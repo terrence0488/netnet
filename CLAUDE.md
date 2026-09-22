@@ -1,7 +1,21 @@
 # CLAUDE.md
 
 ## Project
-<one paragraph: what this product is, who it is for. Fill this in.>
+
+**NetNet** is an AI-native net worth tracker. It gives people with multi-asset, multi-currency
+wealth — brokerages, bank cash, CPF, property, vehicles, unvested equity, crypto — one accurate,
+current picture of what they are worth, on any device. Everything a person can do in the UI, an
+AI agent can also do: NetNet exposes a comprehensive MCP layer so a user connects ChatGPT or
+Claude to their own data and delegates the tedious part. Drop a brokerage statement into your
+agent and it updates your holdings; ask whether you can afford a car and the answer is grounded
+in your actual balance sheet. The bet is that data entry, not tracking, is the real problem, and
+that an agent solves it without narrowing what can be tracked the way bank-feed aggregation does.
+First users are multi-asset professionals in Singapore and SEA, a market US-centric aggregators
+serve badly. Web first, native iOS/Android later. Free during validation, with monetisation
+deferred until demand is proven.
+
+**Design reference:** `docs/reference/mockups/` (iOS mockups — design and functionality only;
+they predate the MCP layer and use an obsolete product name).
 
 ## How this project is built
 
@@ -28,8 +42,4 @@ If `docs/WORKFLOW.md` or `docs/STATE.md` does not exist, tell the Founder and st
 - Append significant decisions to `docs/decisions.md`.
 
 ## Commands
-<fill in once the project is scaffolded, e.g.>
-- Install: `npm install`
-- Dev server: `npm run dev`
-- Test: `npm test`
-- Lint: `npm run lint`
+<not yet scaffolded — filled in during Stage 5, Phase 1>
