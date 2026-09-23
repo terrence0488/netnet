@@ -3,34 +3,32 @@
 ## Current
 Stage: Prototype
 Phase: n/a
-Status: not-started
-Next action: `stage: prototype`
+Status: awaiting-approval
+Next action: Founder reviews `docs/02-prototype/index.html` (and ideally tests it with 3–5 users).
+On approval: `stage: architecture`
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
 |---|---|---|---|
 | Discovery | **approved** | 2026-09-23 | `docs/00-discovery.md`; §1/§3/§4 reframed same day, re-confirmed with the PRD approval |
 | PRD | **approved** | 2026-09-23 | `docs/01-prd.md`; four gate decisions taken as recommended |
-| Prototype | not-started | | |
+| Prototype | **awaiting-approval** | 2026-09-23 | `docs/02-prototype/`; built against the Founder's four mockup boards, shared in-session |
 | Architecture | not-started | | |
 | Plan | not-started | | |
 | P1 | not-started | | |
 
 ## Handoff note (last session)
-Stage 1 approved. docs/01-prd.md is settled: 11 jobs with Given/When/Then acceptance criteria
-(section 6) are the contract Stage 4 plans against and Stage 6 tests against.
-What the Founder decided in this session, all already in the doc: the problem is reframed - AI
-cannot advise without knowing where the user stands, so advice is the premise and tracking the
-means; vision broad but beachhead narrow, selected on financial literacy so no market education is
-needed; Insights ships in the MVP (J11), overriding the recommendation to defer; accessibility is a
-first-class holding attribute; Claude is the launch-blocking MCP client with ChatGPT a dated
-fast-follow; {client} rides on the connection and tool-call events so M3 splits by client.
-NEXT: Stage 2, the prototype. Input is docs/01-prd.md only.
-ASK THE FOUNDER FOR THE MOCKUP IMAGES FIRST. J11 (Insights) was specified from the README line
-alone - those frames have never been seen, and the prototype cannot get them right blind. Never
-commit them.
-WATCH OUT: Stage 2 is design, not stack. No hosting, framework or database opinions - that is
-Stage 3, and an earlier session already drifted there once.
-MAIN: fast-forwarded to 286bc18 with the Founder's approval, so main carries Stage 0 and Stage 1.
-Per-session branches hold nothing unique once merged - main is the checkpoint of record and docs/ is
-the memory.
+Stage 2 built. `docs/02-prototype/` is a clickable prototype — plain HTML/CSS/JS, opens by
+double-clicking index.html, no build. It covers all 11 jobs; `prototype-notes.md` maps flow to job,
+records the design decisions, lists 5 gate decisions and carries the 3–5 user test script.
+PROCESS NOTE, worth not repeating: I started building Insights without asking for the mockups,
+which both STATE.md and 01-prd.md §9 told me to do first. The Founder stopped me and supplied all
+four boards (Home landing, Home detail, Insights, Account). Insights was rebuilt against the real
+frames; Home was corrected too (chart carousel, sparkline rows, stat pills, expandable value rows).
+The Founder's direction: mockups are reference not gospel — match functionality, ignore branding,
+and make it responsive for desktop as well as mobile, since v1 is a web app.
+MOCKUP IMAGES ARE NOT IN THE REPO and must never be committed. Ask the Founder for them again.
+NEXT: Stage 2 is a gate. Do not start Stage 3. Any user-test learnings go back into 01-prd.md
+BEFORE the Founder approves this stage.
+WATCH OUT: Stage 3 owns all stack choices. The prototype deliberately has no framework, no
+database and hand-rolled SVG charts — do not read it as an architecture proposal.
