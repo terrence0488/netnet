@@ -33,9 +33,13 @@ so that no market education is needed. Expansion ladder in 01-prd.md §2 is orde
 cost, not market size, and the broad market is step 4, deferred. The pitch consequence is binding -
 the beachhead already roughly knows their net worth, so G-D1 and G-D3 must say "your numbers are
 stale and your AI can't read them", never "you don't know what you're worth".
-FOUR OPEN QUESTIONS remain in 01-prd.md §9, each with a recommendation: metric targets, the
-reserved capability list, accessibility as a first-class holding attribute, and scope/sequencing
-(Insights tab, which MCP client is launch-blocking).
+INSIGHTS IS IN THE MVP - Founder override of the recommendation to defer it. Specified as J11 with
+acceptance criteria, but written from the mockups README alone: the Insights frames have never been
+seen. Stage 2 must review the real frames with the Founder before building them.
+FOUR OPEN QUESTIONS remain in 01-prd.md §9: metric targets, the reserved capability list,
+accessibility as a first-class holding attribute, and which MCP client is launch-blocking (which
+carries a required instrumentation amendment - {client} on the connection and tool-call events,
+without which M3 cannot be split by client).
 BRANCH: claude/zealous-davinci-x09bgr, started from the approved Stage 0 commit (= origin/main).
 MOCKUPS: still not in the repo. Stage 2 needs the visuals - ask the Founder, never commit them.
 WATCH OUT: do not let Stage 2 drift into stack or hosting choices; that is Stage 3.

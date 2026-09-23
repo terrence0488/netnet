@@ -140,7 +140,8 @@ no evidence and §3.3 cannot be applied. Minimum event set:
 `value_recorded {source}` · `agent_connection_started` · `agent_connection_completed` ·
 `agent_connection_failed {step}` · `agent_tool_called {tool, kind: read|write, outcome,
 latency_ms}` · `value_corrected {original_source, age_at_correction}` · `value_undone` ·
-`session_started` · `reminder_sent` · `reminder_clicked` · `account_deleted`
+`session_started` · `insights_viewed {view: monthly|quarterly|yearly}` · `reminder_sent` ·
+`reminder_clicked` · `account_deleted`
 
 `kind: read|write` is what makes M7 separable from M4 — without it the premise is unmeasurable.
 
@@ -154,11 +155,17 @@ is a security incident, not a trade-off.
 
 Assemble and maintain a financial position: any asset or liability, user-defined types and tags,
 any currency, dated value history, archive · net worth total with trend, breakdown by type,
-assets-vs-liabilities, and a user-chosen comparison baseline · staleness labels and email
-reminders · **a comprehensive MCP layer with full CRUD, plus read tools shaped for advice, reached
+assets-vs-liabilities, and a user-chosen comparison baseline · **an Insights view of change by
+calendar period (monthly, quarterly, yearly) with its own filters and exclusions** · staleness
+labels and email reminders · **a comprehensive MCP layer with full CRUD, plus read tools shaped for advice, reached
 by OAuth from ChatGPT or Claude** · audit log and undo for every agent write · export and account
 deletion · the §3.5 analytics · the §3.4 distribution assets. Mobile-first responsive web, one API
 that native clients reuse later.
+
+**Note for Stage 4:** Insights is the one item here that does not serve §3.1, so it should be
+sequenced *after* the MCP layer and the §3.5 analytics within P1. Not a hedge on shipping it — it
+ships at launch — but if anything in P1 slips, the slip must be visible against the launch date
+rather than quietly eating the work the experiment depends on.
 
 ### 4.2 Permanently free, and what is deliberately reserved (A10)
 
@@ -178,6 +185,11 @@ Reserved for later monetisation — **not** built in v1, so they are not given a
 | Document vault / statement history | Storage cost, and v1 deliberately never receives documents |
 | Threshold alerts and push notifications | Infrastructure cost per user |
 
+**Where the line falls, now that Insights ships free (§4.1):** *backward-looking* analysis of data
+the user already has is free and in v1 — totals, trends, period-by-period change, breakdowns.
+*Forward-looking* projection built by NetNet is reserved. That is the boundary; it is not "charts
+are free, better charts are paid", which would be unholdable.
+
 **Not a contradiction of §1:** the user's *agent* may project, model scenarios and reason about tax
 from the read tools — that is the whole point, and it is free and uncapped. What is reserved is
 NetNet building those features itself. NetNet supplies context; the agent supplies advice.
@@ -196,6 +208,7 @@ keep it trustworthy.
 | **J2** | track any asset or liability, any currency, their own types and tags | Coverage |
 | **J3** | record what something is worth today, and correct history | Snapshot model |
 | **J4** | see whether they are going up, against a baseline they choose | A6, M6 |
+| **J11** | see how each month, quarter and year actually went, and what drove it | A6, M6 |
 | **J7** | see exactly what the agent changed, and undo it | A2, M5 |
 | **J9** | be nudged before the picture goes stale | M8 |
 | **J10** | export everything and delete the account | A7 |
@@ -344,6 +357,39 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** any screen or API response, **when** produced, **then** it contains no other user's
   data — verified by test, not by inspection.
 
+### J11 — Insights: how each period actually went
+> Specified from `reference/mockups/README.md` alone; the Insights frames are not in the repo.
+> Stage 2 must review the real frames with the Founder before building — the behaviour below is
+> the contract, the visual and interaction detail is not yet settled.
+
+- **Given** holdings with value history, **when** the user opens Insights, **then** they can switch
+  between **Monthly, Quarterly and Yearly** views, each listing net-worth change per calendar
+  period — period-end value, absolute change and % change — newest period first.
+- **Given** a period in any view, **when** the user opens it, **then** they see which holdings drove
+  that period's change, ranked by contribution, in their default currency.
+- **Given** Insights Filters, **when** the user filters by type or tag, **then** every figure in the
+  view recomputes over the filtered set only and the active filter is visible.
+- **Given** the Insights **"Don't Show" exclusion list** (which Home's filter does not have),
+  **when** the user excludes a holding, type or tag, **then** it is dropped from Insights figures
+  **without** changing Home totals or net worth, and the exclusion persists across sessions until
+  cleared.
+- **Given** a user with less history than the selected view needs — fewer than two periods carrying
+  data, which is the normal case for most users in the first weeks after launch — **when** they open
+  that view, **then** they see the periods they do have plus a plain statement of what is needed for
+  a comparison: never an empty grid, a fabricated 0% row, or an axis with one point.
+- **Given** values added with past dates after the fact, **when** Insights is opened, **then** the
+  affected periods recompute — periods derive from **value dates**, never from when the entry was
+  made.
+- **Given** a holding with no value recorded inside a period, **when** that period is computed,
+  **then** its last known value before the period end is carried forward, and the view marks the
+  figure as carried rather than observed.
+- **Given** holdings in several currencies, **when** a period's change is computed, **then** it uses
+  each entry's recorded default-currency conversion (J2), so a period's change is not distorted by
+  FX that moved after the fact.
+- **Given** a phone-width viewport, **when** any Insights view is used, **then** it is fully usable
+  without horizontal scrolling.
+- **Given** any Insights view, **when** it is opened, **then** `insights_viewed {view}` fires.
+
 ## 7. Non-functional requirements
 
 | # | Requirement | Why |
@@ -380,9 +426,11 @@ reconsider, and it is currently neither in scope nor reserved.
 
 Each carries a recommendation, so silence still leaves a decision.
 
-**Resolved since drafting:** audience breadth. Broad vision, narrow beachhead selected on financial
-literacy so no market education is required — now §2, with the expansion ladder and the pitch
-consequence it forces.
+**Resolved since drafting:** (a) audience breadth — broad vision, narrow beachhead selected on
+financial literacy so no market education is required, now §2 with its expansion ladder and the
+pitch consequence it forces; (b) the **Insights tab ships in the MVP** (Founder decision,
+overriding the recommendation to defer) — now §4.1 and J11, with the free/reserved boundary
+redrawn in §4.2 as backward-looking free, forward-looking reserved.
 
 1. **Metric targets and kill thresholds (§3.2, §3.3)**, now with advice pull (M7 ≥50%, kill <20%)
    as a headline. *Recommend: adopt as written.*
@@ -391,10 +439,15 @@ consequence it forces.
 3. **Accessibility as a first-class attribute (J2, J8).** *Recommend: yes. "Can I afford it"
    answered off CPF and home equity is wrong in a way that destroys trust in one question, and
    this beachhead's balance sheet is mostly locked-up money.*
-4. **Scope and sequencing:** does the mockups' full Insights tab ship in v1, and which MCP client
-   is launch-blocking? *Recommend: defer Insights (Home's trend + breakdown + baseline already
-   answers "am I going up"); build to the standard remote-MCP + OAuth spec so both clients work,
-   verify Claude end to end as launch-blocking, ChatGPT fast-follow. Both count toward M3.*
+4. **Which MCP client is launch-blocking, and one instrumentation amendment.** *Recommend: build to
+   the standard remote-MCP + OAuth spec so no client-specific branching exists; verify Claude end to
+   end as launch-blocking, ChatGPT as a dated fast-follow, both counting toward M3.* The amendment
+   this depends on: add `{client}` to `agent_connection_started`, `agent_connection_completed`,
+   `agent_connection_failed` and `agent_tool_called`. Without it M3 cannot be split by client, and
+   "ChatGPT users bounce at authorise" is indistinguishable from "A1 is wrong" — which is the most
+   expensive misreading available in this launch. Stage 3 must also verify each client's current
+   connector requirements (paid tier, developer mode) before the architecture locks, since those
+   cap M3's realistic ceiling and move faster than any of us can remember.
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves
