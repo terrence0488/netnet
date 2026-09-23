@@ -231,6 +231,11 @@ ambiguous, ask which side of that line it falls on rather than deciding case by 
 - **Wide (≥1500px).** The measure grows to 1340px, then 1440px past 1800px, and is **centred** in
   the space beside the sidebar. A ledger is read in a column, so the measure stays capped rather
   than stretching to fill a 2560px display — but it is centred, never left-aligned against a void.
+- **The content column's width never depends on what is on screen.** Switching a tab or a view must
+  not resize the page. Centre it with an explicit `width` plus `justify-self`, never with `margin:0
+  auto` — auto margins on a grid item cancel `stretch`, so the item falls back to fitting its
+  content and the container silently starts tracking whatever is inside it. This shipped once and
+  was caught by the Founder switching between the Insights views.
 - **The agent margin gutter is reserved at every breakpoint.** It is 24px of the left margin, and
   rows offset their mark into it. Nothing else may occupy it.
 - **No horizontal scrolling at phone width**, ever (PRD J4, J11).
