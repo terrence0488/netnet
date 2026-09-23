@@ -120,9 +120,19 @@ whether the warm paper survives a landing page; and the wordmark, which is still
     toast" — that last one belongs to background FX refresh, which PRD §4.2 reserves.
 16. The old product name and branding throughout.
 
+**What is deliberately NOT in the prototype**
+
+17. **No design or scope commentary in the UI.** Notes explaining why something was or was not
+    built belong in this document, not in the product. Four such notes were written into screens
+    and then removed — on New Goal, on the mockup toggles that were dropped, on accessibility being
+    an addition, and on Stage 3 re-checking the ChatGPT connector. A prototype is shown to users;
+    anything addressed to the Founder is noise to them and makes the product look unfinished.
+    The only text in the UI that speaks about the prototype is tester orientation (the agent replay
+    banner, and the PROTO drawer), which a tester genuinely needs to read the screen correctly.
+
 **Prototype-only scaffolding**
 
-17. The PROTO drawer shows the §3.5 analytics events as they fire, with their properties. It is
+18. The PROTO drawer shows the §3.5 analytics events as they fire, with their properties. It is
     there so the event contract is reviewable at design time rather than at build time, and it
     demonstrates the N9 constraint: names, counts and timings only, never amounts or holding names.
 

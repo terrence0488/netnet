@@ -910,7 +910,7 @@ function renderAgent() {
           <li>Approve NetNet when the browser window opens.</li>
           <li>Done. NetNet's tools appear in ChatGPT. No token to copy anywhere.</li></ol>
           <div class="note warn" style="margin:12px 0 0">ChatGPT exposes custom connectors on paid plans only,
-            and may need developer mode on. Stage 3 re-checks this before the architecture locks.</div>`}
+            and may need developer mode switched on.</div>`}
         <div class="urlbox"><span class="mono">${MCP_URL}</span>
           <button class="btn ghost sm auto" data-act="copy-url">Copy</button></div>
         <button class="btn" style="margin-top:14px" data-act="connect" ${!S.account.verified ? 'disabled' : ''}>I've pasted it — continue</button>
@@ -1098,8 +1098,7 @@ function renderSub(name) {
           <div class="sub">Show holdings in your default currency rather than their own</div></span>
           <input type="checkbox" data-act="toggle-setting" data-v="showDefaultCcy" ${S.settings.showDefaultCcy ? 'checked' : ''}></label>
       </div>
-      <div class="note">The mockups' “Show Legacy Trend Graph”, “Use Old Logic in New Trend Graph” and haptic
-        feedback are deliberately not carried into v1 — compat cruft and a native-only concern.</div>`;
+      `;
   } else if (name === 'types' || name === 'tags') {
     const isT = name === 'types';
     const items = isT ? S.types : S.tags.map(t => ({ id:t, name:t, colour:'var(--ink-3)' }));
@@ -1191,7 +1190,7 @@ function renderAdd(kind, presetType, editId) {
       <select id="f-access">${Object.keys(ACCESS).filter(a => a !== 'n/a').map(a =>
         `<option value="${a}" ${(h ? h.access : 'accessible') === a ? 'selected' : ''}>${esc(ACCESS[a].label)} — ${esc(ACCESS[a].hint)}</option>`).join('')}</select>
       <div class="hint">This is what stops your agent counting CPF or home equity when you ask whether you
-        can afford something. It is a NetNet addition, not in the original mockups.</div></div>` : ''}
+        can afford something.</div></div>` : ''}
     ${!h ? `<div class="two">
       <div class="field"><label>Currency <span class="req">*</span></label>
         <select id="f-ccy">${['SGD','USD','MYR','HKD','AUD','GBP','EUR','JPY'].map(c =>
@@ -1321,9 +1320,7 @@ function sheetSort() {
 function sheetAddMenu() {
   sheet(`<h3 style="padding:0 18px 10px;text-align:center">Start Tracking</h3>
     <button class="opt" data-go="#/add/asset"><span class="grow" style="color:var(--gain)">+ New Asset</span></button>
-    <button class="opt" data-go="#/add/liability"><span class="grow" style="color:var(--loss)">− New Liability</span></button>
-    <div class="note" style="margin:12px 18px 0">The mockups also offer <b>New Goal</b>. Net-worth goals are not
-      in the v1 scope in <code>01-prd.md</code> — flagged as a gate decision rather than built.</div>`);
+    <button class="opt" data-go="#/add/liability"><span class="grow" style="color:var(--loss)">− New Liability</span></button>`);
 }
 function sheetHoldingMenu(id) {
   const h = holdingOf(id);
