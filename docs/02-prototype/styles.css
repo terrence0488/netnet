@@ -47,7 +47,7 @@ h1,h2,h3{margin:0;font-weight:600}
 @media (min-width:900px){
   .shell{display:grid;grid-template-columns:232px minmax(0,1fr)}
   .sidebar{display:block;position:sticky;top:0;height:100vh;border-right:1px solid var(--rule);padding:26px 18px}
-  .main{max-width:1060px;margin:0;padding:0 40px 70px}
+  .main{max-width:1180px;margin:0 auto;padding:0 40px 70px}
   .tabbar{display:none!important}
 }
 
@@ -309,6 +309,11 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12p
 .pos{color:var(--gain)}.neg{color:var(--loss)}.muted{color:var(--ink-3)}
 .split{display:flex;height:3px;background:var(--rule);margin:10px 0}
 .split i{display:block}
+
+/* Wide screens: grow the measure rather than banking a void to the right.
+   Past ~1700px it stays capped and centred — a ledger is read in a column. */
+@media (min-width:1500px){ .main{max-width:1340px} }
+@media (min-width:1800px){ .main{max-width:1440px} }
 
 /* Home: summary column leads in the DOM (mobile reads net worth → position →
    holdings). On desktop it returns to the right without changing that order. */

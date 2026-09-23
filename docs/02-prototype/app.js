@@ -939,18 +939,27 @@ function renderAgent() {
 const SCRIPT = [
   { who:'user', text:"Here's my IBKR statement for September — update NetNet." },
   { who:'tool', text:'<b>netnet.find_holding</b> { query: "IBKR" }<br>→ 1 likely match: “IBKR” (USD, Stocks) · last value 21 Sep' },
-  { who:'ai',   text:"Found your existing IBKR holding, so I'll update that rather than create a second one. The statement closes at USD 421,900." },
-  { who:'tool', text:'<b>netnet.record_value</b> { holding_id: "h-ibkr", amount: 421900, currency: "USD", as_of: "2026-09-23" }<br>→ ok', write:true },
+  { who:'ai',   text:"Found your existing IBKR holding, so I'll update that rather than create a second one. The statement closes at USD {{IBKRNEW}}." },
+  { who:'tool', text:'<b>netnet.record_value</b> { holding_id: "h-ibkr", amount: {{IBKRNEW}}, currency: "USD", as_of: "2026-09-23" }<br>→ ok', write:true },
   { who:'ai',   text:'Done — IBKR is updated. Your net worth is now <b>{{NW}}</b>.' },
   { who:'user', text:"Can I afford a $120k car?" },
   { who:'tool', text:'<b>netnet.get_position_summary</b> { include: ["accessibility","staleness","currency_exposure"] }<br>→ one call, no follow-ups needed' },
   { who:'ai',   text:"Yes — comfortably, but the useful part isn't the yes.<br><br>You're worth <b>{{NW}}</b>, and of that <b>{{ACC}}</b> is <b>readily accessible</b>. The rest is CPF, the flat and unvested RSUs — locked or illiquid, and not money you can put toward a car. A $120k purchase is about <b>{{MULT}}×</b> covered by what you can actually reach.<br><br>Two things the numbers themselves flag: most of your accessible money is a single brokerage position, so you'd be selling equities to buy a depreciating asset; and your current car was last valued <b>{{CARSTALE}}</b>, so any trade-in figure in this is guesswork." }
 ];
+/* A statement update nudges the position; it does not halve it. Deriving the
+   demo's written value from the holding's own latest value keeps the trend
+   plausible however the seed data drifts. */
+function demoIbkrAmount() {
+  const h = holdingOf('h-ibkr'), v = h && latest(h);
+  const base = v ? (v.turn === 'turn-demo' ? v.amount / 1.021 : v.amount) : 600000;
+  return Math.round(base * 1.021 / 100) * 100;
+}
 function renderChat() {
   const step = S.chatStep || 0;
   const t = totals(S.holdings.filter(h => !h.archived));
   const car = holdingOf('h-car');
-  const fill = s => s.replace(/\{\{NW\}\}/g, money(t.now)).replace(/\{\{ACC\}\}/g, money(t.accessible))
+  const fill = s => s.replace(/\{\{IBKRNEW\}\}/g, demoIbkrAmount().toLocaleString('en-SG'))
+    .replace(/\{\{NW\}\}/g, money(t.now)).replace(/\{\{ACC\}\}/g, money(t.accessible))
     .replace(/\{\{MULT\}\}/g, (t.accessible / 120000).toFixed(1))
     .replace(/\{\{CARSTALE\}\}/g, car && latest(car) ? ago(latest(car).date) : 'a while ago');
   $('#s-chat').innerHTML = `
@@ -1594,7 +1603,7 @@ document.addEventListener('click', ev => {
       if (stepDef && stepDef.write) {
         const h = holdingOf('h-ibkr');
         if (h && !h.values.some(x => x.turn === 'turn-demo')) {
-          const val = { id:uid('v'), date:TODAY, amount:421900, ccy:'USD', note:'', marked:false,
+          const val = { id:uid('v'), date:TODAY, amount:demoIbkrAmount(), ccy:'USD', note:'', marked:false,
             source:'agent', client:'Claude', turn:'turn-demo', enteredAt:new Date().toISOString() };
           recomputeBase(val); h.values.push(val); h.values.sort((a, b) => a.date.localeCompare(b.date));
           logIt({ kind:'value.create', holdingId:h.id, valueId:val.id, source:'agent', client:'Claude',

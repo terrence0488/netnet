@@ -228,6 +228,9 @@ ambiguous, ask which side of that line it falls on rather than deciding case by 
 - **Desktop (≥900px).** Sidebar nav plus a content column that widens to two columns for the
   summary and holdings. The page does not become a card grid — the ruled-section structure holds;
   there is simply more room between rules.
+- **Wide (≥1500px).** The measure grows to 1340px, then 1440px past 1800px, and is **centred** in
+  the space beside the sidebar. A ledger is read in a column, so the measure stays capped rather
+  than stretching to fill a 2560px display — but it is centred, never left-aligned against a void.
 - **The agent margin gutter is reserved at every breakpoint.** It is 24px of the left margin, and
   rows offset their mark into it. Nothing else may occupy it.
 - **No horizontal scrolling at phone width**, ever (PRD J4, J11).
