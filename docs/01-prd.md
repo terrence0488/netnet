@@ -39,16 +39,41 @@ the tracker exists to feed the advice, not the other way round. Detail: `00-disc
 
 ## 2. Target user
 
-The multi-asset professional in Singapore / SEA: net worth ~S$300K–5M, 5–20 holdings across ≥2
-currencies including CPF, reviews position monthly or quarterly, already keeps a stale
-spreadsheet, already pays for ChatGPT or Claude. Detail and secondary segments: `00-discovery.md`
-§2.
+**Vision: broad.** Anyone whose AI could advise them better if it knew where they stood — which is
+most people (§1).
 
-**Live tension, raised at the gate (§9.1):** the reframe describes "most people don't know what
-they're worth", which is a mass-market statement. The approved beachhead is narrower and, notably,
-*does* roughly know — their picture exists and is merely stale. This PRD keeps the approved
-beachhead and treats the reframe as the why, on the reading that a two-year-old picture is not
-usable context either. If the Founder wants the broader user instead, §§4–6 change materially.
+**Beachhead: narrow, chosen for one reason — it needs no education.** The Founder's criterion is
+financial literacy: target people who already understand why a current picture of their position is
+worth keeping, so the product never has to teach that. Educating a market is the slow, expensive
+problem, and the test-market phase deliberately does not attempt it.
+
+So the first user is the **financially engaged multi-asset tracker, SG/SEA first**: net worth
+~S$300K–5M, 5–20 holdings across ≥2 currencies including CPF, reviews position monthly or
+quarterly, already keeps a spreadsheet, already pays for ChatGPT or Claude. Detail:
+`00-discovery.md` §2.
+
+Expansion ladder, ordered by education cost rather than size:
+
+| # | Segment | Education needed | Why this order |
+|---|---|---|---|
+| 1 | SG/SEA multi-asset professional | **None** | Founder is this user; CPF and multi-currency are already the mockups' reality; aggregators serve this market worst |
+| 2 | Global FIRE / net-worth trackers | **None** | Already track deliberately; same product, same behaviour, larger market, more competition |
+| 3 | Financially engaged, simpler holdings (one currency, few assets) | Low | Understand the value but need less of the product; may find it heavy |
+| 4 | The broad market who do not know what they are worth | **High** | Must first be convinced this matters, and need guided assembly, not just faster entry |
+
+Step 4 is the vision in §1 and is deliberately deferred. v1's guided starting categories (J1) are
+the on-ramp for it, kept cheap — not a campaign to win it.
+
+**Consequence for the pitch (G-D1, G-D3).** The beachhead *does* roughly know what they are worth;
+their picture exists and is merely stale. The mass-market line — "you don't know your net worth" —
+does not describe them and will read as condescending. Their version of the problem is: *your
+numbers are real but stale, and trapped somewhere your AI cannot read, so the advice you get is
+generic.* Landing copy and the launch note are written for that, not for §1's broader framing.
+
+**Trade-off worth naming:** literacy cuts the education cost and raises the trust bar. This audience
+asks where the data lives, whether it is sold, and what happens on deletion — *before* signing up
+(A7). That makes J10 (export and delete) and N4 (isolation) go-to-market features here, not
+compliance chores.
 
 ## 3. Goals & success metrics
 
@@ -93,12 +118,15 @@ experiment is not evidence.
 
 Signups are the kill metric and there is no channel yet, so distribution ships as product work:
 
-- **G-D1** A public landing page that states the problem in one screen — *your AI can't advise you
-  because it doesn't know what you're worth* — and shows an agent answering a real question from a
-  real balance sheet (screen recording, no audio, no real data).
+- **G-D1** A public landing page that states the problem in one screen **in the beachhead's terms**
+  (§2) — *your numbers are stale and your AI can't read them, so the advice you get is generic* —
+  and shows an agent answering a real question from a real balance sheet (screen recording, no
+  audio, no real data).
 - **G-D2** NetNet listed wherever MCP clients and users discover connectors (client connector
   directories, public MCP registries and lists).
-- **G-D3** A launch note the Founder can post to 3+ relevant communities without rewriting it.
+- **G-D3** A launch note the Founder can post, without rewriting it, to 3+ communities of people
+  who are **already financially literate** (§2). The targeting criterion is literacy, not reach: a
+  smaller audience that needs no education converts better than a larger one that does.
 - **G-D4** Landing and signup-funnel analytics live before launch, so M10 is readable.
 
 Channel selection and posting are Founder work; producing G-D1–G-D4 is in v1 scope.
@@ -337,7 +365,10 @@ expense tracking** (see the risk below) · tax filing or NetNet-produced tax rep
 household or advisor access · native iOS/Android apps · **an in-app AI chat or assistant, and any
 advice generated by NetNet itself** — the agent is the user's own, running on their subscription
 (N2) · automatic price or FX refresh (§4.2) · document upload or storage · NetNet-built forecasting
-· billing, plans or entitlements · the mockups' Pro tier, legacy trend-graph toggles and haptics.
+· billing, plans or entitlements · **financial-literacy education — explainers, coaching, "what is
+net worth" content** (the beachhead in §2 exists precisely to avoid that cost; teaching the broad
+market is a later and separate problem) · the mockups' Pro tier, legacy trend-graph toggles and
+haptics.
 
 **Named risk in that list:** a balance sheet answers "what am I worth" and "can I afford this from
 what I hold". It does not answer "can I afford this from what I earn", which needs cash flow. v1
@@ -349,21 +380,18 @@ reconsider, and it is currently neither in scope nor reserved.
 
 Each carries a recommendation, so silence still leaves a decision.
 
-1. **Beachhead vs the reframe's breadth (§2).** The reframe speaks about most people not knowing
-   their worth; the approved beachhead is the SG/SEA multi-asset professional, who *does* know,
-   roughly, and whose pain is staleness. *Recommend: keep the beachhead, adopt the reframe as the
-   why — a stale picture is not usable context either, and this user has the most context to
-   assemble, the most currencies and the least aggregator coverage. Broadening would mean a
-   simpler product competing on ease against well-funded aggregators, and would discard the CPF /
-   multi-currency edge.*
-2. **Metric targets and kill thresholds (§3.2, §3.3)**, now with advice pull (M7 ≥50%, kill <20%)
+**Resolved since drafting:** audience breadth. Broad vision, narrow beachhead selected on financial
+literacy so no market education is required — now §2, with the expansion ladder and the pitch
+consequence it forces.
+
+1. **Metric targets and kill thresholds (§3.2, §3.3)**, now with advice pull (M7 ≥50%, kill <20%)
    as a headline. *Recommend: adopt as written.*
-3. **Reserved capabilities (§4.2)** — confirm the list, that unlimited MCP read and write stays
+2. **Reserved capabilities (§4.2)** — confirm the list, that unlimited MCP read and write stays
    permanently free, and that NetNet never generates advice itself. *Recommend: confirm.*
-4. **Accessibility as a first-class attribute (J2, J8).** *Recommend: yes. "Can I afford it"
+3. **Accessibility as a first-class attribute (J2, J8).** *Recommend: yes. "Can I afford it"
    answered off CPF and home equity is wrong in a way that destroys trust in one question, and
    this beachhead's balance sheet is mostly locked-up money.*
-5. **Scope and sequencing:** does the mockups' full Insights tab ship in v1, and which MCP client
+4. **Scope and sequencing:** does the mockups' full Insights tab ship in v1, and which MCP client
    is launch-blocking? *Recommend: defer Insights (Home's trend + breakdown + baseline already
    answers "am I going up"); build to the standard remote-MCP + OAuth spec so both clients work,
    verify Claude end to end as launch-blocking, ChatGPT fast-follow. Both count toward M3.*

@@ -10,7 +10,7 @@ Next action: Founder replies `approve prd`; the next session then starts with `s
 | Stage / Phase | Status | Date | Notes |
 |---|---|---|---|
 | Discovery | **approved**, §1/§3/§4 revised | 2026-09-23 | Approved, then reframed by the Founder same day; revision needs re-confirmation at the PRD gate |
-| PRD | awaiting-approval | | `docs/01-prd.md`; 5 open questions at the gate |
+| PRD | awaiting-approval | | `docs/01-prd.md`; 4 open questions at the gate |
 | Prototype | not-started | | |
 | Architecture | not-started | | |
 | Plan | not-started | | |
@@ -28,8 +28,14 @@ A11 added; M7 (repeat read-only agent queries) is a headline metric with its own
 accessibility of each holding proposed as a first-class attribute so affordability answers are not
 computed off CPF and home equity; NetNet supplies context and never generates advice itself.
 What it did not change: the build. Assembly, the MCP layer, audit + undo, the free-forever set.
-FIVE OPEN QUESTIONS in 01-prd.md §9, each with a recommendation. Question 1 is the live tension -
-the reframe's language is mass-market, the approved beachhead is not.
+AUDIENCE RESOLVED by the Founder: vision broad, beachhead narrow, selected on financial literacy
+so that no market education is needed. Expansion ladder in 01-prd.md §2 is ordered by education
+cost, not market size, and the broad market is step 4, deferred. The pitch consequence is binding -
+the beachhead already roughly knows their net worth, so G-D1 and G-D3 must say "your numbers are
+stale and your AI can't read them", never "you don't know what you're worth".
+FOUR OPEN QUESTIONS remain in 01-prd.md §9, each with a recommendation: metric targets, the
+reserved capability list, accessibility as a first-class holding attribute, and scope/sequencing
+(Insights tab, which MCP client is launch-blocking).
 BRANCH: claude/zealous-davinci-x09bgr, started from the approved Stage 0 commit (= origin/main).
 MOCKUPS: still not in the repo. Stage 2 needs the visuals - ask the Founder, never commit them.
 WATCH OUT: do not let Stage 2 drift into stack or hosting choices; that is Stage 3.

@@ -58,7 +58,13 @@ scope: NetNet supplies context and never generates advice itself (see `01-prd.md
 
 ## 2. Target user
 
-**Primary (beachhead): the multi-asset professional in Singapore / SEA.**
+**The vision is broad; the beachhead is narrow, and it is selected on financial literacy.**
+Founder decision, 2026-09-23: go first at people who already understand why a current picture of
+their position is worth keeping, because educating a market is the slow and expensive problem and
+the test-market phase will not attempt it. Breadth comes later, in the order set out at the end of
+this section.
+
+**Primary (beachhead): the financially engaged multi-asset professional in Singapore / SEA.**
 
 - Mid-to-late career, salaried or self-employed, net worth roughly S$300K–5M.
 - Holdings span 5–20 line items across ≥2 currencies: a local brokerage or IBKR, bank cash,
@@ -72,11 +78,21 @@ Chosen because the Founder is this user, which makes validation fast and honest;
 mockups already encode this user's reality (CPF and multi-currency are first-class); and because
 US-centric aggregation products serve this market especially badly.
 
-**Secondary (later): global FIRE / net-worth trackers** — the same behaviour, larger market,
-more competition. Reachable once the core works, without changing the product.
+**Expansion order — by education cost, not market size:** (1) SG/SEA multi-asset professional,
+no education needed; (2) global FIRE / net-worth trackers — same behaviour, larger market, more
+competition, still no education needed; (3) financially engaged people with simpler holdings; (4)
+the broad market who do not know what they are worth — high education cost, and they need guided
+assembly rather than faster entry. Step 4 is the vision in §1, deliberately deferred. See
+`01-prd.md` §2 for the table and what it means for the launch pitch.
+
+**Note the asymmetry it creates:** the beachhead already roughly knows their net worth, so the
+mass-market framing of §1 does not describe them. Their problem is that the numbers are stale and
+unreadable by their AI. Literacy also raises the trust bar — this audience asks where the data lives
+and what deletion means before signing up (A7).
 
 **Explicitly not the user in v1:** budgeters, day traders, people wanting transaction
-categorisation, households sharing finances, anyone needing tax filing.
+categorisation, households sharing finances, anyone needing tax filing, and anyone who first has to
+be taught why tracking net worth matters.
 
 ## 3. Current alternatives, and why they lose
 
