@@ -99,7 +99,58 @@ control. A mis-parsed statement produces a plausible-looking wrong number in the
 worth. The audit log and undo are not polish — they are what makes agent write access
 defensible.
 
-## 5. Interview questions
+## 5. Business constraints
+
+Founder-set constraints on the business. These are **not** technical choices — they are the
+inputs Stage 3 (Architecture) must satisfy, and the yardstick any stack proposal is measured
+against.
+
+### Purpose of the build
+Launch as a **real production app** to test market demand. Not a prototype, not a private beta:
+a live product that real users trust with real financial data.
+
+### Go-to-market
+- **Web app first**, on a custom domain the Founder will register.
+- **Native iOS/Android is planned**, not hypothetical. Decisions made now must not make that
+  expansion expensive later — web and native must be able to share one backend and one API.
+
+### Pricing during test-market
+**Completely free.** No billing, no paywall, no tiers. Monetisation is deliberately deferred
+until demand is proven.
+
+### Cost ceilings
+
+| Users | Monthly running cost |
+|---|---|
+| 0–100 | ≈ $0 |
+| 100–1,000 | < $50 |
+| > 1,000 | Exit test-market phase; work out the business model |
+
+### Runway
+**Undefined** — could be a month, a quarter, or a year.
+
+Consequence: the cost ceilings must hold **indefinitely**. Anything free only for a trial window
+(introductory credits, 3-month trials, promotional tiers) does not satisfy this constraint. It
+defers an unknown bill to an unknown date, which is not the same as being cheap.
+
+### Quality floor — does not trade against cost
+Minimising cost must **not** compromise service quality or security. The app must be reliable
+and secure at all times. Cheap-but-flaky is a failed outcome, not an acceptable trade.
+
+This bites hardest on the agent-facing surface. A web page that is slow produces an annoyed user
+who retries; an **MCP call that fails mid-task teaches the user the integration cannot be
+trusted** — and that is the product's core bet (A1, A2). Infrastructure defaults that trade
+availability for cost are therefore a product risk, not an ops detail.
+
+### Success and kill criteria
+The outcome to drive is **sign-ups and engagement**. If NetNet cannot get people to sign up and
+keep using it, the app is killed and the Founder moves on.
+
+Consequence for planning: every phase is judged on whether it moves those two numbers. Work that
+does not is deferrable by definition, and the PRD's success metrics should make both directly
+measurable.
+
+## 6. Interview questions
 
 Ten questions for 5–8 people matching the target user. Ask about the past, not the future;
 never pitch NetNet before question 9.
@@ -124,7 +175,7 @@ never pitch NetNet before question 9.
 
 Close with: *"Who else should I talk to?"*
 
-## 6. Open questions for the Founder
+## 7. Open questions for the Founder
 
 1. **Is the interview round happening?** The mockups and stated vision are strong enough to
    proceed on Founder conviction alone, but then A1/A2 stay untested until P1 is live in
@@ -134,7 +185,7 @@ Close with: *"Who else should I talk to?"*
 3. **Does "free" have a stated end date?** It affects early messaging and whether users feel
    baited later.
 
-## 7. Decisions taken in this stage
+## 8. Decisions taken in this stage
 
 | Decision | Reason |
 |---|---|
@@ -143,3 +194,7 @@ Close with: *"Who else should I talk to?"*
 | Remote MCP + OAuth, not pasted tokens | Only path to one-click connection in ChatGPT and Claude; A1 is the top risk, so the setup flow must be as frictionless as possible |
 | P1 ships web app + MCP together | Tests the riskiest assumptions first rather than deferring them |
 | No LLM in NetNet's own backend | Inference runs on the user's agent subscription; keeps free-tier hosting viable and keeps statements off our servers |
+| Free during test-market, with cost ceilings of ~$0 to 100 users and <$50 to 1,000 | Proves demand without a pricing variable confounding the signal, at a running cost the Founder can carry indefinitely |
+| Test-market runway is open-ended, so cost ceilings must hold indefinitely | Rules out anything free only for a trial window — it defers an unknown bill to an unknown date |
+| Reliability and security do not trade against cost | A failing MCP call destroys trust in the agent integration, which is the product's core bet |
+| Success = sign-ups and engagement; failure = kill the app | Gives every phase a single yardstick and an explicit exit, rather than drifting on sunk cost |
