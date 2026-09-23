@@ -1,5 +1,21 @@
 # NetNet UI Mockups — Reference
 
+> ## ⚠️ The mockup images are NOT in this repository
+>
+> They were removed, and purged from git history, because they contain the Founder's **real
+> personal financial data** — full name, email, actual net worth, itemised holdings and several
+> years of value history.
+>
+> **They still exist. Ask the Founder for them whenever you need the visual reference** — they are
+> happy to share them directly. Do not treat their absence as "no design exists", and do not
+> invent a design to fill the gap.
+>
+> This file is the written substitute: it records everything the boards establish. It is
+> deliberately detailed for that reason, but it is not a replacement for looking at them.
+>
+> **If the Founder shares them again, do not commit them.** `.gitignore` blocks image files in
+> this directory to prevent exactly that. Keep them local.
+
 Source: Founder-supplied iOS mockups, 2026-09-22. **Design and functional reference only.**
 The product name and any legacy/compat settings shown in them are obsolete — the product is
 **NetNet**, and the mockups predate the MCP layer, which they do not show at all.
@@ -7,12 +23,12 @@ The product name and any legacy/compat settings shown in them are obsolete — t
 Target for v1 is a **mobile-first responsive web app**, not native. These frames define the
 information architecture, interactions and visual language to reproduce on web.
 
-| File | Frames |
+| Board | Frames |
 |---|---|
-| `01-home-landing.webp` | Line chart · Pie by type · Pie assets-vs-liabilities · Sort By · Comparison Options · Filters · Add Tracking menu · New Asset · New Liability |
-| `02-home-detail.webp` | Holding line chart · Bar chart (period change) · Add Value · Expanded value row · Edit Value · Three-dots menu (Edit/Archive/Delete) · Edit Asset |
-| `03-insights.webp` | Quarterly · Yearly · Monthly views · Insights Filters (note: adds a "Don't Show" exclusion section the Home filter lacks) |
-| `04-account.webp` | Account · General Settings · View Settings · Manage Types · Manage Tags |
+| **Home tab — landing** | Line chart · Pie by type · Pie assets-vs-liabilities · Sort By · Comparison Options · Filters · Add Tracking menu · New Asset · New Liability |
+| **Home tab — holding detail** | Holding line chart · Bar chart (period change) · Add Value · Expanded value row · Edit Value · Three-dots menu (Edit/Archive/Delete) · Edit Asset |
+| **Insights tab** | Quarterly · Yearly · Monthly views · Insights Filters (note: adds a "Don't Show" exclusion section the Home filter lacks) |
+| **Account tab** | Account · General Settings · View Settings · Manage Types · Manage Tags |
 
 ## What the mockups establish
 

@@ -14,8 +14,11 @@ First users are multi-asset professionals in Singapore and SEA, a market US-cent
 serve badly. Web first, native iOS/Android later. Free during validation, with monetisation
 deferred until demand is proven.
 
-**Design reference:** `docs/reference/mockups/` (iOS mockups — design and functionality only;
-they predate the MCP layer and use an obsolete product name).
+**Design reference:** `docs/reference/mockups/README.md` — a written description of the
+Founder's iOS mockups. **The images themselves are deliberately not in this repo** (they contain
+real personal financial data); ask the Founder for them when you need the visual reference, and
+do not commit them. They are design and functionality only: they predate the MCP layer and use
+an obsolete product name.
 
 ## How this project is built
 
