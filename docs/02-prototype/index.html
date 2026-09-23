@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NetNet — Stage 2 prototype</title>
+<meta name="description" content="Clickable design prototype for NetNet. Fictional data.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ============ LANDING (G-D1) ============ -->
+  <section class="screen" id="s-landing">
+    <div class="landing">
+      <div class="hero">
+        <div class="wordmark"><i></i>NetNet</div>
+        <h1>Your numbers are real. They’re just stale — and your AI can’t read them.</h1>
+        <p class="lede">
+          You already know roughly what you’re worth. The spreadsheet is six months old, CPF is a
+          guess, and none of it is anywhere ChatGPT or Claude can see. So you ask a capable model a
+          real question and get a generic answer.
+        </p>
+        <p class="lede">
+          NetNet is the context layer. Connect your own agent once: it does the data entry, and
+          every question you ask after that is answered against your actual balance sheet.
+        </p>
+        <button class="btn" data-go="#/signup">Start free — no card, no bank login</button>
+        <button class="btn ghost" data-demo-landing>Watch a 20-second demo</button>
+      </div>
+
+      <div class="demo">
+        <div class="bar"><span class="chip agent">Claude</span> connected to NetNet</div>
+        <div id="landing-demo"></div>
+      </div>
+
+      <div class="proof">
+        <ul>
+          <li><b>Everything counts.</b> CPF, property, the car, unvested RSUs, IBKR in USD, crypto.
+            Your own types and tags — not a fixed chart of accounts.</li>
+          <li><b>The agent keeps it current.</b> Drop a statement into your agent, tell it to update
+            NetNet. Every write is logged, attributed and undoable.</li>
+          <li><b>No bank logins.</b> No document uploads to us. No AI in our backend — the advice is
+            your agent’s job, on your subscription.</li>
+          <li><b>Yours to take.</b> Full export, one-tap delete, and we never sell it.</li>
+        </ul>
+        <div class="foot">
+          Free, permanently, for everything above — including unlimited agent reads and writes.<br>
+          Singapore-built, multi-currency from day one.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SIGN UP (J1) ============ -->
+  <section class="screen" id="s-signup">
+    <div class="topbar"><button class="back" data-go="#/landing">‹ Back</button></div>
+    <div class="pad">
+      <h1 style="font-size:25px;letter-spacing:-.025em;margin:6px 0 6px">Create your account</h1>
+      <p class="muted" style="margin:0 0 20px">Takes about 30 seconds. You can add holdings, or let your agent do it.</p>
+    </div>
+    <div class="card">
+      <div class="field"><label>Email</label><input id="su-email" type="email" placeholder="you@example.com" autocomplete="email"></div>
+      <div class="field"><label>Default currency</label>
+        <select id="su-ccy"><option>SGD</option><option>USD</option><option>MYR</option><option>HKD</option><option>AUD</option><option>GBP</option><option>EUR</option></select>
+        <div class="hint">Everything is totalled in this. You can hold anything in any currency.</div>
+      </div>
+      <button class="btn" id="su-go">Continue</button>
+    </div>
+    <div class="pad"><div style="text-align:center;color:var(--ink-3);font-size:12.5px;margin:4px 0 12px">or</div></div>
+    <div class="btn-row">
+      <button class="btn sec" data-social="Google">Google</button>
+      <button class="btn sec" data-social="Apple">Apple</button>
+    </div>
+    <div class="note">We never ask for a bank login, and we never receive your statements.
+      <b>Your agent reads them on your device; NetNet only ever sees the numbers you or it write.</b></div>
+  </section>
+
+  <!-- ============ JS-RENDERED SCREENS ============ -->
+  <section class="screen" id="s-home"></section>
+  <section class="screen" id="s-holding"></section>
+  <section class="screen" id="s-add"></section>
+  <section class="screen" id="s-insights"></section>
+  <section class="screen" id="s-period"></section>
+  <section class="screen" id="s-agent"></section>
+  <section class="screen" id="s-chat"></section>
+  <section class="screen" id="s-activity"></section>
+  <section class="screen" id="s-account"></section>
+  <section class="screen" id="s-sub"></section>
+
+</div>
+
+<!-- ============ TAB BAR ============ -->
+<nav class="tabbar hidden" id="tabbar"><div class="tabbar-inner">
+  <button class="tab" data-tab="#/home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 4 5-7 4 5"/><path d="M3 21h18"/></svg>Home</button>
+  <button class="tab" data-tab="#/insights">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="17" y="10" width="4" height="10" rx="1"/></svg>Insights</button>
+  <button class="tab" data-tab="#/agent">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V4"/><circle cx="9" cy="13" r="1.2" fill="currentColor"/><circle cx="15" cy="13" r="1.2" fill="currentColor"/></svg>Agent</button>
+  <button class="tab" data-tab="#/account">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.7"/><path d="M4.5 20c1.3-3.8 4-5.7 7.5-5.7s6.2 1.9 7.5 5.7"/></svg>Account</button>
+</div></nav>
+
+<!-- ============ SHEETS ============ -->
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"></div>
+
+<button class="devbtn" id="devbtn">PROTO</button>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
