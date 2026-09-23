@@ -26,3 +26,4 @@ Append-only. Newest entries at the bottom.
 | 2026-09-23 | Free stays free permanently; monetisation comes only from capabilities added later | Founder decision; anything shipped during the test-market phase can never be paywalled, so scope is now a revenue decision | Discovery |
 | 2026-09-23 | Interview guide deleted from 00-discovery.md rather than left in place | Workflow rule: documents stay short and living, never stale | Discovery |
 | 2026-09-23 | CORRECTION, supersedes the entry above: merge to main after **each stage is approved**, not once the whole project is finalised | Founder clarification. Each approved stage lands on main as a checkpoint, so main always reflects the last Founder-approved state; work continues on claude/compassionate-franklin-f6gat1 | Discovery |
+| 2026-09-23 | Stage 0 Discovery approved by the Founder | Problem, beachhead user, assumptions and business constraints settled; Stage 1 (PRD) may begin | Discovery |

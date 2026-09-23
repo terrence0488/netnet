@@ -1,15 +1,15 @@
 # Project State
 
 ## Current
-Stage: Discovery
+Stage: Requirements (PRD)
 Phase: n/a
-Status: awaiting-approval
-Next action: Founder replies `approve discovery`, then `stage: prd`
+Status: not-started
+Next action: `stage: prd`
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
 |---|---|---|---|
-| Discovery | awaiting-approval | 2026-09-23 | `docs/00-discovery.md` written; business constraints added |
+| Discovery | **approved** | 2026-09-23 | `docs/00-discovery.md`; approved by Founder |
 | PRD | not-started | | |
 | Prototype | not-started | | |
 | Architecture | not-started | | |
@@ -17,25 +17,21 @@ Next action: Founder replies `approve discovery`, then `stage: prd`
 | P1 | not-started | | |
 
 ## Handoff note (last session)
-Scaffolded the repo and ran Stage 0. docs/00-discovery.md holds the problem statement, beachhead
-user, alternatives, 8 ranked risky assumptions, Founder business constraints (section 5), and an
-interview guide. Decisions are in docs/decisions.md (16 entries).
-MOCKUPS: the Founder's UI mockups are NOT in this repo - they hold real personal financial data
-and were purged from git history. docs/reference/mockups/README.md is the written substitute.
-Ask the Founder for the images when you need the visual reference; never commit them.
-BRANCH: develop on claude/compassionate-franklin-f6gat1. After the Founder approves a stage,
-merge that branch into main - main holds the last approved state, one merge per approved stage.
-Keep working on the same branch afterwards. main does not exist yet; it is created at the first
-approval. History was rewritten once (mockup purge).
-WATCH OUT: this session drifted into comparing hosting providers, which is Stage 3 work. The
-Founder correctly stopped it and that research was deliberately NOT saved. Do not carry stack
-opinions into Stage 1; section 5 of 00-discovery.md holds the constraints that should drive the
-Stage 3 decision when it is properly reached.
-All three Stage 0 open questions are now answered (00-discovery.md section 7): no interviews,
-no pre-launch channel, and free stays free forever with monetisation from future capabilities
-only. Nothing is unresolved in Stage 0.
-CARRY INTO STAGE 1: (a) analytics is the experiment, not a nice-to-have - P1 must measure agent
-connection rate, write volume, correction rate and return visits, or the launch yields no
-evidence; (b) distribution needs a PRD goal and real planned work, since nothing exists today;
-(c) everything shipped in the test-market phase is permanently free, so scope decisions are
-revenue decisions.
+Stage 0 approved and merged to main. docs/00-discovery.md is settled: problem framed around data
+entry rather than tracking, SG/SEA multi-asset professional as beachhead, 10 ranked assumptions,
+Founder business constraints (section 5), all open questions resolved (section 7).
+NEXT: Stage 1, the PRD. Inputs are docs/00-discovery.md plus the Founder's high-level solution.
+Read docs/reference/mockups/README.md too - it is the only design reference in the repo.
+THREE THINGS THE PRD MUST CARRY, from the resolved questions:
+ 1. Instrumentation IS the experiment. No interviews are happening, so P1 must measure agent
+    connection rate, agent write volume, correction rate and return visits. Without these the
+    launch produces no evidence and the kill decision has nothing to rest on.
+ 2. Distribution needs a real goal. No waitlist, no channel, and signups are the kill metric
+    (assumption A9).
+ 3. Everything shipped in the test-market phase is permanently free (A10). Scope is a revenue
+    decision - worth naming which capabilities are deliberately reserved for later monetisation.
+MOCKUPS: images are NOT in this repo (real personal financial data, purged from history). Ask
+the Founder for them when the visual reference is needed; never commit them.
+BRANCH: develop on claude/compassionate-franklin-f6gat1, merge to main after each approved stage.
+WATCH OUT: an earlier session drifted into comparing hosting providers, which is Stage 3 work.
+That research was deliberately not saved. Do not carry stack opinions into Stage 1.
