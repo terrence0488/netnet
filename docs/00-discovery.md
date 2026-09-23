@@ -1,6 +1,6 @@
 # 00 — Discovery
 
-Status: awaiting Founder approval · Date: 2026-09-22 · Stage owner: Product researcher
+Status: awaiting Founder approval · Date: 2026-09-22 (revised 2026-09-23) · Stage owner: Product researcher
 
 ## 1. Problem statement
 
@@ -88,11 +88,18 @@ testing before heavy investment.
 | **A6** | Consolidated net worth is a **recurring** need (monthly-ish), not an annual curiosity. | Retention floor is very low regardless of execution quality. | Interview for last-checked recency and frequency. |
 | **A7** | People will hand **complete net-worth data** to a new, unknown, free product from a solo founder. | Signups stall at the trust barrier. | Ask directly in interviews; watch whether signups add >3 holdings. |
 | **A8** | Free-forever-for-now attracts real users, not just tyre-kickers, and monetisation can follow later. | Demand signal is noise. | Judge by depth of use (holdings added, return visits), never by signup count. |
+| **A9** | **Distribution is solvable after launch.** There is no waitlist, audience or channel; the plan is to launch and then promote. | The product can be excellent and still get no signups — and the kill criterion is signups. Failure would be indistinguishable from "no demand". | Treat distribution as a work item with its own owner and metrics, not a launch-day afterthought. |
+| **A10** | Enough of the product's value can stay free permanently that **future capabilities alone** can carry monetisation. | Nothing left to charge for that people want more than what they already have free. | Decide now which capabilities are deliberately reserved, before they ship for free by accident. |
 
-**The sharpest risk is A1 + A2 together.** The premise needs the user to clear a setup hurdle
-*and* extend trust to an agent with write access. Either one failing takes the wedge with it.
-This is why P1 ships both halves — the web app and the MCP layer — rather than deferring the
+**The sharpest product risk is A1 + A2 together.** The premise needs the user to clear a setup
+hurdle *and* extend trust to an agent with write access. Either one failing takes the wedge with
+it. This is why P1 ships both halves — the web app and the MCP layer — rather than deferring the
 agent work: the riskiest assumption should be tested first, not last.
+
+**The sharpest business risk is A9.** With no interviews and no channel, every assumption above
+is now tested only by live users — and live users only exist if promotion works. A product that
+nobody sees produces the same reading as a product nobody wants, and the kill criterion cannot
+tell them apart. Distribution therefore needs to be planned as work, not hoped for.
 
 **Non-obvious risk worth naming:** the agent writes *through* an LLM the Founder does not
 control. A mis-parsed statement produces a plausible-looking wrong number in the user's net
@@ -152,38 +159,43 @@ measurable.
 
 ## 6. Interview questions
 
-Ten questions for 5–8 people matching the target user. Ask about the past, not the future;
-never pitch NetNet before question 9.
+Removed. The Founder decided against an interview round (see section 7) — the market will be
+tested by launching. This section previously held a ten-question guide; it is deleted rather than
+left to rot, per the workflow's rule that documents stay short and living.
 
-**Current behaviour**
-1. Walk me through the last time you worked out your total net worth. What did you actually do?
-2. When was that? What prompted it — a decision, a date, something else?
-3. Where does it live right now? Show me, if you're willing.
-4. Which of your assets are the annoying ones to get a number for, and why?
+## 7. Founder answers (resolved 2026-09-23)
 
-**Pain**
-5. What's the longest it's gone without updating? What made you come back to it?
-6. If it were always current and correct, what would you do with it that you can't today?
-7. What have you tried and abandoned? What made you stop?
+**1. User interviews before the PRD? — No.** No interview round will run. The product launches
+and the market is tested live.
 
-**Money and trust**
-8. Have you ever paid for a tool like this? What happened?
-9. You already use ChatGPT/Claude. How would you feel about giving it access to read your full
-   financial position? What about letting it *write* to it?
-10. What would a new financial app have to do — or not do — before you'd put your real numbers
-    in it?
+*Consequence:* assumptions A1–A8 are tested only by real users of the deployed product. This
+raises the stakes on P1's instrumentation — if it does not measure connection rate, agent write
+volume, correction rate and return visits, the launch produces no evidence and the kill decision
+has nothing to rest on. **Analytics is not a nice-to-have in P1; it is the experiment.**
 
-Close with: *"Who else should I talk to?"*
+**2. Waitlist, audience or channel for the first users? — No.** Launch first, promote after.
 
-## 7. Open questions for the Founder
+*Consequence:* distribution is an unsolved problem with no owner (A9). The PRD must carry a
+goal for it, and the plan must contain real work for it, or the signup metric measures reach
+rather than demand.
 
-1. **Is the interview round happening?** The mockups and stated vision are strong enough to
-   proceed on Founder conviction alone, but then A1/A2 stay untested until P1 is live in
-   front of real users. Both are legitimate; they differ in where the risk sits.
-2. **Is there a waitlist, audience, or channel** for the first 20 users, or does distribution
-   need to be solved as its own problem?
-3. **Does "free" have a stated end date?** It affects early messaging and whether users feel
-   baited later.
+**3. Does "free" have an end date? — No, and it is stronger than that.** Whatever people can use
+for free now stays free for them in future. Monetisation will come from **new capabilities added
+later**, not from putting today's features behind a paywall.
+
+*Consequence, and it binds every later stage:* **anything shipped during the test-market phase is
+permanently free.** Scope decisions from here are revenue decisions. Before P1 ships, it is worth
+naming which capabilities are deliberately withheld for later monetisation — otherwise they get
+given away by default (A10).
+
+*Worth stating plainly once:* the MCP layer is both the product's differentiator and the most
+obviously monetisable thing in it. Committing it to the permanently-free set is a real choice
+with real cost. It is also defensible — the differentiator is what drives adoption, and adoption
+is what the test-market phase exists to produce. Recorded here so the trade-off is deliberate
+rather than discovered later.
+
+*Technically:* no billing in v1, but the data model should not make a future entitlement concept
+painful to add. That is a Stage 3 consideration, not a decision to take now.
 
 ## 8. Decisions taken in this stage
 
@@ -198,3 +210,6 @@ Close with: *"Who else should I talk to?"*
 | Test-market runway is open-ended, so cost ceilings must hold indefinitely | Rules out anything free only for a trial window — it defers an unknown bill to an unknown date |
 | Reliability and security do not trade against cost | A failing MCP call destroys trust in the agent integration, which is the product's core bet |
 | Success = sign-ups and engagement; failure = kill the app | Gives every phase a single yardstick and an explicit exit, rather than drifting on sunk cost |
+| No user interviews; the market is tested by launching | Founder decision; shifts all validation onto live usage, which makes P1 instrumentation the experiment |
+| No waitlist or channel; launch first, promote after | Founder decision; makes distribution an explicit unsolved problem (A9) rather than an assumed one |
+| Free stays free: today's capabilities are permanently free, monetisation comes from future additions | Founder decision; means anything shipped in the test-market phase can never be paywalled, so scope is now a revenue decision |

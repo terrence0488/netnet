@@ -29,5 +29,11 @@ WATCH OUT: this session drifted into comparing hosting providers, which is Stage
 Founder correctly stopped it and that research was deliberately NOT saved. Do not carry stack
 opinions into Stage 1; section 5 of 00-discovery.md holds the constraints that should drive the
 Stage 3 decision when it is properly reached.
-Unresolved: whether user interviews run before the PRD; whether a channel exists for the first
-20 users (both in 00-discovery.md section 7).
+All three Stage 0 open questions are now answered (00-discovery.md section 7): no interviews,
+no pre-launch channel, and free stays free forever with monetisation from future capabilities
+only. Nothing is unresolved in Stage 0.
+CARRY INTO STAGE 1: (a) analytics is the experiment, not a nice-to-have - P1 must measure agent
+connection rate, write volume, correction rate and return visits, or the launch yields no
+evidence; (b) distribution needs a PRD goal and real planned work, since nothing exists today;
+(c) everything shipped in the test-market phase is permanently free, so scope decisions are
+revenue decisions.
