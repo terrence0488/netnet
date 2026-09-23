@@ -1,7 +1,7 @@
 # 00 — Discovery
 
 Status: approved 2026-09-23 · §1, §3 and §4 revised 2026-09-23 on the Founder's reframe of the
-problem (pending re-confirmation at the PRD gate) · Stage owner: Product researcher
+problem, re-confirmed with the PRD approval the same day · Stage owner: Product researcher
 
 ## 1. Problem statement
 

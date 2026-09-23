@@ -1,6 +1,6 @@
 # 01 — Product Requirements (PRD)
 
-Status: awaiting Founder approval · Date: 2026-09-23 · Stage owner: Product manager
+Status: **approved by the Founder 2026-09-23** · Stage owner: Product manager
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -137,13 +137,16 @@ Analytics ranks with the MCP layer as a P1 deliverable. Without these events the
 no evidence and §3.3 cannot be applied. Minimum event set:
 
 `landing_view` · `signup_started` · `account_created` · `holding_created {source: web|agent}` ·
-`value_recorded {source}` · `agent_connection_started` · `agent_connection_completed` ·
-`agent_connection_failed {step}` · `agent_tool_called {tool, kind: read|write, outcome,
-latency_ms}` · `value_corrected {original_source, age_at_correction}` · `value_undone` ·
+`value_recorded {source}` · `agent_connection_started {client}` ·
+`agent_connection_completed {client}` · `agent_connection_failed {step, client}` ·
+`agent_tool_called {tool, kind: read|write, outcome, latency_ms, client}` ·
+`value_corrected {original_source, age_at_correction}` · `value_undone` ·
 `session_started` · `insights_viewed {view: monthly|quarterly|yearly}` · `reminder_sent` ·
 `reminder_clicked` · `account_deleted`
 
 `kind: read|write` is what makes M7 separable from M4 — without it the premise is unmeasurable.
+`client` is what makes M3 separable by MCP client — without it, one client's broken connector flow
+reads identically to A1 being wrong, which is the most expensive misreading available here (§9.4).
 
 **Privacy constraint (binding):** events carry names, counts, timings and a user id only. Never
 amounts, holding names, or any document content. A metrics pipeline that leaks the balance sheet
@@ -286,7 +289,7 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   **then** OAuth completes, the client lists NetNet's tools, and NetNet shows the connection as
   active with client name and time.
 - **Given** a connection attempt, **when** it fails at any step (discovery, authorise, callback,
-  first call), **then** `agent_connection_failed {step}` fires and the user sees a plain-language
+  first call), **then** `agent_connection_failed {step, client}` fires and the user sees a plain-language
   cause and a retry, not a raw error.
 - **Given** an active connection, **when** the user revokes it in NetNet, **then** later calls from
   that client are rejected and the revocation is in the audit log.
@@ -422,33 +425,31 @@ draws the line at the balance sheet deliberately — it is the part nobody has �
 strong with users asking affordability questions, income and expenses is the first candidate to
 reconsider, and it is currently neither in scope nor reserved.
 
-## 9. Open questions
+## 9. Decisions taken at the gate
 
-Each carries a recommendation, so silence still leaves a decision.
+Approved by the Founder 2026-09-23. All four open questions were taken as recommended; earlier in
+the same session the Founder resolved audience breadth (§2) and overrode the recommendation to
+defer Insights (§4.1, J11).
 
-**Resolved since drafting:** (a) audience breadth — broad vision, narrow beachhead selected on
-financial literacy so no market education is required, now §2 with its expansion ladder and the
-pitch consequence it forces; (b) the **Insights tab ships in the MVP** (Founder decision,
-overriding the recommendation to defer) — now §4.1 and J11, with the free/reserved boundary
-redrawn in §4.2 as backward-looking free, forward-looking reserved.
-
-1. **Metric targets and kill thresholds (§3.2, §3.3)**, now with advice pull (M7 ≥50%, kill <20%)
-   as a headline. *Recommend: adopt as written.*
-2. **Reserved capabilities (§4.2)** — confirm the list, that unlimited MCP read and write stays
-   permanently free, and that NetNet never generates advice itself. *Recommend: confirm.*
-3. **Accessibility as a first-class attribute (J2, J8).** *Recommend: yes. "Can I afford it"
-   answered off CPF and home equity is wrong in a way that destroys trust in one question, and
-   this beachhead's balance sheet is mostly locked-up money.*
-4. **Which MCP client is launch-blocking, and one instrumentation amendment.** *Recommend: build to
-   the standard remote-MCP + OAuth spec so no client-specific branching exists; verify Claude end to
-   end as launch-blocking, ChatGPT as a dated fast-follow, both counting toward M3.* The amendment
-   this depends on: add `{client}` to `agent_connection_started`, `agent_connection_completed`,
-   `agent_connection_failed` and `agent_tool_called`. Without it M3 cannot be split by client, and
-   "ChatGPT users bounce at authorise" is indistinguishable from "A1 is wrong" — which is the most
-   expensive misreading available in this launch. Stage 3 must also verify each client's current
-   connector requirements (paid tier, developer mode) before the architecture locks, since those
-   cap M3's realistic ceiling and move faster than any of us can remember.
+1. **Metric targets and kill thresholds stand as written** (§3.2, §3.3), with advice pull (M7 ≥50%,
+   kill <20%) as a headline metric alongside signups, connection rate and week-4 return.
+2. **Reserved capability list confirmed** (§4.2): unlimited MCP read and write is permanently free,
+   NetNet never generates advice itself, and the free/reserved line is backward-looking analysis
+   free, forward-looking projection reserved.
+3. **Accessibility is a first-class holding attribute** (readily accessible / illiquid / locked),
+   defaulting by type — so J8 never answers "can I afford this" off CPF, home equity or unvested
+   equity.
+4. **Claude is the launch-blocking MCP client**, ChatGPT a dated fast-follow, both counting toward
+   M3; the server is built to the standard remote-MCP + OAuth spec with no client-specific
+   branching. The instrumentation amendment this depends on is **applied**: `{client}` now rides on
+   `agent_connection_started`, `agent_connection_completed`, `agent_connection_failed` and
+   `agent_tool_called` (§3.5). Stage 3 must verify each client's current connector requirements
+   (paid tier, developer mode) before the architecture locks, since those cap M3's realistic
+   ceiling and change faster than any of us will remember.
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves
 automated refresh). Exact source is a Stage 3 choice.
+
+**Carried into Stage 2:** J11's behaviour is specified from the mockups README alone — the Insights
+frames have never been seen. Review them with the Founder before building.
