@@ -1,10 +1,25 @@
 # 00 — Discovery
 
-Status: awaiting Founder approval · Date: 2026-09-22 (revised 2026-09-23) · Stage owner: Product researcher
+Status: approved 2026-09-23 · §1, §3 and §4 revised 2026-09-23 on the Founder's reframe of the
+problem (pending re-confirmation at the PRD gate) · Stage owner: Product researcher
 
 ## 1. Problem statement
 
-People with **multi-asset, multi-currency wealth** have no reliable picture of their net worth.
+> **Reframed by the Founder, 2026-09-23.** The earlier framing led with data entry as the problem.
+> Data entry is the *obstacle*; the problem is that AI cannot give tailored advice without knowing
+> where the person stands. The wedge and the build are unchanged — the hierarchy is not.
+
+People want financial advice fitted to their own situation, and frontier AI models can already
+give it — well enough for most of what an ordinary person actually decides. What a model cannot do
+is know the thing every one of those answers depends on: **where this person actually stands.**
+
+Most people cannot supply that context, because they do not have it. They do not know their net
+worth, what they own against what they owe, or how much of it they could touch this month. They
+ask a capable model a real question, get a generic answer, and nothing in the exchange tells them
+the limit was the input rather than the model.
+
+Assembling that picture is the obstacle, and it is where every existing route fails. People with
+**multi-asset, multi-currency wealth** have no reliable picture of their net worth.
 Their money is spread across brokerages, bank accounts, retirement schemes (CPF), property,
 vehicles, unvested equity and crypto. The automated tools (Mint-style aggregators, Monarch,
 Copilot) are built on bank-feed aggregation, which:
@@ -33,9 +48,13 @@ numbers and writes them into NetNet. The tedious part is delegated, not automate
 means it works for *any* asset, including the ones no bank feed will ever reach.
 
 This inverts the usual trade-off: manual entry stops being NetNet's limitation and becomes the
-reason the agent is useful. And once the agent can also *read* the balance sheet, a second job
-appears that no tracker serves today — "I'm thinking of buying a car, can I afford it?" answered
-against the user's real financial position rather than generic advice.
+reason the agent is useful.
+
+**And reading is the point.** Once the agent can read the balance sheet, every question the user
+asks it is answered against their real position rather than a blank slate — "can I afford this
+car?", "how exposed am I to USD?", "am I on track?". NetNet is the context layer that makes those
+answers possible. Tracking is the means; better advice is the end. That ordering matters for
+scope: NetNet supplies context and never generates advice itself (see `01-prd.md` §4.2, §8).
 
 ## 2. Target user
 
@@ -68,7 +87,7 @@ categorisation, households sharing finances, anyone needing tax filing.
 | **Manual net-worth apps** | Purpose-built, mobile, decent charts | Entry is still fully manual, so they decay too; closed silos with no programmatic access |
 | **Brokerage / bank apps** | Accurate and live for that one account | Single-institution by definition; no consolidated picture |
 | **Not tracking at all** | Zero effort | The status quo NetNet actually competes with, and the most common one |
-| **ChatGPT alone** | Conversational, already in hand | No memory of financial state across chats; re-supply everything each time; nothing persists or charts |
+| **ChatGPT alone (now the primary alternative)** | Conversational, already in hand, gives real advice | No memory of financial state across chats; the user must re-supply everything each time, and cannot, because they do not have it; nothing persists or charts |
 
 **Positioning:** the flexibility of a spreadsheet, without the data entry — because your own AI
 agent does the entry for you.
@@ -83,13 +102,18 @@ testing before heavy investment.
 | **A1** | Users will actually **connect** NetNet to their agent. The setup (OAuth connector in ChatGPT/Claude) is a real drop-off cliff, and many people have never added a connector. | The differentiator is dead weight; NetNet is just another manual tracker. | Instrument connection rate in P1. Watch 5 users attempt setup unaided, timed, no help. |
 | **A2** | Users will **trust an agent to write** financial data — and trust the numbers it wrote without re-checking every one. | The write path collapses to read-only; the "drop a statement" story is gone. | In interviews, probe reactions to agent-written values. Measure post-write correction rate. |
 | **A3** | Agent-assisted entry is genuinely **less effort** than the spreadsheet, end to end, including verifying what the agent did. | No reason to switch. | Time both paths, same user, same statement. |
-| **A4** | The **advice job** ("can I afford this car?") is valued, not a novelty people try twice. | NetNet is a tracker with an import feature — thinner, but still viable. | Track repeat read-only agent queries in week 2+, not week 1. |
+| **A4** | **(promoted — this is now the premise)** The **advice job** is valued and recurring, not a novelty people try twice. | The reason for building NetNet is gone. What is left is a tracker with an import feature — viable, but not what this is. | Track repeat read-only agent queries in week 2+, not week 1 (PRD metric M7). |
 | **A5** | Statement-to-values extraction is **accurate enough** across messy real formats that users don't lose trust after one bad parse. | Trust breaks early and doesn't recover. | Run 10 real statements (SG banks, IBKR, CPF) through an agent and score accuracy. |
 | **A6** | Consolidated net worth is a **recurring** need (monthly-ish), not an annual curiosity. | Retention floor is very low regardless of execution quality. | Interview for last-checked recency and frequency. |
 | **A7** | People will hand **complete net-worth data** to a new, unknown, free product from a solo founder. | Signups stall at the trust barrier. | Ask directly in interviews; watch whether signups add >3 holdings. |
 | **A8** | Free-forever-for-now attracts real users, not just tyre-kickers, and monetisation can follow later. | Demand signal is noise. | Judge by depth of use (holdings added, return visits), never by signup count. |
 | **A9** | **Distribution is solvable after launch.** There is no waitlist, audience or channel; the plan is to launch and then promote. | The product can be excellent and still get no signups — and the kill criterion is signups. Failure would be indistinguishable from "no demand". | Treat distribution as a work item with its own owner and metrics, not a launch-day afterthought. |
 | **A10** | Enough of the product's value can stay free permanently that **future capabilities alone** can carry monetisation. | Nothing left to charge for that people want more than what they already have free. | Decide now which capabilities are deliberately reserved, before they ship for free by accident. |
+| **A11** | **(new, from the reframe)** Advice grounded in the user's real numbers is **noticeably better** than generic advice — and the user can tell the difference. | The context layer is effort nobody is rewarded for. Users go back to asking the model directly, which is free and needs no setup. | Compare repeat query behaviour in week 2+ (M7) against week 1 novelty; watch whether users keep the picture current for the sake of the answers (M8). |
+
+**A4 and A11 sit above these as the premise:** if grounded advice is not worth the assembly, A1
+and A2 do not matter. They are cheaper to test, though — they only read out once users are
+connected, which is why the ordering below still holds for what to build first.
 
 **The sharpest product risk is A1 + A2 together.** The premise needs the user to clear a setup
 hurdle *and* extend trust to an agent with write access. Either one failing takes the wedge with
@@ -210,6 +234,7 @@ painful to add. That is a Stage 3 consideration, not a decision to take now.
 | Test-market runway is open-ended, so cost ceilings must hold indefinitely | Rules out anything free only for a trial window — it defers an unknown bill to an unknown date |
 | Reliability and security do not trade against cost | A failing MCP call destroys trust in the agent integration, which is the product's core bet |
 | Success = sign-ups and engagement; failure = kill the app | Gives every phase a single yardstick and an explicit exit, rather than drifting on sunk cost |
+| Problem reframed: the problem is AI lacking financial context, not data entry as such | Founder reframe. Frontier models can already advise well; what they lack is where the user stands. Tracking becomes the means, advice the end — which promotes A4 to the premise and adds A11 |
 | No user interviews; the market is tested by launching | Founder decision; shifts all validation onto live usage, which makes P1 instrumentation the experiment |
 | No waitlist or channel; launch first, promote after | Founder decision; makes distribution an explicit unsolved problem (A9) rather than an assumed one |
 | Free stays free: today's capabilities are permanently free, monetisation comes from future additions | Founder decision; means anything shipped in the test-market phase can never be paywalled, so scope is now a revenue decision |

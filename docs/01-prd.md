@@ -1,25 +1,41 @@
 # 01 — Product Requirements (PRD)
 
 Status: awaiting Founder approval · Date: 2026-09-23 · Stage owner: Product manager
-Inputs: `docs/00-discovery.md` (approved 2026-09-23), `docs/reference/mockups/README.md`
+Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
+the same date), `docs/reference/mockups/README.md`
 
-> This PRD is longer than the workflow's "~2 pages" because the acceptance criteria (§6) are the
-> contract Stage 4 and Stage 6 work from, one set per story. Sections 1–5 and 7–9 are the lean
+> Longer than the workflow's "~2 pages" because the acceptance criteria (§6) are the contract
+> Stage 4 plans against and Stage 6 tests against, one set per job. §§1–5 and 7–9 are the lean
 > part; skim §6 unless you are checking a specific job.
 
 ---
 
 ## 1. Problem
 
-People with multi-asset, multi-currency wealth have no current picture of their net worth.
-Aggregators automate entry but cannot see the assets that dominate this balance sheet (property,
-CPF, vehicles, unvested equity, foreign and private holdings) and break outside the US.
-Spreadsheets cover everything but decay, because updating them is manual drudgery with no
-deadline. **The problem is data entry, not tracking.**
+People want financial advice fitted to their own situation. Frontier AI models can already give
+it — well enough for most of what an ordinary person actually decides. What the model cannot do
+is know the thing every one of those answers depends on: **where this person actually stands.**
 
-NetNet's wedge: the user's own AI agent does the entry. Drop a statement into ChatGPT or Claude,
-the agent writes the values into NetNet through a comprehensive MCP layer. Effort is delegated
-rather than automated away, so coverage is never narrowed. Full detail: `00-discovery.md` §1.
+Most people cannot supply that context, because they do not have it. They do not know their net
+worth, what they own against what they owe, or how much of it they could touch this month. So
+they ask a capable model a real question and get a generic answer — and nothing in the exchange
+tells them the limit was the *input*, not the model.
+
+Assembling the picture is the obstacle, and every existing route to it fails this user:
+aggregators automate entry but cannot see the assets that dominate the balance sheet (property,
+CPF, vehicles, unvested equity, foreign and private holdings) and break outside the US;
+spreadsheets cover everything but decay, because maintaining one is manual drudgery with no
+deadline. Talking to ChatGPT directly works once — and then the context is gone, and the next
+question starts from nothing.
+
+**NetNet is the context layer.** The user's own AI agent helps assemble and organise their
+financial position, keeps it current by doing the data entry, and reads it back through a
+comprehensive MCP layer so every question they ask is answered against their real balance sheet
+instead of a blank slate. Tracking is the means. Better advice is the end.
+
+The wedge is unchanged by that framing: entry is still what makes the context exist, and
+delegating it to an agent is still what makes coverage unlimited. What changes is the hierarchy —
+the tracker exists to feed the advice, not the other way round. Detail: `00-discovery.md` §1.
 
 ## 2. Target user
 
@@ -28,85 +44,99 @@ currencies including CPF, reviews position monthly or quarterly, already keeps a
 spreadsheet, already pays for ChatGPT or Claude. Detail and secondary segments: `00-discovery.md`
 §2.
 
+**Live tension, raised at the gate (§9.1):** the reframe describes "most people don't know what
+they're worth", which is a mass-market statement. The approved beachhead is narrower and, notably,
+*does* roughly know — their picture exists and is merely stale. This PRD keeps the approved
+beachhead and treats the reframe as the why, on the reading that a two-year-old picture is not
+usable context either. If the Founder wants the broader user instead, §§4–6 change materially.
+
 ## 3. Goals & success metrics
 
 ### 3.1 What v1 exists to prove
 
-Two assumptions, in this order: **A1 — users will connect their agent** (OAuth setup is a
-drop-off cliff) and **A2 — users will trust an agent to write financial data**. No interviews are
-happening; there is no other test. Everything else in v1 is in service of producing a clean
-reading on those two.
+Three things, in this order:
+
+1. **The premise (A4, promoted).** Grounded advice is worth assembling the data for — users come
+   back and ask their agent about their position again, not once.
+2. **A1 — users will connect their agent.** Without a connection there is no context layer at
+   all, only a tracker.
+3. **A2 — users will trust an agent to write** financial data, which is what keeps the picture
+   current enough to be worth reading.
+
+No interviews are happening; live usage is the only test.
 
 ### 3.2 Success metrics
 
-Measurement window: **8 weeks from public launch**, unless stated. "Signup" = verified account.
+Window: **8 weeks from public launch** unless stated. "Signup" = verified account.
 
 | # | Metric | Definition (as instrumented) | Target | A miss means |
 |---|---|---|---|---|
 | **M1** | Signups | Verified accounts created | **100** | Distribution failed (A9) or the pitch does not land |
-| **M2** | Activation depth | % of signups with ≥3 holdings within 7 days | **50%** | People look but will not hand over real data (A7) |
-| **M3** | **Agent connection rate** | % of signups completing OAuth from an MCP client within 14 days | **40%** | **A1 is wrong** — the differentiator is dead weight |
-| **M4** | Agent write adoption | % of connected users with ≥1 successful write tool call; and median ≥5 writes/user/month | **70%** | **A2 is wrong** — the write path collapses to read-only |
-| **M5** | Correction rate | % of agent-written values edited or undone by the user within 48h | **<10%** (>25% = failing) | Extraction accuracy is breaking trust (A5) |
-| **M6** | Return rate | % of signups with any activity (web session or agent call) in calendar week 4 | **30%** | Net worth is not a recurring need for them (A6) |
-| **M7** | Advice job pull | % of connected users making ≥1 read-only agent query after week 1 | **40%** | The advice job is a novelty, not a job (A4) |
-| **M8** | Freshness | Median days since last value update, across users active in the last 30 days | **<45 days** | The decay problem is not actually solved |
-| **M9** | Setup friction | p50 minutes from signup to first agent-written value | **<15 min** | Setup is the cliff A1 predicts |
+| **M2** | Picture assembled | % of signups with ≥3 holdings within 7 days | **50%** | People will not hand over real data (A7), so no context exists |
+| **M3** | **Agent connection rate** | % of signups completing OAuth from an MCP client within 14 days | **40%** | **A1 is wrong** — the context never reaches an agent |
+| **M4** | Agent write adoption | % of connected users with ≥1 successful write tool call; median ≥5 writes/user/month | **70%** | **A2 is wrong** — the picture will go stale again |
+| **M5** | Correction rate | % of agent-written values edited or undone within 48h | **<10%** (>25% = failing) | Extraction accuracy is breaking trust (A5) |
+| **M6** | Return rate | % of signups with any activity (web or agent) in calendar week 4 | **30%** | Not a recurring need for them (A6) |
+| **M7** | **Advice pull** (headline) | % of connected users making ≥1 read-only agent query **after** week 1; and median ≥3 such queries/user/month | **50%** | **The premise is wrong** — grounded advice was a novelty (A4) |
+| **M8** | Freshness | Median days since last value update, across users active in the last 30 days | **<45 days** | The context is too stale to answer from |
+| **M9** | Time to value | p50 minutes from signup to first agent interaction (read or write) | **<15 min** | Setup is the cliff A1 predicts (M9 is the funnel, not the outcome) |
 | **M10** | Funnel conversion | Landing-page unique visitors → signup | **≥8%**, on ≥1,200 visits | The pitch, not the product, is the blocker |
 
 ### 3.3 Kill criteria
 
-Per Founder constraint: the product is killed if it cannot get signups and engagement. Concretely,
-after the 8-week window: **M1 < 25 signups, or M3 < 15%, or M6 < 10%.** Any one of those is a kill
-reading, provided §3.5 instrumentation and the §3.4 distribution goal were actually delivered — a
-missing experiment is not evidence.
+The product is killed if it cannot get signups and engagement. Concretely, after the 8-week
+window: **M1 < 25 signups, or M3 < 15%, or M7 < 20%, or M6 < 10%.** Any one is a kill reading —
+provided §3.5 instrumentation and the §3.4 distribution assets were actually delivered. A missing
+experiment is not evidence.
 
 ### 3.4 Distribution goal (A9)
 
-Distribution is a product goal here, not a launch-day afterthought, because signups are the kill
-metric and there is no channel yet. v1 must ship the assets that make promotion possible:
+Signups are the kill metric and there is no channel yet, so distribution ships as product work:
 
-- **G-D1** A public landing page that states the wedge in one screen and shows the agent writing a
-  holding (short screen recording, no audio, no real data).
-- **G-D2** NetNet listed wherever MCP clients and users discover connectors (client-side connector
+- **G-D1** A public landing page that states the problem in one screen — *your AI can't advise you
+  because it doesn't know what you're worth* — and shows an agent answering a real question from a
+  real balance sheet (screen recording, no audio, no real data).
+- **G-D2** NetNet listed wherever MCP clients and users discover connectors (client connector
   directories, public MCP registries and lists).
 - **G-D3** A launch note the Founder can post to 3+ relevant communities without rewriting it.
-- **G-D4** Landing-page and signup-funnel analytics live before launch, so M10 is readable.
+- **G-D4** Landing and signup-funnel analytics live before launch, so M10 is readable.
 
-Channel selection and posting are Founder work; producing G-D1–G-D4 is in v1 scope. Targets sit in
-M1/M10.
+Channel selection and posting are Founder work; producing G-D1–G-D4 is in v1 scope.
 
 ### 3.5 Instrumentation requirement — this *is* the experiment
 
-Analytics is a P1 deliverable of the same rank as the MCP layer. Without these events the launch
-produces no evidence and §3.3 cannot be applied. Minimum event set:
+Analytics ranks with the MCP layer as a P1 deliverable. Without these events the launch produces
+no evidence and §3.3 cannot be applied. Minimum event set:
 
 `landing_view` · `signup_started` · `account_created` · `holding_created {source: web|agent}` ·
 `value_recorded {source}` · `agent_connection_started` · `agent_connection_completed` ·
-`agent_connection_failed {step}` · `agent_tool_called {tool, outcome, latency_ms}` ·
-`value_corrected {original_source, age_at_correction}` · `value_undone` · `session_started` ·
-`reminder_sent` · `reminder_clicked` · `account_deleted`
+`agent_connection_failed {step}` · `agent_tool_called {tool, kind: read|write, outcome,
+latency_ms}` · `value_corrected {original_source, age_at_correction}` · `value_undone` ·
+`session_started` · `reminder_sent` · `reminder_clicked` · `account_deleted`
 
-**Privacy constraint on analytics (binding):** events carry names, counts, timings and a user id
-only. Never amounts, holding names, currencies-as-identifiers, or any document content. A metrics
-pipeline that leaks the balance sheet is a security incident, not a trade-off.
+`kind: read|write` is what makes M7 separable from M4 — without it the premise is unmeasurable.
+
+**Privacy constraint (binding):** events carry names, counts, timings and a user id only. Never
+amounts, holding names, or any document content. A metrics pipeline that leaks the balance sheet
+is a security incident, not a trade-off.
 
 ## 4. Scope
 
 ### 4.1 In scope for v1
 
-Manual tracking of any asset or liability (user-defined types and tags, any currency, dated value
-history, archive) · net worth total with trend chart, breakdown by type, assets-vs-liabilities, and
-a user-chosen comparison baseline · staleness labels and email reminders · **a comprehensive MCP
-layer with full CRUD over everything above, reached by OAuth from ChatGPT or Claude** · audit log
-and undo for every agent write · data export and account deletion · the §3.5 analytics · the §3.4
-distribution assets. Mobile-first responsive web, one API that native clients can reuse later.
+Assemble and maintain a financial position: any asset or liability, user-defined types and tags,
+any currency, dated value history, archive · net worth total with trend, breakdown by type,
+assets-vs-liabilities, and a user-chosen comparison baseline · staleness labels and email
+reminders · **a comprehensive MCP layer with full CRUD, plus read tools shaped for advice, reached
+by OAuth from ChatGPT or Claude** · audit log and undo for every agent write · export and account
+deletion · the §3.5 analytics · the §3.4 distribution assets. Mobile-first responsive web, one API
+that native clients reuse later.
 
 ### 4.2 Permanently free, and what is deliberately reserved (A10)
 
-Everything in §4.1 ships free and **stays free for those users forever** — including unrestricted
-MCP read *and* write, with no call caps or holding limits. That is a deliberate cost: the
-differentiator is what drives adoption, and adoption is what this phase exists to produce.
+Everything in §4.1 is free and **stays free for those users forever** — including unrestricted MCP
+read *and* write, uncapped. That is a deliberate cost: the context layer is what drives adoption,
+and adoption is what this phase exists to produce.
 
 Reserved for later monetisation — **not** built in v1, so they are not given away by default:
 
@@ -114,196 +144,230 @@ Reserved for later monetisation — **not** built in v1, so they are not given a
 |---|---|
 | Automated market-price and FX refresh for listed holdings | Removes even the agent from the loop; ongoing per-user data cost |
 | Server-initiated / scheduled agent updates | Needs our compute, not the user's subscription |
-| Forecasting and scenario planning (retirement, "what if" projections) | Distinct job from "what am I worth now" |
-| Tax, CGT and year-end reporting | High willingness to pay, jurisdiction-specific work |
-| Multi-entity, household, or advisor-shared portfolios | Seat-shaped by nature |
+| NetNet-generated forecasting and scenario planning | See the note below |
+| Tax, CGT and year-end reporting produced by NetNet | High willingness to pay, jurisdiction-specific |
+| Multi-entity, household or advisor-shared portfolios | Seat-shaped by nature |
 | Document vault / statement history | Storage cost, and v1 deliberately never receives documents |
 | Threshold alerts and push notifications | Infrastructure cost per user |
 
+**Not a contradiction of §1:** the user's *agent* may project, model scenarios and reason about tax
+from the read tools — that is the whole point, and it is free and uncapped. What is reserved is
+NetNet building those features itself. NetNet supplies context; the agent supplies advice.
+
 ## 5. Core user jobs
 
-| # | As a… I want to… | Serves |
+Ordered by what the product is for. J8 is the outcome; J1–J7 exist to make it possible; J9–J10
+keep it trustworthy.
+
+| # | The user wants to… | Serves |
 |---|---|---|
-| **J1** | see a real net-worth number within minutes of signing up | M1, M2, A7 |
-| **J2** | track any asset or liability, in any currency, with my own types and tags | Coverage wedge |
-| **J3** | record what a holding is worth today, and correct history | Snapshot model |
-| **J4** | see whether I am going up, against a baseline I choose | A6, M6 |
-| **J5** | connect my AI agent to NetNet in one flow | **A1**, M3, M9 |
-| **J6** | have my agent do the data entry from my statements | **A2/A3/A5**, M4 |
+| **J8** | **ask their agent questions answered against their real position** | **The premise (A4), M7** |
+| **J5** | connect their AI agent to NetNet in one flow | **A1**, M3, M9 |
+| **J6** | have the agent assemble and maintain the picture from statements or conversation | **A2/A3/A5**, M4 |
+| **J1** | get a first real picture within minutes of signing up | M1, M2, A7 |
+| **J2** | track any asset or liability, any currency, their own types and tags | Coverage |
+| **J3** | record what something is worth today, and correct history | Snapshot model |
+| **J4** | see whether they are going up, against a baseline they choose | A6, M6 |
 | **J7** | see exactly what the agent changed, and undo it | A2, M5 |
-| **J8** | ask my agent questions answered against my actual balance sheet | A4, M7 |
-| **J9** | be nudged before my data goes stale | M8 |
-| **J10** | export everything and delete my account | A7 |
+| **J9** | be nudged before the picture goes stale | M8 |
+| **J10** | export everything and delete the account | A7 |
 
 ## 6. Acceptance criteria
 
-Given/When/Then, one set per job. These are what Stage 6 tests against.
+Given/When/Then, one set per job. Presented in J-number order for reference; §5 gives priority.
 
-### J1 — First number fast
+### J1 — A first real picture, fast
 - **Given** a visitor on the landing page, **when** they sign up with email or a social provider,
-  **then** an account exists and they land on an empty Home with a single obvious next action
-  ("Add your first holding"), with no onboarding wizard to clear first.
-- **Given** a new empty account, **when** the user adds one holding with a value, **then** Home
-  shows a net-worth total equal to that value and the holding is listed under it.
-- **Given** a signup attempt, **when** it succeeds or fails at any step, **then** `signup_started`
-  / `account_created` fire with no amounts attached.
-- **Given** an unverified email, **when** the user tries to use the app, **then** they can use it,
-  but agent connection (J5) requires verification first.
+  **then** an account exists and they land on an empty Home with one obvious next action, and no
+  onboarding wizard to clear first.
+- **Given** an empty account, **when** the user adds one holding with a value, **then** Home shows
+  a net-worth total equal to that value with the holding listed under it.
+- **Given** a user who does not know what to list, **when** they view the empty state, **then**
+  they are offered starting categories relevant to this market (cash, CPF, property, vehicle,
+  investments, loans) as one-tap starting points they can rename or ignore — suggestions, not a
+  fixed chart of accounts.
+- **Given** the empty state, **when** the user would rather delegate assembly, **then** connecting
+  an agent (J5) is offered there as a first-class alternative to typing, not buried in settings.
+- **Given** any signup attempt, **when** it succeeds or fails, **then** `signup_started` /
+  `account_created` fire with no amounts attached.
+- **Given** an unverified email, **when** the user uses the app, **then** they can — but agent
+  connection (J5) requires verification first.
 
 ### J2 — Track anything
 - **Given** the Add flow, **when** the user creates an asset, **then** they can set name, type,
-  tags, currency, and an opening value with a date, and only name/type/currency/value are required.
-- **Given** the Add flow, **when** the user creates a **liability**, **then** it is stored as a
-  negative contribution and net worth = assets − liabilities.
+  tags, currency and an opening value with a date; only name, type, currency and value are
+  required.
+- **Given** the Add flow, **when** the user creates a **liability**, **then** it contributes
+  negatively and net worth = assets − liabilities.
+- **Given** a holding, **when** it is created or edited, **then** the user can mark how accessible
+  it is (readily accessible / illiquid / locked, e.g. CPF or unvested equity), defaulting
+  sensibly by type — this is what stops J8 answering "can you afford it" off money the user cannot
+  touch.
 - **Given** a currency other than the user's default, **when** a value is saved, **then** the entry
   stores the original amount and currency *and* the default-currency conversion with the rate and
-  rate date used, and both are visible on the value row.
+  rate date used, both visible on the value row.
 - **Given** the user's own taxonomy, **when** they add, rename, merge or delete a type or tag,
-  **then** existing holdings follow the change and nothing is orphaned; types/tags are not a fixed
-  enum.
+  **then** existing holdings follow the change and nothing is orphaned.
 - **Given** a holding no longer held, **when** the user archives it, **then** it leaves all totals
-  and charts but is retained with its full history and can be unarchived.
-- **Given** a delete, **when** the user confirms, **then** the holding and its history are removed
-  and the action appears in the audit log (J7).
+  and charts but keeps its history and can be unarchived.
+- **Given** a delete, **when** confirmed, **then** the holding and its history are removed and the
+  action appears in the audit log (J7).
 
 ### J3 — Record and correct values
-- **Given** an existing holding, **when** the user adds a value with a date, **then** it joins the
-  dated series, the latest-by-date value drives the total, and back-dated entries are accepted.
-- **Given** a value row, **when** the user edits the amount, date or currency, **then** history,
-  totals and charts recompute, and the edit is recorded in the audit log.
-- **Given** two values on the same holding with the same date, **when** they are saved, **then**
-  the system resolves deterministically (last written wins) and warns the user rather than
-  silently double-counting.
-- **Given** any value change, **when** it is saved, **then** `value_recorded` or `value_corrected`
-  fires with `source` set to `web` or `agent`.
+- **Given** a holding, **when** the user adds a value with a date, **then** it joins the dated
+  series, the latest-by-date value drives the total, and back-dated entries are accepted.
+- **Given** a value row, **when** the user edits amount, date or currency, **then** history, totals
+  and charts recompute and the edit is recorded in the audit log.
+- **Given** two values on one holding with the same date, **when** saved, **then** the system
+  resolves deterministically (last written wins) and warns, rather than silently double-counting.
+- **Given** any value change, **when** saved, **then** `value_recorded` or `value_corrected` fires
+  with `source` set to `web` or `agent`.
 
 ### J4 — See the picture
 - **Given** holdings with history, **when** the user opens Home, **then** they see total net worth
-  in their default currency, a trend line over time, a breakdown by type, and an
-  assets-vs-liabilities split.
+  in their default currency, a trend line, a breakdown by type, and an assets-vs-liabilities split.
 - **Given** a comparison baseline (Initial value / Last update / Last month / Last quarter / Jan 1 /
-  Last year), **when** the user selects one, **then** every change figure and percentage on the
-  screen is relative to that baseline and the baseline in force is labelled on screen.
-- **Given** a holding, **when** the user opens it, **then** they see its own value trend, its
-  change over the selected period, and its full value history newest-first.
+  Last year), **when** selected, **then** every change figure and percentage on screen is relative
+  to it and the baseline in force is labelled.
+- **Given** a holding, **when** opened, **then** the user sees its own trend, its change over the
+  selected period, and its full history newest-first.
 - **Given** sort and filter controls, **when** the user sorts by value, name, change or last
-  updated, or filters by type or tag, **then** the list and totals reflect only the filtered set
-  and the active filter is visible.
+  updated, or filters by type or tag, **then** list and totals reflect the filtered set and the
+  active filter is visible.
 - **Given** a phone-width viewport, **when** any of the above is used, **then** it is fully usable
   without horizontal scrolling — mobile-first is the primary case, not a fallback.
 
-### J5 — Connect the agent (riskiest; A1)
+### J5 — Connect the agent (A1)
 - **Given** a verified account, **when** the user opens Connect your agent, **then** they get
-  copy-paste-free instructions per client (ChatGPT, Claude) and the exact connector URL, with no
-  token to generate, paste or store.
+  per-client instructions (ChatGPT, Claude) and the connector URL, with no token to generate,
+  paste or store.
 - **Given** the user starts the connection in their MCP client, **when** they authorise NetNet,
   **then** OAuth completes, the client lists NetNet's tools, and NetNet shows the connection as
-  active with the client name and connection time.
+  active with client name and time.
 - **Given** a connection attempt, **when** it fails at any step (discovery, authorise, callback,
   first call), **then** `agent_connection_failed {step}` fires and the user sees a plain-language
   cause and a retry, not a raw error.
-- **Given** an active connection, **when** the user revokes it in NetNet, **then** subsequent tool
-  calls from that client are rejected and the revocation is in the audit log.
-- **Given** the whole flow, **when** measured, **then** p50 signup → first agent-written value is
-  under 15 minutes (M9) and each funnel step is separately readable.
+- **Given** an active connection, **when** the user revokes it in NetNet, **then** later calls from
+  that client are rejected and the revocation is in the audit log.
+- **Given** the whole flow, **when** measured, **then** p50 signup → first agent interaction is
+  under 15 minutes (M9), with each funnel step separately readable.
 
-### J6 — Agent does the entry (A2/A3/A5)
+### J6 — The agent assembles and maintains the picture (A2/A3/A5)
 - **Given** a connected agent, **when** it calls the MCP layer, **then** it can do everything the
   web UI can: list, create, update, archive and delete holdings; read and write values; read and
-  manage types and tags; read net worth and history — with no UI-only capability left out.
-- **Given** the user drops a brokerage or bank statement into their agent and asks it to update
-  NetNet, **when** the agent writes the values, **then** the new values appear in the web app
-  without a manual refresh action beyond reload, each tagged as agent-written with the client name.
-- **Given** an agent write that would create a duplicate holding for something already tracked,
-  **when** the tool is called, **then** the layer surfaces the likely match to the agent so it can
-  update rather than duplicate.
-- **Given** a malformed or out-of-range agent call, **when** it is received, **then** it is
-  rejected with an error message specific enough for the agent to correct itself, and nothing is
-  partially written.
-- **Given** any tool call, **when** it completes, **then** `agent_tool_called {tool, outcome,
-  latency_ms}` fires, and writes also fire the J3 events with `source: agent`.
+  manage types, tags and accessibility; read net worth and history — no UI-only capability.
+- **Given** a user who has never listed their finances, **when** they describe them to their agent
+  in conversation ("I have about 40k in DBS, a flat, some CPF, an IBKR account"), **then** the
+  agent can create the holdings, types and tags to match — assembly is a conversation, not only a
+  document parse.
+- **Given** the user drops a statement into their agent and asks it to update NetNet, **when** the
+  agent writes, **then** the values appear in the web app tagged as agent-written with the client
+  name.
+- **Given** an agent write that would duplicate a holding already tracked, **when** the tool is
+  called, **then** the layer surfaces the likely match so the agent can update rather than
+  duplicate.
+- **Given** a malformed or out-of-range call, **when** received, **then** it is rejected with an
+  error specific enough for the agent to correct itself, and nothing is partially written.
+- **Given** any tool call, **when** it completes, **then** `agent_tool_called {tool, kind, outcome,
+  latency_ms}` fires; writes also fire the J3 events with `source: agent`.
 
 ### J7 — Verify and undo (what makes agent writes defensible)
 - **Given** agent activity, **when** the user opens the audit log, **then** they see every change
-  newest-first with what changed, old → new value, which client did it, and when — and web changes
-  appear in the same log.
-- **Given** an entry in the audit log, **when** the user undoes it, **then** the previous state is
-  restored exactly, the undo is itself logged, and totals recompute.
+  newest-first with what changed, old → new, which client did it and when — web changes in the
+  same log.
+- **Given** a log entry, **when** the user undoes it, **then** the previous state is restored
+  exactly, the undo is itself logged, and totals recompute.
 - **Given** a batch of writes from one agent turn, **when** the user undoes the batch, **then**
-  every change in that turn is reverted together, not one row at a time.
+  every change in that turn reverts together, not row by row.
 - **Given** a value the agent wrote, **when** the user corrects it, **then** `value_corrected`
-  fires with `original_source: agent` and the age of the value at correction (M5).
+  fires with `original_source: agent` and the value's age at correction (M5).
 
-### J8 — Ask about my position (A4)
+### J8 — Advice grounded in my real position (the premise)
 - **Given** a connected agent, **when** the user asks a question about their finances ("can I
-  afford a S$120K car?"), **then** the agent can read current net worth, per-holding values, type
-  and tag breakdowns, history over any period, and currency exposure — enough to answer from the
-  user's real position without the user re-supplying anything.
+  afford a S$120K car?", "how exposed am I to USD?", "am I on track?"), **then** the agent can read
+  current net worth, per-holding values, type and tag breakdowns, history over any period, currency
+  exposure, and **how accessible each holding is** — enough to answer from the user's real position
+  without them re-supplying anything.
+- **Given** a typical question, **when** the agent gathers context, **then** one summary call
+  returns enough to answer without a long chain of round-trips — context assembly must not be so
+  slow or chatty that the agent works around it.
+- **Given** read responses, **when** returned, **then** each value carries an as-of date and its
+  staleness, and the response conveys how complete the picture is, so the agent can qualify an
+  answer built on two-year-old or partial numbers instead of stating it confidently.
 - **Given** a read-only question, **when** the agent answers, **then** nothing in NetNet is
   modified.
-- **Given** read tool responses, **when** they are returned, **then** they carry as-of dates and
-  the staleness of each value, so the agent can qualify an answer built on two-year-old numbers.
 - **Given** read queries, **when** they occur after the user's first week, **then** they are
   countable separately from writes (M7).
 
-### J9 — Stay current (M8)
+### J9 — Keep the context current (M8)
 - **Given** a holding not updated for longer than its expected cadence, **when** the user views it,
-  **then** it is labelled with how long it has been stale ("Updated 2 years ago"), on the list and
-  on the detail screen.
-- **Given** stale holdings, **when** the user's reminder schedule comes due, **then** NetNet emails
-  a reminder naming how many holdings are stale, with a link, and `reminder_sent` fires.
-- **Given** reminder settings, **when** the user changes cadence or turns reminders off, **then**
-  the change takes effect and is honoured — no email after opt-out, ever.
+  **then** it is labelled with how long it has been stale, on both list and detail.
+- **Given** stale holdings, **when** the reminder schedule comes due, **then** NetNet emails a
+  reminder naming how many holdings are stale, with a link, and `reminder_sent` fires.
+- **Given** reminder settings, **when** the user changes cadence or opts out, **then** it is
+  honoured — no email after opt-out, ever.
 
 ### J10 — Own the data (A7)
-- **Given** an account, **when** the user exports, **then** they receive a complete machine-readable
-  file (holdings, types, tags, full value history with currencies and rates) that they could
-  rebuild a spreadsheet from.
+- **Given** an account, **when** the user exports, **then** they receive a complete
+  machine-readable file (holdings, types, tags, accessibility, full value history with currencies
+  and rates) they could rebuild a spreadsheet from.
 - **Given** an account, **when** the user deletes it, **then** all their data is erased within a
   stated window, they are told what that window is, and `account_deleted` fires.
-- **Given** any NetNet screen or API response, **when** it is produced, **then** it contains no
-  other user's data — verified by test, not by inspection.
+- **Given** any screen or API response, **when** produced, **then** it contains no other user's
+  data — verified by test, not by inspection.
 
 ## 7. Non-functional requirements
 
 | # | Requirement | Why |
 |---|---|---|
-| **N1** | MCP tool-call success rate ≥99.5%; p95 tool latency <1.5s | A failing call teaches the user the integration cannot be trusted — the core bet (`00-discovery.md` §5) |
-| **N2** | No LLM inference in NetNet's backend; statements and documents are never uploaded to NetNet | Keeps cost near zero and keeps documents off our servers (Stage 0 decision) |
+| **N1** | MCP tool-call success rate ≥99.5%; p95 tool latency <1.5s | A failing call teaches the user the context layer cannot be trusted — the core bet |
+| **N2** | No LLM inference in NetNet's backend; documents are never uploaded to NetNet | Cost stays near zero, documents stay off our servers, and advice stays the agent's job (§1) |
 | **N3** | Every write, from web or agent, is auditable and reversible | Makes agent write access recoverable rather than irreversible |
-| **N4** | Data isolation per user, enforced at the data layer and covered by tests | Financial data; a single leak ends the product |
-| **N5** | Secrets in environment variables only; no credentials in the repo | Non-negotiable (CLAUDE.md) |
+| **N4** | Data isolation per user, enforced at the data layer and covered by tests | Financial data; one leak ends the product |
+| **N5** | Secrets in environment variables only; none in the repo | Non-negotiable (CLAUDE.md) |
 | **N6** | Running cost ≈$0 to 100 users, <$50/month to 1,000, holding **indefinitely** — no trial-window free tiers | Open-ended runway (`00-discovery.md` §5) |
 | **N7** | Mobile-first responsive; one API serving web now and native later | Native iOS/Android is planned, not hypothetical |
 | **N8** | Reliability and security never trade against cost | Founder constraint; cheap-but-flaky is a failed outcome |
-| **N9** | Analytics carries no financial values (see §3.5) | The metrics pipeline must not become the leak |
+| **N9** | Analytics carries no financial values (§3.5) | The metrics pipeline must not become the leak |
 
 ## 8. Non-goals for v1
 
-Budgeting, transaction feeds and categorisation · bank-feed aggregation of any kind · tax filing or
-tax reporting · shared household or advisor access · native iOS/Android apps · **an in-app AI chat
-or assistant** (the agent is the user's own, running on their subscription — N2) · automatic price
-or FX refresh for listed holdings (§4.2) · document upload or storage · forecasting and retirement
-projections · billing, plans or entitlements of any kind · the mockups' Pro/membership tier, legacy
-trend-graph toggles, and haptics (`reference/mockups/README.md`).
+Budgeting, transaction feeds and categorisation · bank-feed aggregation of any kind · **income and
+expense tracking** (see the risk below) · tax filing or NetNet-produced tax reporting · shared
+household or advisor access · native iOS/Android apps · **an in-app AI chat or assistant, and any
+advice generated by NetNet itself** — the agent is the user's own, running on their subscription
+(N2) · automatic price or FX refresh (§4.2) · document upload or storage · NetNet-built forecasting
+· billing, plans or entitlements · the mockups' Pro tier, legacy trend-graph toggles and haptics.
+
+**Named risk in that list:** a balance sheet answers "what am I worth" and "can I afford this from
+what I hold". It does not answer "can I afford this from what I earn", which needs cash flow. v1
+draws the line at the balance sheet deliberately — it is the part nobody has — but if M7 comes back
+strong with users asking affordability questions, income and expenses is the first candidate to
+reconsider, and it is currently neither in scope nor reserved.
 
 ## 9. Open questions
 
-Numbered for the gate. Each carries a recommendation so silence still leaves a decision.
+Each carries a recommendation, so silence still leaves a decision.
 
-1. **Metric targets (§3.2) and kill thresholds (§3.3)** — are 100 signups / 40% connection / 30%
-   week-4 return the right bar for 8 weeks? *Recommend: adopt as written; they are deliberately
-   modest, and a kill reading should be unambiguous.*
-2. **Reserved capabilities (§4.2)** — confirm the list, especially that **unlimited MCP read and
-   write stays permanently free**. *Recommend: confirm. The differentiator has to be free to drive
-   adoption; the reserved list is where money comes from.*
-3. **Insights tab** — the mockups have a full quarterly/yearly/monthly Insights tab. Ship it in
-   v1? *Recommend: no. Home's trend + breakdown + baseline (J4) covers "am I going up". Insights
-   is a post-launch phase.*
-4. **Which MCP clients are launch-blocking** — both ChatGPT and Claude, or one first?
-   *Recommend: build to the standard remote-MCP + OAuth spec so both work; treat Claude as the
-   launch-blocking client to verify end to end, ChatGPT as fast-follow. Both count toward M3.*
-5. **FX rate source for web-entered values** — the model records a rate per entry, but v1 needs to
-   get a rate from somewhere at zero cost, and §4.2 reserves *automated* refresh.
-   *Recommend: a free daily reference rate for the conversion at entry time only, never a
-   background refresh of past entries; exact source is a Stage 3 choice.*
+1. **Beachhead vs the reframe's breadth (§2).** The reframe speaks about most people not knowing
+   their worth; the approved beachhead is the SG/SEA multi-asset professional, who *does* know,
+   roughly, and whose pain is staleness. *Recommend: keep the beachhead, adopt the reframe as the
+   why — a stale picture is not usable context either, and this user has the most context to
+   assemble, the most currencies and the least aggregator coverage. Broadening would mean a
+   simpler product competing on ease against well-funded aggregators, and would discard the CPF /
+   multi-currency edge.*
+2. **Metric targets and kill thresholds (§3.2, §3.3)**, now with advice pull (M7 ≥50%, kill <20%)
+   as a headline. *Recommend: adopt as written.*
+3. **Reserved capabilities (§4.2)** — confirm the list, that unlimited MCP read and write stays
+   permanently free, and that NetNet never generates advice itself. *Recommend: confirm.*
+4. **Accessibility as a first-class attribute (J2, J8).** *Recommend: yes. "Can I afford it"
+   answered off CPF and home equity is wrong in a way that destroys trust in one question, and
+   this beachhead's balance sheet is mostly locked-up money.*
+5. **Scope and sequencing:** does the mockups' full Insights tab ship in v1, and which MCP client
+   is launch-blocking? *Recommend: defer Insights (Home's trend + breakdown + baseline already
+   answers "am I going up"); build to the standard remote-MCP + OAuth spec so both clients work,
+   verify Claude end to end as launch-blocking, ChatGPT fast-follow. Both count toward M3.*
+
+**Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
+entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves
+automated refresh). Exact source is a Stage 3 choice.
