@@ -1,0 +1,85 @@
+<!doctype html><html><head><meta charset="utf-8"><title>NetNet — Statement × Horizon</title>
+<style>
+@font-face{font-family:Fraunces;src:url(../fonts/fraunces.woff2)format("woff2");font-weight:100 900}
+@font-face{font-family:Inter;src:url(../fonts/inter.woff2)format("woff2");font-weight:100 900}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#454545;font-family:Inter,sans-serif}
+.v{padding:28px}
+.v h2{color:#fff;font-size:21px;font-weight:700;letter-spacing:-.02em}
+.v .idea{color:#ffd9a0;font-size:13px;font-style:italic;margin:4px 0 2px}
+.v p{color:#cfcfcf;font-size:12.5px;max-width:880px;line-height:1.5;margin-bottom:16px}
+.pair{display:flex;gap:18px}
+.ph{width:390px;height:870px;overflow:hidden;border-radius:22px;padding:26px 24px}
+.num{font-variant-numeric:tabular-nums}
+</style></head><body><div id="out"></div>
+<script>
+const TREND=[18,22,20,27,25,31,29,36,34,41,39,44,48,46,54,58,56,64,68,74];
+const ROWS=[['IBKR','Stocks','798,412','+7.98',1,0,0],['HDB flat','Property','710,000','+0.00',0,0,0],
+['CPF Ordinary','CPF','117,440','+2.18',1,0,0],['Acme RSU','Equity','141,280','+1.98',0,0,0],
+['Toyota Altis','Automobile','126,300','+0.00',0,1,0],['HDB loan','Loan','349,100','+0.91',0,0,1]];
+
+function screen(t){
+ const mn=Math.min(...TREND),mx=Math.max(...TREND),sp=(mx-mn)||1;
+ const d=TREND.map((y,i)=>(i?'L':'M')+(i/(TREND.length-1)*100).toFixed(2)+' '+(100-((y-mn)/sp)*92-4).toFixed(2)).join(' ');
+ const R=`border-bottom:1px solid ${t.rule}`;
+ const lbl=`font-size:9.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:${t.i2}`;
+ /* the agent mark: a second ink in the margin when t.ink2col is set, else the
+    same ink at a different weight — this is the variable between V1 and V2 */
+ const agentMark = t.twoInk
+  ? `<span style="display:inline-block;width:5px;height:5px;background:${t.agent};border-radius:50%;margin-right:6px;vertical-align:middle"></span><span style="color:${t.agent};font-weight:700">AGENT</span>`
+  : `<span style="color:${t.acc};font-weight:700">AGENT</span>`;
+ const row=(n,ty,v,c,ag,st,neg)=>`<div style="display:flex;align-items:baseline;gap:12px;padding:12px 0;${R};position:relative">
+   ${ag?`<div style="position:absolute;left:-24px;top:0;bottom:-1px;width:3px;background:${t.twoInk?t.agent:t.acc}"></div>`:''}
+   <div style="flex:1"><div style="font-size:15px;letter-spacing:-.012em">${n}</div>
+    <div style="${lbl};margin-top:4px">${ty}${ag?` &nbsp;·&nbsp; ${agentMark}`:''}${st?` &nbsp;·&nbsp; <span style="color:${t.warn};font-weight:700">STALE</span>`:''}</div></div>
+   <div style="text-align:right">
+    <div class="num" style="font-family:Fraunces;font-size:18px;font-weight:600;letter-spacing:-.015em">${neg?'−':''}$${v}</div>
+    <div class="num" style="font-size:11px;color:${c==='+0.00'?t.i2:t.pos};margin-top:3px">${c}%</div></div></div>`;
+ return `<div class="ph" style="background:${t.bg};color:${t.ink}">
+  <div style="display:flex;align-items:center;${R};padding-bottom:13px">
+   <div style="flex:1;display:flex;align-items:baseline;gap:7px">
+    <span style="display:inline-block;width:8px;height:8px;background:${t.acc};border-radius:50%"></span>
+    <span style="font-family:Fraunces;font-weight:700;font-size:18px;letter-spacing:-.025em">NetNet</span></div>
+   <div style="${lbl}">23 Sept 2026</div></div>
+
+  <div style="padding:26px 0 18px;${R}">
+   <div style="${lbl}">Net worth</div>
+   <div class="num" style="font-family:Fraunces;font-weight:600;font-size:50px;letter-spacing:-.038em;line-height:1;margin:11px 0 13px">$1,843,688</div>
+   <div style="font-size:13px;color:${t.i2}">
+    <span class="num" style="color:${t.pos};font-weight:500">+$88,412 &nbsp; +5.01%</span> &nbsp;·&nbsp; vs last quarter</div></div>
+
+  <div style="padding:18px 0 8px;${R}">
+   <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:104px;display:block">
+    <defs><linearGradient id="g${t.id}" x1="0" y1="0" x2="0" y2="1">
+     <stop offset="0" stop-color="${t.acc}" stop-opacity="${t.wash}"/><stop offset="1" stop-color="${t.acc}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${d} L100 100 L0 100 Z" fill="url(#g${t.id})"/>
+    <path d="${d}" fill="none" stroke="${t.acc}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>
+   <div style="display:flex;justify-content:space-between;${lbl};margin-top:10px"><span>Sept 2025</span><span>Sept 2026</span></div></div>
+
+  <div style="padding:15px 0 5px;${R}">
+   ${[['Assets','2,225,988',0],['Liabilities','382,300',1],['Readily accessible','1,044,641',0]].map(x=>
+   `<div style="display:flex;padding:7px 0"><div style="flex:1;font-size:13.5px;color:${t.i2}">${x[0]}</div>
+    <div class="num" style="font-size:13.5px;font-weight:500">${x[2]?'−':''}$${x[1]}</div></div>`).join('')}</div>
+
+  <div style="display:flex;padding:20px 0 5px;${R}"><div style="${lbl};flex:1">Holdings</div><div style="${lbl}">12</div></div>
+  ${ROWS.map(h=>row(h[0],h[1],h[2],h[3],h[4],h[5],h[6])).join('')}
+ </div>`;}
+
+const V=[
+{k:'v1',n:'V1 · ONE INK',idea:'“Statement, printed in fluorescent.”',
+ p:'Statement’s structure untouched — no cards, hairline rules, Fraunces figures, small-caps labels. One fluorescent magenta does every piece of brand work: the mark, the trend, the agent rule in the margin. Restraint in how much colour appears; boldness in how loud it is when it does. Gain and loss stay quiet ink tones so the fluorescent never competes with meaning.',
+ dark:{id:'a',bg:'#101013',ink:'#F4F2EE',i2:'#87837C',rule:'#2A2A2E',acc:'#FF2E88',wash:'.22',pos:'#6FBF95',neg:'#E0796A',warn:'#D9A441',twoInk:0},
+ light:{id:'b',bg:'#F7F4ED',ink:'#16130E',i2:'#736C5E',rule:'#DFD8C8',acc:'#E4006B',wash:'.14',pos:'#2F6B4F',neg:'#A33A2E',warn:'#8A6100',twoInk:0}},
+{k:'v2',n:'V2 · TWO INKS',idea:'“Two-colour printing. One ink is you, the other is your agent.”',
+ p:'The same page, run through the press twice. Magenta is NetNet; cyan is your agent — every value it wrote carries a cyan rule in the margin and a cyan mark in the metadata line. The two-voices idea becomes a printing property rather than a badge, and it is the one thing in here a competitor cannot copy without also building an agent layer.',
+ dark:{id:'c',bg:'#101013',ink:'#F4F2EE',i2:'#87837C',rule:'#2A2A2E',acc:'#FF2E88',wash:'.22',pos:'#6FBF95',neg:'#E0796A',warn:'#D9A441',agent:'#25D8E8',twoInk:1},
+ light:{id:'d',bg:'#F7F4ED',ink:'#16130E',i2:'#736C5E',rule:'#DFD8C8',acc:'#E4006B',wash:'.14',pos:'#2F6B4F',neg:'#A33A2E',warn:'#8A6100',agent:'#00808F',twoInk:1}},
+{k:'v3',n:'V3 · TWO INKS, HOT GROUND',idea:'“The same press, on stock that pushes the ink further.”',
+ p:'V2’s system on a plum-black ground in dark and a cool press-grey in light, both tuned so the fluorescents read hotter. This is as far as the Horizon end can be pushed while Statement’s typography still governs the page. Past this the colour starts competing with the figures, which is the thing Statement exists to prevent.',
+ dark:{id:'e',bg:'#120A15',ink:'#F6F0F4',i2:'#948892',rule:'#2C1F30',acc:'#FF2E88',wash:'.30',pos:'#5FD3A0',neg:'#FF7A66',warn:'#E8B14A',agent:'#2FE6F2',twoInk:1},
+ light:{id:'f',bg:'#EFEDE8',ink:'#111014',i2:'#6D6B73',rule:'#D6D3CD',acc:'#FF0073',wash:'.18',pos:'#12794F',neg:'#C22E22',warn:'#8A6100',agent:'#007C8C',twoInk:1}}];
+
+document.getElementById('out').innerHTML=V.map(v=>`<div class="v" id="s-${v.k}">
+ <h2>${v.n}</h2><div class="idea">${v.idea}</div><p>${v.p}</p>
+ <div class="pair">${screen(v.dark)}${screen(v.light)}</div></div>`).join('');
+</script></body></html>

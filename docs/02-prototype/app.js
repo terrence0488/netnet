@@ -207,7 +207,7 @@ function byType(list) {
   const map = {};
   list.filter(h => h.kind === 'asset').forEach(h => {
     const t = typeOf(h.typeId);
-    (map[t.id] = map[t.id] || { id:t.id, name:t.name, colour:t.colour, value:0 }).value += signed(h, latest(h));
+    (map[t.id] = map[t.id] || { id:t.id, name:t.name, colour:typeColour(t.id), value:0 }).value += signed(h, latest(h));
   });
   return Object.values(map).filter(s => s.value > 0).sort((a, b) => b.value - a.value);
 }
@@ -277,7 +277,7 @@ function distribution(periods, list) {
     list.forEach(h => {
       const v = valueAsOf(h, p.asOf); if (!v) return;
       const t = typeOf(h.typeId);
-      (segs[t.id] = segs[t.id] || { id:t.id, name:t.name, colour:t.colour, value:0 })
+      (segs[t.id] = segs[t.id] || { id:t.id, name:t.name, colour:typeColour(t.id), value:0 })
         .value += h.kind === 'liability' ? -v.base : v.base;
     });
     return { p, segs:Object.values(segs), total:p.value };
@@ -293,6 +293,17 @@ const INSIGHT_RANGES = {
 };
 function ytdMonths() { return new Date(TODAY + 'T00:00:00Z').getUTCMonth() + 1; }
 function rangeMonths(v) { return v === -1 ? ytdMonths() : v; }
+
+/* ================= chart palette =================
+   The validated default categorical set, documented order, verified against both
+   NetNet grounds. Per design-system.md §4.4: the two brand inks never appear inside
+   a categorical chart, and these hues never appear as UI chrome. Fixed order — a
+   ninth category folds into "Other" rather than getting a generated hue. */
+const CAT_LIGHT = ['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#4a3aa7','#e34948'];
+const CAT_DARK  = ['#3987e5','#d95926','#199e70','#c98500','#d55181','#008300','#9085e9','#e66767'];
+const isDark = () => !window.matchMedia || window.matchMedia('(prefers-color-scheme: dark)').matches;
+const catColour = i => { const p = isDark() ? CAT_DARK : CAT_LIGHT; return i >= 0 && i < p.length ? p[i] : 'var(--ink-3)'; };
+const typeColour = id => catColour(S.types.findIndex(t => t.id === id));
 
 /* ================= charts =================
    SVG carries geometry only, in a 0–100 x 0–100 box with preserveAspectRatio="none",
@@ -362,7 +373,7 @@ function growthBars(periods, o) {
     const v = p.abs || 0;
     const y = v >= 0 ? fy(v) : 50;
     const bh = Math.max(0.7, Math.abs(fy(v) - 50));
-    const colour = v > 0 ? 'var(--pos)' : v < 0 ? 'var(--neg)' : 'var(--surface-3)';
+    const colour = v > 0 ? 'var(--gain)' : v < 0 ? 'var(--loss)' : 'var(--rule-strong)';
     return `<rect x="${(cellW * i + cellW / 2 - bw / 2).toFixed(2)}" y="${y.toFixed(2)}"
       width="${bw.toFixed(2)}" height="${bh.toFixed(2)}" fill="${colour}"/>`;
   }).join('');
@@ -416,31 +427,19 @@ function stackedBars(dist, o) {
     <div class="xl">${xl}</div>`;
 }
 
-/* Pie with inline slice labels — the mockups' two pie views. Square, so it keeps
-   its aspect ratio rather than filling. */
-function pie(segs, o) {
-  o = o || {};
+/* Allocation as a ranked list, not a donut. Name + percentage sit beside every
+   swatch, which is what satisfies the light-mode relief rule (four categorical
+   slots fall below 3:1 on paper, so labels are mandatory, not optional). */
+function allocationList(segs, mode) {
   const total = segs.reduce((s, x) => s + x.value, 0) || 1;
-  const R = 62, cx = 80, cy = 80;
-  let a = -Math.PI / 2, body = '', labels = '';
-  segs.forEach(s => {
-    const ang = (s.value / total) * Math.PI * 2, b = a + ang;
-    const big = ang > Math.PI ? 1 : 0;
-    const p = (r, t) => [(cx + r * Math.cos(t)).toFixed(2), (cy + r * Math.sin(t)).toFixed(2)];
-    const [x1, y1] = p(R, a), [x2, y2] = p(R, b);
-    body += segs.length === 1
-      ? `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${s.colour}"/>`
-      : `<path d="M${cx} ${cy} L${x1} ${y1} A${R} ${R} 0 ${big} 1 ${x2} ${y2} Z" fill="${s.colour}" stroke="var(--surface)" stroke-width="1"/>`;
+  return segs.map(s => {
     const share = s.value / total;
-    if (share > 0.045) {
-      const [lx, ly] = p(R * 0.66, a + ang / 2);
-      labels += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="8.5"
-        font-weight="700" fill="#fff" style="paint-order:stroke;stroke:rgba(0,0,0,.5);stroke-width:2.5px">${
-        esc(o.mode === '$' ? compact(s.value) : (share * 100).toFixed(2) + '%')}</text>`;
-    }
-    a = b;
-  });
-  return `<svg viewBox="0 0 160 160" style="width:100%;max-width:200px;margin:0 auto;display:block" aria-hidden="true">${body}${labels}</svg>`;
+    return `<div class="lrow" style="color:${s.colour}">
+      <span class="bar" style="width:${(share * 68 + 4).toFixed(1)}px"></span>
+      <span class="grow" style="color:var(--ink)">${esc(s.name)}</span>
+      <b style="color:var(--ink-2)">${mode === '$' ? esc(compact(s.value)) : (share * 100).toFixed(1) + '%'}</b>
+    </div>`;
+  }).join('');
 }
 
 /* ================= HOME (J1, J4) ================= */
@@ -474,106 +473,79 @@ function renderHome() {
     pts.push({ x:d, y:netWorthAsOf(d, list) });
   }
   const segs = byType(list);
-  const al = [{ name:'Assets', colour:'var(--pos)', value:t.assets },
-              { name:'Liabilities', colour:'var(--neg)', value:t.liabilities }];
-  const card = S.settings.homeCard;
+  const stale = list.filter(isStale).length;
 
   const rows = list.slice().sort(sorter(S.settings.sort)).map(h => {
-    const c = changeFor(h), v = latest(h), tp = typeOf(h.typeId);
-    const vals = h.values.slice(-14).map(x => Math.abs(x.base));
-    const dir = vals.length > 1 ? vals[vals.length - 1] - vals[0] : 0;
-    const good = h.kind === 'liability' ? -dir : dir;
-    return `<button class="row" data-go="#/holding/${h.id}">
-      ${sparkline(vals, good > 0 ? 'var(--pos)' : good < 0 ? 'var(--neg)' : 'var(--ink-3)')}
+    const c = changeFor(h), v = latest(h);
+    const byAgent = v && v.source === 'agent';
+    return `<button class="row ${byAgent ? 'by-agent' : ''}" data-go="#/holding/${h.id}">
       <span class="grow">
-        <span class="name">${esc(h.name)}
-          ${v && v.source === 'agent' ? '<span class="chip agent">agent</span>' : ''}
-          ${isStale(h) ? '<span class="chip stale">stale</span>' : ''}</span>
-        <span class="sub">${v ? 'Updated ' + esc(ago(v.date)) : 'No value yet'}</span>
+        <span class="name">${esc(h.name)}</span>
+        <span class="sub">${esc(typeOf(h.typeId).name)}
+          ${byAgent ? ` · <span class="chip agent">${esc(v.client || 'agent')}</span>` : ''}
+          ${isStale(h) ? ' · <span class="chip stale">stale</span>' : ''}
+          ${v ? ' · ' + esc(ago(v.date)) : ' · no value yet'}</span>
       </span>
-      <span class="amt"><b class="num">${h.kind === 'liability' ? '−' : ''}${esc(compact(Math.abs(c.now)))}</b>
-        <span class="chg num ${cls(c.abs)}">${esc(pct(c.pct))} ${c.abs >= 0 ? '↑' : '↓'} ${esc(compact(Math.abs(c.abs)))}</span></span>
+      <span class="amt"><b>${h.kind === 'liability' ? '−' : ''}${esc(money(Math.abs(c.now)))}</b>
+        <span class="chg ${cls(c.abs)}">${esc(pct(c.pct))} ${c.abs >= 0 ? '↑' : '↓'} ${esc(compact(Math.abs(c.abs)))}</span></span>
     </button>`;
   }).join('');
 
   $('#s-home').innerHTML = `
   <div class="topbar">
-    <div class="avatar">${esc(S.account.initials || 'ST')}</div>
-    <div class="greet"><small>${esc(greeting())}</small><b>${esc(S.account.name || 'there')}</b></div>
-    <button class="iconbtn" data-act="open-baseline" title="Comparison options">${ICON.dots}</button>
+    <div class="wordmark"><i></i>NetNet</div>
     <button class="iconbtn ${homeFiltered() ? 'on' : ''}" data-act="open-filter" title="Filters">${ICON.filter}</button>
+    <button class="iconbtn" data-go="#/activity" title="Activity">${ICON.activity}</button>
     <button class="iconbtn" data-act="open-add-menu" title="Add tracking">${ICON.plus}</button>
   </div>
 
-  ${homeFiltered() ? `<div class="note"><b>Filtered.</b> ${esc(filterSummary())} — the total below covers the
-    filtered set only. <button class="btn ghost sm auto" data-act="clear-filter">Clear</button></div>` : ''}
-
-  <div class="carousel" id="home-carousel">
-    <div class="slide"><div class="card">
-      ${lineChart([{ points:pts, colour:'var(--pos)', fill:true }], { px:170, includeZero:false })}
-      <div class="rangebar">${HOME_RANGES.map(([l, v]) =>
-        `<button data-act="set-range" data-v="${v}" class="${S.settings.range === v ? 'on' : ''}">${l}</button>`).join('')}</div>
-    </div></div>
-    <div class="slide"><div class="card">
-      ${pie(segs, { mode:S.settings.pieMode })}
-      <div class="seg sm" style="max-width:130px;margin:10px auto 8px">
-        <button data-act="pie-mode" data-v="$" class="${S.settings.pieMode === '$' ? 'on' : ''}">$</button>
-        <button data-act="pie-mode" data-v="%" class="${S.settings.pieMode === '%' ? 'on' : ''}">%</button></div>
-      <div class="legend">${segs.map(s => `<div><i style="background:${s.colour}"></i>${esc(s.name)}</div>`).join('')}</div>
-    </div></div>
-    <div class="slide"><div class="card">
-      ${pie(al, { mode:S.settings.pieMode })}
-      <div class="seg sm" style="max-width:130px;margin:10px auto 8px">
-        <button data-act="pie-mode" data-v="$" class="${S.settings.pieMode === '$' ? 'on' : ''}">$</button>
-        <button data-act="pie-mode" data-v="%" class="${S.settings.pieMode === '%' ? 'on' : ''}">%</button></div>
-      <div class="legend"><div><i style="background:var(--pos)"></i>Assets</div>
-        <div><i style="background:var(--neg)"></i>Liabilities</div></div>
-    </div></div>
-  </div>
-  <div class="dots">${[0,1,2].map(i => `<i class="${card === i ? 'on' : ''}"></i>`).join('')}</div>
+  ${homeFiltered() ? `<div class="note"><b>Filtered.</b> ${esc(filterSummary())} — every figure below covers
+    the filtered set only. <button class="btn ghost sm auto" data-act="clear-filter">Clear</button></div>` : ''}
 
   <div class="nw-wrap">
-    <div class="nw-label">Your total net worth is</div>
-    <div class="nw num">${esc(money(t.now, null, { cents:true }))}</div>
-    <div class="nw-chg num ${cls(t.abs)}">${esc(pct(t.pct))} ${t.abs >= 0 ? '↑' : '↓'} ${esc(compact(Math.abs(t.abs)))}</div>
-    <button class="baseline-btn" data-act="open-baseline">vs ${esc(baselineLabel())} ▾</button>
-    ${!t.exact ? '<div class="muted" style="font-size:11.5px;margin-top:6px">Some holdings pre-date this baseline; their first value is used.</div>' : ''}
+    <div class="label">${homeFiltered() ? 'Filtered total' : 'Net worth'}</div>
+    <div class="nw">${esc(money(t.now, null, { cents:true }))}</div>
+    <div class="nw-chg"><span class="num ${cls(t.abs)}">${esc(money(t.abs, null, { signed:true }))}
+      &nbsp; ${esc(pct(t.pct))}</span> &nbsp;·&nbsp; vs ${esc(baselineLabel().toLowerCase())}</div>
+    <button class="baseline-btn" data-act="open-baseline">Change comparison</button>
+    ${!t.exact ? '<div class="field"><div class="hint">Some holdings pre-date this baseline; their first recorded value is used.</div></div>' : ''}
   </div>
 
-  <div class="grid" style="margin-top:14px">
-    <div class="g8">
-      <div class="section-h"><h2>Assets &amp; Liabilities</h2>
-        <button class="iconbtn" data-act="open-sort" title="Sort by">${ICON.sort}</button></div>
-      <div class="card flush">${rows || '<div class="empty"><p class="muted">Nothing matches this filter.</p></div>'}</div>
-      <div class="btn-row" style="margin-top:12px"><button class="btn" data-act="open-add-menu">+ Add tracking</button></div>
-    </div>
-    <div class="g4">
+  <div class="grid">
+    <div class="g5">
       <div class="section-h"><h2>Position</h2></div>
       <div class="card">
-        <div class="kv"><span>Assets</span><b class="num">${esc(money(t.assets))}</b></div>
-        <div class="kv"><span>Liabilities</span><b class="num neg">−${esc(money(t.liabilities)).replace('−','')}</b></div>
-        <div class="kv"><span>Readily accessible</span><b class="num">${esc(money(t.accessible))}</b></div>
+        <div class="kv"><span>Assets</span><b class="amount">${esc(money(t.assets))}</b></div>
+        <div class="kv"><span>Liabilities</span><b class="amount neg">−${esc(money(t.liabilities)).replace('−','')}</b></div>
+        <div class="kv"><span>Readily accessible</span><b class="amount">${esc(money(t.accessible))}</b></div>
       </div>
-      <div class="note"><b>Readily accessible</b> is what you could actually use this month — it leaves out
-        CPF, the flat and unvested equity. It is what stops your agent answering
-        “can I afford this” off money you can’t touch.</div>
-      ${list.filter(isStale).length ? `<div class="note warn"><b>${list.filter(isStale).length} holding${list.filter(isStale).length>1?'s have':' has'} gone stale.</b>
-        Ask your agent to refresh ${list.filter(isStale).length>1?'them':'it'}.
+      <div class="note">What you could actually use this month — it leaves out CPF, the flat and unvested
+        equity. It is what stops your agent answering “can I afford this” off money you can’t touch.</div>
+
+      <div class="section-h"><h2>Allocation</h2>
+        <button class="link" data-act="pie-mode" data-v="${S.settings.pieMode === '$' ? '%' : '$'}">${S.settings.pieMode === '$' ? 'Show %' : 'Show $'}</button></div>
+      <div class="card">${allocationList(segs, S.settings.pieMode)}</div>
+
+      ${stale ? `<div class="note warn"><b>${stale} holding${stale > 1 ? 's have' : ' has'} gone stale.</b>
+        Ask your agent to refresh ${stale > 1 ? 'them' : 'it'}.
         <button class="btn ghost sm auto" data-go="#/agent/chat">Ask the agent</button></div>` : ''}
-      ${S.holdings.some(h => h.archived) ? `<div class="btn-row"><button class="btn sec sm" data-go="#/sub/archived">Archived (${S.holdings.filter(h=>h.archived).length})</button></div>` : ''}
+      ${S.holdings.some(h => h.archived) ? `<div class="btn-row"><button class="btn sec sm"
+        data-go="#/sub/archived">Archived · ${S.holdings.filter(h => h.archived).length}</button></div>` : ''}
+    </div>
+
+    <div class="g7">
+      <div class="card">
+        ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:150 })}
+        <div class="rangebar">${HOME_RANGES.map(([l, v]) =>
+          `<button data-act="set-range" data-v="${v}" class="${S.settings.range === v ? 'on' : ''}">${l}</button>`).join('')}</div>
+      </div>
+
+      <div class="section-h"><h2>Holdings · ${list.length}</h2>
+        <button class="link" data-act="open-sort">${esc(sortLabel())}</button></div>
+      <div class="card flush">${rows || '<div class="empty"><p class="muted">Nothing matches this filter.</p></div>'}</div>
+      <div class="btn-row"><button class="btn" data-act="open-add-menu">Add tracking</button></div>
     </div>
   </div>`;
-  const c = $('#home-carousel');
-  if (c) {
-    c.scrollLeft = card * c.clientWidth;
-    c.onscroll = () => {
-      const i = Math.round(c.scrollLeft / Math.max(1, c.clientWidth));
-      if (i !== S.settings.homeCard) {
-        S.settings.homeCard = i; save();
-        document.querySelectorAll('#s-home .dots i').forEach((d, j) => d.classList.toggle('on', j === i));
-      }
-    };
-  }
 }
 
 function emptyHome() {
@@ -661,15 +633,15 @@ function renderHolding(id) {
     const d = prev ? Math.abs(x.base) - Math.abs(prev.base) : 0;
     const p = prev && prev.base ? (d / Math.abs(prev.base)) * 100 : 0;
     const open = S.expanded === x.id;
-    return `<button class="row" data-act="expand-value" data-v="${x.id}">
-      <span class="grow"><span class="name" style="font-weight:550">${open ? '▾' : '▸'} ${esc(fmtDate(x.date))}
+    return `<button class="row ${x.source === 'agent' ? 'by-agent' : ''}" data-act="expand-value" data-v="${x.id}">
+      <span class="grow"><span class="name">${open ? '▾' : '▸'} ${esc(fmtDate(x.date))}
         ${x.source === 'agent' ? `<span class="chip agent">${esc(x.client || 'agent')}</span>` : ''}
         ${x.marked ? '<span class="chip marked">★</span>' : ''}</span>
         ${x.note ? `<span class="sub">${esc(x.note)}</span>` : ''}</span>
       <span class="amt"><b class="num">${esc(money(Math.abs(x.base), null, { cents:true }))}</b>
         ${prev ? `<span class="chg num ${cls(d)}">${esc(pct(p))} ${d >= 0 ? '↑' : '↓'} ${esc(compact(Math.abs(d)))}</span>` : ''}</span>
     </button>
-    ${open ? `<div style="padding:2px 14px 14px;border-bottom:1px solid var(--line)">
+    ${open ? `<div style="padding:2px 14px 14px;border-bottom:1px solid var(--rule)">
       <div class="kv"><span>Default Currency</span><b class="num">${esc(money(Math.abs(x.base), null, { cents:true }))}</b></div>
       <div class="kv"><span>Original Value</span><b class="num">${esc(money(x.amount, x.ccy, { cents:true, ccy:x.ccy !== S.settings.defaultCcy }))}</b></div>
       ${x.ccy !== S.settings.defaultCcy ? `<div class="kv"><span>Rate used</span><b class="num">1 ${esc(x.ccy)} = ${x.rate} ${esc(S.settings.defaultCcy)} · ${esc(fmtDate(x.rateDate))}</b></div>` : ''}
@@ -678,7 +650,7 @@ function renderHolding(id) {
       <div class="kv"><span>Entered</span><b>${esc(fmtDT(x.enteredAt))} · ${x.source === 'agent' ? esc(x.client) + ' (agent)' : 'you, on the web'}</b></div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn sec sm" data-act="edit-value" data-h="${h.id}" data-v="${x.id}">Edit</button>
-        <button class="btn sec sm" data-act="delete-value" data-h="${h.id}" data-v="${x.id}" style="color:var(--neg)">Delete</button>
+        <button class="btn sec sm" data-act="delete-value" data-h="${h.id}" data-v="${x.id}" style="color:var(--loss)">Delete</button>
       </div></div>` : ''}`;
   }).join('');
 
@@ -688,17 +660,18 @@ function renderHolding(id) {
     <span style="flex:1"></span>
     <button class="iconbtn" data-act="holding-menu" data-h="${h.id}">${ICON.dots}</button>
   </div>
-  <div class="pad" style="margin-bottom:12px">
-    <h1 style="font-size:26px;letter-spacing:-.025em">${esc(h.name)}</h1>
-    <div class="num" style="margin-top:4px;font-size:15px;font-weight:600">
-      ${h.kind === 'liability' ? '−' : ''}${esc(money(Math.abs(c.now), null, { cents:true }))}
-      <span class="${cls(c.abs)}" style="font-size:13px">${esc(pct(c.pct))} ${c.abs >= 0 ? '↑' : '↓'} ${esc(compact(Math.abs(c.abs)))}</span>
-    </div>
+  <div class="nw-wrap">
+    <div class="label">${esc(typeOf(h.typeId).name)}${h.kind === 'liability' ? ' · Liability' : ''}</div>
+    <h1 style="font-family:Fraunces,Georgia,serif;font-size:26px;font-weight:600;letter-spacing:-.028em;margin:9px 0 6px">${esc(h.name)}</h1>
+    <div class="nw" style="font-size:clamp(32px,9vw,42px);margin:6px 0 11px">${h.kind === 'liability' ? '−' : ''}${esc(money(Math.abs(c.now), null, { cents:true }))}</div>
+    <div class="nw-chg"><span class="num ${cls(c.abs)}">${esc(money(c.abs, null, { signed:true }))} &nbsp; ${esc(pct(c.pct))}</span>
+      &nbsp;·&nbsp; vs ${esc(baselineLabel().toLowerCase())}</div>
+    <button class="baseline-btn" data-act="open-baseline">Change comparison</button>
   </div>
 
   <div class="carousel" id="detail-carousel">
     <div class="slide"><div class="card">
-      ${lineChart([{ points:pts, colour:c.abs >= 0 ? 'var(--pos)' : 'var(--neg)', fill:true }], { px:175 })}
+      ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:160 })}
       <div class="rangebar">${HOME_RANGES.map(([l, val]) =>
         `<button data-act="set-detail-range" data-v="${val}" class="${(S.settings.detailRange||0) === val ? 'on' : ''}">${l}</button>`).join('')}</div>
     </div></div>
@@ -796,7 +769,7 @@ function renderInsights() {
   <div class="pad" style="margin-top:14px"><div class="pillrow">
     <div class="pill" style="min-width:132px"><small>Total Net Worth</small>
       <b class="num" style="font-size:17px">${esc(compact(cur ? cur.value : 0))}</b>
-      ${sparkline(oldestFirst.map(p => p.value), 'var(--pos)')}</div>
+      ${sparkline(oldestFirst.map(p => p.value), 'var(--brand)')}</div>
     <div class="pill" style="min-width:150px"><small>Current ${esc(VIEW_NOUN[view])} Change</small>
       <b class="num ${cur && cur.abs != null ? cls(cur.abs) : 'muted'}" style="font-size:17px">
         ${cur && cur.abs != null ? esc(compactSigned(cur.abs)) + ' / ' + esc(pct(cur.pct)) : '—'}</b></div>
@@ -829,13 +802,13 @@ function renderInsights() {
       <h3>Assets vs. Liabilities</h3>
       <div class="csub">${esc(VIEW_ADJ[view])} assets and liabilities trend over ${oldestFirst.length} ${esc(VIEW_PLURAL[view])}</div>
       <div style="margin-top:12px">${lineChart([
-        { points:oldestFirst.map(p => ({ x:p.end, y:p.assets })), colour:'var(--pos)', fill:true },
-        { points:oldestFirst.map(p => ({ x:p.end, y:p.liabilities })), colour:'var(--neg)', fill:true },
-        { points:oldestFirst.map(p => ({ x:p.end, y:p.value })), colour:'#9aa4b0' }
+        { points:oldestFirst.map(p => ({ x:p.end, y:p.assets })), colour:'var(--gain)', fill:true },
+        { points:oldestFirst.map(p => ({ x:p.end, y:p.liabilities })), colour:'var(--loss)', fill:true },
+        { points:oldestFirst.map(p => ({ x:p.end, y:p.value })), colour:'var(--ink-3)' }
       ], { px:180, includeZero:true })}</div>
-      <div class="legend"><div><i style="background:var(--pos)"></i>Assets</div>
+      <div class="legend"><div><i style="background:var(--gain)"></i>Assets</div>
         <div><i style="background:#7d8794"></i>Net worth</div>
-        <div><i style="background:var(--neg)"></i>Liabilities</div></div>
+        <div><i style="background:var(--loss)"></i>Liabilities</div></div>
     </div></div>
 
     <div class="g12"><div class="card">
@@ -888,7 +861,7 @@ function renderPeriod(view, i) {
   <div class="section-h"><h2>What drove it</h2></div>
   <div class="card flush">${cs.map(c => `
     <button class="row" data-go="#/holding/${c.h.id}">
-      <span class="dot" style="background:${typeOf(c.h.typeId).colour}"></span>
+      <span class="dot" style="background:${typeColour(c.h.typeId)}"></span>
       <span class="grow"><span class="name">${esc(c.h.name)}${c.carried ? ' <span class="chip carried">carried</span>' : ''}</span>
         <span class="sub">${esc(typeOf(c.h.typeId).name)} · ${esc(money(Math.abs(c.now)))} at period end</span></span>
       <span class="amt"><b class="num ${cls(c.delta)}">${esc(money(c.delta, null, { signed:true }))}</b></span>
@@ -912,13 +885,13 @@ function renderAgent() {
         <button class="btn sm auto" style="margin-top:10px" data-act="mock-verify">Mark verified (prototype)</button></div>` : ''}
       ${conns.map(c => `<div class="card">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
-          <span style="width:9px;height:9px;border-radius:50%;background:var(--pos);display:block"></span>
+          <span style="width:9px;height:9px;border-radius:50%;background:var(--gain);display:block"></span>
           <h3 style="flex:1">${esc(c.client)} — connected</h3></div>
         <div class="kv"><span>Connected</span><b>${esc(fmtDT(c.connectedAt))}</b></div>
         <div class="kv"><span>Last tool call</span><b>${esc(fmtDT(c.lastCall))}</b></div>
         <div style="display:flex;gap:8px;margin-top:12px">
           <button class="btn sm" data-go="#/agent/chat">Try it</button>
-          <button class="btn sec sm" data-act="revoke" data-v="${c.id}" style="color:var(--neg)">Revoke</button></div>
+          <button class="btn sec sm" data-act="revoke" data-v="${c.id}" style="color:var(--loss)">Revoke</button></div>
       </div>`).join('')}
 
       <div class="section-h"><h2>${conns.length ? 'Connect another client' : 'Connect a client'}</h2></div>
@@ -1006,12 +979,12 @@ function renderActivity() {
     let head = '';
     if (e.turn && turns[e.turn] && turns[e.turn].length > 1 && !seen[e.turn]) {
       seen[e.turn] = true;
-      head = `<div style="padding:10px 14px;display:flex;align-items:center;gap:8px;background:var(--agent-soft)">
+      head = `<div style="padding:12px 0 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--rule)">
         <span class="chip agent">${esc(e.client)} · one turn · ${turns[e.turn].length} changes</span>
         <span style="flex:1"></span>
         <button class="btn ghost sm auto" data-act="undo-turn" data-v="${esc(e.turn)}">Undo all</button></div>`;
     }
-    return head + `<div class="row" style="${e.undone ? 'opacity:.45' : ''}">
+    return head + `<div class="row ${e.source === 'agent' && !e.undone ? 'by-agent' : ''}" style="${e.undone ? 'opacity:.45' : ''}">
       <span class="grow"><span class="name" style="font-weight:550">${esc(describeLog(e, h))}
         ${e.undone ? '<span class="chip">undone</span>' : ''}</span>
         <span class="sub">${esc(fmtDT(e.at))} · ${e.source === 'agent' ? esc(e.client) + ' (agent)' : 'you, on the web'}</span></span>
@@ -1082,7 +1055,7 @@ function renderAccount() {
           <span class="name" style="font-weight:550">Export everything</span>
           <span class="sub">Machine-readable, including full history</span></span><span class="chev">›</span></button>
         <button class="row" data-go="#/sub/delete"><span class="grow">
-          <span class="name" style="font-weight:550;color:var(--neg)">Delete account</span>
+          <span class="name" style="font-weight:550;color:var(--loss)">Delete account</span>
           <span class="sub">Erases all your data</span></span><span class="chev">›</span></button>
       </div>
       <div class="note">NetNet never sells your data, never receives your documents, and runs no AI on your
@@ -1124,7 +1097,7 @@ function renderSub(name) {
     html = B(isT ? 'Manage Types' : 'Manage Tags') + `
       <div class="card flush">
         <button class="row" data-act="${isT ? 'new-type' : 'new-tag'}">
-          <span class="grow"><span class="name" style="color:var(--accent)">+ Add New ${isT ? 'Type' : 'Tag'}</span></span></button>
+          <span class="grow"><span class="name" style="color:var(--brand-text)">+ Add New ${isT ? 'Type' : 'Tag'}</span></span></button>
         ${items.map(t => {
           const used = S.holdings.filter(h => isT ? h.typeId === t.id : h.tags.includes(t.name)).length;
           return `<button class="row" data-act="edit-${isT ? 'type' : 'tag'}" data-v="${esc(t.id)}">
@@ -1158,7 +1131,7 @@ function renderSub(name) {
       <button class="btn ghost sm" data-act="export-csv">Download CSV instead</button></div>`;
   } else if (name === 'delete') {
     html = B('Delete account') + `<div class="card">
-      <h3 style="color:var(--neg)">This erases everything</h3>
+      <h3 style="color:var(--loss)">This erases everything</h3>
       <p class="muted" style="margin:8px 0 6px;font-size:14px">Your holdings, value history, types, tags,
         audit log and agent connections are deleted within <b>30 days</b>, and immediately stop being
         readable by any connected agent.</p>
@@ -1338,8 +1311,8 @@ function sheetSort() {
 }
 function sheetAddMenu() {
   sheet(`<h3 style="padding:0 18px 10px;text-align:center">Start Tracking</h3>
-    <button class="opt" data-go="#/add/asset"><span class="grow" style="color:var(--pos)">+ New Asset</span></button>
-    <button class="opt" data-go="#/add/liability"><span class="grow" style="color:var(--neg)">− New Liability</span></button>
+    <button class="opt" data-go="#/add/asset"><span class="grow" style="color:var(--gain)">+ New Asset</span></button>
+    <button class="opt" data-go="#/add/liability"><span class="grow" style="color:var(--loss)">− New Liability</span></button>
     <div class="note" style="margin:12px 18px 0">The mockups also offer <b>New Goal</b>. Net-worth goals are not
       in the v1 scope in <code>01-prd.md</code> — flagged as a gate decision rather than built.</div>`);
 }

@@ -41,7 +41,36 @@ replaced with one.
 Deliberately **not** built, because they are not design questions: real auth, real OAuth, a real
 MCP server, email sending, and anything on the reserved list in PRD §4.2.
 
-## 3. Design decisions
+## 3. Design system
+
+`design-system.md` is the spec; this is the short version of how it came about.
+
+The prototype is built on **NetNet v1 — "Two Inks"**, chosen by the Founder on 2026-09-23 after
+three rounds. The idea: *a ledger, typeset and printed in two inks — one ink is you, the other is
+your agent.* Structure is typographic (hairline rules, no cards); colour is scarce and loud.
+Fraunces sets every monetary amount, Inter sets everything else.
+
+The first round was rejected outright, and the reason is worth keeping: it started from a palette
+rather than an idea, and produced four recolourings of the same generic dashboard. `explorations/`
+holds the whole record, including that failure.
+
+**Decisions this locked in, beyond appearance**
+
+- The agent's ink is a *structural* device, not a badge — a cyan rule in a reserved 24px gutter,
+  used identically on Home, value history and the audit log. It is the one thing here a competitor
+  cannot copy without also building an agent layer.
+- The allocation donut was replaced by a ranked list. A donut is a dashboard device; a ranked list
+  is typographic, and its direct labels are what satisfy the light-mode relief rule the chart
+  validator flagged (four categorical slots fall below 3:1 on paper).
+- The trend line is the brand ink, never gain/loss — a line that turned red on a bad quarter would
+  put two conflicting signals in one glance.
+- Every token is measured, not chosen by eye. Two brand colours failed small-text contrast during
+  development, which is why light mode carries a darker sibling for each ink.
+
+**Still open** (`design-system.md` §9): whether Fraunces should set row amounts or the hero only;
+whether the warm paper survives a landing page; and the wordmark, which is still a placeholder dot.
+
+## 4. Design decisions
 
 **Following the mockups**
 
@@ -97,7 +126,7 @@ MCP server, email sending, and anything on the reserved list in PRD §4.2.
     there so the event contract is reviewable at design time rather than at build time, and it
     demonstrates the N9 constraint: names, counts and timings only, never amounts or holding names.
 
-## 4. Decisions I need from you
+## 5. Decisions I need from you
 
 1. **Net Worth Goals / "New Goal".** In the mockups' Add Tracking menu and Account settings, but
    nowhere in the approved PRD. I did not build it and left a note in the Add Tracking sheet.
@@ -115,7 +144,7 @@ MCP server, email sending, and anything on the reserved list in PRD §4.2.
 5. **Accessibility wording.** "Readily accessible / Illiquid / Locked" — is that the right
    vocabulary for an SG audience, or should CPF-style holdings say something more specific?
 
-## 5. Risks and open questions
+## 6. Risks and open questions
 
 - **The sample user is liquid, so the demo answer is "yes".** With S$1.04M readily accessible, the
   honest answer to "can I afford a S$120k car" is yes — the accessibility split changes *what the
@@ -129,7 +158,7 @@ MCP server, email sending, and anything on the reserved list in PRD §4.2.
   Stage 3 choice. Do not read the implementation as a recommendation.
 - **Nothing here is a stack opinion.** No framework, no database, no hosting. Stage 3 owns all of it.
 
-## 6. User test script
+## 7. User test script
 
 Five people, 20–25 minutes each, from the beachhead in PRD §2: already track their net worth
 somehow, already pay for ChatGPT or Claude, multi-currency, SG/SEA. Screen-share, think-aloud.
