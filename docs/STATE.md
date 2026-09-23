@@ -31,5 +31,6 @@ alone - those frames have never been seen, and the prototype cannot get them rig
 commit them.
 WATCH OUT: Stage 2 is design, not stack. No hosting, framework or database opinions - that is
 Stage 3, and an earlier session already drifted there once.
-PENDING: the project convention is to merge each approved stage to main. This session was scoped to
-claude/zealous-davinci-x09bgr and did not push main; ask the Founder before doing it.
+MAIN: fast-forwarded to 286bc18 with the Founder's approval, so main carries Stage 0 and Stage 1.
+Per-session branches hold nothing unique once merged - main is the checkpoint of record and docs/ is
+the memory.
