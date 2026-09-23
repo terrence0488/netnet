@@ -23,8 +23,10 @@ interview guide. Decisions are in docs/decisions.md (16 entries).
 MOCKUPS: the Founder's UI mockups are NOT in this repo - they hold real personal financial data
 and were purged from git history. docs/reference/mockups/README.md is the written substitute.
 Ask the Founder for the images when you need the visual reference; never commit them.
-BRANCH: everything stays on claude/compassionate-franklin-f6gat1. Merge to main only when the
-project is finalised, not stage by stage. History was rewritten once (mockup purge).
+BRANCH: develop on claude/compassionate-franklin-f6gat1. After the Founder approves a stage,
+merge that branch into main - main holds the last approved state, one merge per approved stage.
+Keep working on the same branch afterwards. main does not exist yet; it is created at the first
+approval. History was rewritten once (mockup purge).
 WATCH OUT: this session drifted into comparing hosting providers, which is Stage 3 work. The
 Founder correctly stopped it and that research was deliberately NOT saved. Do not carry stack
 opinions into Stage 1; section 5 of 00-discovery.md holds the constraints that should drive the
