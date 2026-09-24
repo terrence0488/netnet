@@ -1,9 +1,9 @@
 # 01 — Product Requirements (PRD)
 
 Status: **amended 2026-09-24 — awaiting Founder re-approval** · Stage owner: Product manager
-Approved 2026-09-23; §2 widened from one persona to three on 2026-09-24, and §2.3 added
-jurisdiction packs so the product is not permanently shaped by its first market. Also changed: §3,
-§4, J1, J2, §8 and N10. What changed and why: **§9.5**. AI never marks its own work approved.
+Approved 2026-09-23; §2 widened from one persona to three on 2026-09-24, §2.3 added jurisdiction packs so the product is not permanently
+shaped by its first market, and §2.4 made the agent a target user with a falsifiable claim behind
+it. Also changed: §3, §4, J1, J2, J8, §8, N10 and N11. What changed and why: **§9.5**. AI never marks its own work approved.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -127,7 +127,46 @@ Four rules, binding:
 files added without a release. The machinery is the part that is expensive to retrofit; the second
 pack is cheap and should wait for demand.
 
-### 2.4 Consequence for the pitch (G-D1, G-D3)
+### 2.4 The agent is a user too — and the thing v1 is really betting on
+
+§2.2 says the app must be worth using with no agent. This is its mirror: **with an agent, the pair
+must beat either half.**
+
+The benchmark is the one P-C already runs every month. Put identical data in a spreadsheet and in
+NetNet. Upload the spreadsheet to one Claude instance; connect NetNet to another. Ask both the same
+question. **The NetNet answer must be better** — and it must be better even when the model is a weak
+one, because that is the only way to prove the lift comes from the context rather than from the
+model (assumption **A13**, gated by **M12**).
+
+That only works if NetNet compiles data into context rather than dumping rows. Four layers, none of
+which a spreadsheet can carry:
+
+| Layer | What NetNet supplies | Why it lifts a weak model |
+|---|---|---|
+| **Arithmetic already done** | Accessible / illiquid / locked totals, period change, contribution by holding, currency exposure, concentration | A weak model doing 40 rows of arithmetic in context makes errors, confidently. Deterministic computation does not. |
+| **Semantics** | "Mandatory retirement account, locked until withdrawal eligibility, counts toward net worth, never toward spendable" — where a spreadsheet row says `CPF OA \| 117,100` | The model stops inferring what an instrument is from its name. This is the §2.3 jurisdiction pack paying a second dividend. |
+| **Provenance & completeness** | As-of date and staleness per value, observed vs carried forward, how complete the picture is | Lets the model **qualify** instead of asserting. A confident wrong answer is the failure mode that ends trust, and an upload guarantees it. |
+| **Answer shape** | Which figure applies to which kind of question — affordability uses accessible, not total | Removes the most common category error without NetNet giving any advice. |
+
+**Two constraints on this, both binding.**
+
+- **Dense, not comprehensive.** More context is not better context: a bloated summary buries the
+  relevant fact and fights N1's latency budget. The summary is ordered by importance and stays small
+  enough to help a weak model rather than drown it. "Send everything" is a failure, not a default.
+- **Facts and structure, never judgement.** NetNet may state what is true and flag what is
+  uncertain. It may not state what the user should do. "Readily accessible is $X, and one input is
+  two years stale" is context; "don't buy the car" is advice, and belongs to the agent (§8, N2).
+
+**Where the moat actually is, stated honestly.** Any competitor can compute an accessible total —
+the compute is not the secret. What is hard to replicate is the **capture**: the opinionated flow
+(§2.1) and the jurisdiction semantics (§2.3) that get accessibility, provenance and meaning recorded
+correctly in the first place, plus the accumulated history behind them. Investment that protects the
+differentiator goes there, not into the summary endpoint.
+
+**And it costs nothing.** Every layer above is deterministic computation over data we already hold.
+No inference, so N2 holds and N6's cost ceiling is untouched (N11).
+
+### 2.5 Consequence for the pitch (G-D1, G-D3)
 
 One line no longer fits all three. P-C's problem is that real numbers are *stale and unreadable by
 their AI*; P-A's is *never having had the numbers at all*. The landing page leads with the widest
@@ -135,7 +174,7 @@ statement that is true for all three — **you cannot get useful advice from an 
 where you stand** — and carries both proofs beneath it. It never opens with "you don't know your net
 worth", which is false and condescending for P-B and P-C.
 
-### 2.5 Trade-offs worth naming
+### 2.6 Trade-offs worth naming
 
 - **Education cost is now real**, and is paid by opinionated defaults and by the user's agent — never
   by content we write and maintain (§8).
@@ -177,6 +216,7 @@ Window: **8 weeks from public launch** unless stated. "Signup" = verified accoun
 | **M8** | Freshness | Median days since last value update, across users active in the last 30 days | **<45 days** | The context is too stale to answer from |
 | **M9** | Time to value | p50 minutes from signup to first agent interaction (read or write) | **<15 min** | Setup is the cliff A1 predicts (M9 is the funnel, not the outcome) |
 | **M10** | Funnel conversion | Landing-page unique visitors → signup | **≥8%**, on ≥1,200 visits | The pitch, not the product, is the blocker |
+| **M12** | **Context lift** (new) | Blind A/B on a fixed dataset and question set: NetNet-connected agent vs the same data uploaded as a spreadsheet, scored on numeric correctness, appropriate qualification, and absence of fabrication — run on a deliberately weak model | NetNet wins **≥80%** of paired questions, and **never** scores worse on fabrication | **A13 is wrong** — the context layer is not adding what §2.4 claims, and NetNet is a nicer spreadsheet |
 | **M11** | **Standalone value** (new) | % of signups with ≥2 sessions **before** any agent connection; and % still active in week 4 having never connected | **40%** / **15%** | **A12 is wrong** — the app is not worth using on its own, so P-A churns before the real experiment reaches them (§2.2) |
 
 **Every metric above is reported per segment** (P-A / P-B / P-C), captured at signup by one
@@ -250,6 +290,11 @@ labels and email reminders · **a comprehensive MCP layer with full CRUD, plus r
 by OAuth from ChatGPT or Claude** · audit log and undo for every agent write · export and account
 deletion · the §3.5 analytics · the §3.4 distribution assets. Mobile-first responsive web, one API
 that native clients reuse later.
+
+**Added 2026-09-24 (§2.4):** a **context-compilation layer** that turns stored data into agent-ready
+context — derived totals, per-holding meaning, provenance and completeness, and answer-shape
+guidance — deterministic and small enough to help a weak model rather than drown it. This is the
+differentiator, not a convenience.
 
 **Added 2026-09-24, following the §2 widening:** **opinionated defaults with stated reasons**
 throughout data entry; **fact-based questions in place of classification** wherever a category would
@@ -457,6 +502,19 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** a typical question, **when** the agent gathers context, **then** one summary call
   returns enough to answer without a long chain of round-trips — context assembly must not be so
   slow or chatty that the agent works around it.
+- **Given** that one summary call, **when** it returns, **then** it carries all four §2.4 layers:
+  arithmetic already done (accessible / illiquid / locked totals, period change, contribution by
+  holding, currency exposure, concentration); the **meaning** of each holding, not just its name;
+  per-value provenance and overall completeness; and which figure applies to which kind of question.
+- **Given** the same question asked of an agent with NetNet connected and an agent handed the same
+  data as a spreadsheet, **when** both answer, **then** the NetNet answer is more accurate and
+  better qualified — measured blind, on a deliberately weak model, per M12 (A13).
+- **Given** the summary response, **when** it is assembled, **then** it is **ordered by importance
+  and kept small**; completeness is never traded for relevance, since a bloated response buries the
+  answer and breaches N1's latency budget.
+- **Given** any context NetNet returns, **when** it is produced, **then** it is computed
+  deterministically — arithmetic, schema and stored provenance only, never inference (N11) — and it
+  states facts and uncertainty, never what the user should do (§8).
 - **Given** read responses, **when** returned, **then** each value carries an as-of date and its
   staleness, and the response conveys how complete the picture is, so the agent can qualify an
   answer built on two-year-old or partial numbers instead of stating it confidently.
@@ -528,6 +586,7 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 | **N7** | Mobile-first responsive; one API serving web now and native later | Native iOS/Android is planned, not hypothetical |
 | **N8** | Reliability and security never trade against cost | Founder constraint; cheap-but-flaky is a failed outcome |
 | **N9** | Analytics carries no financial values (§3.5) | The metrics pipeline must not become the leak |
+| **N11** | Context compilation is **deterministic** — arithmetic, schema and stored provenance only, no inference of any kind | Keeps §2.4's lift free: N2 stays intact and N6's cost ceiling is untouched. The moment context needs a model to produce it, the economics of the whole product change |
 | **N10** | Jurisdiction packs are **data, not code**: adding a market ships no release, and no local institution name, rule or default is hard-coded into a flow | Being opinionated is inherently local (§2.3). Fusing local facts into the engine makes v1 a Singapore app that cannot leave, and that is the expensive thing to retrofit |
 
 ## 8. Non-goals for v1
@@ -598,6 +657,17 @@ section needs Founder re-approval before Stage 2 can be approved.**
 10. **Accessibility is never asked as a classification** (J2). This was the trigger for the whole
    revision: "illiquid or locked?" for a property is unanswerable without knowing whether the user
    lives in it, and a layman asked to classify either stalls or guesses wrong — both silent failures.
+
+11. **The agent is a target user, and NetNet + agent must beat either half** (§2.4, A13, M12).
+    Founder's framing, and the benchmark is the one P-C already runs monthly: identical data in a
+    spreadsheet and in NetNet, the same question to two agents, and the NetNet answer must be better
+    **even on a weak model**. That makes the claim falsifiable instead of aspirational. Two
+    constraints were added rather than assumed: context is dense and ordered, never comprehensive,
+    because bloat degrades weak models and breaches N1; and NetNet supplies facts and uncertainty,
+    never judgement, which keeps §8 and N2 intact. N11 keeps the whole layer deterministic, so the
+    differentiator costs nothing to run. Recorded honestly: the **compute is replicable** — the
+    durable moat is the capture (§2.1) and the jurisdiction semantics (§2.3) that get accessibility,
+    meaning and provenance recorded correctly, plus accumulated history.
 
 **Correction to a §9.4 premise.** The claim that custom MCP connectors are paid-tier only is
 **unverified and probably wrong** — the Founder connects Notion, Google Drive and other MCP servers

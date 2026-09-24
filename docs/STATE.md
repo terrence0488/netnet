@@ -33,6 +33,12 @@ ALSO IN THE AMENDMENT: §2.3 + N10 — jurisdiction packs. Being opinionated is 
 "opinions about the interaction" (universal) and "opinions about the world" (per-market data) are
 kept apart. Types are universal, only labels are local: ship a mandatory-retirement type, NOT "CPF".
 v1 = machinery + SG pack + a first-class generic pack; further markets are data files, no release.
+AND §2.4 — THE AGENT IS A TARGET USER, and the real bet: NetNet + agent must beat the same data
+uploaded as a spreadsheet, on a WEAK model (A13, M12, a blind paired eval). Context carries four
+layers: arithmetic done, per-holding meaning, provenance/completeness, answer shape. Two constraints
+are binding — dense and ordered never comprehensive (bloat degrades weak models and breaks N1), and
+facts/uncertainty never judgement (§8, N2). N11 keeps it deterministic so it costs nothing.
+Moat is the CAPTURE (§2.1, §2.3) and history — the compute itself is replicable.
 CORRECTED IN §9.5: I claimed custom MCP connectors were paid-tier only. The Founder connects several
 MCP servers on free ChatGPT. Do not repeat that claim; Stage 3 verifies it.
 NEXT after re-approval: rework the prototype for amended J1/J2 (guided assembly, fact-based
