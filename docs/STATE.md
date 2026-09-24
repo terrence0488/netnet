@@ -29,6 +29,10 @@ fix generalised into the new organising principle in §2.1 — NetNet does not t
 asks for facts rather than categories, and routes real judgement to the user's agent.
 Second principle, §2.2: the app must be worth using BEFORE an agent is connected (A12 / M11).
 Chosen for measurement reasons — otherwise P-A's poor numbers read as A1/A4 being wrong.
+ALSO IN THE AMENDMENT: §2.3 + N10 — jurisdiction packs. Being opinionated is inherently local, so
+"opinions about the interaction" (universal) and "opinions about the world" (per-market data) are
+kept apart. Types are universal, only labels are local: ship a mandatory-retirement type, NOT "CPF".
+v1 = machinery + SG pack + a first-class generic pack; further markets are data files, no release.
 CORRECTED IN §9.5: I claimed custom MCP connectors were paid-tier only. The Founder connects several
 MCP servers on free ChatGPT. Do not repeat that claim; Stage 3 verifies it.
 NEXT after re-approval: rework the prototype for amended J1/J2 (guided assembly, fact-based

@@ -1,8 +1,9 @@
 # 01 — Product Requirements (PRD)
 
 Status: **amended 2026-09-24 — awaiting Founder re-approval** · Stage owner: Product manager
-Approved 2026-09-23; §2 widened from one persona to three on 2026-09-24, which also changed §3, §4,
-J1, J2 and §8. What changed and why: **§9.5**. AI never marks its own work approved.
+Approved 2026-09-23; §2 widened from one persona to three on 2026-09-24, and §2.3 added
+jurisdiction packs so the product is not permanently shaped by its first market. Also changed: §3,
+§4, J1, J2, §8 and N10. What changed and why: **§9.5**. AI never marks its own work approved.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -86,7 +87,47 @@ thing v1 exists to test, and M3, M6 and M7 come back looking like evidence that 
 wrong** — when in truth the experiment never ran on them. That is the same class of misreading §9.4
 already names as the most expensive available here.
 
-### 2.3 Consequence for the pitch (G-D1, G-D3)
+### 2.3 Region — Singapore first, but never Singapore-shaped
+
+**SG/SEA is the launch region, not the design constraint.** Being opinionated (§2.1) is inherently
+local: "CPF is locked" is a fact about one country. Fusing that into the flow would make NetNet a
+Singapore app that cannot leave, so the two kinds of opinion are kept apart:
+
+| | Scope | Where it lives |
+|---|---|---|
+| **Opinions about the interaction** — ask a fact not a category, default with a stated reason, show the consequence, never block saving | Universal | The product. Never localised. |
+| **Opinions about the world** — which holdings are common here, what they are called, which are locked and why | Per jurisdiction | A **jurisdiction pack**: data, not code |
+
+A pack supplies the starting-point checklist, local labels for universal types, default accessibility
+per type with the one-line reason shown to the user, the disambiguating question for each ambiguous
+type, and currency and date conventions.
+
+**Types are universal; only labels are local.** NetNet does not ship "CPF" as a type — it ships a
+mandatory-retirement type that the SG pack labels CPF, and that is EPF, MPF, Superannuation, 401(k)
+or a workplace pension elsewhere. Different names, identical behaviour: counts toward net worth,
+never toward what can be spent this month. The same holds for primary vs investment property,
+tax-advantaged wrappers, vehicles and secured loans — and the disambiguating questions turn out to
+be universal anyway ("do you live here?" works everywhere). A corollary for copy: **"locked until
+you're eligible to withdraw" beats "locked until 55"** — it is both safer and portable.
+
+Four rules, binding:
+
+1. **The generic pack is first-class, not a degraded fallback.** Someone in a market with no pack
+   gets universal types, universal questions and the full §2.1 treatment — only the local names are
+   missing. It must be good on its own.
+2. **A wrong pack is worse than no pack.** Showing CPF to a Malaysian is more alienating than showing
+   nothing. Infer from locale, then **confirm with one question**; never apply silently.
+3. **Packs set defaults; they never restrict.** This audience holds a Singapore CPF, a UK ISA and a
+   US brokerage at once. Jurisdiction chooses the suggestions; the type system stays fully open (J2).
+4. **The agent covers every market we have not packed.** "I have a Riester pension" is something the
+   user's agent already understands; J2's open taxonomy and J6's assembly mean it can create it
+   correctly. Unpacked markets are served on day one by the thing the product is already for.
+
+**In v1:** the pack machinery, the **SG pack**, and the **generic pack**. Further markets are data
+files added without a release. The machinery is the part that is expensive to retrofit; the second
+pack is cheap and should wait for demand.
+
+### 2.4 Consequence for the pitch (G-D1, G-D3)
 
 One line no longer fits all three. P-C's problem is that real numbers are *stale and unreadable by
 their AI*; P-A's is *never having had the numbers at all*. The landing page leads with the widest
@@ -94,7 +135,7 @@ statement that is true for all three — **you cannot get useful advice from an 
 where you stand** — and carries both proofs beneath it. It never opens with "you don't know your net
 worth", which is false and condescending for P-B and P-C.
 
-### 2.4 Trade-offs worth naming
+### 2.5 Trade-offs worth naming
 
 - **Education cost is now real**, and is paid by opinionated defaults and by the user's agent — never
   by content we write and maintain (§8).
@@ -311,9 +352,18 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** any holding type, **when** the user is asked about accessibility, **then** the question
   asks for a **fact they already know** ("do you live here?", "has it vested?"), never for the
   category itself. The three category names are a data model, not a question put to a user.
-- **Given** a type where the answer is not in doubt — CPF, cash, listed investments — **when** a
-  holding is created, **then** nothing is asked and the value is set, with its reason stated in one
-  line the user can see and override.
+- **Given** a type where the answer is not in doubt — mandatory retirement, cash, listed
+  investments — **when** a holding is created, **then** nothing is asked and the value is set, with
+  its reason stated in one line the user can see and override. The reason text comes from the
+  jurisdiction pack (§2.3), never hard-coded.
+- **Given** a user in a market with no pack, **when** they add holdings, **then** the generic pack
+  gives them universal types, the same fact-based questions and the same stated reasons — only local
+  institution names are absent, and nothing about the flow degrades (§2.3 rule 1).
+- **Given** a jurisdiction inferred from locale, **when** the user first sees it, **then** it is
+  confirmed by one question rather than applied silently, and it is changeable afterwards (§2.3
+  rule 2).
+- **Given** a user holding instruments from several countries, **when** they add them, **then**
+  nothing in the pack prevents it — the pack supplies suggestions and defaults only (§2.3 rule 3).
 - **Given** any accessibility default, **when** it is applied, **then** its **consequence** is shown
   rather than its label — "counts toward the $X you could use this month" / "won't count, it's your
   home" — and it stays changeable from the holding afterwards.
@@ -478,6 +528,7 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 | **N7** | Mobile-first responsive; one API serving web now and native later | Native iOS/Android is planned, not hypothetical |
 | **N8** | Reliability and security never trade against cost | Founder constraint; cheap-but-flaky is a failed outcome |
 | **N9** | Analytics carries no financial values (§3.5) | The metrics pipeline must not become the leak |
+| **N10** | Jurisdiction packs are **data, not code**: adding a market ships no release, and no local institution name, rule or default is hard-coded into a flow | Being opinionated is inherently local (§2.3). Fusing local facts into the engine makes v1 a Singapore app that cannot leave, and that is the expensive thing to retrofit |
 
 ## 8. Non-goals for v1
 
@@ -538,7 +589,13 @@ section needs Founder re-approval before Stage 2 can be approved.**
    experiment had simply never reached them.
 8. **All metrics are reported per segment, and kill criteria are read on P-B and P-C, not on the
    blend** (§3.2, §3.3). P-A is held to M11 instead. `{segment}` rides on every event.
-9. **Accessibility is never asked as a classification** (J2). This was the trigger for the whole
+9. **Singapore is the launch region, not the design constraint** (§2.3, N10). Opinions about the
+   interaction are universal; opinions about the world live in jurisdiction packs, which are data.
+   Types are universal and only labels are local — NetNet ships a mandatory-retirement type, not
+   "CPF". v1 carries the machinery, the SG pack and a first-class generic pack; further markets are
+   data files. Raised by the Founder, who declined to have the app shaped permanently by its first
+   market.
+10. **Accessibility is never asked as a classification** (J2). This was the trigger for the whole
    revision: "illiquid or locked?" for a property is unanswerable without knowing whether the user
    lives in it, and a layman asked to classify either stalls or guesses wrong — both silent failures.
 
