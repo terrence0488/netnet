@@ -747,7 +747,7 @@ function guideAdd() {
   const basis = kind === 'liability' ? null
     : item.answer ? { q:item.u, a:item.answer } : (startingBasis(t.id) || { q:'unset' });
   const h = createHolding({ name:item.name, kind, typeId:t.id, ccy:S.settings.defaultCcy,
-    amount, date:TODAY, basis });
+    amount, date:TODAY, basis, via:'guided' });
   Object.assign(S.guide, { i:idx + 1, stage:'ask', last:h.id });
   S.guide.answered[idx] = 'yes';
   save(); render(true);
@@ -1396,7 +1396,9 @@ function renderAdd(kind, presetType, editId) {
   const choices = typesFor(k);
   const typeId = h ? h.typeId : (choices.find(t => t.id === presetType) || choices[0]).id;
   S.form = { typeId, basis: h ? (h.accessBasis || { q:'unset' }) : startingBasis(typeId), changing:false,
-             editId: h ? h.id : null };
+             editId: h ? h.id : null,
+             /* §3.5 `via`: only a starter tile opens the form with a preset type */
+             via: !h && presetType ? 'starter' : 'form' };
   const title = h ? 'Edit ' + (k === 'asset' ? 'Asset' : 'Liability') : 'New ' + (k === 'asset' ? 'Asset' : 'Liability');
   $('#s-add').innerHTML = `
   <div class="topbar">
@@ -1495,7 +1497,7 @@ function saveHolding(kind, editId) {
   const amount = parseFloat($('#f-amount').value);
   if (!(amount >= 0)) { alert('Enter a value.'); return; }
   createHolding({ name, kind, typeId, tags:(S.formTags || []).slice(), ccy:$('#f-ccy').value,
-    amount, date:$('#f-date').value || TODAY, basis });
+    amount, date:$('#f-date').value || TODAY, basis, via:S.form.via || 'form' });
   (S.formTags || []).forEach(t => { if (!S.tags.includes(t)) S.tags.push(t); });
   /* Back to Home, where the new holding is listed under the total (J1). */
   S.formTags = []; save(); location.hash = '#/home';
@@ -1514,7 +1516,7 @@ function createHolding(o) {
   logIt({ kind:'holding.create', holdingId:h.id, source:'web', client:null, turn:null, before:null, after:{ name:h.name } });
   logIt({ kind:'value.create', holdingId:h.id, valueId:v.id, source:'web', client:null, turn:null,
           before:null, after:{ amount:v.amount, ccy:v.ccy, date:v.date } });
-  fire('holding_created', { source:'web' });
+  fire('holding_created', { source:'web', via:o.via || 'form' });
   fire('value_recorded', { source:'web' });
   return h;
 }

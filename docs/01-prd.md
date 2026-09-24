@@ -4,7 +4,8 @@ Status: **approved by the Founder 2026-09-24** (amended) · Stage owner: Product
 First approved 2026-09-23. Amended and re-approved 2026-09-24: §2 widened from one persona to
 three, §2.3 added jurisdiction packs so the product is not permanently shaped by its first market,
 and §2.4 made the agent a target user with a falsifiable claim behind it. Also changed: §3, §4, J1,
-J2, J8, §8, N10 and N11. What changed and why: **§9.5**.
+J2, J8, §8, N10 and N11. What changed and why: **§9.5**. Further amendments made on the Founder's
+direction at the Stage 2 review (J2 undecided state, G-D1/G-D3, §3.5 `via`): **§9.6**.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -241,15 +242,20 @@ rather than carried (§2.4). A blended reading is never used to kill anything.
 
 Signups are the kill metric and there is no channel yet, so distribution ships as product work:
 
-- **G-D1** A public landing page that states the problem in one screen **in the beachhead's terms**
-  (§2) — *your numbers are stale and your AI can't read them, so the advice you get is generic* —
-  and shows an agent answering a real question from a real balance sheet (screen recording, no
-  audio, no real data).
+- **G-D1** A public landing page that states the problem in one screen **in §2.5's terms** — the
+  widest statement true for all three personas: *you can't get useful advice from an AI that
+  doesn't know where you stand* — with both proofs beneath it: for someone who has never added it
+  up (P-A), and for someone whose numbers are real but stale and unreadable by their AI (P-B, P-C).
+  It shows an agent answering a real question from a real balance sheet (screen recording, no
+  audio, no real data), and it never opens with "you don't know your net worth".
 - **G-D2** NetNet listed wherever MCP clients and users discover connectors (client connector
   directories, public MCP registries and lists).
-- **G-D3** A launch note the Founder can post, without rewriting it, to 3+ communities of people
-  who are **already financially literate** (§2). The targeting criterion is literacy, not reach: a
-  smaller audience that needs no education converts better than a larger one that does.
+- **G-D3** A launch note the Founder can post, without rewriting it, to 3+ communities that
+  **between them reach all three personas** (§2). It leads with §2.5's statement and varies only the
+  proof to suit the audience. Literacy is no longer the filter — §2.1 moved the education cost onto
+  opinionated defaults and the user's agent — but **P-B and P-C carry the kill criteria** (§3.3), so
+  the channel mix must put enough of them in front of the product to make those segments readable.
+  A launch that recruits mostly P-A produces a large, cheerful, unreadable result.
 - **G-D4** Landing and signup-funnel analytics live before launch, so M10 is readable.
 
 Channel selection and posting are Founder work; producing G-D1–G-D4 is in v1 scope.
@@ -259,7 +265,7 @@ Channel selection and posting are Founder work; producing G-D1–G-D4 is in v1 s
 Analytics ranks with the MCP layer as a P1 deliverable. Without these events the launch produces
 no evidence and §3.3 cannot be applied. Minimum event set:
 
-`landing_view` · `signup_started` · `account_created` · `holding_created {source: web|agent}` ·
+`landing_view` · `signup_started` · `account_created` · `holding_created {source: web|agent, via: guided|form|starter}` ·
 `value_recorded {source}` · `agent_connection_started {client}` ·
 `agent_connection_completed {client}` · `agent_connection_failed {step, client}` ·
 `agent_tool_called {tool, kind: read|write, outcome, latency_ms, client}` ·
@@ -270,6 +276,11 @@ no evidence and §3.3 cannot be applied. Minimum event set:
 Every event above also carries **`{segment}`** (`starting_out` / `accumulating` / `established` /
 `unknown`), set at signup and never changed by us. Without it none of §3.2 is readable per segment,
 and §3.3 cannot be applied to the segment it is meant to judge.
+
+`via` is set only when `source` is `web`: **`guided`** for the guided basics (J1), **`starter`** for a
+starting-point tile, **`form`** for the Add form. Without it nothing can say whether guided assembly
+is what gets P-A to M2 — a guided "yes" and a typed holding would be indistinguishable. It carries
+no amounts, so N9 is unaffected.
 
 `kind: read|write` is what makes M7 separable from M4 — without it the premise is unmeasurable.
 `client` is what makes M3 separable by MCP client — without it, one client's broken connector flow
@@ -393,7 +404,8 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** the Add flow, **when** the user creates a **liability**, **then** it contributes
   negatively and net worth = assets − liabilities.
 - **Given** a holding, **when** it is created or edited, **then** how accessible it is is recorded
-  as one of readily accessible / illiquid / locked — this is what stops J8 answering "can you afford
+  as one of readily accessible / illiquid / locked, **or undecided** (below) — this is what stops
+  J8 answering "can you afford
   it" off money the user cannot touch.
 - **Given** any holding type, **when** the user is asked about accessibility, **then** the question
   asks for a **fact they already know** ("do you live here?", "has it vested?"), never for the
@@ -415,6 +427,12 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   home" — and it stays changeable from the holding afterwards.
 - **Given** the Add flow, **when** the user is unsure, **then** accessibility never blocks saving,
   and asking their agent is offered as an alternative to deciding.
+- **Given** a user who answers "Not sure", **when** the holding is saved, **then** it is recorded as
+  **undecided** — a fourth state, never silently resolved to one of the three. An undecided holding
+  **counts toward net worth** but **never toward what the user could use this month**; it is marked
+  as not yet decided wherever it is listed, with a way to decide or to ask their agent; and it is
+  reported to the agent as **incompleteness** in the §2.4 provenance layer, so an affordability
+  answer is qualified rather than quietly built on a guess.
 - **Given** a currency other than the user's default, **when** a value is saved, **then** the entry
   stores the original amount and currency *and* the default-currency conversion with the rate and
   rate date used, both visible on the value row.
@@ -677,6 +695,23 @@ differently from a custom connector added by URL. Stage 3's existing obligation 
 client's requirements now carries more weight, because if free tiers can add custom connectors, P-A
 reaches the core product on day one and the §2.2 risk shrinks considerably. A12 and M11 stand
 regardless — standalone value was chosen for measurement reasons, not only for access reasons.
+
+### 9.6 Amendments at the Stage 2 review — 2026-09-24
+
+Made on the Founder's direction while reviewing the reworked prototype. The Founder decided each
+change; the exact wording is AI-drafted and is flagged for the Founder's reading at the Stage 2 gate
+rather than recorded as separately approved.
+
+12. **J2 names an undecided accessibility state.** J2 required both "recorded as one of three" and
+    "never blocks saving", which cannot both hold for someone who taps Not sure. Undecided counts
+    toward net worth, never toward what can be used this month, is visibly marked, and is reported
+    to the agent as incompleteness — exactly the §2.4 provenance layer's job.
+13. **G-D1 and G-D3 re-worded to §2.5.** Both still spoke to the retired single beachhead ("your
+    numbers are stale"; "already financially literate"). G-D3 now also requires the channel mix to
+    reach P-B and P-C in enough volume, since they carry the kill criteria.
+14. **`via` added to `holding_created`** (§3.5), so guided assembly's contribution to M2 is readable.
+15. **Net Worth Goals stays out of v1**, with nothing to build or test for it. The Tags AND/OR toggle
+    stays.
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves

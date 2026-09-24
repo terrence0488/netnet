@@ -245,29 +245,21 @@ whether the warm paper survives a landing page; and the wordmark, which is still
     doesn't know where you stand* — and carries both proofs beneath it: never added it up, and
     already track it. It names no local institution, because nobody has said where they live yet.
 
-## 7. Decisions I need from you
+## 7. Decisions — status after the Founder's review (2026-09-24)
 
-1. **An "undecided" accessibility state.** J2 says accessibility "is recorded as one of readily
-   accessible / illiquid / locked" *and* that it "never blocks saving". Both cannot hold for a user
-   who taps Not sure, so the prototype stores a fourth state. *Recommend:* amend J2 to name it —
-   counted in net worth, never in what you could use, and reported to the agent as incompleteness
-   (it is exactly the §2.4 provenance layer's job).
-2. **§3.4 still carries the old beachhead.** G-D1 says to state the problem "in the beachhead's
-   terms — *your numbers are stale*", and G-D3 targets communities "already financially literate".
-   Both contradict §2.5, which the prototype follows. *Recommend:* re-word G-D1 and G-D3 to §2.5
-   and re-approve.
-3. **Measuring the guided basics.** `holding_created {source}` cannot tell a guided "yes" from the
-   Add form, so nothing can say whether guided assembly is what gets P-A to M2. *Recommend:* add
-   `{via: guided|form|starter}` to §3.5 (no amounts; N9 unaffected).
-4. **The desktop layout** (carried over). Sidebar plus multi-column Home. *Recommend:* confirm the
-   direction now; Stage 3 prices it and Stage 4 schedules it.
-5. **Three calls carried over from the first review.** Net Worth Goals out of v1 (not needed by any
-   job; edges toward the forward-looking territory §4.2 reserves); value Note and Mark-on-graph kept,
-   with a line added to J3 so Stage 6 tests them; the Tags OR/AND toggle kept. *Recommend:* all three
-   as stated.
-
-The earlier question about accessibility wording is withdrawn: under the amended J2 the words are
-never shown.
+1. **Undecided accessibility state — decided: named in J2** (PRD §9.6 item 12). Undecided counts
+   toward net worth, never toward what could be used this month, is marked "not decided" wherever
+   it is listed, and is reported to the agent as incompleteness. The prototype already behaved this
+   way; the PRD now says so.
+2. **G-D1 and G-D3 — decided: re-worded to §2.5** (§9.6 item 13). The Founder delegated the wording,
+   so it is AI-drafted and flagged for reading at this gate. G-D3 now also requires the launch to
+   reach P-B and P-C in enough volume, since they carry the kill criteria.
+3. **`via` on `holding_created` — decided and built** (§3.5, §9.6 item 14): `guided`, `starter` or
+   `form`, shown in the PROTO drawer. Verified on all three entry paths.
+4. **The desktop layout — open.** The Founder is reviewing the overall UI/UX; this gate waits on it.
+5. **Net Worth Goals — out of v1**, nothing to build or test. **Tags AND/OR — kept.**
+   **Still open:** value **Note** and **Mark on graph** are built but not in the PRD. The
+   recommendation stands — keep them, and add a line to J3 so Stage 6 tests them.
 
 ## 8. Risks and open questions
 

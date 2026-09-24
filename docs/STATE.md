@@ -4,9 +4,9 @@
 Stage: Prototype (rework)
 Phase: n/a
 Status: awaiting-approval
-Next action: Founder reviews `docs/02-prototype/` (ideally tests it with 3–5 people across P-A/B/C,
-script in `prototype-notes.md` §9) and replies `approve prototype` — or gives feedback. Answers to
-`prototype-notes.md` §7 decisions 1–2 change `01-prd.md` and must land before approval.
+Next action: Founder finishes the UI/UX review (`prototype-notes.md` §7 item 4) and decides value
+Note / Mark on graph (§7 item 5), then replies `approve prototype` — or gives feedback. Decisions
+1–3 are applied (PRD §9.6).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -20,12 +20,14 @@ script in `prototype-notes.md` §9) and replies `approve prototype` — or gives
 | P1 | not-started | | |
 
 ## Handoff note (last session)
-Prototype reworked against the amended PRD. J1: sign-up confirms region + optional segment; guided basics
-sit on the empty Home; a first picture (usable / locked-until / owed) appears with no agent. J2: accessibility
-is a pack default + reason, one fact question, or the universal question — consequence shown, never the label;
-"Not sure" saves as an undecided 4th state. §2.3: `02-prototype/packs.js` (SG + generic, data only).
-OPEN at the gate (`prototype-notes.md` §7): #1 undecided state needs a J2 edit; #2 §3.4 G-D1/G-D3 still say
-"beachhead"/"already literate", contradicting §2.5; #3 proposed `{via}` on `holding_created`.
-§2.4 (A13/M12) is still NOT demonstrated — the Agent → Try it screen is a scripted replay. Say so at Stage 3.
-`design-system.md` governs visuals (four components added in §6). No design/scope commentary in the UI.
-Stage 3 still owes: verify MCP connector tier-gating per client (§9.5).
+Stage 2 rework is built (f635106) and awaiting approval. Since then: landing/sign-up no longer squeeze
+into the 232px sidebar track (71f9c1e); and the Founder's gate decisions 1–3 are applied — J2 names an
+undecided accessibility state, G-D1/G-D3 re-worded to §2.5, `via` on `holding_created` (PRD §9.6,
+wording AI-drafted and flagged for the Founder's reading). Net Worth Goals out; Tags AND/OR kept.
+STILL OPEN: desktop layout (Founder reviewing UI/UX) and value Note / Mark on graph.
+The functional suite had gone stale against the rework (it predated J1's return-to-Home and the
+universal t-retirement type) — tests live in the session scratchpad, not the repo, so they do not
+survive sessions. Re-run them before claiming anything passes.
+`design-system.md` governs visuals; never put design or scope commentary in the prototype UI.
+§2.4 (A13/M12) cannot be shown in a clickable prototype — Stage 5/6. Stage 3 owns stack and must
+verify MCP connector tier-gating per client.
