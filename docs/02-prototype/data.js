@@ -81,13 +81,6 @@ const AGENT_WRITES = {
   'h-btc':    { count:2, client:'Claude', turn:'turn-1', at:'2026-08-04T21:40:00Z' },
   'h-cpfoa':  { count:1, client:'Claude', turn:'turn-1', at:'2026-08-04T21:40:09Z' }
 };
-/* Milestone notes — the mockups' "Note" + "Mark on graph" on a value entry. */
-const VALUE_NOTES = {
-  'h-ibkr':   { index:-6, note:'Rebalanced out of bonds', marked:true },
-  'h-house':  { index:-1, note:'Latest valuation from the bank', marked:true },
-  'h-btc':    { index:-9, note:'Moved to cold storage', marked:true }
-};
-
 function buildHoldings() {
   return HOLDING_SPECS.map(spec => {
     const r = rng(hashStr(spec.id));
@@ -107,18 +100,13 @@ function buildHoldings() {
       values.push({
         id: spec.id + '-v' + m, date, amount: rounded, ccy: spec.ccy, rate, rateDate: date,
         base: Math.round(rounded * rate), source: 'web', client: null, turn: null,
-        note: '', marked: false, enteredAt: date + 'T12:00:00Z'
+        enteredAt: date + 'T12:00:00Z'
       });
     }
     const aw = AGENT_WRITES[spec.id];
     if (aw) values.slice(-aw.count).forEach(v => {
       v.source = 'agent'; v.client = aw.client; v.turn = aw.turn; v.enteredAt = aw.at;
     });
-    const vn = VALUE_NOTES[spec.id];
-    if (vn && values.length >= Math.abs(vn.index)) {
-      const v = values[values.length + vn.index];
-      if (v) { v.note = vn.note; v.marked = vn.marked; }
-    }
     return {
       id: spec.id, name: spec.name, kind, typeId: spec.type, tags: spec.tags.slice(),
       ccy: spec.ccy, access: kind === 'liability' ? 'n/a' : null,
@@ -132,7 +120,7 @@ function buildHoldings() {
 /* One archived holding, to prove archive keeps history but leaves the totals (J2). */
 function archivedExtra() {
   const mk = (i, date, amount) => ({ id:'h-sold-v'+i, date, amount, ccy:'SGD', rate:1, rateDate:date,
-    base:amount, source:'web', client:null, turn:null, note:'', marked:false, enteredAt:date+'T12:00:00Z' });
+    base:amount, source:'web', client:null, turn:null, enteredAt:date+'T12:00:00Z' });
   return { id:'h-sold', name:'Syfe Equity100 (closed)', kind:'asset', typeId:'t-listed',
     tags:['Growth'], ccy:'SGD', access:null, accessBasis:{ q:'default' }, cadenceDays:30, archived:true,
     values:[mk(0,'2024-10-01',18400), mk(1,'2025-04-01',21250), mk(2,'2025-08-12',22900)] };

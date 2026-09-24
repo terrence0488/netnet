@@ -710,8 +710,8 @@ rather than recorded as separately approved.
     numbers are stale"; "already financially literate"). G-D3 now also requires the channel mix to
     reach P-B and P-C in enough volume, since they carry the kill criteria.
 14. **`via` added to `holding_created`** (§3.5), so guided assembly's contribution to M2 is readable.
-15. **Net Worth Goals stays out of v1**, with nothing to build or test for it. The Tags AND/OR toggle
-    stays.
+15. **Net Worth Goals, and the value Note and Mark on graph, stay out of v1**, with nothing to build
+    or test for them. All three came from the mockups. The Tags AND/OR toggle stays.
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves

@@ -39,7 +39,7 @@ with one.
 | **J2** track anything | Add Tracking → New Asset / New Liability; Manage Types; Manage Tags | User-defined taxonomy on top of universal types; rename/delete cascades to holdings |
 | **J2** accessibility | Add form, holding page, Home | A fact question only where the type is ambiguous; otherwise the default and its reason in one line, with **Change**. The consequence is shown, never the category. "Not sure" is always allowed and never blocks saving |
 | **§2.3** jurisdiction packs | `packs.js`; Account → General → Where you live | SG pack and generic pack. Switching region relabels every type you have not renamed and re-words every reason, live |
-| **J3** record and correct | Holding detail → Update / Add Value / Edit Value / Delete | Back-dating, same-date warning, note + mark-on-graph |
+| **J3** record and correct | Holding detail → Update / Add Value / Edit Value / Delete | Back-dating, same-date warning |
 | **J4** see the picture | Home: trend, allocation, Position ledger (includes assets-vs-liabilities), baseline, sort, filters | Every % on screen is relative to the chosen baseline. Trend and change figures appear once there is history to show |
 | **J5** connect the agent | Agent tab | Per-client steps, connector URL, no token; connect, fail and revoke all simulated |
 | **J6** agent assembles | Agent → Try it | Scripted turn: finds the existing holding rather than duplicating, then writes |
@@ -257,9 +257,9 @@ whether the warm paper survives a landing page; and the wordmark, which is still
 3. **`via` on `holding_created` — decided and built** (§3.5, §9.6 item 14): `guided`, `starter` or
    `form`, shown in the PROTO drawer. Verified on all three entry paths.
 4. **The desktop layout — open.** The Founder is reviewing the overall UI/UX; this gate waits on it.
-5. **Net Worth Goals — out of v1**, nothing to build or test. **Tags AND/OR — kept.**
-   **Still open:** value **Note** and **Mark on graph** are built but not in the PRD. The
-   recommendation stands — keep them, and add a line to J3 so Stage 6 tests them.
+5. **Net Worth Goals — out of v1**, nothing to build or test. **Tags AND/OR — kept.** **Value Note
+   and Mark on graph — out of scope** (Founder, 2026-09-24): removed from the prototype along with
+   the data they wrote, their seeded examples and the export column, so nothing implies they exist.
 
 ## 8. Risks and open questions
 

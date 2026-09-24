@@ -131,7 +131,6 @@ h1,h2,h3{margin:0;font-weight:600}
 .chip.agent::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;
   background:var(--agent);margin-right:5px;vertical-align:middle}
 .chip.carried{color:var(--ink-3);font-style:italic;letter-spacing:.08em}
-.chip.marked{color:var(--brand-text)}
 .chip.on{color:var(--brand-text)}
 
 /* ---------- controls ---------- */

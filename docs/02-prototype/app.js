@@ -432,9 +432,6 @@ function lineChart(series, o) {
     const area = s.fill ? `<path d="${d} L100 100 L0 100 Z" fill="${s.colour}" opacity=".2"/>` : '';
     return area + `<path class="ln" d="${d}" stroke="${s.colour}" vector-effect="non-scaling-stroke"/>`;
   }).join('');
-  const marks = (o.marks || []).map(m =>
-    `<circle cx="${fx(m.i).toFixed(2)}" cy="${fy(m.y).toFixed(2)}" r="2.6" fill="var(--bg)"
-      stroke="${series[0].colour}" stroke-width="2" vector-effect="non-scaling-stroke"/>`).join('');
   const yl = S.settings.showZeroBounds ? ticks.map(t =>
     `<span class="yt" style="top:${fy(t).toFixed(2)}%">${esc(compact(t))}</span>`).join('') : '';
   const idx = [0, Math.round((pts0.length - 1) / 3), Math.round((pts0.length - 1) * 2 / 3), pts0.length - 1]
@@ -442,7 +439,7 @@ function lineChart(series, o) {
   const xl = idx.map(i => `<span>${esc(new Date(pts0[i].x + 'T00:00:00Z')
     .toLocaleDateString(LOC(), { month:'short', year:'numeric', timeZone:'UTC' }))}</span>`).join('');
   return `<div class="plot" style="height:${h}px;padding-left:${PADL}px">${yl}
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${grid}${body}${marks}</svg></div>
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${grid}${body}</svg></div>
     <div class="axis" style="padding-left:${PADL}px">${xl}</div>`;
 }
 
@@ -829,8 +826,6 @@ function renderHolding(id) {
   const hist = h.values.slice();
   const pts = (months ? hist.filter(x => x.date >= addMonths(TODAY, -months)) : hist)
     .map(x => ({ x:x.date, y:Math.abs(x.base) }));
-  const marks = pts.map((p, i) => ({ i, y:p.y, v:hist.find(x => x.date === p.x) }))
-    .filter(m => m.v && m.v.marked);
 
   const pers = periodsFor(view, [h], 5 + page * 5).slice(page * 5, page * 5 + 5).reverse();
   const ath = hist.reduce((m, x) => !m || Math.abs(x.base) > Math.abs(m.base) ? x : m, null);
@@ -844,9 +839,7 @@ function renderHolding(id) {
     const open = S.expanded === x.id;
     return `<button class="row ${x.source === 'agent' ? 'by-agent' : ''}" data-act="expand-value" data-v="${x.id}">
       <span class="grow"><span class="name">${open ? '▾' : '▸'} ${esc(fmtDate(x.date))}
-        ${x.source === 'agent' ? `<span class="chip agent">${esc(x.client || 'agent')}</span>` : ''}
-        ${x.marked ? '<span class="chip marked">★</span>' : ''}</span>
-        ${x.note ? `<span class="sub">${esc(x.note)}</span>` : ''}</span>
+        ${x.source === 'agent' ? `<span class="chip agent">${esc(x.client || 'agent')}</span>` : ''}</span></span>
       <span class="amt"><b class="num">${esc(money(Math.abs(x.base), null, { cents:true }))}</b>
         ${prev ? `<span class="chg num ${cls(d)}">${esc(pct(p))} ${d >= 0 ? '↑' : '↓'} ${esc(compact(Math.abs(d)))}</span>` : ''}</span>
     </button>
@@ -1509,7 +1502,7 @@ function createHolding(o) {
     access: o.kind === 'liability' ? 'n/a' : accessFromBasis(o.basis, u),
     accessBasis: o.kind === 'liability' ? null : o.basis,
     cadenceDays:30, archived:false, values:[] };
-  const v = { id:uid('v'), date:o.date, amount:o.amount, ccy:o.ccy, note:'', marked:false, source:'web',
+  const v = { id:uid('v'), date:o.date, amount:o.amount, ccy:o.ccy, source:'web',
     client:null, turn:null, enteredAt:new Date().toISOString() };
   recomputeBase(v); h.values.push(v);
   S.holdings.push(h);
@@ -1534,14 +1527,12 @@ function saveValue(hid, vid) {
   if (!(amount >= 0)) { alert('Enter an amount.'); return; }
   const date = $('#v-date').value || TODAY;
   const ccy = $('#v-ccy').value;
-  const note = ($('#v-note').value || '').trim();
-  const marked = $('#v-mark').checked;
   if (vid) {
     const v = h.values.find(x => x.id === vid);
     const before = { amount:v.amount, ccy:v.ccy, date:v.date };
     const wasAgent = v.source === 'agent';
     const age = daysBetween(v.date, TODAY);
-    Object.assign(v, { amount, ccy, date, note, marked });
+    Object.assign(v, { amount, ccy, date });
     recomputeBase(v);
     h.values.sort((a, b) => a.date.localeCompare(b.date));
     logIt({ kind:'value.edit', holdingId:h.id, valueId:v.id, source:'web', client:null, turn:null,
@@ -1551,7 +1542,7 @@ function saveValue(hid, vid) {
     const clash = h.values.find(x => x.date === date);
     if (clash && !confirm('There is already a value on ' + fmtDate(date) +
         '. The newer entry wins and the older one stays in your history. Continue?')) return;
-    const v = { id:uid('v'), date, amount, ccy, note, marked, source:'web', client:null, turn:null,
+    const v = { id:uid('v'), date, amount, ccy, source:'web', client:null, turn:null,
       enteredAt:new Date().toISOString() };
     recomputeBase(v);
     h.values.push(v); h.values.sort((a, b) => a.date.localeCompare(b.date));
@@ -1570,7 +1561,7 @@ function undoEntry(e) {
     const v = h.values.find(x => x.id === e.valueId);
     if (v) { Object.assign(v, e.before); recomputeBase(v); h.values.sort((a, b) => a.date.localeCompare(b.date)); }
   } else if (e.kind === 'value.delete') {
-    h.values.push(Object.assign({ id:e.valueId, source:'web', note:'', marked:false,
+    h.values.push(Object.assign({ id:e.valueId, source:'web', 
       enteredAt:new Date().toISOString() }, e.before));
     const v = h.values[h.values.length - 1]; recomputeBase(v);
     h.values.sort((a, b) => a.date.localeCompare(b.date));
@@ -1632,9 +1623,6 @@ function sheetValue(hid, vid) {
           .map(c => `<option ${c === (v ? v.ccy : h.ccy) ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
       </div>
       <div class="field"><label>As of</label><input id="v-date" type="date" value="${v ? v.date : TODAY}" max="${TODAY}"></div>
-      <div class="field"><label>Note (optional)</label>
-        <textarea id="v-note" maxlength="80" placeholder="e.g. Rebalanced out of bonds">${esc(v ? v.note : '')}</textarea></div>
-      <label class="check"><input type="checkbox" id="v-mark" ${v && v.marked ? 'checked' : ''}> Mark on graph</label>
       ${(v ? v.ccy : h.ccy) !== S.settings.defaultCcy ? `<div class="note" style="margin:14px 0 0">Saved in
         ${esc(v ? v.ccy : h.ccy)} <b>and</b> converted to ${esc(S.settings.defaultCcy)} at today's reference rate.
         Both the rate and its date are kept on the entry and never re-derived later.</div>` : ''}
@@ -1961,7 +1949,7 @@ document.addEventListener('click', ev => {
       if (stepDef && stepDef.write) {
         const h = holdingOf('h-ibkr');
         if (h && !h.values.some(x => x.turn === 'turn-demo')) {
-          const val = { id:uid('v'), date:TODAY, amount:demoIbkrAmount(), ccy:'USD', note:'', marked:false,
+          const val = { id:uid('v'), date:TODAY, amount:demoIbkrAmount(), ccy:'USD', 
             source:'agent', client:'Claude', turn:'turn-demo', enteredAt:new Date().toISOString() };
           recomputeBase(val); h.values.push(val); h.values.sort((a, b) => a.date.localeCompare(b.date));
           logIt({ kind:'value.create', holdingId:h.id, valueId:val.id, source:'agent', client:'Claude',
@@ -2015,9 +2003,9 @@ document.addEventListener('click', ev => {
       let blob, name;
       if (a === 'export') { blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' }); name = 'netnet-export.json'; }
       else {
-        const rows = [['holding','type','tags','kind','accessibility','currency','date','amount','rate','rate_date','default_currency_value','source','note']];
+        const rows = [['holding','type','tags','kind','accessibility','currency','date','amount','rate','rate_date','default_currency_value','source']];
         S.holdings.forEach(h => h.values.forEach(x => rows.push([h.name, typeOf(h.typeId).name, h.tags.join('|'),
-          h.kind, h.access, x.ccy, x.date, x.amount, x.rate, x.rateDate, x.base, x.source, x.note])));
+          h.kind, h.access, x.ccy, x.date, x.amount, x.rate, x.rateDate, x.base, x.source])));
         blob = new Blob([rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')], { type:'text/csv' });
         name = 'netnet-export.csv';
       }
