@@ -1,46 +1,33 @@
 # Project State
 
 ## Current
-Stage: PRD (re-opened) → then Prototype
+Stage: Prototype (rework)
 Phase: n/a
-Status: awaiting-approval
-Next action: Founder re-approves `docs/01-prd.md` §9.5 (the §2 widening). The Prototype gate is
-blocked behind it — the workflow requires learnings to land in 01-prd.md before Stage 2 is approved,
-and the prototype does not yet show the new J1/J2 behaviour.
+Status: in-progress
+Next action: `continue` — rework `docs/02-prototype/` for the amended J1, J2 and §2.3, then present
+the Stage 2 gate.
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
 |---|---|---|---|
-| Discovery | **approved** | 2026-09-23 | `docs/00-discovery.md`; §1/§3/§4 reframed same day, re-confirmed with the PRD approval |
-| PRD | **awaiting re-approval** | 2026-09-24 | Approved 2026-09-23; §2 widened to three personas 2026-09-24 → §9.5 |
-| Prototype | **blocked** | 2026-09-24 | Built and design-systemed, but must show the amended J1/J2 before it can be approved |
+| Discovery | **approved** | 2026-09-23 | `docs/00-discovery.md`; §1/§3/§4 reframed same day |
+| PRD | **approved** | 2026-09-23 | Original, single-beachhead version |
+| PRD (amended) | **approved** | 2026-09-24 | Three personas, jurisdiction packs, agent as a user → `01-prd.md` §9.5 |
+| Prototype | in-progress | | Built and design-systemed; must show amended J1/J2/§2.3 before its gate |
 | Architecture | not-started | | |
 | Plan | not-started | | |
 | P1 | not-started | | |
 
 ## Handoff note (last session)
-THE PRD WAS RE-OPENED. Read `docs/01-prd.md` §9.5 first — §2 was widened from one beachhead to
-three personas (P-A starting out, P-B accumulating, P-C established) on the Founder's decision, and
-that cascaded into §3 (per-segment metrics, new M11), §4.1, J1, J2 and §8. The PRD is NOT approved
-in its amended form. Stage 2 is blocked behind that re-approval.
-The trigger was small and worth remembering: the accessibility dropdown asked users to classify a
-property as illiquid or locked, which is unanswerable unless you know whether they live in it. The
-fix generalised into the new organising principle in §2.1 — NetNet does not teach; it is opinionated,
-asks for facts rather than categories, and routes real judgement to the user's agent.
-Second principle, §2.2: the app must be worth using BEFORE an agent is connected (A12 / M11).
-Chosen for measurement reasons — otherwise P-A's poor numbers read as A1/A4 being wrong.
-ALSO IN THE AMENDMENT: §2.3 + N10 — jurisdiction packs. Being opinionated is inherently local, so
-"opinions about the interaction" (universal) and "opinions about the world" (per-market data) are
-kept apart. Types are universal, only labels are local: ship a mandatory-retirement type, NOT "CPF".
-v1 = machinery + SG pack + a first-class generic pack; further markets are data files, no release.
-AND §2.4 — THE AGENT IS A TARGET USER, and the real bet: NetNet + agent must beat the same data
-uploaded as a spreadsheet, on a WEAK model (A13, M12, a blind paired eval). Context carries four
-layers: arithmetic done, per-holding meaning, provenance/completeness, answer shape. Two constraints
-are binding — dense and ordered never comprehensive (bloat degrades weak models and breaks N1), and
-facts/uncertainty never judgement (§8, N2). N11 keeps it deterministic so it costs nothing.
-Moat is the CAPTURE (§2.1, §2.3) and history — the compute itself is replicable.
-CORRECTED IN §9.5: I claimed custom MCP connectors were paid-tier only. The Founder connects several
-MCP servers on free ChatGPT. Do not repeat that claim; Stage 3 verifies it.
-NEXT after re-approval: rework the prototype for amended J1/J2 (guided assembly, fact-based
-accessibility, standalone Home answers), then the Stage 2 gate.
-WATCH OUT: Stage 3 still owns framework, hosting and data. `design-system.md` governs all visuals.
+PRD approved as amended 2026-09-24 — read `01-prd.md` §9.5 first; it lists all four changes.
+Stage 2 is NOT at its gate yet. The prototype still contradicts the amended PRD on screen: it asks
+"How accessible is it?" as a three-way classification, which J2 now forbids.
+REWORK NEEDED before the gate: J1 guided assembly + a first picture that states something the user
+did not type; J2 fact-based accessibility with pack-supplied reasons, shown as consequence not
+label, never blocking save; §2.3 an SG pack and a first-class generic pack, as data.
+`design-system.md` governs every visual decision — read it before touching styles.
+NEVER put design or scope commentary in the prototype UI (notes §4 item 17).
+§2.4 (context lift, A13/M12) CANNOT be demonstrated in a clickable prototype — it needs a real MCP
+server, so it is Stage 5/6. Do not let the Stage 2 gate imply that bet has been validated.
+WATCH OUT: Stage 3 owns framework, hosting and data, and must verify MCP connector tier-gating per
+client — my earlier claim that custom connectors are paid-only was wrong (§9.5).

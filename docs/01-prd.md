@@ -1,9 +1,10 @@
 # 01 — Product Requirements (PRD)
 
-Status: **amended 2026-09-24 — awaiting Founder re-approval** · Stage owner: Product manager
-Approved 2026-09-23; §2 widened from one persona to three on 2026-09-24, §2.3 added jurisdiction packs so the product is not permanently
-shaped by its first market, and §2.4 made the agent a target user with a falsifiable claim behind
-it. Also changed: §3, §4, J1, J2, J8, §8, N10 and N11. What changed and why: **§9.5**. AI never marks its own work approved.
+Status: **approved by the Founder 2026-09-24** (amended) · Stage owner: Product manager
+First approved 2026-09-23. Amended and re-approved 2026-09-24: §2 widened from one persona to
+three, §2.3 added jurisdiction packs so the product is not permanently shaped by its first market,
+and §2.4 made the agent a target user with a falsifiable claim behind it. Also changed: §3, §4, J1,
+J2, J8, §8, N10 and N11. What changed and why: **§9.5**.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -632,8 +633,8 @@ defer Insights (§4.1, J11).
 
 ### 9.5 Decisions taken 2026-09-24 — the §2 widening
 
-Founder decision, overturning the single-beachhead choice made at the 2026-09-23 gate. **This
-section needs Founder re-approval before Stage 2 can be approved.**
+Founder decision, overturning the single-beachhead choice made at the 2026-09-23 gate.
+**Approved by the Founder 2026-09-24.**
 
 5. **v1 targets three personas** (§2), not one. The expansion ladder is retired: its step 4 — the
    broad market who do not know what they are worth — is now P-A and in scope. §1 always described
