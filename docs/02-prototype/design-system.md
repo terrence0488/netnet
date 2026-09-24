@@ -1,6 +1,7 @@
 # NetNet Design System — v1
 
-Status: **awaiting Founder review** (chosen 2026-09-23, direction V2 "Two Inks")
+Status: **awaiting Founder review** (chosen 2026-09-23, direction V2 "Two Inks"; four components
+added 2026-09-24 for the amended J1/J2 — §6)
 Owner: Product designer · Stage 2
 
 > This is the design system, not a style guide written after the fact. It is the thing the
@@ -205,6 +206,10 @@ Built by us, because they carry the brand:
 | **Segmented control** | Ours: it carries brand and appears on data screens. |
 | **Button** | Ours. `brand` fill, paper-coloured text; secondary is ruled, not filled. |
 | **Empty state** | Typographic. A sentence and one action, never an illustration. |
+| **Position ledger** | Figure rows as a ledger: bucket in `body`, what is in it in `meta` beneath, amount in Fraunces; a `rule-strong` hairline above the subtotal, whose name is a `label`. How the first picture is set (PRD J1). |
+| **Choice row** | Answers to a fact question. Short answers: ruled buttons in `label` caps; the chosen one takes a `brand` rule, not a fill. Sentence answers: a stacked list of rows, the chosen one marked by a 3px `brand` bar. Never pills. |
+| **Consequence line** | `body-sm` in `ink-2`; the consequence in `ink` 600, the amount in Fraunces, the pack's reason after an em dash, then a `label`-scale **Change** link. States money, never a category (PRD J2). |
+| **Amount entry** | The one place a number is *typed* at display size: Fraunces 600 · 30px on a single hairline that turns `brand` on focus, currency symbol in `ink-3`. Money is typeset the same way whether it is shown or entered. |
 
 Deferred to the platform, per the Founder's "brand chrome, native controls" decision:
 

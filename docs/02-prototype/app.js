@@ -3,8 +3,8 @@
    Stack decisions belong to Stage 3. */
 
 /* ================= state ================= */
-const LS = 'netnet-proto-v2';
-let S = load();
+const LS = 'netnet-proto-v3';
+let S = null;   // loaded at the bottom of this file, once every helper exists
 
 function load() {
   try { const raw = localStorage.getItem(LS); if (raw) return JSON.parse(raw); } catch (e) {}
@@ -21,6 +21,10 @@ function reset(mode) {
 /* The audit log (J7) is built FROM the value history, so every row on screen has
    a log entry behind it rather than the log being a separate fiction. */
 function hydrate(s) {
+  s.holdings.forEach(h => {
+    if (h.kind === 'asset' && !h.access)
+      h.access = accessFromBasis(h.accessBasis, universalOf(h.typeId, s), PACKS[s.account.pack]);
+  });
   const log = [];
   s.holdings.forEach(h => {
     log.push({ id:'lg-c-'+h.id, at:h.values[0] ? h.values[0].enteredAt : TODAY+'T12:00:00Z',
@@ -50,38 +54,127 @@ function hydrate(s) {
    Names, counts and timings only — never amounts or holding names (N9).
    The PROTO drawer shows the stream so the event contract is reviewable now. */
 function fire(name, props) {
-  S.events.unshift({ name, props:props||{}, at:new Date().toISOString() });
+  props = Object.assign({}, props || {}, { segment:(S.account && S.account.segment) || 'unknown' });
+  S.events.unshift({ name, props, at:new Date().toISOString() });
   if (S.events.length > 150) S.events.pop();
-  console.log('[event]', name, props || {});
+  console.log('[event]', name, props);
   save();
 }
 
 /* ================= helpers ================= */
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const typeOf = id => S.types.find(t => t.id === id) || { id:'t-general', name:'General', colour:'#94a3b8' };
 const holdingOf = id => S.holdings.find(h => h.id === id);
 const uid = p => p + '-' + Math.random().toString(36).slice(2, 9);
 
+/* ---- jurisdiction packs (§2.3). The flow reads the world ONLY through these. ---- */
+const pack = () => PACKS[(S && S.account && S.account.pack) || 'generic'] || PACKS.generic;
+function packVal(section, key) {
+  const p = pack(), g = PACKS.generic;
+  if (p[section] && p[section][key] != null) return p[section][key];
+  return g[section] ? g[section][key] : undefined;
+}
+const packList = section => pack()[section] || PACKS.generic[section];
+const regionOf = code => REGIONS.find(r => r.code === code) || null;
+const LIAB = UNIVERSAL_TYPES.filter(u => u.side === 'liability').map(u => u.id);
+
+/* A type shows the user's own name if they renamed it, else the pack's label. */
+const typeName = t => t.name || packVal('labels', t.universal) || 'Other';
+function typeOf(id) {
+  const t = S.types.find(x => x.id === id) || { id:'t-other', universal:'other', name:null };
+  return Object.assign({}, t, { name:typeName(t) });
+}
+const universalOf = (typeId, s) => ((s || S).types.find(t => t.id === typeId) || { universal:'other' }).universal;
+function typeForUniversal(u) {
+  let t = S.types.find(x => x.universal === u && !x.name) || S.types.find(x => x.universal === u);
+  if (!t) { t = { id:uid('t'), universal:u, name:null }; S.types.push(t); }
+  return t;
+}
+
+/* ---- accessibility (J2). Stored as accessible / illiquid / locked, plus 'unset'
+   when the user has not decided — saving is never blocked. The category names
+   are the data model; the user only ever sees a fact question and a consequence. */
+function accessRule(u, pk) {
+  for (const src of [pk || pack(), PACKS.generic]) {
+    if (src.defaults && src.defaults[u]) return { fixed:src.defaults[u] };
+    if (src.questions && src.questions[u]) return { q:u, question:src.questions[u] };
+  }
+  return { q:'other', question:packVal('questions', 'other') };
+}
+const questionFor = q => packVal('questions', q);
+function answerFor(basis) {
+  if (!basis || !basis.q) return null;
+  if (basis.q === 'default') return null;
+  const qu = questionFor(basis.q);
+  return qu ? qu.answers.find(a => a.id === basis.a) || null : null;
+}
+function accessFromBasis(basis, u, pk) {
+  if (!basis || basis.q === 'unset') return 'unset';
+  if (basis.q === 'default') { const r = accessRule(u, pk); return r.fixed ? r.fixed.access : 'unset'; }
+  const a = answerFor(basis);
+  return a ? a.access : 'unset';
+}
+/* The one-line stated reason, always read from the CURRENT pack, so a region
+   change re-words it. Returns { reason, until } or null when undecided. */
+function reasonFor(h) {
+  const b = h.accessBasis;
+  if (!b || b.q === 'unset') return null;
+  if (b.q === 'default') {
+    const u = universalOf(h.typeId);
+    const r = (pack().defaults || {})[u] || (PACKS.generic.defaults || {})[u];
+    return r ? { reason:r.reason, until:r.until } : { reason:'you set this when you added it' };
+  }
+  const a = answerFor(b);
+  return a ? { reason:a.reason, until:a.until } : null;
+}
+/* The consequence, never the label: "counts toward the $X you could use this month". */
+function consequence(access, reason, usable) {
+  const tail = reason ? ' — ' + esc(reason) + '.' : '.';
+  const X = `<span class="amount">${esc(money(usable))}</span>`;
+  if (access === 'accessible') return `<b>Counts toward the ${X} you could use this month</b>${tail}`;
+  if (access === 'illiquid' || access === 'locked')
+    return `<b>Counts toward your net worth, not the ${X} you could use this month</b>${tail}`;
+  return `<b>Counts toward your net worth.</b> Not toward the ${X} you could use this month until you decide.`;
+}
+
+/* ---- conventions: the pack's, or the browser's own for the generic pack ---- */
+function LOC() {
+  const p = pack();
+  try { return p.locale || navigator.language || 'en-GB'; } catch (e) { return 'en-GB'; }
+}
+const FMT = {};
+function nf(ccy, d) {
+  const k = LOC() + ccy + d;
+  if (!FMT[k]) {
+    try { FMT[k] = new Intl.NumberFormat(LOC(), { style:'currency', currency:ccy, currencyDisplay:'narrowSymbol',
+            minimumFractionDigits:d, maximumFractionDigits:d }); }
+    catch (e) { FMT[k] = new Intl.NumberFormat('en-GB', { style:'currency', currency:ccy,
+            minimumFractionDigits:d, maximumFractionDigits:d }); }
+  }
+  return FMT[k];
+}
+function sym(ccy) {
+  const part = nf(ccy || S.settings.defaultCcy, 0).formatToParts(0).find(x => x.type === 'currency');
+  return part ? part.value : '$';
+}
 function money(n, ccy, o) {
   o = o || {};
-  const abs = Math.abs(n);
+  const c = ccy || S.settings.defaultCcy;
   const d = o.decimals != null ? o.decimals : (o.cents ? 2 : 0);
-  const s = abs.toLocaleString('en-SG', { minimumFractionDigits:d, maximumFractionDigits:d });
-  return (n < 0 ? '−' : (o.signed && n > 0 ? '+' : '')) + '$' + s + (o.ccy ? ' ' + (ccy || S.settings.defaultCcy) : '');
+  return (n < 0 ? '−' : (o.signed && n > 0 ? '+' : '')) + nf(c, d).format(Math.abs(n)) + (o.ccy ? ' ' + c : '');
 }
 function compact(n) {
-  const a = Math.abs(n), sign = n < 0 ? '−' : '';
-  if (a >= 1e6) return sign + '$' + (a / 1e6).toFixed(2).replace(/\.00$/, '') + 'M';
-  if (a >= 1e3) return sign + '$' + Math.round(a / 1e3) + 'K';
-  return sign + '$' + Math.round(a);
+  const a = Math.abs(n), sign = n < 0 ? '−' : '', $ = sym();
+  if (a >= 1e6) return sign + $ + (a / 1e6).toFixed(2).replace(/\.00$/, '') + 'M';
+  if (a >= 1e3) return sign + $ + Math.round(a / 1e3) + 'K';
+  return sign + $ + Math.round(a);
 }
 function compactSigned(n) { return (n > 0 ? '+' : '') + compact(n); }
 const pct = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toFixed(2) + '%';
 const cls = n => n > 0 ? 'pos' : n < 0 ? 'neg' : 'muted';
-const fmtDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-SG', { day:'numeric', month:'short', year:'numeric', timeZone:'UTC' });
-const fmtDT = iso => new Date(iso).toLocaleDateString('en-SG', { day:'numeric', month:'short', year:'numeric' }) +
-  ', ' + new Date(iso).toLocaleTimeString('en-SG', { hour:'numeric', minute:'2-digit' });
+const fmtDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString(LOC(), { day:'numeric', month:'short', year:'numeric', timeZone:'UTC' });
+const fmtDT = iso => new Date(iso).toLocaleDateString(LOC(), { day:'numeric', month:'short', year:'numeric' }) +
+  ', ' + new Date(iso).toLocaleTimeString(LOC(), { hour:'numeric', minute:'2-digit' });
 function ago(d) {
   const n = daysBetween(d, TODAY);
   if (n < 1) return 'today';
@@ -91,12 +184,6 @@ function ago(d) {
   const y = n / 365;
   return 'about ' + (y < 1.5 ? 'a year' : Math.round(y) + ' years') + ' ago';
 }
-const ACCESS = {
-  accessible:{ label:'Readily accessible', hint:'I could use it this month' },
-  illiquid:  { label:'Illiquid',           hint:"I'd have to sell it first" },
-  locked:    { label:'Locked',             hint:'CPF, unvested, or otherwise untouchable' },
-  'n/a':     { label:'—',                  hint:'' }
-};
 
 /* ================= core computation ================= */
 function valueAsOf(h, dateStr) {
@@ -189,16 +276,19 @@ function changeFor(h) {
            pct: b.value ? ((now - b.value) / Math.abs(b.value)) * 100 : 0, exact:b.exact };
 }
 function totals(list) {
-  let now = 0, base = 0, assets = 0, liabilities = 0, accessible = 0, exact = true;
+  let now = 0, base = 0, assets = 0, liabilities = 0, exact = true;
+  const by = { accessible:0, illiquid:0, locked:0, unset:0 };
   list.forEach(h => {
     const c = changeFor(h);
     now += c.now; base += c.base; if (!c.exact) exact = false;
     if (h.kind === 'liability') liabilities += Math.abs(c.now);
-    else { assets += c.now; if (h.access === 'accessible') accessible += c.now; }
+    else { assets += c.now; by[by[h.access] != null ? h.access : 'unset'] += c.now; }
   });
   return { now, base, abs:now - base, pct: base ? ((now - base) / Math.abs(base)) * 100 : 0,
-           assets, liabilities, accessible, exact };
+           assets, liabilities, accessible:by.accessible, illiquid:by.illiquid, locked:by.locked,
+           unset:by.unset, exact };
 }
+const usableNow = () => totals(S.holdings.filter(h => !h.archived)).accessible;
 const isStale = h => {
   const v = latest(h);
   return !v || daysBetween(v.date, TODAY) > Math.max(45, (h.cadenceDays || 30) * 1.6);
@@ -230,7 +320,7 @@ function periodStart(view, end) {
 function periodLabel(view, end, short) {
   const d = new Date(end + 'T00:00:00Z');
   if (view === 'monthly') return short ? (d.getUTCMonth() + 1) + '-' + d.getUTCFullYear()
-    : d.toLocaleDateString('en-SG', { month:'long', year:'numeric', timeZone:'UTC' });
+    : d.toLocaleDateString(LOC(), { month:'long', year:'numeric', timeZone:'UTC' });
   if (view === 'quarterly') return 'Q' + (Math.floor(d.getUTCMonth() / 3) + 1) + '/' + d.getUTCFullYear();
   return String(d.getUTCFullYear());
 }
@@ -350,7 +440,7 @@ function lineChart(series, o) {
   const idx = [0, Math.round((pts0.length - 1) / 3), Math.round((pts0.length - 1) * 2 / 3), pts0.length - 1]
     .filter((v, i, a) => a.indexOf(v) === i);
   const xl = idx.map(i => `<span>${esc(new Date(pts0[i].x + 'T00:00:00Z')
-    .toLocaleDateString('en-SG', { month:'short', year:'numeric', timeZone:'UTC' }))}</span>`).join('');
+    .toLocaleDateString(LOC(), { month:'short', year:'numeric', timeZone:'UTC' }))}</span>`).join('');
   return `<div class="plot" style="height:${h}px;padding-left:${PADL}px">${yl}
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${grid}${body}${marks}</svg></div>
     <div class="axis" style="padding-left:${PADL}px">${xl}</div>`;
@@ -464,6 +554,7 @@ function renderHome() {
   if (!S.holdings.filter(h => !h.archived).length) { $('#s-home').innerHTML = emptyHome(); return; }
   const list = homeHoldings();
   const t = totals(list);
+  const hasHistory = list.some(h => h.values.length > 1);
   const months = rangeMonths(S.settings.range);
   const first = earliestDate(list);
   const span = months || (first ? Math.max(2, Math.ceil(daysBetween(first, TODAY) / 30)) : 12);
@@ -484,10 +575,11 @@ function renderHome() {
         <span class="sub">${esc(typeOf(h.typeId).name)}
           ${byAgent ? ` · <span class="chip agent">${esc(v.client || 'agent')}</span>` : ''}
           ${isStale(h) ? ' · <span class="chip stale">stale</span>' : ''}
+          ${h.kind === 'asset' && h.access === 'unset' ? ' · <span class="chip stale">not decided</span>' : ''}
           ${v ? ' · ' + esc(ago(v.date)) : ' · no value yet'}</span>
       </span>
       <span class="amt"><b>${h.kind === 'liability' ? '−' : ''}${esc(money(Math.abs(c.now)))}</b>
-        <span class="chg ${cls(c.abs)}">${esc(pct(c.pct))} ${c.abs >= 0 ? '↑' : '↓'} ${esc(compact(Math.abs(c.abs)))}</span></span>
+        ${hasHistory ? `<span class="chg ${cls(c.abs)}">${esc(pct(c.pct))} ${c.abs >= 0 ? '↑' : '↓'} ${esc(compact(Math.abs(c.abs)))}</span>` : ''}</span>
     </button>`;
   }).join('');
 
@@ -505,26 +597,23 @@ function renderHome() {
   <div class="nw-wrap">
     <div class="label">${homeFiltered() ? 'Filtered total' : 'Net worth'}</div>
     <div class="nw">${esc(money(t.now, null, { cents:true }))}</div>
-    <div class="nw-chg"><span class="num ${cls(t.abs)}">${esc(money(t.abs, null, { signed:true }))}
+    <div class="lead">${leadLine(t)}</div>
+    ${hasHistory ? `<div class="nw-chg"><span class="num ${cls(t.abs)}">${esc(money(t.abs, null, { signed:true }))}
       &nbsp; ${esc(pct(t.pct))}</span> &nbsp;·&nbsp; vs ${esc(baselineLabel().toLowerCase())}</div>
     <button class="baseline-btn" data-act="open-baseline">Change comparison</button>
-    ${!t.exact ? '<div class="field"><div class="hint">Some holdings pre-date this baseline; their first recorded value is used.</div></div>' : ''}
+    ${!t.exact ? '<div class="field"><div class="hint">Some holdings pre-date this baseline; their first recorded value is used.</div></div>' : ''}` : ''}
   </div>
+
+  ${guideBlock()}
 
   <div class="grid">
     <div class="g5">
       <div class="section-h"><h2>Position</h2></div>
-      <div class="card">
-        <div class="kv"><span>Assets</span><b class="amount">${esc(money(t.assets))}</b></div>
-        <div class="kv"><span>Liabilities</span><b class="amount neg">−${esc(money(t.liabilities)).replace('−','')}</b></div>
-        <div class="kv"><span>Readily accessible</span><b class="amount">${esc(money(t.accessible))}</b></div>
-      </div>
-      <div class="note">What you could actually use this month — it leaves out CPF, the flat and unvested
-        equity. It is what stops your agent answering “can I afford this” off money you can’t touch.</div>
+      ${positionLedger(list, t)}
 
-      <div class="section-h"><h2>Allocation</h2>
-        <button class="link" data-act="pie-mode" data-v="${S.settings.pieMode === '$' ? '%' : '$'}">${S.settings.pieMode === '$' ? 'Show %' : 'Show $'}</button></div>
-      <div class="card">${allocationList(segs, S.settings.pieMode)}</div>
+      ${segs.length > 1 ? `<div class="section-h"><h2>Allocation</h2>
+        <button class="link" data-act="pie-mode" data-v="${S.settings.pieMode === '$' ? '%' : '$'}">${S.settings.pieMode === '$' ? 'Show %' : 'Show ' + esc(sym())}</button></div>
+      <div class="card">${allocationList(segs, S.settings.pieMode)}</div>` : ''}
 
       ${stale ? `<div class="note warn"><b>${stale} holding${stale > 1 ? 's have' : ' has'} gone stale.</b>
         Ask your agent to refresh ${stale > 1 ? 'them' : 'it'}.
@@ -534,11 +623,11 @@ function renderHome() {
     </div>
 
     <div class="g7">
-      <div class="card">
+      ${hasHistory ? `<div class="card">
         ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:150 })}
         <div class="rangebar">${HOME_RANGES.map(([l, v]) =>
           `<button data-act="set-range" data-v="${v}" class="${S.settings.range === v ? 'on' : ''}">${l}</button>`).join('')}</div>
-      </div>
+      </div>` : ''}
 
       <div class="section-h"><h2>Holdings · ${list.length}</h2>
         <button class="link" data-act="open-sort">${esc(sortLabel())}</button></div>
@@ -548,26 +637,145 @@ function renderHome() {
   </div>`;
 }
 
+/* The first picture (J1, §2.2): one thing the user did not type, under the total. */
+function leadLine(t) {
+  const X = v => `<span class="amount">${esc(money(v))}</span>`;
+  if (t.assets <= 0) return t.liabilities > 0 ? `You owe ${X(t.liabilities)}, and nothing you own is listed yet.` : '';
+  if (t.accessible <= 0) return 'None of it is money you could use this month.';
+  if (t.accessible >= t.assets) return `All ${X(t.accessible)} of what you own is money you could use this month.`;
+  return t.now > 0 ? `You could use ${X(t.accessible)} of it this month.` : `You could use ${X(t.accessible)} this month.`;
+}
+
+/* Position as a ledger: what you could use, what needs selling, what is locked
+   and until when, what is undecided, and what you owe against it (J1, J4). */
+function positionLedger(list, t) {
+  const assets = list.filter(h => h.kind === 'asset');
+  const names = hs => {
+    const n = hs.map(h => esc(h.name));
+    return n.length > 3 ? n.slice(0, 3).join(' · ') + ' · +' + (n.length - 3) + ' more' : n.join(' · ');
+  };
+  const inBucket = a => assets.filter(h => (h.access || 'unset') === a);
+  const lockedLine = () => {
+    const groups = [];
+    inBucket('locked').forEach(h => {
+      const r = reasonFor(h) || {};
+      const key = r.until ? typeOf(h.typeId).name + ' ' + r.until : h.name;
+      if (!groups.includes(key)) groups.push(key);
+    });
+    return groups.map(esc).join(' · ');
+  };
+  const owedLine = () => {
+    const n = names(list.filter(h => h.kind === 'liability'));
+    if (!t.accessible) return n + ' · with nothing you could use this month against it';
+    const r = t.liabilities / t.accessible;
+    return n + ' · ' + (r >= 1 ? r.toFixed(1) + '× what you could use this month'
+                                : Math.round(r * 100) + '% of what you could use this month');
+  };
+  const row = (label, amount, sub, extra) => `<div class="lg-row${extra ? ' ' + extra : ''}">
+      <span class="grow"><span class="t">${label}</span>${sub ? `<span class="s">${sub}</span>` : ''}</span>
+      <b class="amount${amount < 0 ? ' neg' : ''}">${esc(money(amount))}</b></div>`;
+  return `<div class="card flush ledger">
+    ${row('You could use this month', t.accessible, names(inBucket('accessible')) || 'Nothing yet')}
+    ${t.illiquid ? row('You’d have to sell first', t.illiquid, names(inBucket('illiquid'))) : ''}
+    ${t.locked ? row('Locked away', t.locked, lockedLine()) : ''}
+    ${t.unset ? row('Not decided yet', t.unset, 'Won’t count toward what you could use until you decide · ' + names(inBucket('unset'))) : ''}
+    ${row('Assets', t.assets, '', 'total')}
+    ${t.liabilities ? row('You owe', -t.liabilities, owedLine()) : ''}
+  </div>`;
+}
+
+/* ---- guided assembly (J1, P-A). Not a wizard: it sits on Home, every "yes"
+   is saved the moment it is answered, and stopping loses nothing. ---- */
+function guideCovered(item) {
+  return S.holdings.some(h => !h.archived && universalOf(h.typeId) === item.u &&
+    (!item.answer || (h.accessBasis && h.accessBasis.a === item.answer)));
+}
+function guideCurrent() {
+  const items = packList('checklist');
+  for (let i = S.guide.i || 0; i < items.length; i++) {
+    if (S.guide.answered[i] || guideCovered(items[i])) continue;
+    return { item:items[i], idx:i, total:items.length };
+  }
+  return null;
+}
+function guideBlock() {
+  const g = S.guide;
+  if (!g || g.done) return '';
+  const cur = guideCurrent();
+  const last = g.last && holdingOf(g.last);
+  const lastLine = last ? `<div class="guide-last">Added <b>${esc(last.name)}</b>,
+      <span class="amount">${esc(money(Math.abs(latest(last).base)))}</span>.
+      ${last.kind === 'asset' ? consequence(last.access, (reasonFor(last) || {}).reason, usableNow())
+        : 'Subtracted from your net worth.'}</div>` : '';
+  if (!cur) {
+    /* The list is finished: confirm the last answer once, then step aside. */
+    g.done = true; save();
+    return lastLine ? `<div class="guide">${lastLine}</div>` : '';
+  }
+  const { item, idx, total } = cur;
+  const conns = (S.account.connections || []).filter(c => c.active);
+  return `<div class="guide" id="guide">
+    ${lastLine}
+    <div class="section-h"><h2>The basics · ${idx + 1} of ${total}</h2>
+      <button class="link" data-act="guide-stop">Stop here</button></div>
+    ${g.stage === 'amount' ? `
+      <div class="guide-q">${esc(item.amount)}</div>
+      <div class="amt-in"><span>${esc(sym())}</span>
+        <input id="g-amount" type="number" inputmode="decimal" min="0" placeholder="0" aria-label="${esc(item.amount)}">
+        <button class="btn auto" data-act="guide-add">Add</button></div>
+      <div class="hint">${esc(item.hint || 'A round number is fine. You can correct it any time.')}</div>
+      <button class="link-sm" data-act="guide-back">‹ Back</button>`
+    : `
+      <div class="guide-q">${esc(item.ask)}</div>
+      <div class="choice"><button data-act="guide-yes">Yes</button><button data-act="guide-no">No</button></div>`}
+    ${!conns.length ? `<div class="guide-alt">Rather have your agent do this?
+      <button class="link-sm" data-go="#/agent">Connect it</button></div>` : ''}
+  </div>`;
+}
+
+function guideAdd() {
+  const cur = guideCurrent();
+  const el = $('#g-amount');
+  if (!cur || !el) return;
+  const amount = parseFloat(el.value);
+  if (!(amount >= 0)) { el.classList.add('bad'); el.focus(); return; }
+  const { item, idx } = cur;
+  const kind = LIAB.includes(item.u) ? 'liability' : 'asset';
+  const t = typeForUniversal(item.u);
+  /* A fact folded into the checklist question ("the home you live in") is
+     recorded as that fact's answer; otherwise the type's usual default. */
+  const basis = kind === 'liability' ? null
+    : item.answer ? { q:item.u, a:item.answer } : (startingBasis(t.id) || { q:'unset' });
+  const h = createHolding({ name:item.name, kind, typeId:t.id, ccy:S.settings.defaultCcy,
+    amount, date:TODAY, basis });
+  Object.assign(S.guide, { i:idx + 1, stage:'ask', last:h.id });
+  S.guide.answered[idx] = 'yes';
+  save(); render(true);
+  const g = $('#guide');
+  if (g && g.getBoundingClientRect().top < 0) g.scrollIntoView({ block:'start' });
+}
+
 function emptyHome() {
+  const g = S.guide || {};
+  const starters = packList('starters');
   return `
   <div class="topbar">
     <div class="avatar">${esc(S.account.initials || '·')}</div>
     <div class="greet"><small>${esc(greeting())}</small><b>${esc(S.account.name || 'there')}</b></div>
     <button class="iconbtn" data-act="open-add-menu">${ICON.plus}</button>
   </div>
-  <div class="nw-wrap" style="padding:20px 0 6px">
-    <div class="nw-label">Your total net worth is</div>
-    <div class="nw num muted">$0.00</div>
-    <div class="muted" style="font-size:13px">Nothing tracked yet.</div>
+  <div class="nw-wrap">
+    <div class="label">Net worth</div>
+    <div class="nw muted">${esc(money(0, null, { cents:true }))}</div>
+    <div class="lead">Nothing here yet.</div>
   </div>
-  <div class="btn-row"><button class="btn" data-act="open-add-menu">+ Add your first holding</button></div>
+  ${g.done || !guideCurrent() ? `<div class="btn-row"><button class="btn" data-act="guide-resume">Walk me through the basics</button></div>`
+    : guideBlock()}
   <div class="grid">
     <div class="g7">
-      <div class="section-h"><h2>Or start from one of these</h2></div>
+      <div class="section-h"><h2>Or add something specific</h2></div>
       <div class="pad"><div class="cats">
-        ${[['Cash','t-cash','Bank accounts'],['CPF','t-cpf','OA, SA, MA'],['Property','t-prop','Home or investment'],
-           ['Stocks','t-stocks','Brokerage, funds'],['Automobile','t-auto','Car, COE'],['Loan','t-loan','Mortgage, car loan']]
-          .map(([n,t,s]) => `<button data-act="quick-add" data-v="${t}">${esc(n)}<small>${esc(s)}</small></button>`).join('')}
+        ${starters.map(s => `<button data-act="quick-add" data-v="${esc(s.u)}">${esc(packVal('labels', s.u))}<small>${esc(s.sub)}</small></button>`).join('')}
       </div>
       <p class="muted" style="font-size:12.5px;margin:12px 2px 0">Suggestions, not a fixed list. Rename them,
         ignore them, or make your own.</p></div>
@@ -583,6 +791,7 @@ function emptyHome() {
     </div>
   </div>`;
 }
+
 
 const SORTS = [['name','Name'],['updated','Last Update'],['value-desc','Value (High to Low)'],
                ['value-asc','Value (Low to High)'],['type','Type'],['chg-pct','Change Percentage'],['chg-val','Change Value']];
@@ -664,12 +873,17 @@ function renderHolding(id) {
     <div class="label">${esc(typeOf(h.typeId).name)}${h.kind === 'liability' ? ' · Liability' : ''}</div>
     <h1 style="font-family:Fraunces,Georgia,serif;font-size:26px;font-weight:600;letter-spacing:-.028em;margin:9px 0 6px">${esc(h.name)}</h1>
     <div class="nw" style="font-size:clamp(32px,9vw,42px);margin:6px 0 11px">${h.kind === 'liability' ? '−' : ''}${esc(money(Math.abs(c.now), null, { cents:true }))}</div>
-    <div class="nw-chg"><span class="num ${cls(c.abs)}">${esc(money(c.abs, null, { signed:true }))} &nbsp; ${esc(pct(c.pct))}</span>
+    ${hist.length > 1 ? `<div class="nw-chg"><span class="num ${cls(c.abs)}">${esc(money(c.abs, null, { signed:true }))} &nbsp; ${esc(pct(c.pct))}</span>
       &nbsp;·&nbsp; vs ${esc(baselineLabel().toLowerCase())}</div>
-    <button class="baseline-btn" data-act="open-baseline">Change comparison</button>
+    <button class="baseline-btn" data-act="open-baseline">Change comparison</button>` : ''}
+    ${h.kind === 'asset' ? `<div class="conseq">${consequence(h.access, (reasonFor(h) || {}).reason, usableNow())}
+      <span class="conseq-acts">
+        <button class="link-sm" data-act="open-access" data-h="${h.id}">${h.access === 'unset' ? 'Decide' : 'Change'}</button>
+        ${h.access === 'unset' ? `<button class="link-sm" data-act="ask-agent" data-h="${h.id}">Ask your agent</button>` : ''}
+      </span></div>` : ''}
   </div>
 
-  <div class="carousel" id="detail-carousel">
+  ${hist.length > 1 ? `<div class="carousel" id="detail-carousel">
     <div class="slide"><div class="card">
       ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:160 })}
       <div class="rangebar">${HOME_RANGES.map(([l, val]) =>
@@ -688,11 +902,10 @@ function renderHolding(id) {
       </div>
     </div></div>
   </div>
-  <div class="dots">${[0,1].map(i => `<i class="${card === i ? 'on' : ''}"></i>`).join('')}</div>
+  <div class="dots">${[0,1].map(i => `<i class="${card === i ? 'on' : ''}"></i>`).join('')}</div>` : ''}
 
   <div class="pad"><div class="pillrow">
     <div class="pill"><small>Type</small><b>${esc(tp.name)}</b></div>
-    <div class="pill"><small>Accessibility</small><b>${esc(ACCESS[h.access].label)}</b></div>
     <div class="pill"><small>Last update</small><b>${v ? esc(ago(v.date)) : '—'}</b></div>
     <div class="pill"><small>Started on</small><b>${hist.length ? esc(fmtDate(hist[0].date)) : '—'}</b></div>
     ${ath ? `<div class="pill"><small>ATH ${esc(fmtDate(ath.date))}</small><b class="num">${esc(money(Math.abs(ath.base)))}</b></div>` : ''}
@@ -924,7 +1137,7 @@ function renderAgent() {
         <div class="kv"><span>Read position, history, currency exposure</span><b>✓</b></div>
         <div class="kv"><span>Create, update, archive, delete holdings</span><b>✓</b></div>
         <div class="kv"><span>Record and correct values</span><b>✓</b></div>
-        <div class="kv"><span>Manage types, tags and accessibility</span><b>✓</b></div>
+        <div class="kv"><span>Manage types, tags, and what counts as usable</span><b>✓</b></div>
         <div class="kv"><span>Every write logged and reversible</span><b>✓</b></div>
       </div>
       <div class="note"><b>Your statements never reach us.</b> Your agent reads them where it runs and sends
@@ -937,13 +1150,13 @@ function renderAgent() {
 /* ================= AGENT DEMO (J6, J8) ================= */
 const SCRIPT = [
   { who:'user', text:"Here's my IBKR statement for September — update NetNet." },
-  { who:'tool', text:'<b>netnet.find_holding</b> { query: "IBKR" }<br>→ 1 likely match: “IBKR” (USD, Stocks) · last value 21 Sep' },
+  { who:'tool', text:'<b>netnet.find_holding</b> { query: "IBKR" }<br>→ 1 likely match: “IBKR” (USD, Investments) · last value 21 Sep' },
   { who:'ai',   text:"Found your existing IBKR holding, so I'll update that rather than create a second one. The statement closes at USD {{IBKRNEW}}." },
   { who:'tool', text:'<b>netnet.record_value</b> { holding_id: "h-ibkr", amount: {{IBKRNEW}}, currency: "USD", as_of: "2026-09-23" }<br>→ ok', write:true },
   { who:'ai',   text:'Done — IBKR is updated. Your net worth is now <b>{{NW}}</b>.' },
   { who:'user', text:"Can I afford a $120k car?" },
   { who:'tool', text:'<b>netnet.get_position_summary</b> { include: ["accessibility","staleness","currency_exposure"] }<br>→ one call, no follow-ups needed' },
-  { who:'ai',   text:"Yes — comfortably, but the useful part isn't the yes.<br><br>You're worth <b>{{NW}}</b>, and of that <b>{{ACC}}</b> is <b>readily accessible</b>. The rest is CPF, the flat and unvested RSUs — locked or illiquid, and not money you can put toward a car. A $120k purchase is about <b>{{MULT}}×</b> covered by what you can actually reach.<br><br>Two things the numbers themselves flag: most of your accessible money is a single brokerage position, so you'd be selling equities to buy a depreciating asset; and your current car was last valued <b>{{CARSTALE}}</b>, so any trade-in figure in this is guesswork." }
+  { who:'ai',   text:"Yes — comfortably, but the useful part isn't the yes.<br><br>You're worth <b>{{NW}}</b>, and <b>{{ACC}}</b> of that is money you could use this month. The rest — {{REST}} — is locked or would have to be sold first, so it isn't money you can put toward a car. A $120k purchase is about <b>{{MULT}}×</b> covered by what you can actually reach.<br><br>Two things the numbers themselves flag: most of your usable money is a single brokerage position, so you'd be selling equities to buy a depreciating asset; and your current car was last valued <b>{{CARSTALE}}</b>, so any trade-in figure in this is guesswork." }
 ];
 /* A statement update nudges the position; it does not halve it. Deriving the
    demo's written value from the holding's own latest value keeps the trend
@@ -957,7 +1170,10 @@ function renderChat() {
   const step = S.chatStep || 0;
   const t = totals(S.holdings.filter(h => !h.archived));
   const car = holdingOf('h-car');
-  const fill = s => s.replace(/\{\{IBKRNEW\}\}/g, demoIbkrAmount().toLocaleString('en-SG'))
+  const rest = [...new Set(S.holdings.filter(h => !h.archived && h.kind === 'asset' && h.access !== 'accessible')
+    .map(h => typeOf(h.typeId).name))].join(', ');
+  const fill = s => s.replace(/\{\{IBKRNEW\}\}/g, demoIbkrAmount().toLocaleString(LOC()))
+    .replace(/\{\{REST\}\}/g, esc(rest || 'nothing else'))
     .replace(/\{\{NW\}\}/g, money(t.now)).replace(/\{\{ACC\}\}/g, money(t.accessible))
     .replace(/\{\{MULT\}\}/g, (t.accessible / 120000).toFixed(1))
     .replace(/\{\{CARSTALE\}\}/g, car && latest(car) ? ago(latest(car).date) : 'a while ago');
@@ -1036,7 +1252,7 @@ function renderAccount() {
       </div>
       <div class="section-h"><h2>Settings</h2></div>
       <div class="card flush">
-        ${[['general','General', S.settings.defaultCcy],
+        ${[['general','General', [(regionOf(S.account.region) || {}).name, S.settings.defaultCcy].filter(Boolean).join(' · ')],
            ['view','View Settings',''],
            ['types','Manage Types', S.types.length + ''],
            ['tags','Manage Tags', S.tags.length + ''],
@@ -1078,8 +1294,12 @@ function renderSub(name) {
   let html = '';
   if (name === 'general') {
     html = B('General') + `<div class="card">
+      <div class="field"><label>Where you live</label>
+        <select data-act="set-region">${S.account.region ? '' : '<option value="" selected>Not set</option>'}${REGIONS.map(r =>
+          `<option value="${r.code}" ${r.code === S.account.region ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}</select>
+        <div class="hint">Sets the local names and suggestions you see. You can still add anything, from anywhere.</div></div>
       <div class="field"><label>Default Currency</label>
-        <select data-act="set-ccy">${['SGD','USD','MYR','HKD','AUD','GBP','EUR','JPY'].map(c =>
+        <select data-act="set-ccy">${CCYS.map(c =>
           `<option ${c === S.settings.defaultCcy ? 'selected' : ''}>${c}</option>`).join('')}</select>
         <div class="hint">The currency everything is totalled and displayed in. Holdings keep their own
           currency, and each value keeps the rate it was converted at.</div></div></div>`;
@@ -1100,7 +1320,8 @@ function renderSub(name) {
       `;
   } else if (name === 'types' || name === 'tags') {
     const isT = name === 'types';
-    const items = isT ? S.types : S.tags.map(t => ({ id:t, name:t, colour:'var(--ink-3)' }));
+    const items = isT ? S.types.map(t => ({ id:t.id, name:typeName(t), colour:typeColour(t.id) }))
+                      : S.tags.map(t => ({ id:t, name:t, colour:'var(--ink-3)' }));
     html = B(isT ? 'Manage Types' : 'Manage Tags') + `
       <div class="card flush">
         <button class="row" data-act="${isT ? 'new-type' : 'new-tag'}">
@@ -1161,11 +1382,21 @@ function renderSub(name) {
 }
 
 /* ================= ADD / EDIT HOLDING (J2) ================= */
+const sideOf = u => (UNIVERSAL_TYPES.find(x => x.id === u) || { side:'any' }).side;
+const typesFor = k => S.types.filter(t => { const s = sideOf(t.universal); return s === 'any' || s === k; });
+/* The starting answer for a type: its default if the pack has one, else
+   nothing yet — the question is shown and saving without an answer is fine. */
+const startingBasis = typeId => accessRule(universalOf(typeId)).fixed ? { q:'default' } : null;
+
 function renderAdd(kind, presetType, editId) {
   const h = editId ? holdingOf(editId) : null;
   const k = h ? h.kind : (kind || 'asset');
   const tags = S.tags.length ? S.tags : SEED_TAGS;
   S.formTags = h ? h.tags.slice() : (S.formTags || []);
+  const choices = typesFor(k);
+  const typeId = h ? h.typeId : (choices.find(t => t.id === presetType) || choices[0]).id;
+  S.form = { typeId, basis: h ? (h.accessBasis || { q:'unset' }) : startingBasis(typeId), changing:false,
+             editId: h ? h.id : null };
   const title = h ? 'Edit ' + (k === 'asset' ? 'Asset' : 'Liability') : 'New ' + (k === 'asset' ? 'Asset' : 'Liability');
   $('#s-add').innerHTML = `
   <div class="topbar">
@@ -1178,65 +1409,121 @@ function renderAdd(kind, presetType, editId) {
       <button class="${k === 'asset' ? 'on' : ''}" data-go="#/add/asset">Asset</button>
       <button class="${k === 'liability' ? 'on' : ''}" data-go="#/add/liability">Liability</button></div>` : ''}
     <div class="field"><label>${k === 'asset' ? 'Asset' : 'Liability'} Name <span class="req">*</span></label>
-      <input id="f-name" value="${esc(h ? h.name : '')}" placeholder="${k === 'asset' ? 'e.g. DBS Multiplier' : 'e.g. HDB loan'}"></div>
+      <input id="f-name" value="${esc(h ? h.name : '')}" placeholder="${esc(packVal('examples', universalOf(typeId)) || '')}"></div>
     <div class="field"><label>Type <span class="req">*</span></label>
-      <select id="f-type">${S.types.map(t => `<option value="${t.id}" ${
-        (h ? h.typeId : presetType || 't-general') === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>
-    <div class="field"><label>Tags</label><div class="tagpick" id="f-tags">
-      ${tags.map(t => `<button type="button" data-act="toggle-formtag" data-v="${esc(t)}"
-        class="${S.formTags.includes(t) ? 'on' : ''}">${esc(t)}</button>`).join('')}</div></div>
-    ${k === 'asset' ? `<div class="field"><label>How accessible is it?</label>
-      <select id="f-access">${Object.keys(ACCESS).filter(a => a !== 'n/a').map(a =>
-        `<option value="${a}" ${(h ? h.access : 'accessible') === a ? 'selected' : ''}>${esc(ACCESS[a].label)} — ${esc(ACCESS[a].hint)}</option>`).join('')}</select>
-      <div class="hint">This is what stops your agent counting CPF or home equity when you ask whether you
-        can afford something.</div></div>` : ''}
+      <select id="f-type" data-act="form-type">${choices.map(t => `<option value="${t.id}" ${
+        typeId === t.id ? 'selected' : ''}>${esc(typeName(t))}</option>`).join('')}</select></div>
+    ${k === 'asset' ? '<div class="field" id="f-access"></div>' : ''}
     ${!h ? `<div class="two">
       <div class="field"><label>Currency <span class="req">*</span></label>
-        <select id="f-ccy">${['SGD','USD','MYR','HKD','AUD','GBP','EUR','JPY'].map(c =>
+        <select id="f-ccy" data-act="form-amount">${CCYS.map(c =>
           `<option ${c === S.settings.defaultCcy ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
       <div class="field"><label>${k === 'asset' ? 'Asset' : 'Liability'} Value <span class="req">*</span></label>
         <input id="f-amount" type="number" inputmode="decimal" placeholder="0"></div></div>
     <div class="field"><label>As of</label><input id="f-date" type="date" value="${TODAY}" max="${TODAY}">
       <div class="hint">Back-dating is fine — the newest date is what counts toward your total.</div></div>` : ''}
+    <div class="field"><label>Tags</label><div class="tagpick" id="f-tags">
+      ${tags.map(t => `<button type="button" data-act="toggle-formtag" data-v="${esc(t)}"
+        class="${S.formTags.includes(t) ? 'on' : ''}">${esc(t)}</button>`).join('')}</div></div>
     <p class="privacy">For your privacy, do not enter sensitive information such as a password or account
       number. NetNet does not need it to function.</p>
   </div>`;
+  paintAccess(h);
 }
+
+/* The accessibility block. A fact question only when the type is genuinely
+   ambiguous (or the user asks to change it); otherwise the default and its
+   reason, stated once, with the consequence in money. */
+function paintAccess(h) {
+  const el = $('#f-access');
+  if (!el || !S.form) return;
+  h = h || (S.form.editId && holdingOf(S.form.editId));
+  const f = S.form, u = universalOf(f.typeId), rule = accessRule(u);
+  const showQ = f.changing ? (rule.question ? rule.q : 'other') : (!f.basis && rule.question ? rule.q : null);
+  const access = f.basis ? accessFromBasis(f.basis, u) : null;
+
+  /* What "the $X you could use" would be once this is saved. */
+  let own = 0;
+  if (h) { const v = latest(h); own = v ? v.base : 0; }
+  else {
+    const amt = parseFloat(($('#f-amount') || {}).value) || 0;
+    own = Math.round(amt * rateFor(($('#f-ccy') || {}).value || S.settings.defaultCcy, TODAY, S.settings.defaultCcy));
+  }
+  const others = usableNow() - (h && h.access === 'accessible' && !h.archived ? own : 0);
+  const usable = others + (access === 'accessible' ? own : 0);
+
+  let html = '';
+  if (showQ) {
+    const qu = questionFor(showQ);
+    const on = (q, a) => f.basis && f.basis.q === q && (a == null || f.basis.a === a) ? 'on' : '';
+    html += `<label>${esc(qu.ask)}</label>
+      <div class="choice">${qu.answers.map(a =>
+        `<button type="button" data-act="form-answer" data-q="${esc(showQ)}" data-a="${esc(a.id)}" class="${on(showQ, a.id)}">${esc(a.label)}</button>`).join('')}
+        <button type="button" data-act="form-answer" data-q="unset" class="${on('unset')}">Not sure</button></div>
+      ${f.changing && rule.fixed ? `<button type="button" class="link-sm" data-act="form-answer" data-q="default">Keep the usual</button>` : ''}`;
+  }
+  if (f.basis) {
+    const r = f.basis.q === 'default' ? rule.fixed : answerFor(f.basis);
+    html += `<div class="conseq">${consequence(access, r && r.reason, usable)}
+      ${!showQ ? '<button type="button" class="link-sm" data-act="form-change">Change</button>' : ''}</div>`;
+    if (access === 'unset') html += `<div class="hint">Saving is fine as it is. Your agent can help you decide later.</div>`;
+  }
+  el.innerHTML = html;
+}
+
 
 /* ================= mutations ================= */
 function logIt(e) { S.log.unshift(Object.assign({ id:uid('lg'), at:new Date().toISOString(), undone:false }, e)); }
-function recomputeBase(v) { v.rate = rateFor(v.ccy, v.date); v.rateDate = v.date; v.base = Math.round(v.amount * v.rate); }
+function recomputeBase(v) { v.rate = rateFor(v.ccy, v.date, S.settings.defaultCcy); v.rateDate = v.date; v.base = Math.round(v.amount * v.rate); }
 
 function saveHolding(kind, editId) {
   const name = ($('#f-name').value || '').trim();
   const typeId = $('#f-type').value;
   if (!name) { alert('Give it a name.'); return; }
+  const u = universalOf(typeId);
+  /* Accessibility never blocks saving: no answer is recorded as undecided. */
+  const basis = (editId ? holdingOf(editId).kind : kind) === 'liability' ? null : (S.form.basis || { q:'unset' });
   if (editId) {
     const h = holdingOf(editId);
-    const before = { name:h.name, typeId:h.typeId, tags:h.tags.slice(), access:h.access };
+    const before = { name:h.name, typeId:h.typeId, tags:h.tags.slice(), access:h.access, accessBasis:h.accessBasis };
     h.name = name; h.typeId = typeId; h.tags = (S.formTags || []).slice();
-    if (h.kind === 'asset' && $('#f-access')) h.access = $('#f-access').value;
+    if (h.kind === 'asset') { h.accessBasis = basis; h.access = accessFromBasis(basis, u); }
     logIt({ kind:'holding.edit', holdingId:h.id, source:'web', client:null, turn:null,
-            before, after:{ name:h.name, typeId:h.typeId, tags:h.tags.slice(), access:h.access } });
+            before, after:{ name:h.name, typeId:h.typeId, tags:h.tags.slice(), access:h.access, accessBasis:h.accessBasis } });
     S.formTags = []; save(); location.hash = '#/holding/' + h.id; return;
   }
   const amount = parseFloat($('#f-amount').value);
   if (!(amount >= 0)) { alert('Enter a value.'); return; }
-  const ccy = $('#f-ccy').value, date = $('#f-date').value || TODAY;
-  const h = { id:uid('h'), name, kind, typeId, tags:(S.formTags || []).slice(), ccy,
-    access: kind === 'liability' ? 'n/a' : ($('#f-access') ? $('#f-access').value : 'accessible'),
+  createHolding({ name, kind, typeId, tags:(S.formTags || []).slice(), ccy:$('#f-ccy').value,
+    amount, date:$('#f-date').value || TODAY, basis });
+  (S.formTags || []).forEach(t => { if (!S.tags.includes(t)) S.tags.push(t); });
+  /* Back to Home, where the new holding is listed under the total (J1). */
+  S.formTags = []; save(); location.hash = '#/home';
+}
+
+function createHolding(o) {
+  const u = universalOf(o.typeId);
+  const h = { id:uid('h'), name:o.name, kind:o.kind, typeId:o.typeId, tags:o.tags || [], ccy:o.ccy,
+    access: o.kind === 'liability' ? 'n/a' : accessFromBasis(o.basis, u),
+    accessBasis: o.kind === 'liability' ? null : o.basis,
     cadenceDays:30, archived:false, values:[] };
-  const v = { id:uid('v'), date, amount, ccy, note:'', marked:false, source:'web', client:null, turn:null,
-    enteredAt:new Date().toISOString() };
+  const v = { id:uid('v'), date:o.date, amount:o.amount, ccy:o.ccy, note:'', marked:false, source:'web',
+    client:null, turn:null, enteredAt:new Date().toISOString() };
   recomputeBase(v); h.values.push(v);
   S.holdings.push(h);
-  (S.formTags || []).forEach(t => { if (!S.tags.includes(t)) S.tags.push(t); });
-  logIt({ kind:'holding.create', holdingId:h.id, source:'web', client:null, turn:null, before:null, after:{ name } });
+  logIt({ kind:'holding.create', holdingId:h.id, source:'web', client:null, turn:null, before:null, after:{ name:h.name } });
   logIt({ kind:'value.create', holdingId:h.id, valueId:v.id, source:'web', client:null, turn:null,
-          before:null, after:{ amount, ccy, date } });
+          before:null, after:{ amount:v.amount, ccy:v.ccy, date:v.date } });
   fire('holding_created', { source:'web' });
   fire('value_recorded', { source:'web' });
-  S.formTags = []; save(); location.hash = '#/holding/' + h.id;
+  return h;
+}
+
+function setAccess(h, basis) {
+  const before = { access:h.access, accessBasis:h.accessBasis };
+  h.accessBasis = basis; h.access = accessFromBasis(basis, universalOf(h.typeId));
+  logIt({ kind:'holding.edit', holdingId:h.id, source:'web', client:null, turn:null,
+          before, after:{ access:h.access, accessBasis:h.accessBasis } });
 }
 
 function saveValue(hid, vid) {
@@ -1339,7 +1626,7 @@ function sheetValue(hid, vid) {
       <div class="two">
         <div class="field" style="flex:2"><label>${h.kind === 'liability' ? 'Liability' : 'Asset'} Value</label>
           <input id="v-amount" type="number" inputmode="decimal" value="${v ? v.amount : ''}" placeholder="0" autofocus></div>
-        <div class="field"><label>Currency</label><select id="v-ccy">${['SGD','USD','MYR','HKD','AUD','GBP','EUR','JPY']
+        <div class="field"><label>Currency</label><select id="v-ccy">${CCYS
           .map(c => `<option ${c === (v ? v.ccy : h.ccy) ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
       </div>
       <div class="field"><label>As of</label><input id="v-date" type="date" value="${v ? v.date : TODAY}" max="${TODAY}"></div>
@@ -1378,7 +1665,7 @@ function sheetFilter(forInsights) {
         `<button data-act="draft-showonly" data-v="${v}" class="${d.showOnly === v ? 'on' : ''}">${l}</button>`).join('')}</div>
 
       <div class="sh-grp"><span class="grow">Types</span></div>
-      ${chips(S.types, d.types, 'draft-type')}
+      ${chips(S.types.map(t => ({ id:t.id, name:typeName(t) })), d.types, 'draft-type')}
 
       <div class="sh-grp"><span class="grow">Tags</span>${modeToggle(d.tagMode, 'draft-tagmode')}</div>
       ${chips(tags.map(t => ({ id:t, name:t })), d.tags, 'draft-tag')}
@@ -1386,7 +1673,7 @@ function sheetFilter(forInsights) {
       ${forInsights ? `
         <div style="text-align:center;margin:22px 0 4px;font-weight:650;font-size:15px">Don't Show</div>
         <div class="sh-grp"><span class="grow">Types</span></div>
-        ${chips(S.types, d.exTypes, 'draft-extype', true)}
+        ${chips(S.types.map(t => ({ id:t.id, name:typeName(t) })), d.exTypes, 'draft-extype', true)}
         <div class="sh-grp"><span class="grow">Tags</span>${modeToggle(d.exTagMode, 'draft-extagmode')}</div>
         ${chips(tags.map(t => ({ id:t, name:t })), d.exTags, 'draft-extag', true)}
         <div class="note" style="margin:14px 0 0">Excluded things drop out of <b>Insights only</b>. Your net
@@ -1401,12 +1688,52 @@ function sheetFilter(forInsights) {
     </div>`);
 }
 
+/* Change or decide accessibility on a saved holding: the same fact question,
+   never the category. */
+function sheetAccess(hid) {
+  const h = holdingOf(hid), rule = accessRule(universalOf(h.typeId));
+  const q = rule.question ? rule.q : 'other', qu = questionFor(q), b = h.accessBasis || {};
+  const on = (qq, a) => tick(b.q === qq && (a == null || b.a === a));
+  sheet(`<h3 style="padding:0 22px 4px;text-align:center">${esc(h.name)}</h3>
+    <div class="sheet-q">${esc(qu.ask)}</div>
+    ${qu.answers.map(a => `<button class="opt" data-act="set-access" data-h="${h.id}" data-q="${esc(q)}" data-a="${esc(a.id)}">
+      <span class="grow">${esc(a.label)}</span>${on(q, a.id)}</button>`).join('')}
+    ${rule.fixed ? `<button class="opt" data-act="set-access" data-h="${h.id}" data-q="default">
+      <span class="grow">Keep the usual <span class="muted">— ${esc(rule.fixed.reason)}</span></span>${on('default')}</button>` : ''}
+    <button class="opt" data-act="set-access" data-h="${h.id}" data-q="unset"><span class="grow">Not sure</span>${on('unset')}</button>
+    <div class="note" style="margin:14px 22px 0">Not sure is fine. It counts toward your net worth either way;
+      it just won’t count toward what you could use this month until you decide.
+      <button class="btn ghost sm auto" data-act="ask-agent" data-h="${h.id}">Ask your agent</button></div>`);
+}
+function sheetAskAgent(hid) {
+  const h = holdingOf(hid);
+  const conns = (S.account.connections || []).filter(c => c.active);
+  const text = `Look at my “${h.name}” in NetNet. Help me work out whether it’s money I could use within a month, then update it.`;
+  sheet(`<h3 style="padding:0 22px 10px;text-align:center">Ask your agent</h3>
+    <div class="sh-body">
+      <p class="muted" style="font-size:14px;margin:0">Paste this into ${conns.length ? esc(conns.map(c => c.client).join(' or '))
+        : 'Claude or ChatGPT'}. ${conns.length ? 'It can read this holding, work it out with you, and set the answer — and you can undo anything it changes.'
+        : 'Connect it first, so it can see this holding.'}</p>
+      <div class="urlbox"><span class="grow">${esc(text)}</span>
+        <button class="btn ghost sm auto" data-act="copy-prompt" data-v="${esc(text)}">Copy</button></div>
+      ${conns.length ? '' : '<button class="btn" style="margin-top:14px" data-go="#/agent">Connect your agent</button>'}
+    </div>`);
+}
+
+/* ---- prototype-only: pretend the browser is somewhere else, so the region
+   confirmation (§2.3 rule 2) can be tested from anywhere. ---- */
+const PL = 'netnet-proto-locale';
+function protoLocale() { try { return localStorage.getItem(PL); } catch (e) { return null; } }
+
 function sheetProto() {
   sheet(`<h3 style="padding:0 18px 6px;text-align:center">Prototype controls</h3>
     <div class="sheet-sub" style="padding:0 18px 12px;font-size:12.5px;color:var(--ink-3);text-align:center">
       Scaffolding for testing — not product UI.</div>
     <button class="opt" data-act="reset-seeded"><span class="grow">Reset to the sample account</span></button>
     <button class="opt" data-act="reset-empty"><span class="grow">Start from an empty account (first-run)</span></button>
+    <div class="sh-grp" style="padding:0 22px">Browser location, for the next sign-up</div>
+    ${[['', 'This browser'], ['SG', 'Singapore'], ['MY', 'Malaysia'], ['GB', 'United Kingdom'], ['none', 'No hint at all']]
+      .map(([v, l]) => `<button class="opt" data-act="proto-locale" data-v="${v}"><span class="grow">${l}</span>${tick((protoLocale() || '') === v)}</button>`).join('')}
     <div class="sh-grp" style="padding:0 18px">Analytics events fired (§3.5)</div>
     <div style="max-height:40vh;overflow:auto">${S.events.length ? S.events.map(e =>
       `<div class="ev"><b>${esc(e.name)}</b> ${esc(JSON.stringify(e.props))}</div>`).join('')
@@ -1418,7 +1745,7 @@ function sheetProto() {
 /* ================= router ================= */
 const TABS = [['#/home','Home',ICON.home],['#/insights','Insights',ICON.insights],
               ['#/agent','Agent',ICON.agent],['#/account','Account',ICON.account]];
-function render() {
+function render(keepScroll) {
   const hash = location.hash || (S.account.signedIn ? '#/home' : '#/landing');
   const p = hash.replace(/^#\//, '').split('/');
   const screens = { landing:'s-landing', signup:'s-signup', home:'s-home', holding:'s-holding',
@@ -1439,6 +1766,7 @@ function render() {
   else if (p[0] === 'account') renderAccount();
   else if (p[0] === 'sub') renderSub(p[1]);
   else if (p[0] === 'landing') renderLandingDemo();
+  else if (p[0] === 'signup') renderSignup();
 
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
   const chrome = !['landing','signup'].includes(p[0]);
@@ -1448,21 +1776,21 @@ function render() {
   const tabFor = { home:'#/home', holding:'#/home', add:'#/home', edit:'#/home', insights:'#/insights',
     period:'#/insights', agent:'#/agent', activity:'#/agent', account:'#/account', sub:'#/account' }[p[0]];
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === tabFor));
-  window.scrollTo(0, 0);
-  if (p[0] === 'home') fire('session_started', {});
+  if (!keepScroll) window.scrollTo(0, 0);
+  if (p[0] === 'home' && !keepScroll) fire('session_started', {});
 }
 
 function renderLandingDemo() {
   const el = $('#landing-demo');
   if (!el || el.dataset.done) return;
   el.dataset.done = '1';
-  const t = totals(seededState().holdings.filter(h => !h.archived));
+  const t = totals(hydrate(seededState()).holdings.filter(h => !h.archived));
   el.innerHTML = `<div class="chat" style="padding:12px">
     <div class="msg user" style="font-size:13.5px">Can I afford a $120k car?</div>
     <div class="msg tool">netnet.get_position_summary → one call</div>
     <div class="msg ai" style="font-size:13.5px">Yes, comfortably. You're worth <b>${esc(money(t.now))}</b>,
-      but only <b>${esc(money(t.accessible))}</b> of that is readily accessible — CPF, the flat and unvested
-      RSUs are locked or illiquid. You'd be selling equities to buy a depreciating asset.</div>
+      but only <b>${esc(money(t.accessible))}</b> of that is money you could use this month — your retirement
+      savings, your home and unvested shares are locked. You'd be selling equities to buy a depreciating asset.</div>
   </div>`;
 }
 
@@ -1476,6 +1804,7 @@ document.addEventListener('click', ev => {
   if (!el) return;
   const a = el.dataset.act, v = el.dataset.v, s = S.settings;
   const rerender = () => { save(); render(); };
+  const keep = () => { save(); render(true); };
 
   switch (a) {
     case 'close-sheet': closeSheet(); return;
@@ -1528,7 +1857,35 @@ document.addEventListener('click', ev => {
     case 'detail-page': S.detailPage = Math.max(0, (S.detailPage || 0) + +v); rerender(); return;
     case 'expand-value': S.expanded = S.expanded === v ? null : v; rerender(); return;
 
-    case 'quick-add': location.hash = '#/add/' + (v === 't-loan' ? 'liability' : 'asset') + '/' + v; return;
+    case 'quick-add':
+      location.hash = '#/add/' + (LIAB.includes(v) ? 'liability' : 'asset') + '/' + typeForUniversal(v).id; return;
+
+    /* guided assembly (J1) */
+    case 'guide-yes': S.guide.stage = 'amount'; keep(); setTimeout(() => { const i = $('#g-amount'); if (i) i.focus(); }, 30); return;
+    case 'guide-back': S.guide.stage = 'ask'; keep(); return;
+    case 'guide-no': { const c = guideCurrent(); if (c) { S.guide.answered[c.idx] = 'no'; S.guide.i = c.idx + 1; }
+      S.guide.stage = 'ask'; S.guide.last = null; keep(); return; }
+    case 'guide-add': guideAdd(); return;
+    case 'guide-stop': S.guide.done = true; S.guide.last = null; keep(); return;
+    case 'guide-resume': S.guide = { done:false, i:0, stage:'ask', answered:{}, last:null }; keep(); return;
+
+    /* accessibility, in the Add/Edit form (J2) */
+    case 'form-answer':
+      S.form.basis = el.dataset.q === 'unset' ? { q:'unset' } : el.dataset.q === 'default' ? { q:'default' }
+                   : { q:el.dataset.q, a:el.dataset.a };
+      S.form.changing = false; paintAccess(); return;
+    case 'form-change': S.form.changing = true; paintAccess(); return;
+
+    /* accessibility, on an existing holding */
+    case 'open-access': sheetAccess(el.dataset.h); return;
+    case 'set-access': {
+      const h = holdingOf(el.dataset.h);
+      setAccess(h, el.dataset.q === 'unset' ? { q:'unset' } : el.dataset.q === 'default' ? { q:'default' }
+                 : { q:el.dataset.q, a:el.dataset.a });
+      closeSheet(); rerender(); return;
+    }
+    case 'ask-agent': sheetAskAgent(el.dataset.h); return;
+    case 'copy-prompt': navigator.clipboard && navigator.clipboard.writeText(el.dataset.v); el.textContent = 'Copied'; return;
     case 'toggle-formtag': {
       S.formTags = S.formTags || [];
       const i = S.formTags.indexOf(v); i < 0 ? S.formTags.push(v) : S.formTags.splice(i, 1);
@@ -1617,19 +1974,20 @@ document.addEventListener('click', ev => {
     case 'set-cadence': s.reminderCadence = v; rerender(); return;
     case 'new-type': {
       const n = prompt('Name the new type'); if (!n) return;
-      S.types.push({ id:uid('t'), name:n.trim(),
-        colour:['#38bdf8','#22c55e','#a78bfa','#f59e0b','#ec4899','#fb923c','#2dd4bf'][S.types.length % 7],
-        access:'accessible' });
+      /* The user's own type has no universal meaning, so its holdings get the
+         universal fact question rather than a guessed default. */
+      S.types.push({ id:uid('t'), universal:'other', name:n.trim() });
       rerender(); return;
     }
     case 'edit-type': {
       const t = S.types.find(x => x.id === v);
-      const n = prompt('Rename type (blank to delete; holdings move to General)', t.name);
+      const n = prompt('Rename type (blank to delete; its holdings move to ' + typeName({ universal:'other' }) + ')', typeName(t));
       if (n === null) return;
       if (!n.trim()) {
-        S.holdings.forEach(h => { if (h.typeId === t.id) h.typeId = 't-general'; });
         S.types = S.types.filter(x => x.id !== t.id);
-      } else t.name = n.trim();
+        const fallback = typeForUniversal('other');
+        S.holdings.forEach(h => { if (h.typeId === t.id) h.typeId = fallback.id; });
+      } else if (n.trim() !== typeName(t)) t.name = n.trim();
       rerender(); return;
     }
     case 'new-tag': {
@@ -1670,6 +2028,12 @@ document.addEventListener('click', ev => {
     case 'reset-seeded': reset('seeded'); return;
     case 'reset-empty': reset('empty'); return;
     case 'proto': sheetProto(); return;
+    case 'proto-locale': try { v ? localStorage.setItem(PL, v) : localStorage.removeItem(PL); } catch (e) {} sheetProto(); return;
+
+    /* sign-up (J1, §2.3 rule 2) */
+    case 'su-region': Object.assign(S.signup, { region:v, other:false, err:false }); if (!S.signup.ccyTouched) S.signup.ccy = null; save(); renderSignup(); return;
+    case 'su-other': Object.assign(S.signup, { region:null, other:true }); if (!S.signup.ccyTouched) S.signup.ccy = null; save(); renderSignup(); return;
+    case 'su-seg': S.signup.segment = S.signup.segment === v ? null : v; save(); renderSignup(); return;
   }
 });
 
@@ -1679,27 +2043,109 @@ document.addEventListener('change', ev => {
   if (el.dataset.act === 'toggle-setting') { S.settings[el.dataset.v] = el.checked; save(); render(); }
   if (el.dataset.act === 'toggle-reminders') { S.settings.reminderOptOut = !el.checked; save(); render(); }
   if (el.dataset.act === 'set-ccy') { S.settings.defaultCcy = el.value; save(); render(); }
+  if (el.dataset.act === 'set-region') {
+    const r = regionOf(el.value); if (!r) return;
+    S.account.region = r.code; S.account.pack = r.pack || 'generic'; save(); render();
+  }
+  if (el.dataset.act === 'form-type') {
+    S.form.typeId = el.value; S.form.basis = startingBasis(el.value); S.form.changing = false;
+    const n = $('#f-name'); if (n) n.placeholder = packVal('examples', universalOf(el.value)) || '';
+    paintAccess();
+  }
+  if (el.dataset.act === 'form-amount') paintAccess();
+  if (el.dataset.act === 'su-region-pick') { S.signup.region = el.value || null; S.signup.err = false;
+    S.signup.ccyTouched || (S.signup.ccy = null); save(); renderSignup(); }
+  if (el.dataset.act === 'su-ccy') { S.signup.ccy = el.value; S.signup.ccyTouched = true; save(); }
+});
+document.addEventListener('input', ev => {
+  if (ev.target.id === 'f-amount') paintAccess();
+  if (ev.target.id === 'su-email') { S.signup.email = ev.target.value; save(); }
+});
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Enter' && ev.target.id === 'g-amount') { ev.preventDefault(); guideAdd(); }
 });
 
 $('#scrim').addEventListener('click', closeSheet);
 $('#devbtn').addEventListener('click', sheetProto);
 window.addEventListener('hashchange', render);
 
-/* signup (J1) */
+/* signup (J1). Region is inferred, then confirmed by one question — never
+   applied silently (§2.3 rule 2). Segment is one skippable question (§3.5). */
+const SEGMENTS = [
+  { id:'starting_out', label:'Just starting out' },
+  { id:'accumulating', label:'Building up — saving toward something big' },
+  { id:'established',  label:'Established — a lot to keep track of' }
+];
+function inferRegion() {
+  const sim = protoLocale();
+  if (sim) return sim === 'none' ? null : sim;
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    const byTz = REGIONS.find(r => (r.tz || []).includes(tz));
+    if (byTz) return byTz.code;
+    const cc = ((navigator.language || '').split('-')[1] || '').toUpperCase();
+    if (cc && cc !== 'ZZ' && regionOf(cc)) return cc;
+  } catch (e) {}
+  return null;
+}
+function renderSignup() {
+  const f = S.signup || (S.signup = {});
+  const guess = inferRegion();
+  const showPicker = f.other || !guess;
+  const reg = regionOf(f.region) || regionOf(guess);
+  const ccy = f.ccy || (reg ? reg.ccy : 'USD');
+  $('#s-signup').innerHTML = `
+  <div style="max-width:440px;margin:0 auto;padding:20px 0 60px">
+    <button class="back" data-go="#/landing" style="color:var(--brand-text);font-weight:550">‹ Back</button>
+    <h1 style="font-size:25px;letter-spacing:-.025em;margin:14px 0 6px">Create your account</h1>
+    <p class="muted" style="margin:0 0 20px">About 30 seconds. Nothing to set up before you can start.</p>
+    <div class="field"><label>Email</label>
+      <input id="su-email" type="email" placeholder="you@example.com" autocomplete="email" value="${esc(f.email || '')}"></div>
+    <div class="field"><label>Where do you live?</label>
+      ${guess ? `<div class="choice">
+        <button data-act="su-region" data-v="${guess}" class="${f.region === guess && !f.other ? 'on' : ''}">${esc(regionOf(guess).name)}</button>
+        <button data-act="su-other" class="${f.other ? 'on' : ''}">Somewhere else</button></div>` : ''}
+      ${showPicker ? `<select id="su-region" data-act="su-region-pick" ${guess ? 'style="margin-top:12px"' : ''}>
+        <option value="">Choose…</option>${REGIONS.filter(r => r.code !== guess).map(r =>
+          `<option value="${r.code}" ${f.region === r.code ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}</select>` : ''}
+      <div class="hint">${guess && !f.region && !f.other ? 'Guessed from your browser. ' : ''}Sets the local names and
+        suggestions you see. You can still add anything, from anywhere.</div>
+      ${f.err ? '<div class="hint warn-t">Tell us where you live to carry on.</div>' : ''}</div>
+    <div class="field"><label>Totals in</label>
+      <select id="su-ccy" data-act="su-ccy">${CCYS.map(c => `<option ${c === ccy ? 'selected' : ''}>${c}</option>`).join('')}</select>
+      <div class="hint">You can still hold anything, in any currency.</div></div>
+    <div class="field"><label>Which is closest to you? <span class="opt-t">Optional</span></label>
+      <div class="choice col">${SEGMENTS.map(x =>
+        `<button data-act="su-seg" data-v="${x.id}" class="${f.segment === x.id ? 'on' : ''}">${esc(x.label)}</button>`).join('')}</div>
+      <div class="hint">Only used to see who NetNet works for. It changes nothing you see.</div></div>
+    <button class="btn" id="su-go">Continue</button>
+    <div style="text-align:center;color:var(--ink-3);font-size:12.5px;margin:10px 0">or</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn sec" data-social="Google">Google</button>
+      <button class="btn sec" data-social="Apple">Apple</button>
+    </div>
+    <div class="note" style="margin:16px 0 0">We never ask for a bank login and never receive your
+      statements. <b>Your agent reads them where it runs; NetNet only ever sees the numbers written to it.</b></div>
+  </div>`;
+}
 document.addEventListener('click', ev => {
-  const b = ev.target.closest('#su-go, [data-social], [data-demo-landing]');
+  const b = ev.target.closest('#su-go, [data-social]');
   if (!b) return;
-  if (b.dataset.demoLanding !== undefined) { renderLandingDemo(); return; }
+  const f = S.signup || (S.signup = {});
   fire('signup_started', { method: b.dataset.social || 'email' });
-  const email = ($('#su-email') && $('#su-email').value) || (b.dataset.social ? 'you@example.com' : '');
+  const email = f.email || (b.dataset.social ? 'you@example.com' : '');
   if (!b.dataset.social && !email) { alert('Enter an email.'); return; }
-  S.account.signedIn = true; S.account.verified = false;
-  S.account.email = email; S.account.name = email.split('@')[0] || 'there';
-  S.account.initials = (S.account.name[0] || 'Y').toUpperCase();
-  if ($('#su-ccy')) S.settings.defaultCcy = $('#su-ccy').value;
+  if (!f.region) { f.err = true; save(); renderSignup(); return; }
+  const r = regionOf(f.region);
+  Object.assign(S.account, { signedIn:true, verified:false, email,
+    name: email.split('@')[0] || 'there', initials: (email[0] || 'Y').toUpperCase(),
+    region: r.code, pack: r.pack || 'generic', segment: f.segment || 'unknown' });
+  S.settings.defaultCcy = f.ccy || r.ccy;
+  S.guide = { done:false, i:0, stage:'ask', answered:{}, last:null };
   fire('account_created', {});
-  save(); location.hash = '#/home';
+  S.signup = null; save(); location.hash = '#/home';
 });
 
+S = load();
 fire('landing_view', {});
 render();
