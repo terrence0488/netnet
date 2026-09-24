@@ -1772,6 +1772,9 @@ function render(keepScroll) {
   const chrome = !['landing','signup'].includes(p[0]);
   $('#tabbar').classList.toggle('hidden', !chrome);
   $('#sidebar').style.display = chrome ? '' : 'none';
+  // Hiding the sidebar removes it from the grid, and .main would then auto-place into
+  // the 232px sidebar track. Without chrome the shell is one column.
+  document.querySelector('.shell').classList.toggle('no-chrome', !chrome);
   $('#devbtn').style.display = chrome ? '' : 'none';
   const tabFor = { home:'#/home', holding:'#/home', add:'#/home', edit:'#/home', insights:'#/insights',
     period:'#/insights', agent:'#/agent', activity:'#/agent', account:'#/account', sub:'#/account' }[p[0]];

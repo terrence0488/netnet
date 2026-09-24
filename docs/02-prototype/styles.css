@@ -46,6 +46,7 @@ h1,h2,h3{margin:0;font-weight:600}
 .pad{padding:0}
 @media (min-width:900px){
   .shell{display:grid;grid-template-columns:232px minmax(0,1fr)}
+  .shell.no-chrome{grid-template-columns:minmax(0,1fr)}
   .sidebar{display:block;position:sticky;top:0;height:100vh;border-right:1px solid var(--rule);padding:26px 18px}
   .main{width:min(100%,1180px);max-width:none;margin:0;justify-self:center;padding:0 40px 70px}
   .tabbar{display:none!important}
