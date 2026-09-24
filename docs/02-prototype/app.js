@@ -909,8 +909,7 @@ function renderAgent() {
           <li>Paste the NetNet URL below and choose OAuth.</li>
           <li>Approve NetNet when the browser window opens.</li>
           <li>Done. NetNet's tools appear in ChatGPT. No token to copy anywhere.</li></ol>
-          <div class="note warn" style="margin:12px 0 0">ChatGPT exposes custom connectors on paid plans only,
-            and may need developer mode switched on.</div>`}
+`}
         <div class="urlbox"><span class="mono">${MCP_URL}</span>
           <button class="btn ghost sm auto" data-act="copy-url">Copy</button></div>
         <button class="btn" style="margin-top:14px" data-act="connect" ${!S.account.verified ? 'disabled' : ''}>I've pasted it — continue</button>

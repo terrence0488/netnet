@@ -1,6 +1,8 @@
 # 01 — Product Requirements (PRD)
 
-Status: **approved by the Founder 2026-09-23** · Stage owner: Product manager
+Status: **amended 2026-09-24 — awaiting Founder re-approval** · Stage owner: Product manager
+Approved 2026-09-23; §2 widened from one persona to three on 2026-09-24, which also changed §3, §4,
+J1, J2 and §8. What changed and why: **§9.5**. AI never marks its own work approved.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -39,41 +41,69 @@ the tracker exists to feed the advice, not the other way round. Detail: `00-disc
 
 ## 2. Target user
 
+> **Rewritten 2026-09-24.** The beachhead was widened from one persona to three, on the Founder's
+> decision. §9.5 records what that overturned and what it costs.
+
 **Vision: broad.** Anyone whose AI could advise them better if it knew where they stood — which is
 most people (§1).
 
-**Beachhead: narrow, chosen for one reason — it needs no education.** The Founder's criterion is
-financial literacy: target people who already understand why a current picture of their position is
-worth keeping, so the product never has to teach that. Educating a market is the slow, expensive
-problem, and the test-market phase deliberately does not attempt it.
+**v1 targets three personas, SG/SEA first.** §1 has always described someone who does not know what
+they are worth. Until now §2 excluded exactly that person. This section makes §2 agree with §1.
 
-So the first user is the **financially engaged multi-asset tracker, SG/SEA first**: net worth
-~S$300K–5M, 5–20 holdings across ≥2 currencies including CPF, reviews position monthly or
-quarterly, already keeps a spreadsheet, already pays for ChatGPT or Claude. Detail:
-`00-discovery.md` §2.
-
-Expansion ladder, ordered by education cost rather than size:
-
-| # | Segment | Education needed | Why this order |
+| | **P-A · Starting out** | **P-B · Accumulating** | **P-C · Established** |
 |---|---|---|---|
-| 1 | SG/SEA multi-asset professional | **None** | Founder is this user; CPF and multi-currency are already the mockups' reality; aggregators serve this market worst |
-| 2 | Global FIRE / net-worth trackers | **None** | Already track deliberately; same product, same behaviour, larger market, more competition |
-| 3 | Financially engaged, simpler holdings (one currency, few assets) | Low | Understand the value but need less of the product; may find it heavy |
-| 4 | The broad market who do not know what they are worth | **High** | Must first be convinced this matters, and need guided assembly, not just faster entry |
+| Sketch | ~21, first job, well educated | ~30, close to a decade of work, saving for a first home | ~40, family with two children, heavy commitments |
+| Net worth | Under ~S$50K, sometimes negative | ~S$100–500K | ~S$1M+, with ~S$500K invested |
+| Holdings | 2–5: a bank account, CPF, maybe a study loan | 5–10, mostly one currency | 15–30: multi-currency, CPF, property, loans, insurance |
+| Tracks today | Nothing, or an app abandoned after a month | Spreadsheet or app, but misses months | Spreadsheet or app, 30–60 min every month |
+| Net worth literacy | Has heard of it; has never computed one | Roughly | Well — the problem is making sense of it at scale |
+| AI use | Frequent and casual, free tier | Moderate; Copilot at work, ChatGPT basic | Pastes whole spreadsheets into Claude or ChatGPT and finds it genuinely good |
+| Needs first | To find out where they stand at all | To stop the picture decaying, and to settle trade-offs | Sense-making at scale, and someone else doing the upkeep |
 
-Step 4 is the vision in §1 and is deliberately deferred. v1's guided starting categories (J1) are
-the on-ramp for it, kept cheap — not a campaign to win it.
+### 2.1 The organising principle
 
-**Consequence for the pitch (G-D1, G-D3).** The beachhead *does* roughly know what they are worth;
-their picture exists and is merely stale. The mass-market line — "you don't know your net worth" —
-does not describe them and will read as condescending. Their version of the problem is: *your
-numbers are real but stale, and trapped somewhere your AI cannot read, so the advice you get is
-generic.* Landing copy and the launch note are written for that, not for §1's broader framing.
+The old beachhead was selected on financial literacy **so that the product would never have to
+teach**. Widening the audience removes that rationale. The replacement is not to start teaching:
 
-**Trade-off worth naming:** literacy cuts the education cost and raises the trust bar. This audience
-asks where the data lives, whether it is sold, and what happens on deletion — *before* signing up
-(A7). That makes J10 (export and delete) and N4 (isolation) go-to-market features here, not
-compliance chores.
+> **NetNet does not teach. It is opinionated, and it routes what it cannot decide to the user's own
+> agent.** Defaults are chosen for the user and state their reason in plain language. Questions ask
+> for facts the user already knows ("do you live here?"), never for categories they must learn first
+> ("illiquid or locked?"). Where judgement is genuinely needed, the agent supplies it, not us.
+
+This keeps §8's education non-goal intact rather than deleting it, and it is the same division of
+labour as §1: NetNet supplies context, the agent supplies intelligence.
+
+### 2.2 The second principle — standalone value before the agent
+
+**The app must be worth using before any agent is connected** (assumption A12, measured by M11).
+
+A picture that has been assembled but not connected must still tell a beginner something true and
+surprising on day one: what they can actually touch, what is locked away, what they owe. Arithmetic
+and good defaults can do this — no inference, no backend cost, no breach of N2.
+
+This is not a nicety. If P-A cannot get value before connecting, they churn before ever reaching the
+thing v1 exists to test, and M3, M6 and M7 come back looking like evidence that **A1 and A4 are
+wrong** — when in truth the experiment never ran on them. That is the same class of misreading §9.4
+already names as the most expensive available here.
+
+### 2.3 Consequence for the pitch (G-D1, G-D3)
+
+One line no longer fits all three. P-C's problem is that real numbers are *stale and unreadable by
+their AI*; P-A's is *never having had the numbers at all*. The landing page leads with the widest
+statement that is true for all three — **you cannot get useful advice from an AI that does not know
+where you stand** — and carries both proofs beneath it. It never opens with "you don't know your net
+worth", which is false and condescending for P-B and P-C.
+
+### 2.4 Trade-offs worth naming
+
+- **Education cost is now real**, and is paid by opinionated defaults and by the user's agent — never
+  by content we write and maintain (§8).
+- **The trust bar stays high.** P-B and P-C ask where the data lives, whether it is sold and what
+  deletion means *before* signing up (A7), so J10 and N4 remain go-to-market features, not chores.
+- **P-A is the weakest commercial prospect.** They are least able to pay when monetisation arrives.
+  They are in v1 because the habit forms there and because §1 has always claimed them — not because
+  they are the best near-term business. If that trade stops being acceptable, P-A is the first
+  segment to drop, and §3.3's per-segment kill criteria make that decision readable.
 
 ## 3. Goals & success metrics
 
@@ -106,6 +136,12 @@ Window: **8 weeks from public launch** unless stated. "Signup" = verified accoun
 | **M8** | Freshness | Median days since last value update, across users active in the last 30 days | **<45 days** | The context is too stale to answer from |
 | **M9** | Time to value | p50 minutes from signup to first agent interaction (read or write) | **<15 min** | Setup is the cliff A1 predicts (M9 is the funnel, not the outcome) |
 | **M10** | Funnel conversion | Landing-page unique visitors → signup | **≥8%**, on ≥1,200 visits | The pitch, not the product, is the blocker |
+| **M11** | **Standalone value** (new) | % of signups with ≥2 sessions **before** any agent connection; and % still active in week 4 having never connected | **40%** / **15%** | **A12 is wrong** — the app is not worth using on its own, so P-A churns before the real experiment reaches them (§2.2) |
+
+**Every metric above is reported per segment** (P-A / P-B / P-C), captured at signup by one
+skippable question. Targets in this table are the blended figure; per-segment targets are set in
+§3.3. Blending three populations this different makes a miss unreadable — a strong P-C result would
+hide P-A never connecting at all, which is precisely the misreading §9.4 warns about.
 
 ### 3.3 Kill criteria
 
@@ -113,6 +149,11 @@ The product is killed if it cannot get signups and engagement. Concretely, after
 window: **M1 < 25 signups, or M3 < 15%, or M7 < 20%, or M6 < 10%.** Any one is a kill reading —
 provided §3.5 instrumentation and the §3.4 distribution assets were actually delivered. A missing
 experiment is not evidence.
+
+**Kill criteria are read on P-B and P-C, not on the blend.** Those two are the commercial bet; P-A
+is the habit bet and is allowed to underperform on M3 and M7 without killing the product. What P-A
+*is* held to is **M11** — if the app is not worth using standalone, P-A should be dropped from v1
+rather than carried (§2.4). A blended reading is never used to kill anything.
 
 ### 3.4 Distribution goal (A9)
 
@@ -144,6 +185,10 @@ no evidence and §3.3 cannot be applied. Minimum event set:
 `session_started` · `insights_viewed {view: monthly|quarterly|yearly}` · `reminder_sent` ·
 `reminder_clicked` · `account_deleted`
 
+Every event above also carries **`{segment}`** (`starting_out` / `accumulating` / `established` /
+`unknown`), set at signup and never changed by us. Without it none of §3.2 is readable per segment,
+and §3.3 cannot be applied to the segment it is meant to judge.
+
 `kind: read|write` is what makes M7 separable from M4 — without it the premise is unmeasurable.
 `client` is what makes M3 separable by MCP client — without it, one client's broken connector flow
 reads identically to A1 being wrong, which is the most expensive misreading available here (§9.4).
@@ -164,6 +209,13 @@ labels and email reminders · **a comprehensive MCP layer with full CRUD, plus r
 by OAuth from ChatGPT or Claude** · audit log and undo for every agent write · export and account
 deletion · the §3.5 analytics · the §3.4 distribution assets. Mobile-first responsive web, one API
 that native clients reuse later.
+
+**Added 2026-09-24, following the §2 widening:** **opinionated defaults with stated reasons**
+throughout data entry; **fact-based questions in place of classification** wherever a category would
+otherwise have to be learned; **guided assembly** for someone who does not know what to list; and
+**standalone answers on Home** — what is readily accessible, what is locked, what is owed — good
+enough to be worth the visit before any agent is connected (§2.2). None of this is educational
+content, and none of it needs inference (N2).
 
 **Note for Stage 4:** Insights is the one item here that does not serve §3.1, so it should be
 sequenced *after* the MCP layer and the §3.5 analytics within P1. Not a hedge on shipping it — it
@@ -236,6 +288,16 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   `account_created` fire with no amounts attached.
 - **Given** an unverified email, **when** the user uses the app, **then** they can — but agent
   connection (J5) requires verification first.
+- **Given** a user who has never computed a net worth (P-A), **when** they reach the empty state,
+  **then** they are walked through a short list of things people commonly hold — a bank account,
+  CPF, a loan, a car — answering only "do you have this?" and "roughly how much?", and may stop at
+  any point with whatever they entered already counted.
+- **Given** a first picture of two or three holdings and **no agent connected**, **when** Home is
+  shown, **then** it states at least one thing the user did not type in — what they could actually
+  use, what is locked and roughly until when, and what they owe against it. A total alone is not a
+  first picture (§2.2, A12, M11).
+- **Given** any signup, **when** the account is created, **then** a coarse segment is recorded from
+  one skippable question, and every subsequent event carries it (§3.5).
 
 ### J2 — Track anything
 - **Given** the Add flow, **when** the user creates an asset, **then** they can set name, type,
@@ -243,10 +305,20 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   required.
 - **Given** the Add flow, **when** the user creates a **liability**, **then** it contributes
   negatively and net worth = assets − liabilities.
-- **Given** a holding, **when** it is created or edited, **then** the user can mark how accessible
-  it is (readily accessible / illiquid / locked, e.g. CPF or unvested equity), defaulting
-  sensibly by type — this is what stops J8 answering "can you afford it" off money the user cannot
-  touch.
+- **Given** a holding, **when** it is created or edited, **then** how accessible it is is recorded
+  as one of readily accessible / illiquid / locked — this is what stops J8 answering "can you afford
+  it" off money the user cannot touch.
+- **Given** any holding type, **when** the user is asked about accessibility, **then** the question
+  asks for a **fact they already know** ("do you live here?", "has it vested?"), never for the
+  category itself. The three category names are a data model, not a question put to a user.
+- **Given** a type where the answer is not in doubt — CPF, cash, listed investments — **when** a
+  holding is created, **then** nothing is asked and the value is set, with its reason stated in one
+  line the user can see and override.
+- **Given** any accessibility default, **when** it is applied, **then** its **consequence** is shown
+  rather than its label — "counts toward the $X you could use this month" / "won't count, it's your
+  home" — and it stays changeable from the holding afterwards.
+- **Given** the Add flow, **when** the user is unsure, **then** accessibility never blocks saving,
+  and asking their agent is offered as an alternative to deciding.
 - **Given** a currency other than the user's default, **when** a value is saved, **then** the entry
   stores the original amount and currency *and* the default-currency conversion with the rate and
   rate date used, both visible on the value row.
@@ -414,9 +486,10 @@ expense tracking** (see the risk below) · tax filing or NetNet-produced tax rep
 household or advisor access · native iOS/Android apps · **an in-app AI chat or assistant, and any
 advice generated by NetNet itself** — the agent is the user's own, running on their subscription
 (N2) · automatic price or FX refresh (§4.2) · document upload or storage · NetNet-built forecasting
-· billing, plans or entitlements · **financial-literacy education — explainers, coaching, "what is
-net worth" content** (the beachhead in §2 exists precisely to avoid that cost; teaching the broad
-market is a later and separate problem) · the mockups' Pro tier, legacy trend-graph toggles and
+· billing, plans or entitlements · **financial-literacy education as content — explainers, courses,
+coaching, "what is net worth" articles** (still a non-goal after the §2 widening; §2.1 replaces
+literacy-as-selection with opinionated-defaults-plus-agent. NetNet may use plain language, state the
+reason for a default, and show what a number does — it may not write a curriculum) · the mockups' Pro tier, legacy trend-graph toggles and
 haptics.
 
 **Named risk in that list:** a balance sheet answers "what am I worth" and "can I afford this from
@@ -446,6 +519,36 @@ defer Insights (§4.1, J11).
    `agent_tool_called` (§3.5). Stage 3 must verify each client's current connector requirements
    (paid tier, developer mode) before the architecture locks, since those cap M3's realistic
    ceiling and change faster than any of us will remember.
+
+### 9.5 Decisions taken 2026-09-24 — the §2 widening
+
+Founder decision, overturning the single-beachhead choice made at the 2026-09-23 gate. **This
+section needs Founder re-approval before Stage 2 can be approved.**
+
+5. **v1 targets three personas** (§2), not one. The expansion ladder is retired: its step 4 — the
+   broad market who do not know what they are worth — is now P-A and in scope. §1 always described
+   this person; §2 now agrees with §1.
+6. **Literacy-as-selection is replaced by opinionated-defaults-plus-agent** (§2.1). NetNet still
+   does not teach. It decides, states its reason, asks for facts rather than categories, and routes
+   real judgement to the user's own agent. §8's education non-goal survives, qualified.
+7. **New assumption A12 and new metric M11: the app must be worth using before an agent is
+   connected** (§2.2, §3.2). Chosen over the alternative — treat the agent as the goal and convert
+   beginners to a paid AI plan — primarily because it keeps the launch experiment readable. Under
+   that alternative, P-A's low M3/M6/M7 would look like evidence against A1 and A4 when the
+   experiment had simply never reached them.
+8. **All metrics are reported per segment, and kill criteria are read on P-B and P-C, not on the
+   blend** (§3.2, §3.3). P-A is held to M11 instead. `{segment}` rides on every event.
+9. **Accessibility is never asked as a classification** (J2). This was the trigger for the whole
+   revision: "illiquid or locked?" for a property is unanswerable without knowing whether the user
+   lives in it, and a layman asked to classify either stalls or guesses wrong — both silent failures.
+
+**Correction to a §9.4 premise.** The claim that custom MCP connectors are paid-tier only is
+**unverified and probably wrong** — the Founder connects Notion, Google Drive and other MCP servers
+on a free ChatGPT account. One sub-question stays open: listed directory connectors may be gated
+differently from a custom connector added by URL. Stage 3's existing obligation to verify each
+client's requirements now carries more weight, because if free tiers can add custom connectors, P-A
+reaches the core product on day one and the §2.2 risk shrinks considerably. A12 and M11 stand
+regardless — standalone value was chosen for measurement reasons, not only for access reasons.
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves
