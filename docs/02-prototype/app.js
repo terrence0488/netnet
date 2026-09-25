@@ -731,7 +731,10 @@ function positionLedger(list, t) {
    where-you-live and the segment; reachable again from the empty Home. Every "yes"
    is saved the moment it is answered, "Done for now" is always one tap away, and
    nothing asked here is final. Follow-ups (`onlyIf`) are asked only after a yes. ---- */
-const newGuide = () => ({ done:false, i:0, stage:'ask', answered:{}, last:null });
+/* answered: item id → 'yes' | 'no'. made: item id → the holding its yes created.
+   trail: item ids in the order they were answered, which is what Back walks.
+   revisit: the item Back returned to, shown with its earlier answer. */
+const newGuide = () => ({ done:false, i:0, stage:'ask', answered:{}, made:{}, trail:[], revisit:null, last:null });
 const guideItems = () => packList('checklist');
 function typeForItem(item) {
   if (item.type) { applyPackTypes(); const t = S.types.find(x => x.key === item.type); if (t) return t; }
@@ -748,16 +751,53 @@ function guideApplies(item) {
   return S.guide.answered[item.onlyIf] === 'yes' || (parent && guideCovered(parent));
 }
 function guideCurrent() {
-  const items = guideItems();
-  for (let i = S.guide.i || 0; i < items.length; i++) {
-    const it = items[i];
-    if (S.guide.answered[it.id] || !guideApplies(it) || guideCovered(it)) continue;
+  const g = S.guide, items = guideItems();
+  const at = (it, i) => {
     /* a follow-up shares its question's number, so "3 of 6" never jumps to "3 of 7" */
     const base = items.filter(x => !x.onlyIf);
     const anchor = it.onlyIf ? items.find(x => x.id === it.onlyIf) : it;
     return { item:it, idx:i, n:base.indexOf(anchor) + 1, total:base.length };
+  };
+  if (g.revisit) { const i = items.findIndex(x => x.id === g.revisit); if (i >= 0) return at(items[i], i); }
+  for (let i = g.i || 0; i < items.length; i++) {
+    const it = items[i];
+    if (g.answered[it.id] || !guideApplies(it) || guideCovered(it)) continue;
+    return at(it, i);
   }
   return null;
+}
+/* The holding an earlier "yes" created, if it still exists. */
+const guideMade = id => { const hid = (S.guide.made || {})[id]; return hid ? holdingOf(hid) : null; };
+/* Changing an answer to "no" removes what the "yes" added, and anything asked only
+   because of it ("no car" → no car loan). Logged, like any delete (J7). */
+function guideUnmake(id) {
+  const g = S.guide, drop = [id, ...guideItems().filter(x => x.onlyIf === id).map(x => x.id)];
+  drop.forEach(k => {
+    const h = guideMade(k);
+    if (h) {
+      logIt({ kind:'holding.delete', holdingId:h.id, source:'web', client:null, turn:null,
+              before:{ holding:JSON.parse(JSON.stringify(h)) }, after:null });
+      S.holdings = S.holdings.filter(x => x.id !== h.id);
+    }
+    delete g.made[k];
+    if (k !== id) { delete g.answered[k]; g.trail = g.trail.filter(x => x !== k); }
+  });
+}
+/* Back: from an amount, to its yes/no; from a question, to the one answered before it,
+   shown with its earlier answer; from the first question, out to where the basics began. */
+function guideBack() {
+  const g = S.guide;
+  g.trail = g.trail || []; g.made = g.made || {};
+  if (g.stage === 'amount') { g.stage = 'ask'; return render(true); }
+  if (!g.trail.length) {
+    g.revisit = null;
+    if (!S.account.onboarded) S.account.obStep = 'start';
+    save(); location.hash = S.account.onboarded ? '#/home' : '#/welcome/start';
+    return;
+  }
+  const prev = g.trail.pop();
+  Object.assign(g, { revisit:prev, last:null, stage:guideMade(prev) ? 'amount' : 'ask' });
+  save(); render(true);
 }
 function renderBasics() {
   const g = S.guide || (S.guide = newGuide());
@@ -769,18 +809,20 @@ function renderBasics() {
       <span class="amount">${esc(money(Math.abs(latest(last).base)))}</span>.
       ${last.kind === 'asset' ? consequence(last.access, (reasonFor(last) || {}).reason, null)
         : 'Subtracted from your net worth.'}</div>` : '';
+  const made = guideMade(item.id), had = made && latest(made);
   authShell(`
-    <div class="basics-top"><span class="auth-step">What you have · ${n} of ${total}</span>
+    <div class="basics-top"><button class="back" data-act="guide-back">‹ Back</button>
       <button class="link-sm" data-act="guide-stop">Done for now</button></div>
+    <div class="auth-step">What you have · ${n} of ${total}</div>
     ${lastLine}
     ${g.stage === 'amount' ? `
       <p class="basics-asked">${esc(item.ask)} <b>Yes</b></p>
       <h1>${esc(item.amount)}</h1>
       <div class="amt-in"><span>${esc(sym())}</span>
-        <input id="g-amount" type="number" inputmode="decimal" min="0" placeholder="0" aria-label="${esc(item.amount)}">
-        <button class="btn auto" data-act="guide-add">Add</button></div>
-      <div class="hint" style="margin-top:10px">${esc(item.hint || 'A round number is fine. You can change it any time.')}</div>
-      <button class="link-sm basics-back" data-act="guide-back">‹ Back</button>`
+        <input id="g-amount" type="number" inputmode="decimal" min="0" placeholder="0" aria-label="${esc(item.amount)}"
+          value="${had ? had.amount : ''}">
+        <button class="btn auto" data-act="guide-add">${made ? 'Save' : 'Add'}</button></div>
+      <div class="hint" style="margin-top:10px">${esc(item.hint || 'A round number is fine. You can change it any time.')}</div>`
     : `
       <h1>${esc(item.ask)}</h1>
       <div class="choice basics-yn"><button data-act="guide-yes">Yes</button><button data-act="guide-no">No</button></div>`}`);
@@ -797,16 +839,32 @@ function guideAdd() {
   const amount = parseFloat(el.value);
   if (!(amount >= 0)) { el.classList.add('bad'); el.focus(); return; }
   const { item, idx } = cur;
-  const kind = LIAB.includes(item.u) ? 'liability' : 'asset';
-  const t = typeForItem(item);
-  /* A fact folded into the question ("the home you live in") is recorded as that
-     fact's answer; otherwise the type's usual default. */
-  const basis = kind === 'liability' ? null
-    : item.answer ? { q:item.u, a:item.answer } : (startingBasis(t.id) || { q:'unset' });
-  const h = createHolding({ name:item.name, kind, typeId:t.id, ccy:S.settings.defaultCcy,
-    amount, date:TODAY, basis, via:'guided' });
-  Object.assign(S.guide, { i:idx + 1, stage:'ask', last:h.id });
-  S.guide.answered[item.id] = 'yes';
+  const g = S.guide; g.made = g.made || {}; g.trail = g.trail || [];
+  let h = guideMade(item.id);
+  if (h) {
+    /* back on an earlier yes: the amount is corrected in place, never added twice */
+    const v = h.values[h.values.length - 1];
+    if (v.amount !== amount) {
+      const before = { amount:v.amount, ccy:v.ccy, date:v.date };
+      v.amount = amount; recomputeBase(v);
+      logIt({ kind:'value.edit', holdingId:h.id, valueId:v.id, source:'web', client:null, turn:null,
+              originalSource:'web', before, after:{ amount, ccy:v.ccy, date:v.date } });
+      fire('value_corrected', { original_source:'web', age_at_correction:0 });
+    }
+  } else {
+    const kind = LIAB.includes(item.u) ? 'liability' : 'asset';
+    const t = typeForItem(item);
+    /* A fact folded into the question ("the home you live in") is recorded as that
+       fact's answer; otherwise the type's usual default. */
+    const basis = kind === 'liability' ? null
+      : item.answer ? { q:item.u, a:item.answer } : (startingBasis(t.id) || { q:'unset' });
+    h = createHolding({ name:item.name, kind, typeId:t.id, ccy:S.settings.defaultCcy,
+      amount, date:TODAY, basis, via:'guided' });
+    g.made[item.id] = h.id;
+  }
+  Object.assign(g, { i:idx + 1, stage:'ask', last:h.id, revisit:null });
+  g.answered[item.id] = 'yes';
+  g.trail = g.trail.filter(x => x !== item.id).concat(item.id);
   save(); render(true);
 }
 
@@ -830,9 +888,18 @@ function emptyHome() {
    choice, never a second filled button (design-system §2.1 rule 10). */
 const agentAlt = entry => `<div class="alt-route">
     <p class="alt-title">Let your AI agent do this</p>
-    <p class="alt-sub">Works with Claude and ChatGPT.</p>
-    <button class="btn sec btn-icon" data-act="connect-start" data-v="${entry}">${ICON.agent}Connect to agent</button>
+    <p class="alt-sub">Works with ${esc(listNames(ROLL.map(id => CLIENTS[id].name)))}.</p>
+    <button class="btn sec btn-icon" data-act="connect-start" data-v="${entry}">${agentRoll()}Connect to agent</button>
   </div>`;
+const listNames = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+/* An agent's logo, from agents/<id>.svg, drawn as a silhouette in the ink around it so any
+   official file fits both themes. A missing file shows the name's initial instead. */
+const agentLogo = id => `<span class="alogo" aria-hidden="true"><img src="agents/${id}.svg" alt=""
+  onerror="this.parentNode.classList.add('missing')"><b>${esc(((CLIENTS[id] || {}).name || '?').charAt(0))}</b></span>`;
+/* The icon on "Connect to agent": the generic agent, then every agent it works with, one
+   every two seconds (timer below). */
+const agentRoll = () => `<span class="agent-roll" aria-hidden="true"><i class="on">${ICON.agent}</i>${
+  ROLL.map(id => `<i>${agentLogo(id)}</i>`).join('')}</span>`;
 function emptyNext() {
   const conn = activeConns()[0], cl = conn && clientByName(conn.client);
   if (!cl) return `<div class="empty-next">
@@ -1116,7 +1183,7 @@ function renderAgent() {
       </div>`).join('')}
       ${unconnected.length ? `<div class="section-h"><h2>${conns.length ? 'Connect another' : 'Connect your agent'}</h2></div>
       <div class="card flush">${unconnected.map(([id, c]) => `<button class="row" data-act="connect-start" data-v="agent" data-client="${id}">
-        <span class="grow"><span class="name">Connect ${esc(c.name)}</span></span><span class="chev">›</span></button>`).join('')}</div>` : ''}
+        ${agentLogo(id)}<span class="grow"><span class="name">Connect ${esc(c.name)}</span></span><span class="chev">›</span></button>`).join('')}</div>` : ''}
     </div>
     <div class="g5">
       <div class="section-h"><h2>What it can do</h2></div>
@@ -1152,7 +1219,7 @@ function renderConnect(id, step) {
     authShell(`${back}
       <h1>Which AI agent do you use?</h1>
       <div class="choice col">${Object.entries(CLIENTS).map(([cid, x]) =>
-        `<button data-act="connect-client" data-v="${cid}">${esc(x.name)}</button>`).join('')}</div>
+        `<button data-act="connect-client" data-v="${cid}">${agentLogo(cid)}${esc(x.name)}</button>`).join('')}</div>
       ${instead}`);
     return;
   }
@@ -1918,9 +1985,17 @@ document.addEventListener('click', ev => {
 
     /* guided assembly (J1) */
     case 'guide-yes': S.guide.stage = 'amount'; keep(); setTimeout(() => { const i = $('#g-amount'); if (i) i.focus(); }, 30); return;
-    case 'guide-back': S.guide.stage = 'ask'; keep(); return;
-    case 'guide-no': { const c = guideCurrent(); if (c) { S.guide.answered[c.item.id] = 'no'; S.guide.i = c.idx + 1; }
-      S.guide.stage = 'ask'; S.guide.last = null; keep(); return; }
+    case 'guide-back': guideBack(); return;
+    case 'guide-no': {
+      const g = S.guide, c = guideCurrent();
+      g.made = g.made || {}; g.trail = g.trail || [];
+      if (c) {
+        if (guideMade(c.item.id)) guideUnmake(c.item.id);
+        g.answered[c.item.id] = 'no'; g.i = c.idx + 1;
+        g.trail = g.trail.filter(x => x !== c.item.id).concat(c.item.id);
+      }
+      Object.assign(g, { stage:'ask', last:null, revisit:null }); keep(); return;
+    }
     case 'guide-add': guideAdd(); return;
     case 'guide-stop': finishBasics(); return;
     case 'basics-start': S.guide = newGuide(); save(); location.hash = '#/basics'; return;
@@ -2130,6 +2205,23 @@ $('#devbtn').addEventListener('click', sheetProto);
    stranded over the next screen. Only hash changes close sheets — in-sheet
    re-renders call render() directly and must keep their sheet open. */
 window.addEventListener('hashchange', () => { closeSheet(); render(); });
+/* The agent roll turns every two seconds, counted from when each button first appears, so
+   the first icon always gets its full two seconds. It stays still for anyone who has asked
+   their device for reduced motion, and while the page is hidden. */
+setInterval(() => {
+  try { if (document.hidden || matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
+  const now = Date.now();
+  document.querySelectorAll('.agent-roll').forEach(r => {
+    if (!r.dataset.t) { r.dataset.t = now; return; }
+    if (now - r.dataset.t < 2000) return;
+    r.dataset.t = now;
+    const items = [...r.children], cur = Math.max(0, items.findIndex(x => x.classList.contains('on')));
+    items.forEach(x => { if (x.classList.contains('was')) {
+      x.style.transition = 'none'; x.classList.remove('was'); void x.offsetWidth; x.style.transition = ''; } });
+    items[cur].classList.remove('on'); items[cur].classList.add('was');
+    items[(cur + 1) % items.length].classList.add('on');
+  });
+}, 200);
 
 /* ================= SIGN UP, LOG IN, ONBOARDING (J1) =================
    Sign-up asks for nothing but a way in: a provider, or an email and a password.
@@ -2344,7 +2436,10 @@ function authAction(a, v, el) {
     }
     case 'ob-start': {
       if (!S.account.onboarded) S.account.obStep = 'basics';
-      S.guide = newGuide(); save(); location.hash = '#/basics'; return true;
+      /* coming back from the basics by Back: pick up where they were, answers kept */
+      if (!S.guide || S.guide.done) S.guide = newGuide();
+      Object.assign(S.guide, { revisit:null, stage:'ask', i:0 });
+      save(); location.hash = '#/basics'; return true;
     }
   }
   return false;

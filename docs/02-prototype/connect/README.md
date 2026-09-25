@@ -1,12 +1,15 @@
 # Connector setup screenshots
 
 The agent setup guide (PRD J5) shows one screenshot per step, per client, per platform.
-Drop them here with these exact names and they appear in the prototype on reload:
+Drop them here with these exact names and they appear in the prototype on reload (Grok's and
+Muse's steps are generic drafts until their connector support is confirmed):
 
 | Client | Computer | Phone |
 |---|---|---|
 | Claude | `claude-computer-1.png` · `-2` · `-3` | `claude-phone-1.png` · `-2` · `-3` |
 | ChatGPT | `chatgpt-computer-1.png` · `-2` · `-3` | `chatgpt-phone-1.png` · `-2` · `-3` |
+| Grok | `grok-computer-1.png` · `-2` · `-3` | `grok-phone-1.png` · `-2` · `-3` |
+| Muse | `muse-computer-1.png` · `-2` · `-3` | `muse-phone-1.png` · `-2` · `-3` |
 
 Step *n* is the *n*th step in `connectors.js`. A missing file shows a placeholder with its name.
 PNG, cropped to the part of the screen the step talks about.

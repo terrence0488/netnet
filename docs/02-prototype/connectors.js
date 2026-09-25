@@ -20,6 +20,10 @@ const START_PROMPT = 'Help me set up NetNet. Ask me what I have, one thing at a 
    what is stale itself, through the MCP layer. */
 const REFRESH_PROMPT = 'Some of my NetNet holdings are out of date. Find them and help me update them.';
 
+/* The agents the "Connect to agent" button cycles through, in this order, one every two
+   seconds. Each one's logo is agents/<id>.svg (see agents/README.md). */
+const ROLL = ['chatgpt', 'claude', 'grok', 'muse'];
+
 const CLIENTS = {
   claude: {
     name: 'Claude',
@@ -52,6 +56,41 @@ const CLIENTS = {
         { text:'In the ChatGPT app, open **Settings → Connectors** and tap **Create**.' },
         { text:'Name it NetNet, paste this address, and choose **OAuth**:', url:true },
         { text:'Tap **Create**, then **Allow** on the NetNet page that opens.' }
+      ]
+    }
+  },
+
+  /* DRAFT, unverified: listed at the Founder's request. Before launch, confirm each app
+     accepts a custom remote MCP connector, then replace these generic steps with its own. */
+  grok: {
+    name: 'Grok',
+    deepLink: null,
+    guides: {
+      computer: [
+        { text:'In Grok’s settings, find where you add a **custom connector**.' },
+        { text:'Add one named NetNet, with this address:', url:true },
+        { text:'Approve it, then press **Allow** on the NetNet page that opens.' }
+      ],
+      phone: [
+        { text:'In the Grok app’s settings, find where you add a **custom connector**.' },
+        { text:'Add one named NetNet, with this address:', url:true },
+        { text:'Approve it, then tap **Allow** on the NetNet page that opens.' }
+      ]
+    }
+  },
+  muse: {
+    name: 'Muse',
+    deepLink: null,
+    guides: {
+      computer: [
+        { text:'In Muse’s settings, find where you add a **custom connector**.' },
+        { text:'Add one named NetNet, with this address:', url:true },
+        { text:'Approve it, then press **Allow** on the NetNet page that opens.' }
+      ],
+      phone: [
+        { text:'In the Muse app’s settings, find where you add a **custom connector**.' },
+        { text:'Add one named NetNet, with this address:', url:true },
+        { text:'Approve it, then tap **Allow** on the NetNet page that opens.' }
       ]
     }
   }

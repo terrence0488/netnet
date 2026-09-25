@@ -432,7 +432,13 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   "Let your AI agent do this", with a secondary **Connect to agent** button (J5). It must be visible
   enough to be a real choice, because the agent is what v1 is betting on (A1, M3), and never a
   second filled button, because two equal choices stall a new user. In the basics, every answer is saved the moment it is given, and "Done for now" is one tap
-  away on every screen, so onboarding never has to be cleared to reach Home.
+  away on every screen, so onboarding never has to be cleared to reach Home. Once the basics have
+  started, the agent is not offered again inside them: one route at a time.
+- **Given** the basics, **when** the user presses **Back**, **then** they return to the previous
+  question showing their earlier answer, which they can correct in place or change from yes to no.
+  A no removes what the yes added, and anything asked only because of it ("no car" removes the car
+  loan), logged like any delete. From the first question, Back returns to where the basics began —
+  in onboarding, the screen where the agent route is — so choosing the questions is never a trap.
 - **Given** the agent route, **when** the agent is connected, **then** onboarding is done and the
   user lands on a blank Home — no waiting state. The blank Home offers the starting prompt to copy
   and, where the client supports it, a button that opens the agent with the prompt already typed
@@ -548,10 +554,17 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 
 ### J5 — Connect the agent (A1)
 - **Given** a verified account, **when** the user opens Connect your agent, **then** they get
-  steps for their client (Claude, ChatGPT) **and their platform** (phone or computer, detected and
+  steps for their client **and their platform** (phone or computer, detected and
   switchable), each step with a screenshot, and the connector URL, with no token to generate,
   paste or store. The steps and screenshots are administered content (§2.3), because the clients'
-  own screens change without notice.
+  own screens change without notice. So is the client list itself: Claude and ChatGPT at launch,
+  and any other agent (Grok, Muse) once it is confirmed to accept a custom remote MCP connector.
+  The server is standard remote MCP with OAuth and no client-specific branching, so supporting
+  another agent is content — steps, screenshots, a logo — not code.
+- **Given** the "Connect to agent" button, **when** it is shown, **then** it shows the agents it
+  works with: its icon turns through their logos, two seconds each, and holds still for anyone
+  whose device asks for reduced motion. Logos are each company's official files, drawn in the
+  button's own ink, and screen readers hear only "Connect to agent".
 - **Given** any place the user starts connecting — onboarding, the empty Home, a holding, the Agent
   tab — **when** they do, **then** it is the same flow, so the routes can never drift apart.
 - **Given** an email that is not yet verified, **when** the user starts connecting, **then** they
@@ -812,6 +825,7 @@ Founder's approval with the prototype.
 | 20 | The basics are part of onboarding, one question per screen; an empty Home offers one primary action and one secondary alternative (the agent, below a rule); the starting tiles and `via: starter` are gone | J1, §3.5 |
 | 21 | Packs carry their own default types and basics, with follow-ups after a yes; ten launch countries | §2.3, J2 |
 | 22 | Onboarding offers the agent as its alternative route; one connect flow everywhere, per client and platform, with screenshots; connected ends onboarding on a blank Home with the starting prompt; agent prompts for empty and stale Home; `{entry}` on connection events | J1, J5, J6, §3.5 |
+| 23 | Back on every question of the basics (correct an answer, change yes to no, or return to where the basics began); no agent offer inside the basics; the Connect button turns through the agents it works with; Grok and Muse listed once their connector support is confirmed | J1, J5 |
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves

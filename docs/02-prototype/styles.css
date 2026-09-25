@@ -499,14 +499,13 @@ button.nw-chg{min-height:var(--hit);align-items:center}
 .auth-ccy select{width:auto;min-width:96px;min-height:var(--hit);font-size:16px;background:none;color:var(--ink);border:none;border-bottom:1px solid var(--rule-strong)}
 
 /* the basics: one question per screen, answered with a tap */
-.basics-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-8px 0 18px}
-.basics-top .auth-step{margin:0}
+.basics-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-14px 0 8px}
+.basics-top .back{margin:0}
 .basics-top .link-sm{margin-block:0;margin-right:-4px;color:var(--ink-3)}
 .basics-top .link-sm:hover{color:var(--ink)}
 .basics-asked{font-size:13px;color:var(--ink-3);margin:0 0 6px}
 .basics-asked b{color:var(--ink-2);font-weight:600}
 .basics-yn button{min-width:96px;justify-content:center}
-.basics-back{margin-top:18px;margin-left:-4px}
 /* empty Home: one action, one quiet alternative */
 .empty-next{padding:26px 0;display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:420px}
 .empty-next .link{font-size:13px;color:var(--ink-3)}
@@ -547,3 +546,23 @@ a.btn{text-decoration:none}
 .alt-sub{font-size:13px;color:var(--ink-3);margin:2px 0 14px}
 .btn-icon{gap:10px}
 .btn-icon svg{width:17px;height:17px;flex:none}
+
+/* agent logos: files in agents/, drawn as a silhouette in the surrounding ink */
+.alogo{display:inline-grid;place-items:center;width:18px;height:18px;flex:none}
+.alogo img{width:100%;height:100%;object-fit:contain;filter:brightness(0) invert(1)}
+.alogo b{display:none;place-items:center;width:18px;height:18px;border:1.3px solid currentColor;border-radius:50%;
+  font-size:9.5px;font-weight:700;line-height:1;letter-spacing:0}
+.alogo.missing img{display:none}
+.alogo.missing b{display:grid}
+@media (prefers-color-scheme: light){ .alogo img{filter:brightness(0)} }
+.choice.col button .alogo{margin-right:12px}
+.row .alogo{align-self:center}
+.choice.col button{display:flex;align-items:center}
+/* the roll on "Connect to agent": each agent rises in, holds two seconds, rises out */
+.agent-roll{position:relative;display:inline-block;width:18px;height:18px;overflow:hidden;flex:none}
+.agent-roll>i{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;opacity:0;
+  transform:translateY(90%) scale(.7);transition:transform .55s cubic-bezier(.2,.8,.2,1),opacity .35s ease}
+.agent-roll>i.on{opacity:1;transform:none}
+.agent-roll>i.was{opacity:0;transform:translateY(-90%) scale(.7)}
+.agent-roll svg{width:17px;height:17px}
+@media (prefers-reduced-motion: reduce){ .agent-roll>i{transition:none} }
