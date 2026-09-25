@@ -57,7 +57,7 @@ MCP server, email sending, and anything on the reserved list in PRD §4.2.
 
 **Where they live.** `packs.js` — a data file with no functions in it. `app.js` names no local
 institution, rule or default; it reads the world only through the pack. Adding a market is a new
-entry in `PACKS` plus pointing a `REGIONS` row at it. No change to the flow. In the product, a
+entry in `PACKS` plus a `COUNTRY_PACK` line pointing a country at it. No change to the flow. In the product, a
 human admin will edit packs through a future admin portal (PRD §9.6 item 17); `packs.js` is the
 shape that admin would be editing.
 
@@ -85,10 +85,15 @@ there that type is SRS and the answer is not in doubt.
 | Starters' sub-lines | "Workplace or state pension", "Home or investment" | "OA, SA, MA", "HDB, condo, landed" |
 | Conventions | Browser locale; currency from region | `en-SG`, SGD |
 
-**Where the region comes from.** Inferred from the browser's time zone, then its language tag;
-then **confirmed by one tap in onboarding**, never applied silently (§2.3 rule 2). Changeable
-afterwards in Account → General. Any country without a pack gets generic, and the country is still
-recorded — that is the demand signal for which pack to write next.
+**Where the region comes from.** In the product, the **country detected from the visitor's IP**,
+looked up by NetNet's own server or CDN (Founder, 2026-09-25). It is pre-selected and then
+**confirmed by one tap in onboarding**, never applied silently (§2.3 rule 2); IP is wrong behind a
+VPN or while travelling. The prototype has no server, so PROTO → "Country detected from IP"
+simulates the lookup (Singapore, Malaysia, UK, Germany, or not detected), and otherwise the
+browser's time zone stands in for it. "Somewhere else" lists **every country** (ISO 3166-1, plus
+Kosovo), alphabetically, with none pinned to the top. Each country brings its currency as the
+default for totals. Changeable afterwards in Account → General. Any country without a pack gets
+generic, and the country is still recorded — that is the demand signal for which pack to write next.
 
 **A known edge, handled rather than hidden.** When a pack turns an ambiguous type into a default
 (SG's SRS), a foreign instance of the same universal type inherits the local default — a UK ISA

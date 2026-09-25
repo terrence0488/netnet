@@ -84,7 +84,17 @@ function packVal(section, key) {
   return g[section] ? g[section][key] : undefined;
 }
 const packList = section => pack()[section] || PACKS.generic[section];
+/* Every country, alphabetical by its English name. No country is pinned to the top. */
+const REGIONS = (() => {
+  let dn = null; try { dn = new Intl.DisplayNames(['en'], { type:'region' }); } catch (e) {}
+  return Object.keys(COUNTRY_CCY).map(code => ({ code, ccy:COUNTRY_CCY[code], pack:COUNTRY_PACK[code] || null,
+    name:REGION_NAMES[code] || (dn && dn.of(code)) || code })).sort((a, b) => a.name.localeCompare(b.name, 'en'));
+})();
 const regionOf = code => REGIONS.find(r => r.code === code) || null;
+/* Currency choices: the one in use first, then every currency, alphabetical. */
+const ALL_CCYS = [...new Set([...CCYS, ...Object.values(COUNTRY_CCY)])].sort();
+const ccyOptions = selected => [selected, ...ALL_CCYS.filter(c => c !== selected)]
+  .map(c => `<option ${c === selected ? 'selected' : ''}>${c}</option>`).join('');
 const LIAB = UNIVERSAL_TYPES.filter(u => u.side === 'liability').map(u => u.id);
 
 /* A type shows the user's own name if they renamed it, else the pack's label. */
@@ -1245,12 +1255,11 @@ function renderSub(name) {
   if (name === 'general') {
     html = B('General') + `<div class="card">
       <div class="field"><label>Where you live</label>
-        <select data-act="set-region">${S.account.region ? '' : '<option value="" selected>Not set</option>'}${REGIONS.map(r =>
+        <select data-act="set-region">${regionOf(S.account.region) ? '' : '<option value="" selected>Not set</option>'}${REGIONS.map(r =>
           `<option value="${r.code}" ${r.code === S.account.region ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}</select>
         <div class="hint">Sets local names and suggestions. You can still track anything.</div></div>
       <div class="field"><label>Default Currency</label>
-        <select data-act="set-ccy">${CCYS.map(c =>
-          `<option ${c === S.settings.defaultCcy ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        <select data-act="set-ccy">${ccyOptions(S.settings.defaultCcy)}</select>
         <div class="hint">Everything is totalled in this currency.</div></div></div>`;
   } else if (name === 'view') {
     html = B('View Settings') + `
@@ -1364,8 +1373,7 @@ function renderAdd(kind, presetType, editId) {
     ${k === 'asset' ? '<div class="field" id="f-access"></div>' : ''}
     ${!h ? `<div class="two">
       <div class="field"><label>Currency</label>
-        <select id="f-ccy" data-act="form-amount">${CCYS.map(c =>
-          `<option ${c === S.settings.defaultCcy ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+        <select id="f-ccy" data-act="form-amount">${ccyOptions(S.settings.defaultCcy)}</select></div>
       <div class="field"><label>${k === 'asset' ? 'Asset' : 'Liability'} Value</label>
         <input id="f-amount" type="number" inputmode="decimal" placeholder="0"></div></div>
     <div class="field"><label>As of</label><input id="f-date" type="date" value="${TODAY}" max="${TODAY}"></div>` : ''}
@@ -1570,8 +1578,7 @@ function sheetValue(hid, vid) {
       <div class="two">
         <div class="field" style="flex:2"><label>${h.kind === 'liability' ? 'Liability' : 'Asset'} Value</label>
           <input id="v-amount" type="number" inputmode="decimal" value="${v ? v.amount : ''}" placeholder="0" autofocus></div>
-        <div class="field"><label>Currency</label><select id="v-ccy">${CCYS
-          .map(c => `<option ${c === (v ? v.ccy : h.ccy) ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+        <div class="field"><label>Currency</label><select id="v-ccy">${ccyOptions(v ? v.ccy : h.ccy)}</select></div>
       </div>
       <div class="field"><label>As of</label><input id="v-date" type="date" value="${v ? v.date : TODAY}" max="${TODAY}"></div>
       ${(v ? v.ccy : h.ccy) !== S.settings.defaultCcy ? `<div class="hint" style="margin-top:10px">Totalled in
@@ -1671,8 +1678,8 @@ function sheetProto() {
     <button class="opt" data-act="reset-empty"><span class="grow">Start from an empty account (first-run)</span></button>
     ${!S.account.verified ? '<button class="opt" data-act="mock-verify"><span class="grow">Mark email verified</span></button>' : ''}
     <button class="opt" data-act="fail-connect"><span class="grow">Simulate a failed agent connection</span></button>
-    <div class="sh-grp" style="padding:0 22px">Browser location, for the next sign-up</div>
-    ${[['', 'This browser'], ['SG', 'Singapore'], ['MY', 'Malaysia'], ['GB', 'United Kingdom'], ['none', 'No hint at all']]
+    <div class="sh-grp" style="padding:0 22px">Country detected from IP, for the next sign-up</div>
+    ${[['', 'Use this browser’s time zone'], ['SG', 'Singapore'], ['MY', 'Malaysia'], ['GB', 'United Kingdom'], ['DE', 'Germany'], ['none', 'Not detected']]
       .map(([v, l]) => `<button class="opt" data-act="proto-locale" data-v="${v}"><span class="grow">${l}</span>${tick((protoLocale() || '') === v)}</button>`).join('')}
     <div class="sh-grp" style="padding:0 18px">Analytics events fired (§3.5)</div>
     <div style="max-height:40vh;overflow:auto">${S.events.length ? S.events.map(e =>
@@ -2042,15 +2049,24 @@ const SEGMENTS = [
   { id:'established',  label:'Established — a lot to keep track of' }
 ];
 const PROVIDERS = [['google', 'Google', 'you@gmail.com'], ['apple', 'Apple', 'you@icloud.com']];
-function inferRegion() {
+/* The country the visitor is in, to pre-select "Where do you live?". In production this
+   is the visitor's IP, looked up by our own server or CDN — never a third-party call from
+   the browser — and it is only ever a default the user confirms (§2.3 rule 2). The
+   prototype has no server: the PROTO sheet simulates the lookup, and otherwise the
+   browser's time zone stands in for it. */
+const TZ_STANDIN = { 'Asia/Singapore':'SG', 'Asia/Kuala_Lumpur':'MY', 'Asia/Kuching':'MY', 'Asia/Jakarta':'ID',
+  'Asia/Manila':'PH', 'Asia/Bangkok':'TH', 'Asia/Ho_Chi_Minh':'VN', 'Asia/Saigon':'VN', 'Asia/Hong_Kong':'HK',
+  'Asia/Kolkata':'IN', 'Asia/Calcutta':'IN', 'Australia/Sydney':'AU', 'Australia/Melbourne':'AU',
+  'Europe/London':'GB', 'Europe/Berlin':'DE', 'Europe/Paris':'FR', 'America/New_York':'US',
+  'America/Chicago':'US', 'America/Los_Angeles':'US', 'Asia/Tokyo':'JP', 'Asia/Dubai':'AE' };
+function detectCountry() {
   const sim = protoLocale();
   if (sim) return sim === 'none' ? null : sim;
   try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-    const byTz = REGIONS.find(r => (r.tz || []).includes(tz));
-    if (byTz) return byTz.code;
+    const byTz = TZ_STANDIN[Intl.DateTimeFormat().resolvedOptions().timeZone || ''];
+    if (byTz) return byTz;
     const cc = ((navigator.language || '').split('-')[1] || '').toUpperCase();
-    if (cc && cc !== 'ZZ' && regionOf(cc)) return cc;
+    if (regionOf(cc)) return cc;
   } catch (e) {}
   return null;
 }
@@ -2123,7 +2139,7 @@ function renderWelcome(step) {
       <button class="btn" style="margin-top:22px" data-act="ob-finish">${f.segment ? 'Continue' : 'Skip'}</button>`);
     return;
   }
-  const guess = inferRegion();
+  const guess = detectCountry();
   if (f.region === undefined) f.region = guess || null;
   const reg = regionOf(f.region);
   const ccy = f.ccy || (reg ? reg.ccy : 'USD');
@@ -2142,7 +2158,7 @@ function renderWelcome(step) {
     <div class="hint" style="margin-top:10px">For local names and suggestions. You can still track anything.</div>
     ${f.err ? `<div class="hint warn-t">${esc(f.err)}</div>` : ''}
     ${reg ? `<div class="auth-ccy">Totals in ${f.ccyOpen
-      ? `<select id="ob-ccy" data-act="ob-ccy" aria-label="Currency for totals">${CCYS.map(c => `<option ${c === ccy ? 'selected' : ''}>${c}</option>`).join('')}</select>`
+      ? `<select id="ob-ccy" data-act="ob-ccy" aria-label="Currency for totals">${ccyOptions(ccy)}</select>`
       : `<b>${esc(ccy)}</b> <button class="link-sm" data-act="ob-ccy-open">Change</button>`}</div>` : ''}
     <button class="btn" style="margin-top:22px" data-act="ob-next">Continue</button>`);
 }

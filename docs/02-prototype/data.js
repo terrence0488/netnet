@@ -34,7 +34,9 @@ const SEED_TAGS = ['Emergency','Cash Equivalent','Growth','Dividend','High Risk'
        Invented rates, quoted per USD; SGD wobbles so history is not flat. --- */
 const CCYS = ['SGD','USD','MYR','IDR','PHP','THB','VND','HKD','INR','AUD','GBP','EUR','JPY'];
 const PER_USD = { USD:1, MYR:4.42, IDR:15850, PHP:56.2, THB:35.6, VND:24900, HKD:7.8,
-                  INR:83.4, AUD:1.51, GBP:0.78, EUR:0.92, JPY:149 };
+                  INR:83.4, AUD:1.51, GBP:0.78, EUR:0.92, JPY:149, CHF:0.88, CNY:7.2, KRW:1340,
+                  TWD:32, CAD:1.37, NZD:1.65, AED:3.67, SEK:10.5, NOK:10.7, DKK:6.9, BRL:5.2,
+                  MXN:18, ZAR:18.5, SAR:3.75, TRY:34 };
 function fxUSDSGD(dateStr) {
   const t = Date.parse(dateStr) / 86400000;
   return +(1.325 + 0.052 * Math.sin(t / 61) + 0.024 * Math.sin(t / 19.5)).toFixed(4);

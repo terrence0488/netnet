@@ -6,7 +6,8 @@ three, §2.3 added jurisdiction packs so the product is not permanently shaped b
 and §2.4 made the agent a target user with a falsifiable claim behind it. Also changed: §3, §4, J1,
 J2, J8, §8, N10 and N11. What changed and why: **§9.5**. Further amendments made on the Founder's
 direction at the Stage 2 review (J2 undecided state, G-D1/G-D3, §3.5 `via`, quiet agent provenance
-and no displayed exchange rate, admin-configurable packs, sign-up before onboarding): **§9.6**.
+and no displayed exchange rate, admin-configurable packs, sign-up before onboarding, region from IP):
+**§9.6**.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -119,7 +120,9 @@ Four rules, binding:
    gets universal types, universal questions and the full §2.1 treatment — only the local names are
    missing. It must be good on its own.
 2. **A wrong pack is worse than no pack.** Showing CPF to a Malaysian is more alienating than showing
-   nothing. Infer from locale, then **confirm with one question**; never apply silently.
+   nothing. Infer from the visitor's IP (the browser's locale if that fails), then **confirm with
+   one question**; never apply silently. Every country can be chosen, alphabetically, and none is
+   pinned to the top (§9.6 item 19).
 3. **Packs set defaults; they never restrict.** This audience holds a Singapore CPF, a UK ISA and a
    US brokerage at once. Jurisdiction chooses the suggestions; the type system stays fully open (J2).
 4. **The agent covers every market we have not packed.** "I have a Riester pension" is something the
@@ -427,9 +430,9 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** a user in a market with no pack, **when** they add holdings, **then** the generic pack
   gives them universal types, the same fact-based questions and the same stated reasons — only local
   institution names are absent, and nothing about the flow degrades (§2.3 rule 1).
-- **Given** a jurisdiction inferred from locale, **when** the user first sees it, **then** it is
-  confirmed by one question rather than applied silently, and it is changeable afterwards (§2.3
-  rule 2).
+- **Given** a jurisdiction inferred from the visitor's IP (or locale), **when** the user first sees
+  it, **then** it is confirmed by one question rather than applied silently, and it is changeable
+  afterwards (§2.3 rule 2).
 - **Given** a user holding instruments from several countries, **when** they add them, **then**
   nothing in the pack prevents it — the pack supplies suggestions and defaults only (§2.3 rule 3).
 - **Given** any accessibility default, **when** it is applied, **then** its **consequence** is shown
@@ -759,6 +762,12 @@ rather than recorded as separately approved.
     routes to sign-up. `signup_started` and `account_created` gain `{method}`, so the launch shows
     which way in people choose. Per-segment readings must join these two events to the account,
     since the segment is not known when they fire.
+19. **Where the user lives defaults to the country detected from their IP** (2026-09-25). Founder
+    direction. It is still only a default the user confirms (§2.3 rule 2): IP is wrong behind a
+    VPN or while travelling. The lookup runs on NetNet's own server or CDN, never as a
+    third-party call from the browser. Choosing "somewhere else" lists every country
+    alphabetically, with none pinned to the top, so the product does not read as Singapore's.
+    Every country is recordable, packed or not, and its currency becomes the default for totals.
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves

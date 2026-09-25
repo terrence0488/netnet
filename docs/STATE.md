@@ -32,7 +32,9 @@ cluttered — "one figure, one place" is now binding (design-system §2.1). Agen
 mark, with the client named only on an opened value; the exchange rate is stored, not shown (PRD
 §9.6 item 16, AI-drafted for the Founder's reading). Then the landing page left the prototype, and
 sign-up became only a way in (Google, Apple, or email then password), with region and segment in a
-two-question onboarding afterwards, plus log-in and log-out (PRD §9.6 item 18).
+two-question onboarding afterwards, plus log-in and log-out (PRD §9.6 item 18). Where-you-live now
+defaults to the IP-detected country (simulated in PROTO) and lists every country alphabetically
+(§9.6 item 19).
 The functional suite had gone stale against the rework (it predated J1's return-to-Home and the
 universal t-retirement type) — tests live in the session scratchpad, not the repo, so they do not
 survive sessions. Re-run them before claiming anything passes.
