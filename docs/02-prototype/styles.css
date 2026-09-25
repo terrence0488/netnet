@@ -166,10 +166,7 @@ button.nw-chg:hover .vs{color:var(--ink);text-decoration-color:var(--ink-3)}
 .btn.auto{width:auto;padding:7px 14px}
 .btn[aria-disabled="true"]{opacity:.4;cursor:default;filter:none}
 .btn-row{display:flex;gap:12px;margin:18px 0}
-/* A section's own primary action, in its header: the holding page's Update sits at the top
-   of the history it adds to, so a long history never pushes it out of reach. */
-.section-h .btn-h{width:auto;flex:none;display:inline-flex;align-items:center;min-height:var(--hit);
-  padding:0 18px;font-size:10.5px}
+
 @media (min-width:900px){.btn-row{max-width:420px}}
 
 .field{margin-bottom:16px}
@@ -294,7 +291,7 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12p
 .msg.tool{border-left:2px solid var(--agent);padding-left:12px;color:var(--agent-text);
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;max-width:100%;border-radius:0}
 .carousel{display:block}.dots{display:none}
-.devbtn{position:fixed;right:16px;bottom:calc(var(--tab-h) + 16px);z-index:45;color:var(--ink-3);
+.devbtn{position:fixed;left:16px;bottom:calc(var(--tab-h) + 16px);z-index:45;color:var(--ink-3);
   font-size:8.5px;font-weight:700;letter-spacing:.2em;border:1px solid var(--rule-strong);padding:6px 10px;
   background:var(--paper)}
 @media (min-width:900px){.devbtn{bottom:18px}}
@@ -601,3 +598,30 @@ a.btn{text-decoration:none}
 .ph-label{font-size:9.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--ink)}
 .ph-sub{font-size:13px;color:var(--ink-2);max-width:280px;line-height:1.45;letter-spacing:-.005em}
 @media (forced-colors: active){ .ph-sample{display:none} }
+
+/* ---------- floating action (design-system §6, Floating action) ----------
+   The holding page's Update floats bottom-right, on the content column's edge (the rail
+   mirrors .main's widths), above the tab bar. At the very bottom of the page it sinks
+   behind the tab bar, so it never sits on the last value; it resurfaces on scrolling up. */
+:root{--fab-shadow:0 2px 4px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.5)}
+@media (prefers-color-scheme: light){ :root{--fab-shadow:0 2px 4px rgba(22,19,14,.12),0 8px 22px rgba(22,19,14,.2)} }
+.fab-rail{position:fixed;left:0;right:0;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);
+  z-index:35;pointer-events:none}
+.fab-rail .rail{max-width:520px;margin:0 auto;padding:0 var(--gutter);display:flex;justify-content:flex-end}
+.fab{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 20px 0 16px;
+  background:var(--brand);color:var(--brand-on);border-radius:2px;box-shadow:var(--fab-shadow);
+  font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  transition:transform .3s cubic-bezier(.32,.72,0,1),opacity .3s}
+.fab svg{width:16px;height:16px;flex:none}
+.fab.sunk{transform:translateY(calc(100% + 24px));opacity:0;pointer-events:none}
+.fab.sunk:focus-visible{transform:none;opacity:1}
+#s-holding{padding-bottom:40px}
+@media (min-width:900px){
+  .fab-rail{bottom:24px;display:grid;grid-template-columns:232px minmax(0,1fr)}
+  .fab-rail .rail{grid-column:2;width:min(100%,1180px);max-width:none;margin:0;justify-self:center;padding:0 40px}
+  .fab.sunk{transform:translateY(calc(100% + 32px))}
+  #s-holding{padding-bottom:16px}
+}
+@media (min-width:1500px){ .fab-rail .rail{width:min(100%,1340px)} }
+@media (min-width:1800px){ .fab-rail .rail{width:min(100%,1440px)} }
+@media (prefers-reduced-motion: reduce){ .fab{transition:none} }

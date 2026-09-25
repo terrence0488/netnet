@@ -1079,9 +1079,9 @@ function renderHolding(id) {
         ? 'Update this next month, or add an earlier value, to see how it moves.'
         : 'Add its first value, then update it as it changes.' })}</div>`}
 
-  <div class="section-h" style="margin-top:18px"><h2>History · ${hist.length}</h2>
-    <button class="btn btn-h" data-act="add-value" data-h="${h.id}">Update</button></div>
-  <div class="card flush">${history || '<div class="empty"><p class="muted">No values yet.</p></div>'}</div>`;
+  <div class="section-h" style="margin-top:18px"><h2>History · ${hist.length}</h2></div>
+  <div class="card flush">${history || '<div class="empty"><p class="muted">No values yet.</p></div>'}</div>
+  <div class="fab-rail"><div class="rail"><button class="fab" data-act="add-value" data-h="${h.id}">${ICON.plus}<span>Update</span></button></div></div>`;
 
   const cc = $('#detail-carousel');
   if (cc) {
@@ -1963,6 +1963,7 @@ function render(keepScroll) {
     period:'#/insights', agent:'#/agent', activity:'#/agent', account:'#/account', sub:'#/account' }[p[0]];
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === tabFor));
   if (navigated && !keepScroll) window.scrollTo(0, 0);
+  fabSink();
   if (chrome && S.account.signedIn && !sessionStarted) { sessionStarted = true; fire('session_started', {}); }
   if (p[0] === 'insights') {
     const view = S.settings.insightsView;
@@ -1970,6 +1971,22 @@ function render(keepScroll) {
     lastInsightsView = view;
   }
 }
+
+/* The floating Update button sinks out of the way at the very bottom of the page, so it never
+   sits on the last value, and resurfaces as soon as the page scrolls back up. A page too short
+   to scroll keeps it up; the page leaves room under its last row instead (styles.css). */
+function fabSink() {
+  const fab = document.querySelector('.screen.active .fab');
+  if (!fab) return;
+  const el = document.scrollingElement || document.documentElement;
+  const scrollable = el.scrollHeight - innerHeight > 4;
+  fab.classList.toggle('sunk', scrollable && innerHeight + scrollY >= el.scrollHeight - 4);
+}
+let fabFrame = 0;
+window.addEventListener('scroll', () => {
+  if (!fabFrame) fabFrame = requestAnimationFrame(() => { fabFrame = 0; fabSink(); });
+}, { passive:true });
+window.addEventListener('resize', fabSink);
 
 /* ================= wiring ================= */
 document.addEventListener('click', ev => {
