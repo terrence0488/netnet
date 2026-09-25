@@ -7,7 +7,8 @@ and §2.4 made the agent a target user with a falsifiable claim behind it. Also 
 J2, J8, §8, N10 and N11. What changed and why: **§9.5**. Further amendments made on the Founder's
 direction at the Stage 2 review (J2 undecided state, G-D1/G-D3, §3.5 `via`, quiet agent provenance
 and no displayed exchange rate, admin-configurable packs, sign-up before onboarding, region from IP,
-the basics in onboarding, per-country types and ~10 packs at launch): **§9.6**.
+the basics in onboarding, per-country types and ~10 packs at launch, onboarding through the agent):
+**§9.6**.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -278,7 +279,7 @@ Analytics ranks with the MCP layer as a P1 deliverable. Without these events the
 no evidence and §3.3 cannot be applied. Minimum event set:
 
 `landing_view` · `signup_started {method: email|google|apple}` · `account_created {method}` · `holding_created {source: web|agent, via: guided|form}` ·
-`value_recorded {source}` · `agent_connection_started {client}` ·
+`value_recorded {source}` · `agent_connection_started {client, entry: onboarding|home|holding|agent}` ·
 `agent_connection_completed {client}` · `agent_connection_failed {step, client}` ·
 `agent_tool_called {tool, kind: read|write, outcome, latency_ms, client}` ·
 `value_corrected {original_source, age_at_correction}` · `value_undone` ·
@@ -387,18 +388,26 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** a visitor on the sign-up page, **when** they sign up with a provider (Google, Apple) or
   with an email and a password, **then** an account exists, and sign-up asked for nothing else.
 - **Given** a new account, **when** it is created, **then** onboarding asks, one question per
-  screen: where they live (inferred, then confirmed — §2.3 rule 2), an optional segment, and then
-  **the basics** (below). Every answer is saved the moment it is given, and "Done for now" is one
-  tap away on every screen, so onboarding never has to be cleared to reach Home.
+  screen: where they live (inferred, then confirmed — §2.3 rule 2) and an optional segment. Then
+  one screen — "Let's start by getting to know a little about your finances" — with **Start**,
+  which opens **the basics** (below), and one quiet alternative: connect their AI agent to start
+  (J5). In the basics, every answer is saved the moment it is given, and "Done for now" is one tap
+  away on every screen, so onboarding never has to be cleared to reach Home.
+- **Given** the agent route, **when** the agent is connected, **then** onboarding is done and the
+  user lands on a blank Home — no waiting state. The blank Home offers the starting prompt to copy
+  and, where the client supports it, a button that opens the agent with the prompt already typed
+  ("Let Claude do it"). Adding holdings themselves is the quiet alternative.
 - **Given** an email sign-up, **when** the password is set, **then** a verification email is sent
   and the user carries on without waiting for it. Provider sign-ups are already verified.
 - **Given** a returning user, **when** they log in, **then** they resume onboarding if they had not
   finished it, and otherwise go straight to Home.
 - **Given** an empty account, **when** the user adds one holding with a value, **then** Home shows
   a net-worth total equal to that value with the holding listed under it.
-- **Given** an empty Home, **when** it is shown, **then** it offers **one** action — "Add what you
-  have", which reopens the basics — and one quiet alternative, connecting an agent (J5), not buried
-  in settings. Never several equal-weight choices: a new user who cannot tell where to start leaves.
+- **Given** an empty Home, **when** it is shown, **then** it offers **one** action and one quiet
+  alternative, never several equal-weight choices: a new user who cannot tell where to start
+  leaves. With no agent connected, the action is "Add what you have" (the basics) and the
+  alternative is connecting an agent (J5), not buried in settings. With an agent connected, it is
+  the starting prompt, with "add it yourself" as the alternative.
 - **Given** a user who does not know what to list, **when** they meet the basics, **then** the
   questions are this market's common holdings (the pack's checklist) — suggestions, not a fixed
   chart of accounts.
@@ -491,8 +500,14 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 
 ### J5 — Connect the agent (A1)
 - **Given** a verified account, **when** the user opens Connect your agent, **then** they get
-  per-client instructions (ChatGPT, Claude) and the connector URL, with no token to generate,
-  paste or store.
+  steps for their client (Claude, ChatGPT) **and their platform** (phone or computer, detected and
+  switchable), each step with a screenshot, and the connector URL, with no token to generate,
+  paste or store. The steps and screenshots are content, changeable without a release, because the
+  clients' own screens change without notice (§9.6 item 22).
+- **Given** an email that is not yet verified, **when** the user starts connecting, **then** they
+  are asked to verify first, with a resend, and the flow moves on by itself once they have.
+- **Given** the setup steps, **when** the user approves NetNet in their client, **then** NetNet's
+  screen moves on by itself. There is no "I've done it" button to press.
 - **Given** the user starts the connection in their MCP client, **when** they authorise NetNet,
   **then** OAuth completes, the client lists NetNet's tools, and NetNet shows the connection as
   active with client name and time.
@@ -760,7 +775,8 @@ rather than recorded as separately approved.
       balance sheet are separate permissions.
 
     Everything a pack holds is in scope for the portal, including its own default types and its
-    basics (§9.6 item 21).
+    basics (§9.6 item 21), and so are the agent setup guides — the steps and screenshots per client
+    and platform (§9.6 item 22).
 18. **Sign-up is only a way in; onboarding comes after it; the landing page is a separate design**
     (2026-09-25). Founder direction: sign-up and getting started must be as frictionless as
     possible, and anything that can be set after sign-up is. Sign-up is a provider (Google, Apple)
@@ -798,6 +814,19 @@ rather than recorded as separately approved.
     Australia and the United Kingdom — the first users' region, then where they come from, move to
     and hold assets. The United States and Japan are the obvious alternates. Each pack is reviewed by
     someone who knows that market before it ships. All of it is admin-editable later (item 17).
+22. **Onboarding through the agent** (2026-09-25). Founder direction. After location and segment,
+    one screen offers **Start** (the basics) with, below it, "Or, connect your AI agent to start".
+    The agent route: choose the agent → verify the email if needed (the gate stays) → steps for
+    that agent on this platform, phone or computer, each with a screenshot → NetNet's approval
+    page → done. A connected agent ends onboarding: the user lands on a blank Home whose hint is
+    the starting prompt, with "Let Claude do it" where the client can open with a prompt typed in.
+    There is no waiting state. Someone who later prefers to add things themselves starts from that
+    blank Home. The starting prompt is one line, because NetNet's MCP layer supplies the country's
+    checklist and fact questions: both routes follow the same pack, and it stays admin-editable in
+    one place. Setup steps and screenshots are content: files in the prototype and in v1, and part
+    of the admin portal later (item 17). The Founder reports that Claude's and ChatGPT's free plans
+    now allow custom MCP connectors, so the flow shows no plan warning (see the correction above).
+    `agent_connection_started` carries `entry`, so the launch shows which route drives connections.
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves

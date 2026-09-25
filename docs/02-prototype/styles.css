@@ -511,3 +511,33 @@ button.nw-chg{min-height:var(--hit);align-items:center}
 .empty-next{padding:26px 0;display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:420px}
 .empty-next .link{font-size:13px;color:var(--ink-3)}
 .empty-next .link:hover{color:var(--ink)}
+
+/* ==========================================================================
+   CONNECT AN AGENT — the setup guide, NetNet's approval page, prototype mocks
+   ========================================================================== */
+a.btn{text-decoration:none}
+.auth-alt{display:block;margin-top:14px;font-size:13px;color:var(--ink-3);text-align:left}
+.auth-alt:hover{color:var(--ink)}
+.seg.plat{max-width:280px;margin:0 0 18px}
+.guide-steps li{margin-bottom:22px}
+.guide-steps .urlbox{margin:10px 0 0}
+/* a screenshot per step; a missing file shows its expected name (connect/README.md) */
+.shot{margin:12px 0 0;max-width:360px}
+.shot img{display:block;max-width:100%;max-height:420px;border:1px solid var(--rule)}
+.shot figcaption{display:none}
+.shot.missing img{display:none}
+.shot.missing figcaption{display:flex;align-items:center;justify-content:center;min-height:120px;padding:12px;
+  border:1px dashed var(--rule-strong);font-size:11px;color:var(--ink-3);text-align:center;letter-spacing:.02em}
+.waiting{font-size:13px;color:var(--ink-3);margin:6px 0 0;line-height:1.5}
+.consent{font-size:14px;color:var(--ink-2);line-height:1.55;margin:0 0 22px}
+.consent-cancel{display:flex;margin:12px 0 0 -4px}
+/* Stands in for an event outside NetNet (the verification link, the agent's redirect).
+   Dashed like the PROTO button, so it never reads as product UI. */
+.proto-mock{display:flex;align-items:center;min-height:var(--hit);width:100%;margin:16px 0 0;padding:8px 12px;
+  border:1px dashed var(--rule-strong);font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-3);text-align:left}
+.proto-mock:hover{color:var(--ink);border-color:var(--ink-3)}
+.empty-hint{font-size:14px;color:var(--ink-2);margin:0 0 4px}
+.urlbox.prompt{width:100%;margin:0 0 12px}
+.urlbox.prompt .grow{line-height:1.5}
+.auth > .link-sm{margin-left:-4px}

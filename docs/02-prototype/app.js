@@ -752,7 +752,6 @@ function renderBasics() {
   if (!cur) { finishBasics(); return; }
   const { item, n, total } = cur;
   const last = g.last && holdingOf(g.last);
-  const started = last || Object.keys(g.answered).length;
   const lastLine = last ? `<div class="guide-last">Added <b>${esc(last.name)}</b>,
       <span class="amount">${esc(money(Math.abs(latest(last).base)))}</span>.
       ${last.kind === 'asset' ? consequence(last.access, (reasonFor(last) || {}).reason, null)
@@ -760,8 +759,7 @@ function renderBasics() {
   authShell(`
     <div class="basics-top"><span class="auth-step">What you have · ${n} of ${total}</span>
       <button class="link-sm" data-act="guide-stop">Done for now</button></div>
-    ${lastLine || (!started && g.stage !== 'amount' ? `<p class="auth-sub">A few quick questions. Round numbers are fine,
-      and you can change anything later.</p>` : '')}
+    ${lastLine}
     ${g.stage === 'amount' ? `
       <p class="basics-asked">${esc(item.ask)} <b>Yes</b></p>
       <h1>${esc(item.amount)}</h1>
@@ -812,9 +810,23 @@ function emptyHome() {
     <div class="nw muted">${esc(money(0))}</div>
     <div class="lead">Nothing here yet.</div>
   </div>
-  <div class="empty-next">
+  ${emptyNext()}`;
+}
+function emptyNext() {
+  const conn = activeConns()[0], cl = conn && clientByName(conn.client);
+  if (!cl) return `<div class="empty-next">
     <button class="btn" data-act="basics-start">Add what you have</button>
-    <button class="link" data-go="#/agent">Or let your agent do it ›</button>
+    <button class="link" data-act="connect-start" data-v="home">Or let your agent do it ›</button>
+  </div>`;
+  const c = cl[1];
+  return `<div class="empty-next">
+    <p class="empty-hint">${esc(c.name)} is connected. Ask it to set things up:</p>
+    <div class="urlbox prompt"><span class="grow">${esc(START_PROMPT)}</span>
+      ${c.deepLink ? `<button class="btn ghost sm auto" data-act="copy-prompt" data-v="${esc(START_PROMPT)}">Copy</button>` : ''}</div>
+    ${c.deepLink
+      ? `<a class="btn" href="${esc(c.deepLink + encodeURIComponent(START_PROMPT))}" target="_blank" rel="noopener">Let ${esc(c.name)} do it</a>`
+      : `<button class="btn" data-act="copy-prompt" data-v="${esc(START_PROMPT)}">Copy the prompt</button>`}
+    <button class="link" data-act="basics-start">Or add it yourself ›</button>
   </div>`;
 }
 
@@ -1065,17 +1077,13 @@ function renderPeriod(view, i) {
 }
 
 /* ================= AGENT (J5) ================= */
-const MCP_URL = 'https://netnet.app/mcp';
 function renderAgent() {
-  const conns = (S.account.connections || []).filter(c => c.active);
+  const conns = activeConns();
+  const unconnected = Object.entries(CLIENTS).filter(([, c]) => !conns.some(x => x.client === c.name));
   $('#s-agent').innerHTML = `
   <div class="topbar"><h1>Your agent</h1></div>
   <div class="grid">
     <div class="g7">
-      ${!S.account.verified ? `<div class="note warn"><b>Verify your email first.</b> Connecting an agent needs
-        a verified account; everything else works without it.
-        ${S.account.verifyResent ? `<div class="hint" style="margin-top:6px">Sent again to ${esc(S.account.email)}.</div>`
-          : `<button class="btn ghost sm auto" data-act="resend-verify">Resend the link</button>`}</div>` : ''}
       ${conns.map(c => `<div class="card">
         <div style="display:flex;align-items:center;gap:9px">
           <span style="width:9px;height:9px;border-radius:50%;background:var(--gain);display:block"></span>
@@ -1086,26 +1094,9 @@ function renderAgent() {
           <button class="btn sm" data-go="#/agent/chat">Try it</button>
           <button class="btn sec sm" data-act="revoke" data-v="${c.id}" style="color:var(--loss)">Revoke</button></div>
       </div>`).join('')}
-
-      ${conns.length && !S.showConnect ? `<div class="btn-row"><button class="btn sec sm" data-act="show-connect">Connect another client</button></div>` : `
-      <div class="section-h"><h2>${conns.length ? 'Connect another client' : 'Connect a client'}</h2></div>
-      <div class="card">
-        <div class="seg" style="max-width:260px;margin-bottom:14px">
-          ${['Claude','ChatGPT'].map(c => `<button data-act="set-client" data-v="${c}" class="${(S.uiClient || 'Claude') === c ? 'on' : ''}">${c}</button>`).join('')}
-        </div>
-        ${(S.uiClient || 'Claude') === 'Claude' ? `<ol class="steps">
-          <li>In Claude, open <b>Settings → Connectors → Add custom connector</b>.</li>
-          <li>Paste the NetNet URL below.</li>
-          <li>Press <b>Allow</b> when NetNet opens in your browser.</li></ol>`
-        : `<ol class="steps">
-          <li>In ChatGPT, open <b>Settings → Connectors → Create</b>.</li>
-          <li>Paste the NetNet URL below and choose OAuth.</li>
-          <li>Press <b>Allow</b> when NetNet opens in your browser.</li></ol>
-`}
-        <div class="urlbox"><span class="mono">${MCP_URL}</span>
-          <button class="btn ghost sm auto" data-act="copy-url">Copy</button></div>
-        <button class="btn" style="margin-top:14px" data-act="connect" ${!S.account.verified ? 'aria-disabled="true"' : ''}>I've pasted it — continue</button>
-      </div>`}
+      ${unconnected.length ? `<div class="section-h"><h2>${conns.length ? 'Connect another' : 'Connect your agent'}</h2></div>
+      <div class="card flush">${unconnected.map(([id, c]) => `<button class="row" data-act="connect-start" data-v="agent" data-client="${id}">
+        <span class="grow"><span class="name">Connect ${esc(c.name)}</span></span><span class="chev">›</span></button>`).join('')}</div>` : ''}
     </div>
     <div class="g5">
       <div class="section-h"><h2>What it can do</h2></div>
@@ -1114,6 +1105,78 @@ function renderAgent() {
       <div class="list-foot" style="justify-content:flex-start"><button class="link" data-go="#/activity">Activity log ›</button></div>
     </div>
   </div>`;
+}
+
+/* ================= CONNECT AN AGENT (J5) =================
+   One flow, reached from onboarding, the empty Home, a holding and the Agent tab:
+   which agent → verify your email (email sign-ups only) → setup steps for this
+   platform, with screenshots → NetNet's approval page → done. There is no "I've done
+   it" button: NetNet sees the approval and moves on by itself. The prototype has no
+   server, so the two outside events (opening the verification link, the agent opening
+   NetNet's approval page) are simulated by clearly marked prototype buttons. */
+const activeConns = () => (S.account.connections || []).filter(c => c.active);
+const clientByName = n => Object.entries(CLIENTS).find(([, c]) => c.name === n) || null;
+const md = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+const isPhone = () => { try { return matchMedia('(pointer:coarse)').matches && innerWidth < 900; } catch (e) { return false; } };
+function connectBack() {
+  if (!S.account.onboarded) return '#/welcome/start';
+  return S.connectEntry === 'agent' ? '#/agent' : '#/home';
+}
+function renderConnect(id, step) {
+  /* back to the choice of agent if that is where they came from, else to where they started */
+  const back = `<button class="back" data-go="${id && S.connectEntry !== 'agent' ? '#/connect' : connectBack()}">‹ Back</button>`;
+  const instead = !S.account.onboarded
+    ? `<button class="link auth-alt" data-act="ob-start">Or answer a few questions instead ›</button>` : '';
+  const c = CLIENTS[id];
+  if (!c) {
+    authShell(`${back}
+      <h1>Which AI agent do you use?</h1>
+      <div class="choice col">${Object.entries(CLIENTS).map(([cid, x]) =>
+        `<button data-act="connect-client" data-v="${cid}">${esc(x.name)}</button>`).join('')}</div>
+      ${instead}`);
+    return;
+  }
+  if (!S.account.verified) {
+    authShell(`${back}
+      <h1>Verify your email first</h1>
+      <p class="auth-sub">We sent a link to ${esc(S.account.email)}. Open it on any device, and this page
+        moves on by itself.</p>
+      ${S.account.verifyResent ? `<div class="hint">Sent again.</div>`
+        : `<button class="link-sm" data-act="resend-verify">Resend the link</button>`}
+      <button class="proto-mock" data-act="mock-verify">Prototype: simulate opening the link</button>
+      ${instead}`);
+    return;
+  }
+  if (step === 'allow') {
+    authShell(`
+      <h1>${esc(c.name)} wants to connect to your NetNet</h1>
+      <p class="auth-sub">Signed in as ${esc(S.account.email)}</p>
+      <p class="consent">It will be able to see your holdings and their history, and add or update them.
+        Every change it makes is logged, and you can undo it.</p>
+      <button class="btn" data-act="connect-allow" data-v="${id}">Allow</button>
+      <button class="link-sm consent-cancel" data-act="connect-cancel" data-v="${id}">Cancel</button>`);
+    return;
+  }
+  const plat = S.connectPlatform || (isPhone() ? 'phone' : 'computer');
+  authShell(`${back}
+    <h1>Connect ${esc(c.name)}</h1>
+    ${S.connectNotice ? `<p class="auth-sub">${esc(S.connectNotice)}</p>` : ''}
+    <div class="seg sm plat">${[['phone', 'On a phone'], ['computer', 'On a computer']].map(([k, l]) =>
+      `<button data-act="set-platform" data-v="${k}" class="${plat === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <ol class="steps guide-steps">${c.guides[plat].map((st, i) => `<li>${md(st.text)}
+      ${st.url ? `<div class="urlbox"><span class="mono">${MCP_URL}</span>
+        <button class="btn ghost sm auto" data-act="copy-url">Copy</button></div>` : ''}
+      <figure class="shot"><img src="connect/${id}-${plat}-${i + 1}.png" alt="" loading="lazy"
+        onerror="this.parentNode.classList.add('missing')"><figcaption>Screenshot · connect/${id}-${plat}-${i + 1}.png</figcaption></figure>
+    </li>`).join('')}</ol>
+    <p class="waiting">Waiting for ${esc(c.name)}. This page moves on by itself once you press Allow.</p>
+    <button class="proto-mock" data-go="#/connect/${id}/allow">Prototype: simulate ${esc(c.name)} opening NetNet’s approval page</button>
+    ${instead}`);
+}
+function startConnect(entry, id) {
+  S.connectEntry = entry; S.connectNotice = null;
+  if (id) fire('agent_connection_started', { client:CLIENTS[id].name, entry });
+  save(); location.hash = id ? '#/connect/' + id : '#/connect';
 }
 
 /* ================= AGENT DEMO (J6, J8) ================= */
@@ -1672,7 +1735,7 @@ function sheetAskAgent(hid) {
         : 'Connect it first, so it can see this holding.'}</p>
       <div class="urlbox"><span class="grow">${esc(text)}</span>
         <button class="btn ghost sm auto" data-act="copy-prompt" data-v="${esc(text)}">Copy</button></div>
-      ${conns.length ? '' : '<button class="btn" style="margin-top:14px" data-go="#/agent">Connect your agent</button>'}
+      ${conns.length ? '' : '<button class="btn" style="margin-top:14px" data-act="connect-start" data-v="holding">Connect your agent</button>'}
     </div>`);
 }
 
@@ -1688,7 +1751,6 @@ function sheetProto() {
     <button class="opt" data-act="reset-seeded"><span class="grow">Reset to the sample account</span></button>
     <button class="opt" data-act="reset-empty"><span class="grow">Start from an empty account (first-run)</span></button>
     ${!S.account.verified ? '<button class="opt" data-act="mock-verify"><span class="grow">Mark email verified</span></button>' : ''}
-    <button class="opt" data-act="fail-connect"><span class="grow">Simulate a failed agent connection</span></button>
     <div class="sh-grp" style="padding:0 22px">Country detected from IP, for the next sign-up</div>
     ${[['', 'Use this browser’s time zone'], ['SG', 'Singapore'], ['MY', 'Malaysia'], ['GB', 'United Kingdom'], ['DE', 'Germany'], ['none', 'Not detected']]
       .map(([v, l]) => `<button class="opt" data-act="proto-locale" data-v="${v}"><span class="grow">${l}</span>${tick((protoLocale() || '') === v)}</button>`).join('')}
@@ -1715,7 +1777,8 @@ function guardRoute(hash) {
   const p0 = hash.replace(/^#\//, '').split('/')[0];
   if (!S.account.signedIn) return ['signup', 'login'].includes(p0) ? hash : hasAccount() ? '#/login' : '#/signup';
   if (!S.account.onboarded)
-    return ['welcome', 'basics'].includes(p0) ? hash : S.account.obStep === 'basics' ? '#/basics' : '#/welcome';
+    return ['welcome', 'basics', 'connect'].includes(p0) ? hash
+      : S.account.obStep === 'basics' ? '#/basics' : S.account.obStep === 'start' ? '#/welcome/start' : '#/welcome';
   return AUTH_ROUTES.includes(p0) ? '#/home' : hash;
 }
 function render(keepScroll) {
@@ -1725,7 +1788,7 @@ function render(keepScroll) {
   const p = hash.replace(/^#\//, '').split('/');
   const navigated = hash !== lastRoute;
   lastRoute = hash;
-  const screens = { signup:'s-auth', login:'s-auth', welcome:'s-auth', basics:'s-auth', home:'s-home', holding:'s-holding',
+  const screens = { signup:'s-auth', login:'s-auth', welcome:'s-auth', basics:'s-auth', connect:'s-auth', home:'s-home', holding:'s-holding',
     add:'s-add', edit:'s-add', insights:'s-insights', period:'s-period', agent:'s-agent',
     activity:'s-activity', account:'s-account', sub:'s-sub' };
   let id = screens[p[0]] || 's-home';
@@ -1745,9 +1808,10 @@ function render(keepScroll) {
   else if (p[0] === 'signup' || p[0] === 'login') renderAuth(p[0], p[1]);
   else if (p[0] === 'welcome') renderWelcome(p[1]);
   else if (p[0] === 'basics') renderBasics();
+  else if (p[0] === 'connect') renderConnect(p[1], p[2]);
 
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
-  const chrome = !AUTH_ROUTES.includes(p[0]) && p[0] !== 'basics';
+  const chrome = !AUTH_ROUTES.includes(p[0]) && !['basics', 'connect'].includes(p[0]);
   $('#tabbar').classList.toggle('hidden', !chrome);
   $('#sidebar').style.display = chrome ? '' : 'none';
   // Hiding the sidebar removes it from the grid, and .main would then auto-place into
@@ -1897,25 +1961,24 @@ document.addEventListener('click', ev => {
       rerender(); return;
     }
 
-    case 'set-client': S.uiClient = v; rerender(); return;
     case 'copy-url': navigator.clipboard && navigator.clipboard.writeText(MCP_URL); el.textContent = 'Copied'; return;
     case 'mock-verify': S.account.verified = true; closeSheet(); rerender(); return;
-    case 'show-connect': S.showConnect = true; rerender(); return;
-    case 'connect': {
-      fire('agent_connection_started', { client:S.uiClient || 'Claude' });
-      S.account.connections.push({ id:uid('c'), client:S.uiClient || 'Claude',
-        connectedAt:new Date().toISOString(), lastCall:new Date().toISOString(), active:true });
-      fire('agent_connection_completed', { client:S.uiClient || 'Claude' });
-      S.showConnect = false; rerender(); return;
+    case 'connect-start': closeSheet(); startConnect(v || 'home', el.dataset.client || null); return;
+    case 'connect-client': startConnect(S.connectEntry || 'home', v); return;
+    case 'set-platform': S.connectPlatform = v; keep(); return;
+    case 'connect-allow': {
+      const c = CLIENTS[v], now = new Date().toISOString();
+      S.account.connections.push({ id:uid('c'), client:c.name, connectedAt:now, lastCall:now, active:true });
+      fire('agent_connection_completed', { client:c.name, entry:S.connectEntry || 'agent' });
+      /* On the agent route, connecting IS the end of onboarding: a blank Home follows. */
+      if (!S.account.onboarded) { Object.assign(S.account, { onboarded:true, obStep:null }); S.guide = Object.assign(newGuide(), { done:true }); }
+      S.connectNotice = null; save();
+      location.hash = S.connectEntry === 'agent' ? '#/agent' : '#/home'; return;
     }
-    case 'fail-connect': {
-      closeSheet();
-      fire('agent_connection_failed', { step:'callback', client:S.uiClient || 'Claude' });
-      alert("Couldn't finish connecting to " + (S.uiClient || 'Claude') + ".\n\n" +
-        "Your client sent us back without an approval. This usually means the browser window was closed " +
-        "before you pressed Allow.\n\nTry again — nothing was changed.");
-      return;
-    }
+    case 'connect-cancel':
+      fire('agent_connection_failed', { step:'authorise', client:CLIENTS[v].name, entry:S.connectEntry || 'agent' });
+      S.connectNotice = 'Not connected: you pressed Cancel. Try again whenever you’re ready.';
+      save(); location.hash = '#/connect/' + v; return;
     case 'revoke': {
       const c = S.account.connections.find(x => x.id === v);
       if (!confirm('Revoke ' + c.client + '? Later calls from it will be rejected.')) return;
@@ -2139,6 +2202,15 @@ function renderAuth(route, step) {
 /* Onboarding: after the account exists, before Home. Two questions, one screen each. */
 function renderWelcome(step) {
   const f = draft();
+  if (step === 'start') {
+    authShell(`
+      <h1>Let’s start by getting to know a little about your finances.</h1>
+      <p class="auth-sub">A few quick questions. Round numbers are fine, and you can change anything later.</p>
+      <button class="btn" data-act="ob-start">Start</button>
+      <button class="link auth-alt" data-act="connect-start" data-v="onboarding">Or, connect your AI agent to start,
+        such as Claude or ChatGPT ›</button>`);
+    return;
+  }
   if (step === '2') {
     authShell(`
       <div class="auth-step">2 of 2</div>
@@ -2248,9 +2320,12 @@ function authAction(a, v, el) {
     }
     case 'ob-seg': f.segment = f.segment === v ? null : v; save(); renderWelcome('2'); return true;
     case 'ob-finish': {
-      Object.assign(S.account, { segment:f.segment || 'unknown', obStep:'basics' });
-      S.guide = newGuide();
-      S.signup = null; save(); location.hash = '#/basics'; return true;
+      Object.assign(S.account, { segment:f.segment || 'unknown', obStep:'start' });
+      S.signup = null; save(); location.hash = '#/welcome/start'; return true;
+    }
+    case 'ob-start': {
+      if (!S.account.onboarded) S.account.obStep = 'basics';
+      S.guide = newGuide(); save(); location.hash = '#/basics'; return true;
     }
   }
   return false;

@@ -37,12 +37,14 @@ defaults to the IP-detected country (simulated in PROTO) and lists every country
 (§9.6 item 19). Then the basics moved into onboarding (one question per screen) and the empty Home
 became one action plus a quiet agent link (§9.6 item 20); packs gained per-country default types and
 follow-up questions, SG adds Car loan, and ~10 launch packs are proposed for the Founder to confirm
-(§9.6 item 21).
+(§9.6 item 21). Then onboarding through the agent: intro screen with Start plus "Or, connect your AI
+agent", one connect flow everywhere (per client and platform, screenshot slots in `connect/`, mocked
+approval), connected = done → blank Home with the starting prompt (§9.6 item 22).
 The functional suite had gone stale against the rework (it predated J1's return-to-Home and the
 universal t-retirement type) — tests live in the session scratchpad, not the repo, so they do not
 survive sessions. Re-run them before claiming anything passes.
 `design-system.md` governs visuals; never put design or scope commentary in the prototype UI.
-§2.4 (A13/M12) cannot be shown in a clickable prototype — Stage 5/6. Stage 3 owns stack and must
-verify MCP connector tier-gating per client. Stage 3 must also design packs for a future human-admin
+§2.4 (A13/M12) cannot be shown in a clickable prototype — Stage 5/6. Stage 3 owns stack; the Founder
+reports Claude's and ChatGPT's free plans allow custom MCP connectors (confirm when building). Stage 3 must also design packs for a future human-admin
 portal (PRD §9.6 item 17): runtime-read and versioned, validated whole, audited, no user-data access,
 and a pack edit never silently reclassifies existing holdings. The portal itself is not v1.
