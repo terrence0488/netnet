@@ -4,9 +4,9 @@
 Stage: Prototype (rework)
 Phase: n/a
 Status: awaiting-approval
-Next action: Founder finishes the UI/UX review (`prototype-notes.md` §7 item 4) — the only open
-gate decision — then replies `approve prototype`, or gives feedback. Decisions 1, 2, 3 and 5 are
-applied (PRD §9.6).
+Next action: Founder finishes the UI/UX review (`prototype-notes.md` §7 item 4, the desktop
+layout) — the only open gate decision — and reads the PRD revisions listed in §9.6, then replies
+`approve prototype`, or gives feedback.
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -40,6 +40,10 @@ follow-up questions, SG adds Car loan, and ~10 launch packs are proposed for the
 (§9.6 item 21). Then onboarding through the agent: intro screen with Start plus "Or, connect your AI
 agent", one connect flow everywhere (per client and platform, screenshot slots in `connect/`, mocked
 approval), connected = done → blank Home with the starting prompt (§9.6 item 22).
+Then (2026-09-25): the PRD re-written so the Stage 2 revisions read as requirements in the PM's
+voice, with §9.6 a revision table (Founder asked for this). The prototype has SG, MY and UK packs.
+"All+1" is gone. The out-of-date note now routes to the agent or the connect flow. The open
+questions are settled except the desktop layout, which the Founder is still reviewing.
 The functional suite had gone stale against the rework (it predated J1's return-to-Home and the
 universal t-retirement type) — tests live in the session scratchpad, not the repo, so they do not
 survive sessions. Re-run them before claiming anything passes.

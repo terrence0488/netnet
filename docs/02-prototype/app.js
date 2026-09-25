@@ -440,9 +440,9 @@ function distribution(periods, list) {
 /* --- ranges --- */
 const HOME_RANGES = [['All',0],['6M',6],['YTD',-1],['1Y',12],['2Y',24],['4Y',48],['8Y',96]];
 const INSIGHT_RANGES = {
-  monthly:  [['All',0],['All+1',-2],['YTD',-1],['6M',6],['1Y',12],['2Y',24],['4Y',48]],
-  quarterly:[['All',0],['All+1',-2],['YTD',-1],['1Y',4],['2Y',8],['4Y',16],['8Y',32]],
-  yearly:   [['All',0],['All+1',-2],['2Y',2],['4Y',4],['8Y',8],['10Y',10]]
+  monthly:  [['All',0],['YTD',-1],['6M',6],['1Y',12],['2Y',24],['4Y',48]],
+  quarterly:[['All',0],['YTD',-1],['1Y',4],['2Y',8],['4Y',16],['8Y',32]],
+  yearly:   [['All',0],['2Y',2],['4Y',4],['8Y',8],['10Y',10]]
 };
 function ytdMonths() { return new Date(TODAY + 'T00:00:00Z').getUTCMonth() + 1; }
 function rangeMonths(v) { return v === -1 ? ytdMonths() : v; }
@@ -660,8 +660,7 @@ function renderHome() {
     <div class="g5">
       <div class="o-pos"><div class="section-h"><h2>Position</h2></div>
       ${positionLedger(list, t)}
-      ${stale ? `<div class="note warn"><b>${stale} holding${stale > 1 ? 's are' : ' is'} out of date.</b>
-        <button class="btn ghost sm auto" data-go="#/agent/chat">Ask your agent to refresh ${stale > 1 ? 'them' : 'it'}</button></div>` : ''}</div>
+      ${stale ? staleNote(stale) : ''}</div>
 
       ${segs.length > 1 ? `<div class="o-alloc"><div class="section-h"><h2>Allocation</h2>
         <button class="link" data-act="pie-mode" data-v="${S.settings.pieMode === '$' ? '%' : '$'}">${S.settings.pieMode === '$' ? 'Show %' : 'Show ' + esc(sym())}</button></div>
@@ -681,6 +680,20 @@ function renderHome() {
       ${archived ? `<div class="list-foot"><button class="link" data-go="#/sub/archived">${archived} archived ›</button></div>` : ''}</div>
     </div>
   </div>`;
+}
+
+/* Out-of-date holdings. With an agent connected, one tap hands it the job (the prompt
+   carries no data: the agent finds what is stale through the MCP layer). Without one,
+   the way to keep it current is to connect one. */
+function staleNote(n) {
+  const head = `<b>${n} holding${n > 1 ? 's are' : ' is'} out of date.</b>`;
+  const conn = activeConns()[0], cl = conn && clientByName(conn.client);
+  if (!cl) return `<div class="note warn">${head}
+    <button class="btn ghost sm auto" data-act="connect-start" data-v="home">Connect your agent to keep it current</button></div>`;
+  const c = cl[1], them = n > 1 ? 'them' : 'it';
+  return `<div class="note warn">${head}
+    ${c.deepLink ? `<a class="btn ghost sm auto" href="${esc(c.deepLink + encodeURIComponent(REFRESH_PROMPT))}" target="_blank" rel="noopener">Ask ${esc(c.name)} to update ${them}</a>`
+      : `<button class="btn ghost sm auto" data-act="copy-prompt" data-v="${esc(REFRESH_PROMPT)}">Copy a prompt for ${esc(c.name)}</button>`}</div>`;
 }
 
 /* The change against the comparison baseline. The baseline's name is the control
@@ -968,7 +981,6 @@ function renderInsights() {
   const all = periodsFor(view, list, 0);
   let take = cap > 0 ? cap : all.length;
   if (cap === -1) take = view === 'monthly' ? ytdMonths() : view === 'quarterly' ? Math.ceil(ytdMonths()/3) : 1;
-  if (cap === -2) take = all.length + 1;
   const periods = all.slice(0, Math.max(1, take));
   const oldestFirst = periods.slice().reverse();
   const comparable = periods.filter(p => p.abs != null);

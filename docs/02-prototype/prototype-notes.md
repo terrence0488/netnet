@@ -45,7 +45,7 @@ with one.
 | **J6** agent assembles | Agent → Try it | Scripted turn: finds the existing holding rather than duplicating, then writes |
 | **J7** verify and undo | Activity | Single undo and whole-turn batch undo; web and agent changes in one list |
 | **J8** grounded advice | Agent → Try it (second half) | The affordability question answered off money you could use, with staleness caveats. **A scripted replay — see §8** |
-| **J9** stay current | Stale chips on Home and detail; Account → Reminders | Cadence and a real opt-out |
+| **J9** stay current | Stale chips on Home and detail; the out-of-date note on Home; Account → Reminders | Cadence and a real opt-out. The note hands the job to a connected agent ("Ask Claude to update it", a prompt with no data in it), or offers to connect one |
 | **J10** own the data | Account → Export / Delete account | Export downloads JSON and CSV, including accessibility and the answer behind it |
 | **J11** insights | Insights tab | Monthly/Quarterly/Yearly; Growth, Assets vs Liabilities, Distribution Over Time; Insights Filters with "Don't Show"; period drill-down |
 | **§3.5** segment on every event | PROTO → events | `{segment}` rides on every event: `unknown` until onboarding, then whatever was chosen, or `unknown` if skipped. `signup_started` and `account_created` carry `{method}` |
@@ -78,13 +78,17 @@ shows the machinery working: **generic asks** "could you take money out today wi
 for a tax-advantaged account, because ISAs and IRAs answer differently; **SG does not ask**, because
 there that type is SRS and the answer is not in doubt.
 
-| | Generic | SG |
-|---|---|---|
-| Mandatory retirement | "Retirement account" — locked until you're eligible to withdraw | "CPF" — same rule, reason names CPF |
-| Tax-advantaged | "Tax-advantaged account" — asks the penalty question | "SRS" — locked by default, reason names SRS |
-| The basics | Bank, pension, investments, own home, car, anything owed | Bank, CPF, investments, own home → home loan?, car → car loan?, anything else owed |
-| Own default types | none | Car loan |
-| Conventions | Browser locale; currency from region | `en-SG`, SGD |
+The prototype carries three country packs, **Singapore, Malaysia and the UK**, chosen to show the
+machinery's range; the other launch countries (PRD §2.3) are content for production. Any other
+country, Germany for example, runs on the generic pack.
+
+| | Generic | SG | MY | UK |
+|---|---|---|---|---|
+| Mandatory retirement | "Retirement account" — locked until you're eligible to withdraw | "CPF" — same rule, reason names CPF | "EPF" — **asks** "Is this your EPF Akaun Fleksibel?": Fleksibel is usable, the rest locked. A pack asking where the common default decides | "Pension" — locked until you can start drawing it |
+| Tax-advantaged | "Tax-advantaged account" — asks the penalty question | "SRS" — locked, reason names SRS | "PRS" — locked, tax penalty before retirement age | "ISA" — asks the penalty question (a Lifetime ISA differs from the rest) |
+| The basics | Bank, pension, investments, own home, car, anything owed | Bank, CPF, investments, own home → home loan?, car → car loan?, anything else owed | Bank, EPF → Akaun Fleksibel?, investments, own home → home loan?, car → car loan?, anything else (PTPTN) | Bank or savings, pension, investments (incl. ISAs), own home → mortgage?, car → finance?, anything else owed |
+| Own default types | none | Car loan | Car loan | Car finance |
+| Conventions | Browser locale; currency from region | `en-SG`, SGD | `en-MY`, MYR | `en-GB`, GBP |
 
 **Where the region comes from.** In the product, the **country detected from the visitor's IP**,
 looked up by NetNet's own server or CDN (Founder, 2026-09-25). It is pre-selected and then
@@ -297,9 +301,8 @@ whether the warm paper survives a landing page; and the wordmark, which is still
 - **The sample user is liquid, so the demo answer is "yes".** With ~S$1.04M usable, the honest
   answer to "can I afford a S$120k car" is yes. The empty-account path is now where the sharper
   story lives: a P-A with $4,000 usable and $12,000 owed sees it without an agent at all.
-- **Region inference is a guess by design.** Many people in Singapore run en-US browsers, so time
-  zone is read first. Either way the user confirms it.
-- **"All+1" range semantics were guessed** from the Insights frames.
+- **Region is a guess by design.** In the product it comes from the visitor's IP, which is wrong
+  behind a VPN or abroad; either way the user confirms it.
 - **A pack edit must not reclassify existing holdings** (PRD §9.6 item 17). The prototype saves
   each holding's accessibility when it is created, but reads the reason shown beside it live from
   the pack. That is harmless while packs change only by release. Once an admin can edit a default,

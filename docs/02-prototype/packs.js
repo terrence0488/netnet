@@ -71,7 +71,7 @@ const COUNTRY_CCY = {
   VA:'EUR', VC:'XCD', VE:'VES', VG:'USD', VI:'USD', VN:'VND', VU:'VUV', WF:'XPF', WS:'WST',
   XK:'EUR', YE:'YER', YT:'EUR', ZA:'ZAR', ZM:'ZMW', ZW:'ZWG'
 };
-const COUNTRY_PACK = { SG:'sg' };
+const COUNTRY_PACK = { SG:'sg', MY:'my', GB:'gb' };
 const REGION_NAMES = { HK:'Hong Kong', MO:'Macao' };
 
 const PACKS = {
@@ -205,6 +205,111 @@ const PACKS = {
       { id:'car_loan',  u:'loan', type:'car_loan', name:'Car loan', onlyIf:'car', ask:'Is there a car loan on it?',
         amount:'Roughly how much is left to pay?' },
       { id:'owed',      u:'loan',       name:'Other loans',   ask:'Anything else you owe — a study loan, a personal loan or a card balance?',
+        amount:'Roughly how much, all together?' }
+    ]
+  },
+
+  /* ------------------------------------------------------------------ */
+  my: {
+    id: 'my',
+    locale: 'en-MY',
+    currency: 'MYR',
+
+    labels: {
+      cash:'Cash', retirement:'EPF', vehicle:'Car', mortgage:'Home loan', wrapper:'PRS'
+    },
+
+    examples: {
+      cash:'e.g. Maybank savings', listed:'e.g. Rakuten Trade, StashAway', retirement:'e.g. EPF Akaun Persaraan',
+      property:'e.g. Condo in PJ', vehicle:'e.g. Perodua Myvi', mortgage:'e.g. Housing loan',
+      loan:'e.g. PTPTN loan', wrapper:'e.g. PRS fund'
+    },
+
+    /* Hire purchase makes a car loan as ordinary here as in Singapore. */
+    types: [
+      { key:'car_loan', u:'loan', label:'Car loan', example:'e.g. Hire purchase on the Myvi' }
+    ],
+
+    defaults: {
+      wrapper: { access:'locked', reason:'PRS withdrawals before retirement age carry a tax penalty',
+                 until:'until retirement age' }
+    },
+
+    /* Where the common default has a fixed rule, a pack may ask instead. EPF is not all
+       locked: Akaun Fleksibel can be withdrawn at any time, so the fact decides it. */
+    questions: {
+      retirement: { ask:'Is this your EPF Akaun Fleksibel?', answers:[
+        { id:'yes', label:'Yes, Akaun Fleksibel', access:'accessible', reason:'Akaun Fleksibel can be withdrawn at any time' },
+        { id:'no',  label:'No',                  access:'locked',     reason:'EPF is locked until you’re eligible to withdraw',
+          until:'until you’re eligible to withdraw' } ] }
+    },
+
+    checklist: [
+      { id:'bank',      u:'cash',       name:'Bank accounts', ask:'Do you have money in a bank account?',
+        amount:'Roughly how much, across all of them?' },
+      { id:'epf',       u:'retirement', name:'EPF', answer:'no', ask:'Do you have EPF savings?',
+        amount:'Roughly how much in Akaun Persaraan and Akaun Sejahtera?', hint:'The KWSP app shows each account.' },
+      { id:'epf_flex',  u:'retirement', name:'EPF Akaun Fleksibel', answer:'yes', onlyIf:'epf',
+        ask:'Anything in Akaun Fleksibel?', amount:'Roughly how much?', hint:'This part you can withdraw at any time.' },
+      { id:'invest',    u:'listed',     name:'Investments',   ask:'Any investments — shares, unit trusts, an investing app?',
+        amount:'Roughly what are they worth today?' },
+      { id:'home',      u:'property',   name:'Home', answer:'yes', ask:'Do you own the home you live in?',
+        amount:'Roughly what would it sell for?' },
+      { id:'home_loan', u:'mortgage',   name:'Home loan', onlyIf:'home', ask:'Is there a home loan on it?',
+        amount:'Roughly how much is left to pay?', hint:'Your latest loan statement shows what’s outstanding.' },
+      { id:'car',       u:'vehicle',    name:'Car',           ask:'Do you own a car?',
+        amount:'Roughly what would it sell for?' },
+      { id:'car_loan',  u:'loan', type:'car_loan', name:'Car loan', onlyIf:'car', ask:'Is there a car loan on it?',
+        amount:'Roughly how much is left to pay?' },
+      { id:'owed',      u:'loan',       name:'Other loans',   ask:'Anything else you owe — a PTPTN loan, a personal loan or a card balance?',
+        amount:'Roughly how much, all together?' }
+    ]
+  },
+
+  /* ------------------------------------------------------------------ */
+  gb: {
+    id: 'gb',
+    locale: 'en-GB',
+    currency: 'GBP',
+
+    labels: {
+      cash:'Cash & savings', retirement:'Pension', vehicle:'Car', mortgage:'Mortgage', wrapper:'ISA'
+    },
+
+    examples: {
+      cash:'e.g. Monzo, Premium Bonds', listed:'e.g. Vanguard, Trading 212', retirement:'e.g. Workplace pension',
+      property:'e.g. Flat in Leeds', vehicle:'e.g. Ford Focus', mortgage:'e.g. Nationwide mortgage',
+      loan:'e.g. Student loan', wrapper:'e.g. Stocks & Shares ISA'
+    },
+
+    /* In the UK a car is usually bought on finance (PCP or HP), so it gets its own name. */
+    types: [
+      { key:'car_finance', u:'loan', label:'Car finance', example:'e.g. PCP on the Focus' }
+    ],
+
+    /* An ISA is left to the common question: most can be emptied at any time, a
+       Lifetime ISA cannot, and the owner knows which they have. */
+    defaults: {
+      retirement: { access:'locked', reason:'a pension is locked until you can start drawing it',
+                    until:'until you can draw it' }
+    },
+
+    checklist: [
+      { id:'bank',      u:'cash',       name:'Bank accounts', ask:'Do you have money in a bank or savings account?',
+        amount:'Roughly how much, across all of them?' },
+      { id:'pension',   u:'retirement', name:'Pensions',      ask:'Do you have a workplace or personal pension?',
+        amount:'Roughly how much, all of them together?', hint:'Your provider’s app or annual statement shows the value.' },
+      { id:'invest',    u:'listed',     name:'Investments',   ask:'Any investments — an ISA, funds, shares, an investing app?',
+        amount:'Roughly what are they worth today?' },
+      { id:'home',      u:'property',   name:'Home', answer:'yes', ask:'Do you own the home you live in?',
+        amount:'Roughly what would it sell for?' },
+      { id:'mortgage',  u:'mortgage',   name:'Mortgage', onlyIf:'home', ask:'Is there a mortgage on it?',
+        amount:'Roughly how much is left to pay?', hint:'Your latest mortgage statement shows what’s outstanding.' },
+      { id:'car',       u:'vehicle',    name:'Car',           ask:'Do you own a car?',
+        amount:'Roughly what would it sell for?' },
+      { id:'car_finance', u:'loan', type:'car_finance', name:'Car finance', onlyIf:'car', ask:'Is there finance on it?',
+        amount:'Roughly how much is left to pay?' },
+      { id:'owed',      u:'loan',       name:'Other loans',   ask:'Anything else you owe — a student loan, a personal loan or a credit card?',
         amount:'Roughly how much, all together?' }
     ]
   }

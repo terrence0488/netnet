@@ -355,10 +355,9 @@ patterns**. After the fix there are none at either size, and no overlaps.
   to a text token re-runs the contrast check. Both are cheap and both have already caught real
   failures in this system's own development.
 
-## 9. Open questions for the Founder
+## 9. Open questions — settled at the Stage 2 review (2026-09-25)
 
-1. **Fraunces for row amounts, or hero only?** Currently every monetary amount is serif. Hero-only
-   would be more restrained and slightly faster to render.
-2. **Does the light theme's warm paper survive contact with a landing page?** Warm stock is lovely
-   in-app; marketing pages often want pure white.
-3. **A wordmark still needs drawing.** The dot is a placeholder, not a logo.
+1. **Fraunces for row amounts, or hero only?** Every monetary amount stays in the serif.
+2. **Does the light theme's warm paper survive a landing page?** Moved to the landing page's own
+   design, which is now separate from the product (PRD G-D1).
+3. **A wordmark still needs drawing.** Deferred: the dot stays a placeholder for now.

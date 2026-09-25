@@ -16,6 +16,10 @@ const MCP_URL = 'https://netnet.app/mcp';
 const START_PROMPT = 'Help me set up NetNet. Ask me what I have, one thing at a time — round ' +
   'numbers are fine — and add it for me.';
 
+/* Asked from Home when holdings are out of date. Carries no data: the agent finds
+   what is stale itself, through the MCP layer. */
+const REFRESH_PROMPT = 'Some of my NetNet holdings are out of date. Find them and help me update them.';
+
 const CLIENTS = {
   claude: {
     name: 'Claude',

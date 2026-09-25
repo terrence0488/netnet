@@ -3,12 +3,11 @@
 Status: **approved by the Founder 2026-09-24** (amended) · Stage owner: Product manager
 First approved 2026-09-23. Amended and re-approved 2026-09-24: §2 widened from one persona to
 three, §2.3 added jurisdiction packs so the product is not permanently shaped by its first market,
-and §2.4 made the agent a target user with a falsifiable claim behind it. Also changed: §3, §4, J1,
-J2, J8, §8, N10 and N11. What changed and why: **§9.5**. Further amendments made on the Founder's
-direction at the Stage 2 review (J2 undecided state, G-D1/G-D3, §3.5 `via`, quiet agent provenance
-and no displayed exchange rate, admin-configurable packs, sign-up before onboarding, region from IP,
-the basics in onboarding, per-country types and ~10 packs at launch, onboarding through the agent):
-**§9.6**.
+and §2.4 made the agent a target user with a falsifiable claim behind it (what changed and why:
+**§9.5**). **Revised again during the Stage 2 review, 2026-09-24/25:** sign-up and onboarding, the
+agent route, per-country packs and their administration, and what the product shows. Those
+revisions are written into the requirements below and listed in **§9.6**; they await the Founder's
+approval at the Stage 2 gate.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -47,8 +46,8 @@ the tracker exists to feed the advice, not the other way round. Detail: `00-disc
 
 ## 2. Target user
 
-> **Rewritten 2026-09-24.** The beachhead was widened from one persona to three, on the Founder's
-> decision. §9.5 records what that overturned and what it costs.
+> **Rewritten 2026-09-24:** the beachhead was widened from one persona to three. §9.5 records what
+> that overturned and what it costs.
 
 **Vision: broad.** Anyone whose AI could advise them better if it knew where they stood — which is
 most people (§1).
@@ -109,7 +108,9 @@ top of the universal ones where a thing is common enough there to deserve a name
 Singapore; not in Japan, where cars are mostly bought outright), default accessibility per type with
 the one-line reason shown to the user, the disambiguating question for each ambiguous type, and
 currency and date conventions. **A pack lists only what differs from the common default**, so a new
-country is a short file, and the common default is itself editable (§9.6 items 17 and 21).
+country is a short file and the common default is itself editable. Where the common default fixes an
+answer that is not fixed in one country, that country's pack asks instead (Malaysia's EPF: Akaun
+Fleksibel can be withdrawn at any time, the rest cannot).
 
 **Types are universal; only labels are local.** NetNet does not ship "CPF" as a type — it ships a
 mandatory-retirement type that the SG pack labels CPF, and that is EPF, MPF, Superannuation, 401(k)
@@ -125,21 +126,46 @@ Four rules, binding:
    gets universal types, universal questions and the full §2.1 treatment — only the local names are
    missing. It must be good on its own.
 2. **A wrong pack is worse than no pack.** Showing CPF to a Malaysian is more alienating than showing
-   nothing. Infer from the visitor's IP (the browser's locale if that fails), then **confirm with
-   one question**; never apply silently. Every country can be chosen, alphabetically, and none is
-   pinned to the top (§9.6 item 19).
+   nothing. Infer from the visitor's IP, which beats the browser's language (many people here run
+   en-US browsers), falling back to locale; then **confirm with one question**, because IP is wrong
+   behind a VPN or abroad. Never apply silently. The lookup runs on our own server or CDN, never as a
+   third-party call from the browser. Every country can be chosen from a list sorted alphabetically,
+   with none pinned to the top: a list that opens with Singapore tells everyone else the product is
+   not for them.
 3. **Packs set defaults; they never restrict.** This audience holds a Singapore CPF, a UK ISA and a
    US brokerage at once. Jurisdiction chooses the suggestions; the type system stays fully open (J2).
 4. **The agent covers every market we have not packed.** "I have a Riester pension" is something the
    user's agent already understands; J2's open taxonomy and J6's assembly mean it can create it
    correctly. Unpacked markets are served on day one by the thing the product is already for.
 
-**In v1:** the pack machinery, the **generic pack**, and packs for **about ten countries**, with
-every other country on the generic pack until demand says otherwise (§9.6 item 21). Each pack is
-reviewed by someone who knows that market before it ships, because a wrong pack is worse than none
-(rule 2 below). Further markets are pack data added without a release — in future by a human admin
-through an admin portal (§9.6 item 17). The machinery is the part that is expensive to retrofit; the second
-pack is cheap and should wait for demand.
+**In v1:** the pack machinery, the **generic pack**, and packs for **ten launch countries** —
+Singapore, Malaysia, Indonesia, the Philippines, Thailand, Vietnam, Hong Kong, India, Australia and
+the United Kingdom: the first users' region, then where they come from, move to and hold assets.
+Every other country gets the generic pack, and its country is still recorded — that is the demand
+signal for which pack to write next. Each pack is reviewed by someone who knows that market before
+it ships (rule 2). The machinery is the part that is expensive to retrofit; a pack is cheap, which
+is why launch can carry ten and the rest can follow demand.
+
+**Packs are administered content, not code.** A pack changes more often than the product does — a
+scheme is renamed, a withdrawal rule moves — so a human admin must be able to change one without a
+developer or a release. The admin portal that does it is **not in v1**, but nothing in v1 may
+preclude it (N10). Four constraints, binding now:
+
+- **Packs live where the running system reads them**, in a published schema. An edit that fails
+  validation is rejected whole: a half-applied pack is a wrong pack.
+- **Packs are versioned, and an edit never silently reclassifies anyone's holdings.** Labels may
+  follow the current pack. An accessibility outcome, and the reason shown for it, stay as they were
+  applied until the user changes them or a logged migration re-applies them. Otherwise one edited
+  default moves every user's "what you could use this month" with no action of theirs — the
+  confident wrong answer §2.4 names as the failure that ends trust.
+- **Every pack change is audited and reversible** — who, what, when, old → new — as J7 is for user
+  data.
+- **Editing packs grants no access to user data.** Configuring the world and reading anyone's
+  balance sheet are separate permissions.
+
+The agent setup guides (J5) are administered the same way, for a different reason: the steps and
+screenshots per client and platform describe Claude's and ChatGPT's own screens, which change
+without notice. Until the portal exists they are files, updated without a code change.
 
 ### 2.4 The agent is a user too — and the thing v1 is really betting on
 
@@ -233,7 +259,7 @@ Window: **8 weeks from public launch** unless stated. "Signup" = verified accoun
 | **M12** | **Context lift** (new) | Blind A/B on a fixed dataset and question set: NetNet-connected agent vs the same data uploaded as a spreadsheet, scored on numeric correctness, appropriate qualification, and absence of fabrication — run on a deliberately weak model | NetNet wins **≥80%** of paired questions, and **never** scores worse on fabrication | **A13 is wrong** — the context layer is not adding what §2.4 claims, and NetNet is a nicer spreadsheet |
 | **M11** | **Standalone value** (new) | % of signups with ≥2 sessions **before** any agent connection; and % still active in week 4 having never connected | **40%** / **15%** | **A12 is wrong** — the app is not worth using on its own, so P-A churns before the real experiment reaches them (§2.2) |
 
-**Every metric above is reported per segment** (P-A / P-B / P-C), captured at signup by one
+**Every metric above is reported per segment** (P-A / P-B / P-C), captured in onboarding by one
 skippable question. Targets in this table are the blended figure; per-segment targets are set in
 §3.3. Blending three populations this different makes a miss unreadable — a strong P-C result would
 hide P-A never connecting at all, which is precisely the misreading §9.4 warns about.
@@ -259,8 +285,8 @@ Signups are the kill metric and there is no channel yet, so distribution ships a
   doesn't know where you stand* — with both proofs beneath it: for someone who has never added it
   up (P-A), and for someone whose numbers are real but stale and unreadable by their AI (P-B, P-C).
   It shows an agent answering a real question from a real balance sheet (screen recording, no
-  audio, no real data), and it never opens with "you don't know your net worth". It is a separate
-  marketing design, not a screen in the product; its call to action routes to sign-up (§9.6 item 18).
+  audio, no real data), and it never opens with "you don't know your net worth". It is a marketing
+  page with its own design, not a screen in the product; its call to action goes straight to sign-up.
 - **G-D2** NetNet listed wherever MCP clients and users discover connectors (client connector
   directories, public MCP registries and lists).
 - **G-D3** A launch note the Founder can post, without rewriting it, to 3+ communities that
@@ -280,21 +306,28 @@ no evidence and §3.3 cannot be applied. Minimum event set:
 
 `landing_view` · `signup_started {method: email|google|apple}` · `account_created {method}` · `holding_created {source: web|agent, via: guided|form}` ·
 `value_recorded {source}` · `agent_connection_started {client, entry: onboarding|home|holding|agent}` ·
-`agent_connection_completed {client}` · `agent_connection_failed {step, client}` ·
+`agent_connection_completed {client, entry}` · `agent_connection_failed {step, client, entry}` ·
 `agent_tool_called {tool, kind: read|write, outcome, latency_ms, client}` ·
 `value_corrected {original_source, age_at_correction}` · `value_undone` ·
 `session_started` · `insights_viewed {view: monthly|quarterly|yearly}` · `reminder_sent` ·
 `reminder_clicked` · `account_deleted`
 
 Every event above also carries **`{segment}`** (`starting_out` / `accumulating` / `established` /
-`unknown`), set during onboarding and never changed by us. `signup_started` and `account_created`
-fire before it is asked and carry `unknown`; per-segment readings join them to the account. Without it none of §3.2 is readable per segment,
-and §3.3 cannot be applied to the segment it is meant to judge.
+`unknown`), set during onboarding and never changed by us. Without it none of §3.2 is readable per
+segment, and §3.3 cannot be applied to the segment it is meant to judge. `signup_started` and
+`account_created` fire before the question is asked and carry `unknown`; per-segment readings join
+them to the account.
+
+`method` says which way in people choose — Google, Apple or email. Sign-up is built to be as
+frictionless as possible (J1), and this is how that is checked.
 
 `via` is set only when `source` is `web`: **`guided`** for the basics (J1), **`form`** for the Add
-form. (`starter` went with the empty Home's starting-point tiles, §9.6 item 20.) Without it nothing can say whether guided assembly
-is what gets P-A to M2 — a guided "yes" and a typed holding would be indistinguishable. It carries
-no amounts, so N9 is unaffected.
+form. Without it nothing can say whether guided assembly is what gets P-A to M2 — a guided "yes"
+and a typed holding would be indistinguishable. It carries no amounts, so N9 is unaffected.
+
+`entry` says where a connection attempt began: onboarding, the empty Home, a holding, or the Agent
+tab. Onboarding offers the agent as its alternative route (J1); `entry` is what shows whether that
+route, rather than the Agent tab, is what drives M3.
 
 `kind: read|write` is what makes M7 separable from M4 — without it the premise is unmeasurable.
 `client` is what makes M3 separable by MCP client — without it, one client's broken connector flow
@@ -317,17 +350,20 @@ by OAuth from ChatGPT or Claude** · audit log and undo for every agent write ·
 deletion · the §3.5 analytics · the §3.4 distribution assets. Mobile-first responsive web, one API
 that native clients reuse later.
 
-**Added 2026-09-24 (§2.4):** a **context-compilation layer** that turns stored data into agent-ready
+A **context-compilation layer** (§2.4) that turns stored data into agent-ready
 context — derived totals, per-holding meaning, provenance and completeness, and answer-shape
 guidance — deterministic and small enough to help a weak model rather than drown it. This is the
 differentiator, not a convenience.
 
-**Added 2026-09-24, following the §2 widening:** **opinionated defaults with stated reasons**
-throughout data entry; **fact-based questions in place of classification** wherever a category would
-otherwise have to be learned; **guided assembly** for someone who does not know what to list; and
-**standalone answers on Home** — what is readily accessible, what is locked, what is owed — good
-enough to be worth the visit before any agent is connected (§2.2). None of this is educational
-content, and none of it needs inference (N2).
+**Opinionated defaults with stated reasons** throughout data entry; **fact-based questions in place
+of classification** wherever a category would otherwise have to be learned; **guided assembly** (the
+basics) for someone who does not know what to list; and **standalone answers on Home** — what is
+readily accessible, what is locked, what is owed — good enough to be worth the visit before any
+agent is connected (§2.2). None of this is educational content, and none of it needs inference (N2).
+
+**Sign-up by Google, Apple, or email and password; a short onboarding** that ends in either the
+basics or a connected agent (J1, J5); **jurisdiction packs** for ten launch countries plus the
+generic pack (§2.3).
 
 **Note for Stage 4:** Insights is the one item here that does not serve §3.1, so it should be
 sequenced *after* the MCP layer and the §3.5 analytics within P1. Not a hedge on shipping it — it
@@ -387,6 +423,8 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 ### J1 — A first real picture, fast
 - **Given** a visitor on the sign-up page, **when** they sign up with a provider (Google, Apple) or
   with an email and a password, **then** an account exists, and sign-up asked for nothing else.
+  Every question before the account exists costs sign-ups (M1, M10); anything that can be asked
+  afterwards is.
 - **Given** a new account, **when** it is created, **then** onboarding asks, one question per
   screen: where they live (inferred, then confirmed — §2.3 rule 2) and an optional segment. Then
   one screen — "Let's start by getting to know a little about your finances" — with **Start**,
@@ -449,7 +487,12 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   institution names are absent, and nothing about the flow degrades (§2.3 rule 1).
 - **Given** a jurisdiction inferred from the visitor's IP (or locale), **when** the user first sees
   it, **then** it is confirmed by one question rather than applied silently, and it is changeable
-  afterwards (§2.3 rule 2).
+  afterwards (§2.3 rule 2). Choosing another country lists every country alphabetically, and the
+  chosen country's currency becomes the default for totals, changeable.
+- **Given** a pack with its own default types (Singapore's car loan), **when** the country is
+  confirmed, **then** those types are added to the account alongside the universal ones. Moving
+  country later adds the new pack's types and removes none, since a type may already hold
+  holdings.
 - **Given** a user holding instruments from several countries, **when** they add them, **then**
   nothing in the pack prevents it — the pack supplies suggestions and defaults only (§2.3 rule 3).
 - **Given** any accessibility default, **when** it is applied, **then** its **consequence** is shown
@@ -465,8 +508,10 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   answer is qualified rather than quietly built on a guess.
 - **Given** a currency other than the user's default, **when** a value is saved, **then** the entry
   stores the original amount and currency *and* the default-currency conversion with the rate and
-  rate date used. The original amount is visible on the value; the rate and rate date are kept on
-  the entry, exported, and readable by the agent, but not displayed (§9.6 item 16).
+  rate date used. The original amount is visible on the value, because it is what the user checks
+  against a statement. The rate and rate date are kept on the entry, exported, and readable by the
+  agent, but not displayed: they answer a question almost nobody asks, and showing them made every
+  foreign-currency value harder to read.
 - **Given** the user's own taxonomy, **when** they add, rename, merge or delete a type or tag,
   **then** existing holdings follow the change and nothing is orphaned.
 - **Given** a holding no longer held, **when** the user archives it, **then** it leaves all totals
@@ -502,8 +547,10 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** a verified account, **when** the user opens Connect your agent, **then** they get
   steps for their client (Claude, ChatGPT) **and their platform** (phone or computer, detected and
   switchable), each step with a screenshot, and the connector URL, with no token to generate,
-  paste or store. The steps and screenshots are content, changeable without a release, because the
-  clients' own screens change without notice (§9.6 item 22).
+  paste or store. The steps and screenshots are administered content (§2.3), because the clients'
+  own screens change without notice.
+- **Given** any place the user starts connecting — onboarding, the empty Home, a holding, the Agent
+  tab — **when** they do, **then** it is the same flow, so the routes can never drift apart.
 - **Given** an email that is not yet verified, **when** the user starts connecting, **then** they
   are asked to verify first, with a resend, and the flow moves on by itself once they have.
 - **Given** the setup steps, **when** the user approves NetNet in their client, **then** NetNet's
@@ -512,8 +559,13 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   **then** OAuth completes, the client lists NetNet's tools, and NetNet shows the connection as
   active with client name and time.
 - **Given** a connection attempt, **when** it fails at any step (discovery, authorise, callback,
-  first call), **then** `agent_connection_failed {step, client}` fires and the user sees a plain-language
-  cause and a retry, not a raw error.
+  first call), **then** `agent_connection_failed {step, client, entry}` fires and the user sees a
+  plain-language cause and a retry, not a raw error.
+- **Given** a connected agent, **when** Home is empty or holdings are out of date, **then** the next
+  step is handed to the agent: a starting prompt, or a prompt to update what is stale, with a
+  button that opens the agent with the prompt already typed where the client supports it, and Copy
+  where it does not. Prompts carry no financial data; the agent reads what it needs through the
+  MCP layer. Without a connected agent, the same places offer to connect one.
 - **Given** an active connection, **when** the user revokes it in NetNet, **then** later calls from
   that client are rejected and the revocation is in the audit log.
 - **Given** the whole flow, **when** measured, **then** p50 signup → first agent interaction is
@@ -526,10 +578,13 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** a user who has never listed their finances, **when** they describe them to their agent
   in conversation ("I have about 40k in DBS, a flat, some CPF, an IBKR account"), **then** the
   agent can create the holdings, types and tags to match — assembly is a conversation, not only a
-  document parse.
+  document parse. The MCP layer gives the agent the user's country checklist and the fact questions
+  (J2), so a conversation asks what the basics ask, and a one-line prompt is enough to start it.
 - **Given** the user drops a statement into their agent and asks it to update NetNet, **when** the
   agent writes, **then** the values appear in the web app marked as agent-written, with the client
-  named on the value (§9.6 item 16).
+  named on the value. The mark is quiet and the name appears when the value is opened; the audit
+  log carries full attribution (J7). Who wrote a number matters when checking it, not while
+  reading the position, and a loud label on every agent-written row competes with the figures.
 - **Given** an agent write that would duplicate a holding already tracked, **when** the tool is
   called, **then** the layer surfaces the likely match so the agent can update rather than
   duplicate.
@@ -640,10 +695,10 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 | **N5** | Secrets in environment variables only; none in the repo | Non-negotiable (CLAUDE.md) |
 | **N6** | Running cost ≈$0 to 100 users, <$50/month to 1,000, holding **indefinitely** — no trial-window free tiers | Open-ended runway (`00-discovery.md` §5) |
 | **N7** | Mobile-first responsive; one API serving web now and native later | Native iOS/Android is planned, not hypothetical |
-| **N8** | Reliability and security never trade against cost | Founder constraint; cheap-but-flaky is a failed outcome |
+| **N8** | Reliability and security never trade against cost | Cheap-but-flaky is a failed outcome for financial data |
 | **N9** | Analytics carries no financial values (§3.5) | The metrics pipeline must not become the leak |
 | **N11** | Context compilation is **deterministic** — arithmetic, schema and stored provenance only, no inference of any kind | Keeps §2.4's lift free: N2 stays intact and N6's cost ceiling is untouched. The moment context needs a model to produce it, the economics of the whole product change |
-| **N10** | Jurisdiction packs are **data, not code**: adding a market ships no release, and no local institution name, rule or default is hard-coded into a flow. Packs are validated, versioned data the running system reads, so a human admin can later change them through a UI; that admin portal is not v1, but nothing in v1 may preclude it (§9.6 item 17) | Being opinionated is inherently local (§2.3). Fusing local facts into the engine makes v1 a Singapore app that cannot leave, and that is the expensive thing to retrofit |
+| **N10** | Jurisdiction packs are **data, not code**: adding a market ships no release, and no local institution name, rule or default is hard-coded into a flow. Packs are validated, versioned data the running system reads, so a human admin can later change them through a UI; that admin portal is not v1, but nothing in v1 may preclude it (§2.3) | Being opinionated is inherently local (§2.3). Fusing local facts into the engine makes v1 a Singapore app that cannot leave, and that is the expensive thing to retrofit |
 
 ## 8. Non-goals for v1
 
@@ -656,7 +711,8 @@ advice generated by NetNet itself** — the agent is the user's own, running on 
 coaching, "what is net worth" articles** (still a non-goal after the §2 widening; §2.1 replaces
 literacy-as-selection with opinionated-defaults-plus-agent. NetNet may use plain language, state the
 reason for a default, and show what a number does — it may not write a curriculum) · the mockups' Pro tier, legacy trend-graph toggles and
-haptics · **an admin portal for jurisdiction packs** (future; v1 must not preclude it, §9.6 item 17).
+haptics · Net Worth Goals, notes on a value, and marking a value on a chart (all from the mockups) ·
+**an admin portal for jurisdiction packs and setup guides** (future; v1 must not preclude it, §2.3).
 
 **Named risk in that list:** a balance sheet answers "what am I worth" and "can I afford this from
 what I hold". It does not answer "can I afford this from what I earn", which needs cash flow. v1
@@ -732,101 +788,27 @@ differently from a custom connector added by URL. Stage 3's existing obligation 
 client's requirements now carries more weight, because if free tiers can add custom connectors, P-A
 reaches the core product on day one and the §2.2 risk shrinks considerably. A12 and M11 stand
 regardless — standalone value was chosen for measurement reasons, not only for access reasons.
+*Update, Stage 2 review:* Claude's and ChatGPT's free plans now allow custom MCP connectors, so the
+connect flow carries no plan warning. Stage 3 confirms this when building.
 
-### 9.6 Amendments at the Stage 2 review — 2026-09-24
+### 9.6 Revisions during the Stage 2 review — 2026-09-24/25
 
-Made on the Founder's direction while reviewing the reworked prototype. The Founder decided each
-change; the exact wording is AI-drafted and is flagged for the Founder's reading at the Stage 2 gate
-rather than recorded as separately approved.
+Written into the requirements above; listed here so the gate can see what moved. They await the
+Founder's approval with the prototype.
 
-12. **J2 names an undecided accessibility state.** J2 required both "recorded as one of three" and
-    "never blocks saving", which cannot both hold for someone who taps Not sure. Undecided counts
-    toward net worth, never toward what can be used this month, is visibly marked, and is reported
-    to the agent as incompleteness — exactly the §2.4 provenance layer's job.
-13. **G-D1 and G-D3 re-worded to §2.5.** Both still spoke to the retired single beachhead ("your
-    numbers are stale"; "already financially literate"). G-D3 now also requires the channel mix to
-    reach P-B and P-C in enough volume, since they carry the kill criteria.
-14. **`via` added to `holding_created`** (§3.5), so guided assembly's contribution to M2 is readable.
-15. **Net Worth Goals, and the value Note and Mark on graph, stay out of v1**, with nothing to build
-    or test for them. All three came from the mockups. The Tags AND/OR toggle stays.
-16. **Agent provenance is quiet, and the exchange rate is not displayed** (2026-09-25). The
-    Founder found the screens cluttered and the agent label too loud for how much it matters to
-    the user. J6 now asks for agent writes to be *marked*, with the client named on the value,
-    rather than labelled in every list. J2 still stores the rate and rate date on every
-    foreign-currency entry, and the export and the agent can read them, but the value row shows
-    only the original amount. Nothing about what is recorded changes, only what is shown.
-17. **Jurisdiction packs will be configurable by a human admin** (2026-09-25). The Founder expects
-    a future backend admin portal where an admin edits packs through a UI — checklists, labels,
-    defaults and their reasons, questions, conventions — with no developer and no release. It is
-    not built in v1. What v1 must get right so that it can be added later without rework, for
-    Stage 3:
-    - **Packs live where the running system reads them**, not inside the application bundle, in a
-      published schema. An edit that fails validation is rejected whole; a half-applied pack is a
-      wrong pack, and §2.3 rule 2 says a wrong pack is worse than none.
-    - **Packs are versioned, and a pack edit never silently reclassifies anyone's holdings.**
-      Labels may follow the current pack. An accessibility outcome and the reason shown for it stay
-      as they were applied until the user changes them, or a logged migration re-applies them.
-      Otherwise a default edited by an admin moves "what you could use this month" for every user
-      with no action of theirs. That is the confident wrong answer §2.4 names as the failure that
-      ends trust.
-    - **Every pack change is audited and reversible** — who, what, when, old → new — as J7 is for
-      user data.
-    - **Editing packs grants no access to user data.** Configuring the world and reading anyone's
-      balance sheet are separate permissions.
-
-    Everything a pack holds is in scope for the portal, including its own default types and its
-    basics (§9.6 item 21), and so are the agent setup guides — the steps and screenshots per client
-    and platform (§9.6 item 22).
-18. **Sign-up is only a way in; onboarding comes after it; the landing page is a separate design**
-    (2026-09-25). Founder direction: sign-up and getting started must be as frictionless as
-    possible, and anything that can be set after sign-up is. Sign-up is a provider (Google, Apple)
-    or an email and a password. An email sign-up sends a verification link and does not wait for
-    it. Onboarding then asks where the user lives (§2.3 rule 2 still requires the confirmation)
-    and the optional segment, one question per screen. A returning user who logs in resumes
-    onboarding if unfinished, else goes to Home. J1's "no onboarding wizard to clear first" is kept
-    in spirit, and now means no *data-entry* wizard: the guided basics stay on Home. The landing page
-    (G-D1) leaves the product prototype for a dedicated marketing design whose call to action
-    routes to sign-up. `signup_started` and `account_created` gain `{method}`, so the launch shows
-    which way in people choose. Per-segment readings must join these two events to the account,
-    since the segment is not known when they fire.
-19. **Where the user lives defaults to the country detected from their IP** (2026-09-25). Founder
-    direction. It is still only a default the user confirms (§2.3 rule 2): IP is wrong behind a
-    VPN or while travelling. The lookup runs on NetNet's own server or CDN, never as a
-    third-party call from the browser. Choosing "somewhere else" lists every country
-    alphabetically, with none pinned to the top, so the product does not read as Singapore's.
-    Every country is recordable, packed or not, and its currency becomes the default for totals.
-20. **The basics move out of Home into onboarding; the empty Home offers one action** (2026-09-25).
-    Founder direction. Mixing the basics with the agent (twice) and a grid of starting tiles on one
-    screen left a new user unsure where to start and afraid of a wrong move — the paralysis that
-    ends in closing the app. The basics now follow the segment question as their own screens, one
-    question each, every answer saved on the spot, "Done for now" always one tap away. Home shows
-    the picture, never a questionnaire. An empty Home has one action, "Add what you have", and one
-    quiet link to the agent. The starting-point tiles are gone, with `via: starter`; the basics
-    already are this market's starting categories. This reverses the earlier reading of J1 (§9.6
-    item 18): the basics may live in onboarding, provided nothing there ever has to be finished.
-21. **Default types and the basics are per country; about ten countries get packs at launch**
-    (2026-09-25). Founder direction. A pack can add its own default types on top of the universal
-    ones (Singapore and Malaysia: a car loan, because car loans are common there; not Japan, where
-    cars are usually bought outright) and its own basics, including follow-ups asked only after a
-    yes. Every other country shares the common default. Configuration stays simple because a pack
-    lists only what differs from the common default. Proposed launch list, **for the Founder to
-    confirm**: Singapore, Malaysia, Indonesia, the Philippines, Thailand, Vietnam, Hong Kong, India,
-    Australia and the United Kingdom — the first users' region, then where they come from, move to
-    and hold assets. The United States and Japan are the obvious alternates. Each pack is reviewed by
-    someone who knows that market before it ships. All of it is admin-editable later (item 17).
-22. **Onboarding through the agent** (2026-09-25). Founder direction. After location and segment,
-    one screen offers **Start** (the basics) with, below it, "Or, connect your AI agent to start".
-    The agent route: choose the agent → verify the email if needed (the gate stays) → steps for
-    that agent on this platform, phone or computer, each with a screenshot → NetNet's approval
-    page → done. A connected agent ends onboarding: the user lands on a blank Home whose hint is
-    the starting prompt, with "Let Claude do it" where the client can open with a prompt typed in.
-    There is no waiting state. Someone who later prefers to add things themselves starts from that
-    blank Home. The starting prompt is one line, because NetNet's MCP layer supplies the country's
-    checklist and fact questions: both routes follow the same pack, and it stays admin-editable in
-    one place. Setup steps and screenshots are content: files in the prototype and in v1, and part
-    of the admin portal later (item 17). The Founder reports that Claude's and ChatGPT's free plans
-    now allow custom MCP connectors, so the flow shows no plan warning (see the correction above).
-    `agent_connection_started` carries `entry`, so the launch shows which route drives connections.
+| # | What changed | Where |
+|---|---|---|
+| 12 | An **undecided** accessibility state: counts toward net worth, never toward what can be used, reported to the agent as incompleteness | J2 |
+| 13 | G-D1 and G-D3 re-worded to §2.5; the launch must reach P-B and P-C in enough volume | §3.4 |
+| 14 | `via` on `holding_created` (`guided` / `form`) | §3.5 |
+| 15 | Net Worth Goals, value notes and chart marks out of v1 | §8 |
+| 16 | Agent provenance is quiet: a mark, the client named on the opened value, full attribution in the log. The exchange rate is stored, exported and readable, not displayed | J2, J6 |
+| 17 | Packs are administered content, with an admin portal later; four constraints binding now | §2.3, N10, §8 |
+| 18 | Sign-up asks only for a way in (Google, Apple, email and password); email verification does not block; log-in resumes unfinished onboarding; the landing page is a marketing page with its own design; `{method}` on sign-up events | J1, §3.4, §3.5 |
+| 19 | Where-you-live defaults to the country from IP, confirmed; every country listed alphabetically; the chosen country's currency becomes the default | §2.3, J2 |
+| 20 | The basics are part of onboarding, one question per screen; an empty Home offers one action and one quiet alternative; the starting tiles and `via: starter` are gone | J1, §3.5 |
+| 21 | Packs carry their own default types and basics, with follow-ups after a yes; ten launch countries | §2.3, J2 |
+| 22 | Onboarding offers the agent as its alternative route; one connect flow everywhere, per client and platform, with screenshots; connected ends onboarding on a blank Home with the starting prompt; agent prompts for empty and stale Home; `{entry}` on connection events | J1, J5, J6, §3.5 |
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves
