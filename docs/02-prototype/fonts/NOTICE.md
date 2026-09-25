@@ -1,12 +1,10 @@
-# Fonts
+# Fonts (design C "Calm")
 
-Both are licensed under the SIL Open Font License 1.1, which permits bundling and
-redistribution. Latin subsets only, pulled from Google Fonts.
+Licensed under the SIL Open Font License 1.1, which permits bundling and redistribution.
+Latin subset only, variable weight, from Google Fonts via Fontsource.
 
-- **Fraunces** — Undercase Type (Phaedra Charles, Flavia Zimbardi). Display serif.
-  Used only for monetary amounts. https://fonts.google.com/specimen/Fraunces
-- **Inter** — Rasmus Andersson. Used for everything else.
-  https://fonts.google.com/specimen/Inter
+- **Plus Jakarta Sans** — Tokotype (Gumpita Rahayu). Used for everything.
+  https://fonts.google.com/specimen/Plus+Jakarta+Sans
 
-Stage 3 decides how these are actually served (self-hosted, CDN, or `expo-font`
-on native). They are committed here so the prototype opens offline.
+Design A's Fraunces and Inter live on A's branch. Stage 3 decides how fonts are served.
+Committed here so the prototype opens offline.
