@@ -27,7 +27,13 @@
   }
 }
 
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;
+  /* No double-tap zoom — rapid taps on the pager or range bar must not zoom the page.
+     Pinch-zoom is deliberately kept (pan + pinch are what "manipulation" allows): blocking
+     it fails WCAG 1.4.4 for low-vision users, and iOS ignores user-scalable=no anyway.
+     Set on every element, not just <html>, because a scroll container (sheets, the stat
+     row) resets touch-action for everything inside it. */
+  touch-action:manipulation}
 html,body{background:var(--paper)}
 body{color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   font-size:15px;line-height:1.45;letter-spacing:-.012em;-webkit-font-smoothing:antialiased}

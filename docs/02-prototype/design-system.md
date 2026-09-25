@@ -253,6 +253,11 @@ thumb. So visual size and tap size are specified separately, and only the second
 6. **A pager says what it is paging.** Bare ‹ › arrows are unreadable on a phone. The pager is
    ‹ *period* ›, and an arrow with nowhere to go is disabled rather than leading to an empty chart.
 
+7. **No double-tap zoom; pinch-zoom always.** `touch-action: manipulation` on every element — every
+   element, because a scroll container (a sheet, the stat row) resets it for its contents. Pinch-zoom
+   is never blocked: `user-scalable=no` fails WCAG 1.4.4 for low-vision users, and iOS ignores it.
+8. **Form fields are never smaller than 16px**, or iOS zooms into them on focus.
+
 **Verified, not eyeballed.** Every tappable element on every screen and sheet is measured at phone
 width with touch emulated (target 44) and at desktop width with a mouse (target 32). Targets that
 overlap are reported too. This rule shipped missing: the first audit, prompted by the Founder
