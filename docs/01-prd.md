@@ -434,6 +434,9 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   second filled button, because two equal choices stall a new user. In the basics, every answer is saved the moment it is given, and "Done for now" is one tap
   away on every screen, so onboarding never has to be cleared to reach Home. Once the basics have
   started, the agent is not offered again inside them: one route at a time.
+- **Given** any question in the basics, **when** the user would rather not say or does not know —
+  whether they have it, or roughly how much — **then** **Skip** moves on with nothing added and
+  nothing asked because of it. A skipped question is neither a yes nor a no: Back can return to it.
 - **Given** the basics, **when** the user presses **Back**, **then** they return to the previous
   question showing their earlier answer, which they can correct in place or change from yes to no.
   A no removes what the yes added, and anything asked only because of it ("no car" removes the car
@@ -559,6 +562,14 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   paste or store. The steps and screenshots are administered content (§2.3), because the clients'
   own screens change without notice. So is the client list itself: Claude and ChatGPT at launch,
   and any other agent (Grok, Muse) once it is confirmed to accept a custom remote MCP connector.
+- **Given** an agent that is not on the list, **when** the user chooses **Other agent**, **then**
+  they get a generic guide: add a custom connector (MCP server) in the agent's settings with this
+  address, then Allow on NetNet's page. No platform split and no screenshots, because we cannot know
+  its screens. Any agent that supports remote MCP with OAuth works; the named list is a
+  convenience, never a limit. NetNet's approval page and the Agent tab show the name the agent
+  registers with.
+- **Given** the connect flow, **when** the user changes their mind, **then** Back returns them step
+  by step to where they began; the flow does not also offer the questions.
   The server is standard remote MCP with OAuth and no client-specific branching, so supporting
   another agent is content — steps, screenshots, a logo — not code.
 - **Given** the "Connect to agent" button, **when** it is shown, **then** it shows the agents it
@@ -825,6 +836,7 @@ Founder's approval with the prototype.
 | 20 | The basics are part of onboarding, one question per screen; an empty Home offers one primary action and one secondary alternative (the agent, below a rule); the starting tiles and `via: starter` are gone | J1, §3.5 |
 | 21 | Packs carry their own default types and basics, with follow-ups after a yes; ten launch countries | §2.3, J2 |
 | 22 | Onboarding offers the agent as its alternative route; one connect flow everywhere, per client and platform, with screenshots; connected ends onboarding on a blank Home with the starting prompt; agent prompts for empty and stale Home; `{entry}` on connection events | J1, J5, J6, §3.5 |
+| 24 | Skip on every question of the basics; "Other agent" with a generic guide, so any MCP agent can connect; the connect flow drops its questions link (Back does it) | J1, J5 |
 | 23 | Back on every question of the basics (correct an answer, change yes to no, or return to where the basics began); no agent offer inside the basics; the Connect button turns through the agents it works with; Grok and Muse listed once their connector support is confirmed | J1, J5 |
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at

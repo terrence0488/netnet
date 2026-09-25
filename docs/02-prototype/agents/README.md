@@ -1,23 +1,25 @@
 # Agent logos
 
 The "Connect to agent" button cycles through the agents NetNet works with, one every two
-seconds, and the "Which AI agent do you use?" list shows each one's logo. Drop the logos here:
+seconds, and the "Which AI agent do you use?" list shows each one's logo.
 
-| Agent | File |
-|---|---|
-| ChatGPT | `chatgpt.svg` |
-| Claude | `claude.svg` |
-| Grok | `grok.svg` |
-| Muse | `muse.svg` |
+| Agent | File | Status |
+|---|---|---|
+| ChatGPT | `chatgpt.svg` | In place: OpenAI's mark |
+| Claude | `claude.svg` | In place |
+| Grok | `grok.svg` | In place |
+| Muse | `muse.svg` | **Missing** — which product "Muse" is still needs confirming; shows an "M" until then |
+| Other agent | none | Uses NetNet's own generic agent icon |
 
-The order and the list live in `connectors.js` (`ROLL` and `CLIENTS`). A missing file shows the
-agent's initial in a circle.
+**Source.** The three logos come from LobeHub's open-source AI icon set
+(`@lobehub/icons-static-svg` on npm, MIT licence, github.com/lobehub/lobe-icons): single-colour
+vector marks, `fill="currentColor"`, 24 × 24. The marks themselves belong to OpenAI, Anthropic and
+xAI. Showing them to say "works with" is ordinary practice; before launch, check each company's
+brand guidelines for how the mark may be used.
 
-- **Use each company's official logo file**, from its brand or press page, and follow its brand
-  guidelines. Do not redraw a logo.
-- **Any colour is fine.** The prototype draws every logo as a silhouette in the text colour around
-  it, so a coloured or a black logo both work in the dark and light themes. It needs a
-  transparent background.
-- **SVG, roughly square, cropped tight.** It is shown at 18px.
+**To add or replace one:** an SVG with a transparent background, roughly square, cropped tight.
+Any colour is fine: every logo is drawn as a silhouette in the text colour around it, so it suits
+both the dark and light themes. The order and the list live in `connectors.js` (`ROLL` and
+`CLIENTS`). A missing file shows the agent's initial in a circle.
 
-In the product the agent list, logos and setup steps are content a human admin edits (PRD §2.3).
+In the product, the agent list, logos and setup steps are content a human admin edits (PRD §2.3).

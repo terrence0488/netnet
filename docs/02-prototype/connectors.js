@@ -93,5 +93,23 @@ const CLIENTS = {
         { text:'Approve it, then tap **Allow** on the NetNet page that opens.' }
       ]
     }
+  },
+
+  /* Any agent that can add a remote MCP server with sign-in (OAuth). No platform split,
+     no screenshots: we cannot know its screens, so the guide is the address and the idea.
+     In the product, NetNet's approval page and the Agent tab show the name the agent
+     registers with; the prototype calls it "Your agent". */
+  other: {
+    name: 'Your agent',
+    label: 'Other agent',
+    generic: true,
+    deepLink: null,
+    guides: {
+      any: [
+        { text:'In your agent’s settings, add a **custom connector**. It may be called an MCP server, a tool or an integration.' },
+        { text:'Name it NetNet and use this address:', url:true },
+        { text:'Approve it, then press **Allow** on the NetNet page that opens.' }
+      ]
+    }
   }
 };

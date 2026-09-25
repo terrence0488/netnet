@@ -822,10 +822,12 @@ function renderBasics() {
         <input id="g-amount" type="number" inputmode="decimal" min="0" placeholder="0" aria-label="${esc(item.amount)}"
           value="${had ? had.amount : ''}">
         <button class="btn auto" data-act="guide-add">${made ? 'Save' : 'Add'}</button></div>
-      <div class="hint" style="margin-top:10px">${esc(item.hint || 'A round number is fine. You can change it any time.')}</div>`
+      <div class="hint" style="margin-top:10px">${esc(item.hint || 'A round number is fine. You can change it any time.')}</div>
+      <button class="link-sm basics-skip" data-act="guide-skip">Skip</button>`
     : `
       <h1>${esc(item.ask)}</h1>
-      <div class="choice basics-yn"><button data-act="guide-yes">Yes</button><button data-act="guide-no">No</button></div>`}`);
+      <div class="choice basics-yn"><button data-act="guide-yes">Yes</button><button data-act="guide-no">No</button></div>
+      <button class="link-sm basics-skip" data-act="guide-skip">Skip</button>`}`);
 }
 function finishBasics() {
   S.guide.done = true; S.guide.last = null;
@@ -888,13 +890,13 @@ function emptyHome() {
    choice, never a second filled button (design-system §2.1 rule 10). */
 const agentAlt = entry => `<div class="alt-route">
     <p class="alt-title">Let your AI agent do this</p>
-    <p class="alt-sub">Works with ${esc(listNames(ROLL.map(id => CLIENTS[id].name)))}.</p>
+    <p class="alt-sub">Works with ${esc(ROLL.map(id => CLIENTS[id].name).join(', '))}, or any agent that supports MCP.</p>
     <button class="btn sec btn-icon" data-act="connect-start" data-v="${entry}">${agentRoll()}Connect to agent</button>
   </div>`;
 const listNames = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
 /* An agent's logo, from agents/<id>.svg, drawn as a silhouette in the ink around it so any
    official file fits both themes. A missing file shows the name's initial instead. */
-const agentLogo = id => `<span class="alogo" aria-hidden="true"><img src="agents/${id}.svg" alt=""
+const agentLogo = id => (CLIENTS[id] || {}).generic ? `<span class="alogo" aria-hidden="true">${ICON.agent}</span>` : `<span class="alogo" aria-hidden="true"><img src="agents/${id}.svg" alt=""
   onerror="this.parentNode.classList.add('missing')"><b>${esc(((CLIENTS[id] || {}).name || '?').charAt(0))}</b></span>`;
 /* The icon on "Connect to agent": the generic agent, then every agent it works with, one
    every two seconds (timer below). */
@@ -1166,7 +1168,7 @@ function renderPeriod(view, i) {
 /* ================= AGENT (J5) ================= */
 function renderAgent() {
   const conns = activeConns();
-  const unconnected = Object.entries(CLIENTS).filter(([, c]) => !conns.some(x => x.client === c.name));
+  const unconnected = Object.entries(CLIENTS).filter(([, c]) => c.generic || !conns.some(x => x.client === c.name));
   $('#s-agent').innerHTML = `
   <div class="topbar"><h1>Your agent</h1></div>
   <div class="grid">
@@ -1183,7 +1185,7 @@ function renderAgent() {
       </div>`).join('')}
       ${unconnected.length ? `<div class="section-h"><h2>${conns.length ? 'Connect another' : 'Connect your agent'}</h2></div>
       <div class="card flush">${unconnected.map(([id, c]) => `<button class="row" data-act="connect-start" data-v="agent" data-client="${id}">
-        ${agentLogo(id)}<span class="grow"><span class="name">Connect ${esc(c.name)}</span></span><span class="chev">›</span></button>`).join('')}</div>` : ''}
+        ${agentLogo(id)}<span class="grow"><span class="name">${c.generic ? 'Connect another agent' : 'Connect ' + esc(c.name)}</span></span><span class="chev">›</span></button>`).join('')}</div>` : ''}
     </div>
     <div class="g5">
       <div class="section-h"><h2>What it can do</h2></div>
@@ -1212,15 +1214,12 @@ function connectBack() {
 function renderConnect(id, step) {
   /* back to the choice of agent if that is where they came from, else to where they started */
   const back = `<button class="back" data-go="${id && S.connectEntry !== 'agent' ? '#/connect' : connectBack()}">‹ Back</button>`;
-  const instead = !S.account.onboarded
-    ? `<button class="link auth-alt" data-act="ob-start">Or answer a few questions instead ›</button>` : '';
   const c = CLIENTS[id];
   if (!c) {
     authShell(`${back}
       <h1>Which AI agent do you use?</h1>
       <div class="choice col">${Object.entries(CLIENTS).map(([cid, x]) =>
-        `<button data-act="connect-client" data-v="${cid}">${agentLogo(cid)}${esc(x.name)}</button>`).join('')}</div>
-      ${instead}`);
+        `<button data-act="connect-client" data-v="${cid}">${agentLogo(cid)}${esc(x.label || x.name)}</button>`).join('')}</div>`);
     return;
   }
   if (!S.account.verified) {
@@ -1230,13 +1229,12 @@ function renderConnect(id, step) {
         moves on by itself.</p>
       ${S.account.verifyResent ? `<div class="hint">Sent again.</div>`
         : `<button class="link-sm" data-act="resend-verify">Resend the link</button>`}
-      <button class="proto-mock" data-act="mock-verify">Prototype: simulate opening the link</button>
-      ${instead}`);
+      <button class="proto-mock" data-act="mock-verify">Prototype: simulate opening the link</button>`);
     return;
   }
   if (step === 'allow') {
     authShell(`
-      <h1>${esc(c.name)} wants to connect to your NetNet</h1>
+      <h1>${c.generic ? 'Your AI agent' : esc(c.name)} wants to connect to your NetNet</h1>
       <p class="auth-sub">Signed in as ${esc(S.account.email)}</p>
       <p class="consent">It will be able to see your holdings and their history, and add or update them.
         Every change it makes is logged, and you can undo it.</p>
@@ -1244,21 +1242,21 @@ function renderConnect(id, step) {
       <button class="link-sm consent-cancel" data-act="connect-cancel" data-v="${id}">Cancel</button>`);
     return;
   }
-  const plat = S.connectPlatform || (isPhone() ? 'phone' : 'computer');
+  const plat = c.generic ? 'any' : S.connectPlatform || (isPhone() ? 'phone' : 'computer');
   authShell(`${back}
-    <h1>Connect ${esc(c.name)}</h1>
+    <h1>${c.generic ? 'Connect your agent' : 'Connect ' + esc(c.name)}</h1>
     ${S.connectNotice ? `<p class="auth-sub">${esc(S.connectNotice)}</p>` : ''}
-    <div class="seg sm plat">${[['phone', 'On a phone'], ['computer', 'On a computer']].map(([k, l]) =>
-      `<button data-act="set-platform" data-v="${k}" class="${plat === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    ${c.generic ? `<p class="auth-sub">Any agent that can add a remote MCP server with sign-in (OAuth) can
+      connect to NetNet.</p>` : `<div class="seg sm plat">${[['phone', 'On a phone'], ['computer', 'On a computer']].map(([k, l]) =>
+      `<button data-act="set-platform" data-v="${k}" class="${plat === k ? 'on' : ''}">${l}</button>`).join('')}</div>`}
     <ol class="steps guide-steps">${c.guides[plat].map((st, i) => `<li>${md(st.text)}
       ${st.url ? `<div class="urlbox"><span class="mono">${MCP_URL}</span>
         <button class="btn ghost sm auto" data-act="copy-url">Copy</button></div>` : ''}
-      <figure class="shot"><img src="connect/${id}-${plat}-${i + 1}.png" alt="" loading="lazy"
-        onerror="this.parentNode.classList.add('missing')"><figcaption>Screenshot · connect/${id}-${plat}-${i + 1}.png</figcaption></figure>
+      ${c.generic ? '' : `<figure class="shot"><img src="connect/${id}-${plat}-${i + 1}.png" alt="" loading="lazy"
+        onerror="this.parentNode.classList.add('missing')"><figcaption>Screenshot · connect/${id}-${plat}-${i + 1}.png</figcaption></figure>`}
     </li>`).join('')}</ol>
-    <p class="waiting">Waiting for ${esc(c.name)}. This page moves on by itself once you press Allow.</p>
-    <button class="proto-mock" data-go="#/connect/${id}/allow">Prototype: simulate ${esc(c.name)} opening NetNet’s approval page</button>
-    ${instead}`);
+    <p class="waiting">Waiting for ${c.generic ? 'your agent' : esc(c.name)}. This page moves on by itself once you press Allow.</p>
+    <button class="proto-mock" data-go="#/connect/${id}/allow">Prototype: simulate ${c.generic ? 'your agent' : esc(c.name)} opening NetNet’s approval page</button>`);
 }
 function startConnect(entry, id) {
   S.connectEntry = entry; S.connectNotice = null;
@@ -1997,6 +1995,19 @@ document.addEventListener('click', ev => {
       Object.assign(g, { stage:'ask', last:null, revisit:null }); keep(); return;
     }
     case 'guide-add': guideAdd(); return;
+    /* Skip: not a yes, not a no — for "I'd rather not say" and "I don't know". Nothing is
+       added, nothing asked because of it, and Back can return to it. Skipping an earlier
+       yes leaves it as it was. */
+    case 'guide-skip': {
+      const g = S.guide, c = guideCurrent();
+      g.made = g.made || {}; g.trail = g.trail || [];
+      if (c) {
+        if (!guideMade(c.item.id)) g.answered[c.item.id] = 'skip';
+        g.i = c.idx + 1;
+        g.trail = g.trail.filter(x => x !== c.item.id).concat(c.item.id);
+      }
+      Object.assign(g, { stage:'ask', last:null, revisit:null }); keep(); return;
+    }
     case 'guide-stop': finishBasics(); return;
     case 'basics-start': S.guide = newGuide(); save(); location.hash = '#/basics'; return;
 

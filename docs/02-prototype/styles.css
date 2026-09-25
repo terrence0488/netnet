@@ -566,3 +566,7 @@ a.btn{text-decoration:none}
 .agent-roll>i.was{opacity:0;transform:translateY(-90%) scale(.7)}
 .agent-roll svg{width:17px;height:17px}
 @media (prefers-reduced-motion: reduce){ .agent-roll>i{transition:none} }
+/* Skip: a quiet way past a question, under its answers */
+.basics-skip{display:flex;margin:14px 0 0 -4px;color:var(--ink-3)}
+.basics-skip:hover{color:var(--ink)}
+.alogo svg{width:18px;height:18px}
