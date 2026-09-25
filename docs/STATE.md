@@ -49,7 +49,9 @@ charts with too little data now hold their place as a frosted placeholder, "Need
 (§9.6 item 25; design-system §5 and the Chart placeholder component). Then prompts became a
 raised **prompt card**, the one card in the system (design-system §1, §6). Muse is Meta's agent
 (US-only at launch): its guide now starts with a message to send it, and its logo waits for
-Meta's official file (§9.6 item 26, `agents/README.md`).
+Meta's official file (§9.6 item 26, `agents/README.md`). Then: the holding page's Update became
+a floating button that sinks at the bottom of the page; line charts can be read point by point;
+phone text is 15% larger with an 11px floor (§9.6 item 27; design-system §3, §5).
 The functional suite had gone stale against the rework (it predated J1's return-to-Home and the
 universal t-retirement type) — tests live in the session scratchpad, not the repo, so they do not
 survive sessions. Re-run them before claiming anything passes.

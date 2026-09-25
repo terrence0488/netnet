@@ -533,14 +533,87 @@ function lineChart(series, o) {
   }).join('');
   const yl = S.settings.showZeroBounds ? ticks.map(t =>
     `<span class="yt" style="top:${fy(t).toFixed(2)}%">${esc(compact(t))}</span>`).join('') : '';
-  const idx = [0, Math.round((pts0.length - 1) / 3), Math.round((pts0.length - 1) * 2 / 3), pts0.length - 1]
-    .filter((v, i, a) => a.indexOf(v) === i);
+  /* Four dates across a computer's width, three on a phone, where the text is larger. */
+  const gaps = window.matchMedia && matchMedia('(min-width:900px)').matches ? 3 : 2, last = pts0.length - 1;
+  const idx = Array.from({ length:gaps + 1 }, (_, k) => Math.round(last * k / gaps)).filter((v, i, a) => a.indexOf(v) === i);
   const xl = idx.map(i => `<span>${esc(new Date(pts0[i].x + 'T00:00:00Z')
     .toLocaleDateString(LOC(), { month:'short', year:'numeric', timeZone:'UTC' }))}</span>`).join('');
-  return `<div class="plot" style="height:${h}px;padding-left:${PADL}px">${yl}
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${grid}${body}</svg></div>
+  /* What the reading layer needs, carried on the chart itself: dates, and each series' values. */
+  const data = { x:pts0.map(p => p.x), min, max, neg:!!o.neg,
+    s:series.map(s => ({ n:s.name || '', c:s.colour, y:s.points.map(p => p.y) })) };
+  const label = series.length > 1 ? series.map(s => s.name).join(', ') + ' over time' : (o.label || 'Trend');
+  return `<div class="plot lc" style="height:${h}px;padding-left:${PADL}px" tabindex="0" role="group"
+      aria-label="${esc(label)}. Tap or hover to read a date; use the arrow keys to move." data-lc="${esc(JSON.stringify(data))}">${yl}
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${grid}${body}</svg>
+    <div class="lc-layer" style="left:${PADL}px" aria-hidden="true"></div></div>
     <div class="axis" style="padding-left:${PADL}px">${xl}</div>`;
 }
+
+/* Reading a line chart: the crosshair snaps to the nearest point, and the readout gives
+   the date and every series' value there, the value first. Mouse: hover. Touch: tap a
+   point, or press and hold, then drag, to scrub (a plain swipe still scrolls the page or
+   the chart carousel). Keyboard: focus the chart, then ← → (Home, End; Esc to clear). */
+const lcData = el => el._lc || (el._lc = JSON.parse(el.dataset.lc));
+function lcIndex(el, clientX) {
+  const r = el.querySelector('.lc-layer').getBoundingClientRect(), n = lcData(el).x.length;
+  return Math.round(((clientX - r.left) / Math.max(1, r.width)) * (n - 1));
+}
+function lcShow(el, i) {
+  const d = lcData(el), n = d.x.length;
+  i = Math.max(0, Math.min(n - 1, i)); el._i = i;
+  const x = n > 1 ? (i / (n - 1)) * 100 : 50;
+  const fy = v => 100 - ((v - d.min) / (d.max - d.min)) * 100;
+  const layer = el.querySelector('.lc-layer');
+  layer.innerHTML = `<i class="lc-x" style="left:${x}%"></i>` +
+    d.s.map((s, k) => `<i class="lc-dot" data-k="${k}" style="left:${x}%;top:${fy(s.y[i]).toFixed(2)}%"></i>`).join('') +
+    `<div class="lc-tip ${x > 50 ? 'l' : 'r'}" style="left:${x}%"></div>`;
+  layer.querySelectorAll('.lc-dot').forEach(dot => { dot.style.background = d.s[+dot.dataset.k].c; });
+  /* Built with textContent: series names are data. */
+  const tip = layer.querySelector('.lc-tip'), add = (tag, cls, text, parent) => {
+    const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; (parent || tip).appendChild(e); return e; };
+  add('span', 'lc-d', fmtDate(d.x[i]));
+  const said = [fmtDate(d.x[i])];
+  const fmt = v => (d.neg ? '−' : '') + money(v);
+  if (d.s.length === 1) { add('b', 'lc-v', fmt(d.s[0].y[i])); said.push(fmt(d.s[0].y[i])); }
+  else d.s.map((s, k) => ({ s, v:s.y[i] })).sort((a, b) => b.v - a.v).forEach(({ s, v }) => {
+    const row = add('span', 'lc-s'); add('i', null, null, row).style.background = s.c;
+    add('b', null, money(v), row); add('span', null, s.n, row); said.push(s.n + ' ' + money(v)); });
+  el.classList.add('reading');
+  const live = $('#lc-live'); if (live) live.textContent = said.join(', ');
+}
+function lcHide(el) { el.classList.remove('reading'); el.querySelector('.lc-layer').innerHTML = ''; el._i = null; }
+function bindCharts() {
+  document.querySelectorAll('.lc:not([data-bound])').forEach(el => {
+    el.dataset.bound = '1';
+    el.addEventListener('pointermove', e => { if (e.pointerType !== 'touch') lcShow(el, lcIndex(el, e.clientX)); });
+    el.addEventListener('pointerleave', e => { if (e.pointerType !== 'touch' && !el.matches(':focus-visible')) lcHide(el); });
+    let start = null, hold = 0, scrub = false;
+    el.addEventListener('touchstart', e => {
+      const t = e.touches[0]; start = { x:t.clientX, y:t.clientY }; scrub = false; clearTimeout(hold);
+      hold = setTimeout(() => { scrub = true; lcShow(el, lcIndex(el, start.x)); }, 180);
+    }, { passive:true });
+    el.addEventListener('touchmove', e => {
+      const t = e.touches[0];
+      if (scrub) { e.preventDefault(); lcShow(el, lcIndex(el, t.clientX)); return; }
+      if (start && Math.hypot(t.clientX - start.x, t.clientY - start.y) > 10) { clearTimeout(hold); start = null; }
+    }, { passive:false });
+    el.addEventListener('touchend', () => { clearTimeout(hold); if (!scrub && start) lcShow(el, lcIndex(el, start.x)); scrub = false; start = null; });
+    el.addEventListener('touchcancel', () => { clearTimeout(hold); scrub = false; start = null; });
+    el.addEventListener('keydown', e => {
+      const n = lcData(el).x.length; let i = el._i == null ? n - 1 : el._i;
+      if (e.key === 'ArrowLeft') i--; else if (e.key === 'ArrowRight') i++;
+      else if (e.key === 'Home') i = 0; else if (e.key === 'End') i = n - 1;
+      else if (e.key === 'Escape') { lcHide(el); return; } else return;
+      e.preventDefault(); lcShow(el, i);
+    });
+    el.addEventListener('focus', () => { if (el._i == null && el.matches(':focus-visible')) lcShow(el, lcData(el).x.length - 1); });
+    el.addEventListener('blur', () => lcHide(el));
+  });
+}
+/* A reading stays until you touch somewhere else. */
+document.addEventListener('touchstart', e => {
+  document.querySelectorAll('.lc.reading').forEach(el => { if (!el.contains(e.target)) lcHide(el); });
+}, { passive:true });
 
 /* Growth bars with the change label above each bar — the mockups' signature chart.
    The label states each bar's value, so there is no y-axis to read it off as well, and
@@ -714,7 +787,7 @@ function renderHome() {
 
     <div class="g7">
       ${hasHistory ? `<div class="o-trend card">
-        ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:150 })}
+        ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:150, label:homeFiltered() ? 'Filtered total' : 'Net worth' })}
         <div class="rangebar">${HOME_RANGES.map(([l, v]) =>
           `<button data-act="set-range" data-v="${v}" class="${S.settings.range === v ? 'on' : ''}">${l}</button>`).join('')}</div>
       </div>` : list.length ? `<div class="o-trend card">${chartPlaceholder('line', { px:172,
@@ -1062,7 +1135,7 @@ function renderHolding(id) {
 
   ${hist.length > 1 ? `<div class="carousel" id="detail-carousel">
     <div class="slide"><div class="card">
-      ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:160, empty:'Pick a longer range' })}
+      ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:160, empty:'Pick a longer range', label:h.name, neg:h.kind === 'liability' })}
       <div class="rangebar">${HOME_RANGES.map(([l, val]) =>
         `<button data-act="set-detail-range" data-v="${val}" class="${(S.settings.detailRange||0) === val ? 'on' : ''}">${l}</button>`).join('')}</div>
     </div></div>
@@ -1163,9 +1236,9 @@ function renderInsights() {
     <div class="g6"><div class="card">
       <div class="chart-h"><h3>Assets vs. liabilities</h3></div>
       <div style="margin-top:12px">${noHistory ? chartPlaceholder('lines', { px:202, label:empty }) : lineChart([
-        { points:oldestFirst.map(p => ({ x:p.end, y:p.assets })), colour:'var(--gain)', fill:true },
-        { points:oldestFirst.map(p => ({ x:p.end, y:p.liabilities })), colour:'var(--loss)', fill:true },
-        { points:oldestFirst.map(p => ({ x:p.end, y:p.value })), colour:'var(--ink-3)' }
+        { name:'Assets', points:oldestFirst.map(p => ({ x:p.end, y:p.assets })), colour:'var(--gain)', fill:true },
+        { name:'Liabilities', points:oldestFirst.map(p => ({ x:p.end, y:p.liabilities })), colour:'var(--loss)', fill:true },
+        { name:'Net worth', points:oldestFirst.map(p => ({ x:p.end, y:p.value })), colour:'var(--ink-3)' }
       ], { px:180, includeZero:true, empty:'Pick a longer range' })}</div>
       ${noHistory ? '' : `<div class="legend"><div><i style="background:var(--gain)"></i>Assets</div>
         <div><i style="background:#7d8794"></i>Net worth</div>
@@ -1207,7 +1280,7 @@ function renderPeriod(view, i) {
     <div class="nw-chg num ${p.abs == null ? 'muted' : cls(p.abs)}">
       ${p.abs == null ? 'No earlier period to compare with'
         : esc(money(p.abs, null, { signed:true })) + ' · ' + esc(pct(p.pct))}</div>
-    ${p.current ? `<div class="muted" style="font-size:12.5px;margin-top:8px">${esc(fmtDate(p.start))} – today</div>` : ''}
+    ${p.current ? `<div class="muted" style="font-size:max(var(--fs-min),calc(12.5px * var(--fs)));margin-top:8px">${esc(fmtDate(p.start))} – today</div>` : ''}
   </div>
   <div class="section-h"><h2>What drove it</h2></div>
   <div class="card flush">${cs.map(c => `
@@ -1233,7 +1306,7 @@ function renderAgent() {
         <div style="display:flex;align-items:center;gap:9px">
           <span style="width:9px;height:9px;border-radius:50%;background:var(--gain);display:block"></span>
           <h3 style="flex:1">${esc(c.client)}</h3></div>
-        <div class="muted" style="font-size:12.5px;margin:4px 0 0 18px">Connected ${esc(fmtDate(c.connectedAt.slice(0, 10)))}
+        <div class="muted" style="font-size:max(var(--fs-min),calc(12.5px * var(--fs)));margin:4px 0 0 18px">Connected ${esc(fmtDate(c.connectedAt.slice(0, 10)))}
           · last used ${esc(since(c.lastCall))}</div>
         <div style="display:flex;gap:8px;margin-top:14px">
           <button class="btn sm" data-go="#/agent/chat">Try it</button>
@@ -1353,7 +1426,7 @@ function renderChat() {
     .replace(/\{\{CARSTALE\}\}/g, car && latest(car) ? ago(latest(car).date) : 'a while ago');
   $('#s-chat').innerHTML = `
   <div class="topbar"><button class="back" data-go="#/agent">‹ Your agent</button>
-    <h1 style="font-size:16px">Claude · NetNet connected</h1></div>
+    <h1 style="font-size:max(var(--fs-min),calc(16px * var(--fs)))">Claude · NetNet connected</h1></div>
   <div class="note agent">A replay. In the product this happens inside Claude or ChatGPT.</div>
   <div class="chat">${SCRIPT.slice(0, step).map(m =>
     `<div class="msg ${m.who}">${fill(m.text)}</div>`).join('') || '<div class="muted" style="padding:8px 2px">Press Play to walk through it.</div>'}</div>
@@ -1387,7 +1460,7 @@ function renderActivity() {
     </div>`;
   }).join('');
   $('#s-activity').innerHTML = `
-  <div class="topbar"><button class="back" data-go="#/home">‹ Home</button><h1 style="font-size:19px">Activity</h1></div>
+  <div class="topbar"><button class="back" data-go="#/home">‹ Home</button><h1 style="font-size:max(var(--fs-min),calc(19px * var(--fs)))">Activity</h1></div>
   <div class="card flush">${html}</div>`;
 }
 function describeLog(e, h) {
@@ -1436,7 +1509,7 @@ function renderAccount() {
            ['reminders','Reminders', S.settings.reminderOptOut ? 'Off' : 'On']]
           .map(([k, l, v]) => `<button class="row" data-go="#/sub/${k}">
             <span class="grow"><span class="name" style="font-weight:550">${esc(l)}</span></span>
-            <span class="muted" style="font-size:13px">${esc(v)}</span><span class="chev">›</span></button>`).join('')}
+            <span class="muted" style="font-size:max(var(--fs-min),calc(13px * var(--fs)))">${esc(v)}</span><span class="chev">›</span></button>`).join('')}
       </div>
     </div>
     <div class="g6">
@@ -1467,7 +1540,7 @@ function renderAccount() {
 
 function renderSub(name) {
   const B = t => `<div class="topbar"><button class="back" data-go="#/account">‹ Account</button>
-    <h1 style="font-size:19px">${esc(t)}</h1></div>`;
+    <h1 style="font-size:max(var(--fs-min),calc(19px * var(--fs)))">${esc(t)}</h1></div>`;
   let html = '';
   if (name === 'general') {
     html = B('General') + `<div class="card">
@@ -1525,24 +1598,24 @@ function renderSub(name) {
   } else if (name === 'export') {
     html = B('Export') + `<div class="card">
       <h3>Everything, in one file</h3>
-      <p class="muted" style="margin:8px 0 14px;font-size:14px">Every holding and its full history, including
+      <p class="muted" style="margin:8px 0 14px;font-size:max(var(--fs-min),calc(14px * var(--fs)))">Every holding and its full history, including
         original currencies and the rates used.</p>
       <button class="btn" data-act="export">Download JSON</button>
       <button class="btn ghost sm" data-act="export-csv">Download CSV instead</button></div>`;
   } else if (name === 'delete') {
     html = B('Delete account') + `<div class="card">
       <h3 style="color:var(--loss)">This erases everything</h3>
-      <p class="muted" style="margin:8px 0 6px;font-size:14px">Your holdings, value history, types, tags,
+      <p class="muted" style="margin:8px 0 6px;font-size:max(var(--fs-min),calc(14px * var(--fs)))">Your holdings, value history, types, tags,
         audit log and agent connections are deleted within <b>30 days</b>, and immediately stop being
         readable by any connected agent.</p>
-      <p class="muted" style="margin:0 0 14px;font-size:14px">Export first if you want a copy — we will not
+      <p class="muted" style="margin:0 0 14px;font-size:max(var(--fs-min),calc(14px * var(--fs)))">Export first if you want a copy — we will not
         keep one for you.</p>
       <button class="btn sec sm" data-go="#/sub/export">Export first</button>
       <button class="btn danger" style="margin-top:8px" data-act="delete-account">Delete my account</button></div>`;
   } else if (name === 'archived') {
     const arch = S.holdings.filter(h => h.archived);
     html = `<div class="topbar"><button class="back" data-go="#/home">‹ Home</button>
-      <h1 style="font-size:19px">Archived</h1></div>
+      <h1 style="font-size:max(var(--fs-min),calc(19px * var(--fs)))">Archived</h1></div>
       <div class="note">Archived holdings keep their history but leave every total.</div>
       <div class="card flush">${arch.map(h => `<div class="row">
         <span class="grow"><span class="name">${esc(h.name)}</span>
@@ -1574,7 +1647,7 @@ function renderAdd(kind, presetType, editId) {
   $('#s-add').innerHTML = `
   <div class="topbar">
     <button class="iconbtn" data-go="${h ? '#/holding/' + h.id : '#/home'}">${ICON.close}</button>
-    <h1 style="font-size:18px;text-align:center">${esc(title)}</h1>
+    <h1 style="font-size:max(var(--fs-min),calc(18px * var(--fs)));text-align:center">${esc(title)}</h1>
     <button class="btn ghost auto" data-act="save-holding" data-k="${k}" data-e="${editId || ''}">Save</button>
   </div>
   <div class="card" style="max-width:520px">
@@ -1834,7 +1907,7 @@ function sheetFilter(forInsights) {
       ${chips(tags.map(t => ({ id:t, name:t })), d.tags, 'draft-tag')}
 
       ${forInsights ? `
-        <div style="text-align:center;margin:22px 0 4px;font-weight:650;font-size:15px">Don't Show</div>
+        <div style="text-align:center;margin:22px 0 4px;font-weight:650;font-size:max(var(--fs-min),calc(15px * var(--fs)))">Don't Show</div>
         <div class="sh-grp"><span class="grow">Types</span></div>
         ${chips(S.types.map(t => ({ id:t.id, name:typeName(t) })), d.exTypes, 'draft-extype', true)}
         <div class="sh-grp"><span class="grow">Tags</span>${modeToggle(d.exTagMode, 'draft-extagmode')}</div>
@@ -1872,7 +1945,7 @@ function sheetAskAgent(hid) {
   const text = `Look at my “${h.name}” in NetNet. Help me work out whether it’s money I could use within a month, then update it.`;
   sheet(`<h3 style="padding:0 22px 10px;text-align:center">Ask your agent</h3>
     <div class="sh-body">
-      <p class="muted" style="font-size:14px;margin:0">Paste this into ${conns.length ? esc(conns.map(c => c.client).join(' or '))
+      <p class="muted" style="font-size:max(var(--fs-min),calc(14px * var(--fs)));margin:0">Paste this into ${conns.length ? esc(conns.map(c => c.client).join(' or '))
         : 'Claude or ChatGPT'}. ${conns.length ? 'It can read this holding, work it out with you, and set the answer — and you can undo anything it changes.'
         : 'Connect it first, so it can see this holding.'}</p>
       ${promptCard(text, true)}
@@ -1887,7 +1960,7 @@ function protoLocale() { try { return localStorage.getItem(PL); } catch (e) { re
 
 function sheetProto() {
   sheet(`<h3 style="padding:0 18px 6px;text-align:center">Prototype controls</h3>
-    <div class="sheet-sub" style="padding:0 18px 12px;font-size:12.5px;color:var(--ink-3);text-align:center">
+    <div class="sheet-sub" style="padding:0 18px 12px;font-size:max(var(--fs-min),calc(12.5px * var(--fs)));color:var(--ink-3);text-align:center">
       Scaffolding for testing — not product UI.</div>
     <button class="opt" data-act="reset-seeded"><span class="grow">Reset to the sample account</span></button>
     <button class="opt" data-act="reset-empty"><span class="grow">Start from an empty account (first-run)</span></button>
@@ -1964,6 +2037,7 @@ function render(keepScroll) {
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === tabFor));
   if (navigated && !keepScroll) window.scrollTo(0, 0);
   fabSink();
+  bindCharts();
   if (chrome && S.account.signedIn && !sessionStarted) { sessionStarted = true; fire('session_started', {}); }
   if (p[0] === 'insights') {
     const view = S.settings.insightsView;

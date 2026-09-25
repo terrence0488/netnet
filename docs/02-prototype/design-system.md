@@ -122,6 +122,15 @@ becoming decoration.
 All figures set `font-variant-numeric: tabular-nums` so columns align and digits do not shift as
 values update.
 
+**On a phone, every size above is 15% larger, and nothing is smaller than 11px** (Founder,
+2026-09-25: the small text was a strain to read). The sizes in the table are the computer's.
+The phone scale is one multiplier (`--fs`) and one floor (`--fs-min`), so the hierarchy is kept
+exactly. A `label` reads 11px on a phone, `meta` 13.8px, `body` 17.25px. Display figures already
+size to the viewport and are not scaled. Where larger text crowds a row on the narrowest phones,
+spacing gives way first: tracking on links, gaps, three axis dates instead of four. The `label`
+tracking never gives way. Production should also follow the reader's own text-size setting
+(Dynamic Type, Android font scale) on top of this.
+
 **The 0.2em label tracking is load-bearing.** It is what makes a small uppercase label read as
 typesetting rather than as a cramped UI string, and it is the most copied-wrong detail in the
 system. Do not reduce it.
@@ -241,6 +250,14 @@ instead: the inks and the chart hues never appear in the same role, so they are 
   "Need more data" (see **Chart placeholder**, §6). The sample never wears `brand`, gain/loss or a
   categorical hue and carries no numbers or dates, so it cannot be read as a result even where the
   blur is not supported. Controls that act on data (range bar, pager, legend) are not shown on it.
+- **Every line chart can be read point by point.** A dashed crosshair snaps to the nearest date; a
+  dot marks each series there; the readout gives the date in `meta` and each value in Fraunces,
+  **value first**, keyed by a short stroke of its series colour, largest first. It sits at the top
+  of the plot beside the crosshair, flipping sides past the middle so it never covers the dot, on
+  a paper halo rather than a box. Mouse: hover. Touch: tap a point, or press and hold, then drag,
+  to scrub; a plain swipe still scrolls. Keyboard: focus, then ← → (Home, End, Esc). Screen
+  readers hear each reading. The readout adds precision; every figure it shows is also on the
+  page (the hero, the history, the period list), so it never gates a value.
 - **The trend line is `brand`**, not gain/loss. It is NetNet's mark, and the change figure beside it
   carries the semantics. A trend line that turned red on a bad quarter would put two conflicting
   signals in one glance.

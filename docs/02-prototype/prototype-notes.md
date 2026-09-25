@@ -161,7 +161,8 @@ whether the warm paper survives a landing page; and the wordmark, which is still
 
 **Following the mockups**
 
-1. **The chart carousel is kept on the holding page** — trend, then period bars, with page dots. On
+1. **The holding page stacks its two charts**, trend then period bars. The mockups' carousel with
+   page dots became a stack in the design-system rebuild, so both are visible without swiping. On
    Home it became a trend line beside a ranked allocation list when the design system replaced the
    donuts (§5); the Position ledger now carries the assets-vs-liabilities split.
 2. **Holding rows carry one change figure**, not the mockups' percentage-and-amount pair
@@ -290,6 +291,12 @@ whether the warm paper survives a landing page; and the wordmark, which is still
     It is now a slip raised off the page with a shadow: the one card in the system. The same
     card carries "Ask your agent" and Muse's first setup step. Copy sits inside it unless the
     screen's primary is already "Copy the prompt".
+32. **Line charts can be read point by point** (Founder, 2026-09-25): hover, tap, press-and-drag,
+    or the arrow keys, on Home's trend, a holding's trend and Insights' assets vs. liabilities
+    (design-system §5). Bar charts already carry their values, so they get no readout.
+33. **Text is 15% larger on a phone, with an 11px floor** (Founder, 2026-09-25; design-system §3).
+    Every phone screen was checked at 390px and 320px wide for sideways scrolling, colliding
+    siblings and labels that wrap. The chart axes show three dates on a phone instead of four.
 
 ## 7. Decisions — status after the Founder's review (2026-09-24)
 

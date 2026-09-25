@@ -549,6 +549,11 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   to it and the baseline in force is labelled.
 - **Given** a holding, **when** opened, **then** the user sees its own trend, its change over the
   selected period, and its full history newest-first.
+- **Given** a trend chart (Home, a holding, Insights' assets vs. liabilities), **when** the user
+  hovers, taps, drags or uses the arrow keys along it, **then** they read the date and value at
+  that point (every series, for a chart with several). A trend is a history of real figures, and
+  a user checking "what was I worth in March?" should not have to estimate it from an axis. A
+  plain swipe still scrolls, so reading never traps the page.
 - **Given** a new user whose holdings have one value each, or a holding with only one value,
   **when** they open Home or that holding, **then** the trend keeps its place as a placeholder: a
   sample of the chart's shape, in neutral ink, under frosted glass labelled "Need more data", with
@@ -738,7 +743,7 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 | **N4** | Data isolation per user, enforced at the data layer and covered by tests | Financial data; one leak ends the product |
 | **N5** | Secrets in environment variables only; none in the repo | Non-negotiable (CLAUDE.md) |
 | **N6** | Running cost ≈$0 to 100 users, <$50/month to 1,000, holding **indefinitely** — no trial-window free tiers | Open-ended runway (`00-discovery.md` §5) |
-| **N7** | Mobile-first responsive; one API serving web now and native later | Native iOS/Android is planned, not hypothetical |
+| **N7** | Mobile-first responsive; one API serving web now and native later. On a phone, text is sized for reading at arm's length: nothing below 11px, and the native apps follow the reader's own text-size setting | Native iOS/Android is planned, not hypothetical. The people this is for check their numbers on a phone, often in passing |
 | **N8** | Reliability and security never trade against cost | Cheap-but-flaky is a failed outcome for financial data |
 | **N9** | Analytics carries no financial values (§3.5) | The metrics pipeline must not become the leak |
 | **N11** | Context compilation is **deterministic** — arithmetic, schema and stored provenance only, no inference of any kind | Keeps §2.4's lift free: N2 stays intact and N6's cost ceiling is untouched. The moment context needs a model to produce it, the economics of the whole product change |
@@ -857,6 +862,7 @@ Founder's approval with the prototype.
 | 24 | Skip on every question of the basics; "Other agent" with a generic guide, so any MCP agent can connect; the connect flow drops its questions link (Back does it) | J1, J5 |
 | 25 | A chart with too little data keeps its place as a labelled placeholder (a neutral sample under frosted glass, "Need more data", saying what makes it appear), on Home, a holding and Insights | J4, J11 |
 | 26 | Muse is Meta's agent; its setup starts with a message sent in the chat, and a listing in Meta's connector directory is the better path | J5 |
+| 27 | Trend charts can be read point by point (hover, tap, drag, keyboard); phone text is larger, with an 11px floor | J4, N7 |
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves
