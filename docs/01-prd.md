@@ -565,7 +565,8 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** sort and filter controls, **when** the user sorts by value, name, change or last
   updated, filters by type or tag, or hides types or tags ("Don't Show"), **then** list and totals
   reflect the filtered set and the active filter is visible, naming what is hidden. Hiding is often
-  the easier question: "everything except the car" is one tap, where "show only" would take eleven.
+  the easier question: "everything except the car" is one tap, where Show Only takes a tap for
+  every other type.
   A type or tag is either shown only or hidden, never both. Home's filter and Insights' are separate,
   and each says so.
 - **Given** a phone-width viewport, **when** any of the above is used, **then** it is fully usable
