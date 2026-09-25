@@ -166,6 +166,10 @@ button.nw-chg:hover .vs{color:var(--ink);text-decoration-color:var(--ink-3)}
 .btn.auto{width:auto;padding:7px 14px}
 .btn[aria-disabled="true"]{opacity:.4;cursor:default;filter:none}
 .btn-row{display:flex;gap:12px;margin:18px 0}
+/* A section's own primary action, in its header: the holding page's Update sits at the top
+   of the history it adds to, so a long history never pushes it out of reach. */
+.section-h .btn-h{width:auto;flex:none;display:inline-flex;align-items:center;min-height:var(--hit);
+  padding:0 18px;font-size:10.5px}
 @media (min-width:900px){.btn-row{max-width:420px}}
 
 .field{margin-bottom:16px}

@@ -169,8 +169,9 @@ whether the warm paper survives a landing page; and the wordmark, which is still
 3. **Sort By, Comparison Options, Filters and Add Tracking** are the mockups' menus, with the same
    options — including Filters' `Show Only` / `Types` / `Tags` (OR-AND) / `Filter Archived` and
    the Reset / Cancel / Apply footer.
-4. **The detail page** keeps the monthly/quarterly/yearly bar chart, expandable value rows and the
-   bottom **Update** button. It drops the stat-pill row (Type, Last update, Started on, ATH, YTD):
+4. **The detail page** keeps the monthly/quarterly/yearly bar chart and expandable value rows. Its
+   **Update** button moved from the bottom of the page to the history header ("History · 23 ·
+   Update"), so a long history never pushes it out of reach (Founder, 2026-09-25). It drops the stat-pill row (Type, Last update, Started on, ATH, YTD):
    each pill repeated something already on the page, or was a statistic nobody asked for. An opened
    value shows only the original-currency amount and "Added 3 days ago by Claude", not the
    mockups' five labelled lines that restated the row (Founder review, 2026-09-25).

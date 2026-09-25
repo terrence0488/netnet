@@ -1079,9 +1079,9 @@ function renderHolding(id) {
         ? 'Update this next month, or add an earlier value, to see how it moves.'
         : 'Add its first value, then update it as it changes.' })}</div>`}
 
-  <div class="section-h" style="margin-top:18px"><h2>History · ${hist.length}</h2></div>
-  <div class="card flush">${history || '<div class="empty"><p class="muted">No values yet.</p></div>'}</div>
-  <div class="btn-row"><button class="btn" data-act="add-value" data-h="${h.id}">Update</button></div>`;
+  <div class="section-h" style="margin-top:18px"><h2>History · ${hist.length}</h2>
+    <button class="btn btn-h" data-act="add-value" data-h="${h.id}">Update</button></div>
+  <div class="card flush">${history || '<div class="empty"><p class="muted">No values yet.</p></div>'}</div>`;
 
   const cc = $('#detail-carousel');
   if (cc) {
