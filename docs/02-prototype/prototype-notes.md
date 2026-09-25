@@ -57,7 +57,9 @@ MCP server, email sending, and anything on the reserved list in PRD §4.2.
 
 **Where they live.** `packs.js` — a data file with no functions in it. `app.js` names no local
 institution, rule or default; it reads the world only through the pack. Adding a market is a new
-entry in `PACKS` plus pointing a `REGIONS` row at it. No change to the flow.
+entry in `PACKS` plus pointing a `REGIONS` row at it. No change to the flow. In the product, a
+human admin will edit packs through a future admin portal (PRD §9.6 item 17); `packs.js` is the
+shape that admin would be editing.
 
 **What a pack supplies**, mapped to the PRD's list:
 
@@ -281,6 +283,11 @@ whether the warm paper survives a landing page; and the wordmark, which is still
 - **Region inference is a guess by design.** Many people in Singapore run en-US browsers, so time
   zone is read first. Either way the user confirms it.
 - **"All+1" range semantics were guessed** from the Insights frames.
+- **A pack edit must not reclassify existing holdings** (PRD §9.6 item 17). The prototype saves
+  each holding's accessibility when it is created, but reads the reason shown beside it live from
+  the pack. That is harmless while packs change only by release. Once an admin can edit a default,
+  the two can contradict each other: a holding still counted as locked, now explained as "can be
+  sold within days". Stage 3 should version packs and keep the applied reason with the outcome.
 - **No pagination on value history.** Stage 3 should decide whether the API pages it.
 - **Charts are hand-rolled SVG.** Deliberate — a charting library is a Stage 3 choice.
 - **Nothing here is a stack opinion.** No framework, no database, no hosting. Stage 3 owns all of it.

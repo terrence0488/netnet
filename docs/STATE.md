@@ -36,4 +36,6 @@ universal t-retirement type) — tests live in the session scratchpad, not the r
 survive sessions. Re-run them before claiming anything passes.
 `design-system.md` governs visuals; never put design or scope commentary in the prototype UI.
 §2.4 (A13/M12) cannot be shown in a clickable prototype — Stage 5/6. Stage 3 owns stack and must
-verify MCP connector tier-gating per client.
+verify MCP connector tier-gating per client. Stage 3 must also design packs for a future human-admin
+portal (PRD §9.6 item 17): runtime-read and versioned, validated whole, audited, no user-data access,
+and a pack edit never silently reclassifies existing holdings. The portal itself is not v1.
