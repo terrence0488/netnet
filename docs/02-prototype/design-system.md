@@ -227,6 +227,38 @@ ambiguous, ask which side of that line it falls on rather than deciding case by 
 
 ---
 
+### 6.1 Hit targets — binding
+
+**What a control looks like is a design choice. What you can tap is a contract.** This system draws
+controls as 9.5px tracked labels and hairline chips, which is right for the look and wrong for a
+thumb. So visual size and tap size are specified separately, and only the second is a rule.
+
+| Token | Value | Applies |
+|---|---|---|
+| `--hit` | **44px** | Default — touch is the reference case (J4: mobile is primary, not a fallback) |
+| `--hit` | **32px** | Only under `(hover:hover) and (pointer:fine)` — a mouse, positively detected |
+
+1. **Every control's tap area is at least `--hit` in both dimensions**, however small it draws. A
+   17px icon sits in a 44px box; a "Show $" label is 44px tall.
+2. **Default large, relax only on evidence.** An unknown device gets 44px. The relaxed 32px never goes
+   below WCAG 2.5.8's 24px floor.
+3. **Adjacent targets may touch; they may not overlap.** A bigger target that steals its
+   neighbour's taps is a regression, not a fix.
+4. **Grow the row, not the sentence.** A link in a row (section header, sheet header) makes the row
+   `--hit` tall. A link *inside a sentence* keeps the line height and lets its target overflow the
+   line box instead, so the prose does not break apart.
+5. **Indicators follow the text, not the box.** Selected states under range bars, chips and
+   "Change comparison" are text underlines, so a 44px box does not push the underline 14px away
+   from the word it marks.
+6. **A pager says what it is paging.** Bare ‹ › arrows are unreadable on a phone. The pager is
+   ‹ *period* ›, and an arrow with nowhere to go is disabled rather than leading to an empty chart.
+
+**Verified, not eyeballed.** Every tappable element on every screen and sheet is measured at phone
+width with touch emulated (target 44) and at desktop width with a mouse (target 32). Targets that
+overlap are reported too. This rule shipped missing: the first audit, prompted by the Founder
+tapping a 6×22px chart arrow on a real phone, found **426 undersized targets across 65 component
+patterns**. After the fix there are none at either size, and no overlaps.
+
 ## 7. Layout
 
 - **Mobile-first.** Single column, 24px side margin, bottom tab bar. The reference case.

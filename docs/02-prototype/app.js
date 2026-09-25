@@ -317,6 +317,17 @@ function periodStart(view, end) {
   if (view === 'yearly') d.setUTCMonth(0, 1);
   return d.toISOString().slice(0, 10);
 }
+/* The window a chart pager is showing, e.g. "Jun – Sep 2026", "Q3 2025 – Q3 2026", "2022 – 2026". */
+function windowLabel(ps, view) {
+  if (!ps.length) return '';
+  const a = ps[0], b = ps[ps.length - 1];
+  if (view === 'quarterly') return a.label.replace('/', ' ') + (ps.length > 1 ? ' – ' + b.label.replace('/', ' ') : '');
+  if (view === 'yearly') return a.label + (ps.length > 1 ? ' – ' + b.label : '');
+  const d = x => new Date(x.end + 'T00:00:00Z'), m = x => d(x).toLocaleDateString('en-SG', { month:'short', timeZone:'UTC' });
+  const y = x => d(x).getUTCFullYear();
+  if (ps.length === 1) return m(a) + ' ' + y(a);
+  return y(a) === y(b) ? `${m(a)} – ${m(b)} ${y(b)}` : `${m(a)} ${y(a)} – ${m(b)} ${y(b)}`;
+}
 function periodLabel(view, end, short) {
   const d = new Date(end + 'T00:00:00Z');
   if (view === 'monthly') return short ? (d.getUTCMonth() + 1) + '-' + d.getUTCFullYear()
@@ -828,6 +839,7 @@ function renderHolding(id) {
     .map(x => ({ x:x.date, y:Math.abs(x.base) }));
 
   const pers = periodsFor(view, [h], 5 + page * 5).slice(page * 5, page * 5 + 5).reverse();
+  const noEarlier = periodsFor(view, [h], 5 + (page + 1) * 5).length <= (page + 1) * 5;
   const ath = hist.reduce((m, x) => !m || Math.abs(x.base) > Math.abs(m.base) ? x : m, null);
   const jan1 = valueAsOf(h, TODAY.slice(0, 4) + '-01-01');
   const ytdAbs = jan1 ? Math.abs(v.base) - Math.abs(jan1.base) : null;
@@ -884,9 +896,10 @@ function renderHolding(id) {
     </div></div>
     <div class="slide"><div class="card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <div class="chartnav">
-          <button data-act="detail-page" data-v="1" title="Earlier">‹</button>
-          <button data-act="detail-page" data-v="-1" ${page === 0 ? 'disabled' : ''} title="Later">›</button>
+        <div class="chartnav lead">
+          <button data-act="detail-page" data-v="1" ${noEarlier ? 'disabled' : ''} aria-label="Earlier periods">‹</button>
+          <span class="span">${esc(windowLabel(pers, view))}</span>
+          <button data-act="detail-page" data-v="-1" ${page === 0 ? 'disabled' : ''} aria-label="Later periods">›</button>
         </div><span style="flex:1"></span>
       </div>
       ${growthBars(pers, { px:175 })}
@@ -998,8 +1011,8 @@ function renderInsights() {
         <div style="flex:1"><h3>${esc(VIEW_ADJ[view])} Growth</h3>
           <div class="csub">${esc(VIEW_ADJ[view])} growth over the last ${windowed.length} ${esc(VIEW_PLURAL[view])}</div></div>
         <div class="chartnav">
-          <button data-act="insights-page" data-v="1" ${(page+1)*5 >= oldestFirst.length ? 'disabled' : ''}>‹</button>
-          <button data-act="insights-page" data-v="-1" ${page === 0 ? 'disabled' : ''}>›</button></div>
+          <button data-act="insights-page" data-v="1" ${(page+1)*5 >= oldestFirst.length ? 'disabled' : ''} aria-label="Earlier periods">‹</button>
+          <button data-act="insights-page" data-v="-1" ${page === 0 ? 'disabled' : ''} aria-label="Later periods">›</button></div>
       </div>
       <div style="margin-top:10px">${growthBars(windowed, { px:180 })}</div>
     </div></div>
@@ -1022,8 +1035,8 @@ function renderInsights() {
         <div style="flex:1"><h3>Distribution Over Time</h3>
           <div class="csub">Net worth distribution over the last ${windowed.length} ${esc(VIEW_PLURAL[view])}</div></div>
         <div class="chartnav">
-          <button data-act="insights-page" data-v="1" ${(page+1)*5 >= oldestFirst.length ? 'disabled' : ''}>‹</button>
-          <button data-act="insights-page" data-v="-1" ${page === 0 ? 'disabled' : ''}>›</button></div>
+          <button data-act="insights-page" data-v="1" ${(page+1)*5 >= oldestFirst.length ? 'disabled' : ''} aria-label="Earlier periods">‹</button>
+          <button data-act="insights-page" data-v="-1" ${page === 0 ? 'disabled' : ''} aria-label="Later periods">›</button></div>
       </div>
       <div class="legend" style="margin:8px 0 4px">${distTypes.map(s => `<div><i style="background:${s.colour}"></i>${esc(s.name)}</div>`).join('')}</div>
       ${stackedBars(dist, { px:190 })}
@@ -2060,7 +2073,10 @@ document.addEventListener('keydown', ev => {
 
 $('#scrim').addEventListener('click', closeSheet);
 $('#devbtn').addEventListener('click', sheetProto);
-window.addEventListener('hashchange', render);
+/* Real navigation (including the phone's back gesture) must never leave a sheet
+   stranded over the next screen. Only hash changes close sheets — in-sheet
+   re-renders call render() directly and must keep their sheet open. */
+window.addEventListener('hashchange', () => { closeSheet(); render(); });
 
 /* signup (J1). Region is inferred, then confirmed by one question — never
    applied silently (§2.3 rule 2). Segment is one skippable question (§3.5). */

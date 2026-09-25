@@ -381,3 +381,77 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12p
   #s-home .grid > .g5{grid-column:8 / span 5 !important;grid-row:1}
   #s-home .grid > .g7{grid-column:1 / span 7 !important;grid-row:1}
 }
+
+/* ==========================================================================
+   HIT TARGETS — design-system.md §6.1
+   What you see is a design choice; what you can TAP is a contract. Every
+   control's tap area is at least --hit square, even when it draws as a 9.5px
+   label. 44px by default, because touch is the reference case (J4: mobile is
+   the primary case, not a fallback). Relaxed only where a mouse is positively
+   detected — never below WCAG 2.5.8's 24px. Adjacent targets may touch; they
+   may not overlap.
+   ========================================================================== */
+:root{--hit:44px}
+@media (hover:hover) and (pointer:fine){:root{--hit:32px}}
+
+/* icon buttons: 17px glyph, full-size target; optically flush at the edges */
+.iconbtn{width:var(--hit);height:var(--hit)}
+.topbar>.iconbtn:last-child{margin-right:calc((var(--hit) - 17px) / -2)}
+.topbar>.iconbtn:first-child{margin-left:calc((var(--hit) - 17px) / -2)}
+
+/* text links in a row: the row grows to fit the target */
+.link,.section-h .link,.topbar .back,.sheet .sh-head button,.navitem{
+  display:inline-flex;align-items:center;min-height:var(--hit)}
+.sheet .sh-head button:first-child{justify-content:flex-start}
+.sheet .sh-head button:last-child{justify-content:flex-end}
+.sheet .sh-head{padding-bottom:4px}
+
+/* text links INSIDE a sentence: the target overflows the line box instead of
+   pushing the sentence apart (negative block margins cancel the extra height) */
+.link-sm{display:inline-flex;align-items:center;min-height:var(--hit);min-width:var(--hit);
+  padding:0 4px;margin-block:calc((var(--hit) - 1.4em) / -2);vertical-align:middle}
+
+/* "Change comparison": underline follows the text, not the taller box */
+.baseline-btn{display:inline-flex;align-items:center;min-height:var(--hit);margin-top:2px;
+  border-bottom:none;padding-bottom:0;text-decoration:underline;text-decoration-color:var(--rule-strong);
+  text-underline-offset:4px}
+.baseline-btn:hover{text-decoration-color:var(--ink-3)}
+
+/* range bars become a strip of full-size cells; indicator stays under the text */
+.rangebar{gap:0;margin-top:2px}
+.rangebar button{display:inline-flex;align-items:center;justify-content:center;
+  min-height:var(--hit);min-width:var(--hit);padding:0 6px}
+.rangebar button.on{box-shadow:none;text-decoration:underline 2px var(--brand);text-underline-offset:6px}
+
+/* chip pickers (filters, tags): 44px tall, touching rows, indicator under the text */
+.tagpick{gap:0 18px}
+.tagpick button{display:inline-flex;align-items:center;min-height:var(--hit);padding:0;border-bottom:none}
+.tagpick button.on{text-decoration:underline 2px var(--brand);text-underline-offset:5px}
+.tagpick button.ex.on{text-decoration-color:var(--loss)}
+
+/* chart pager: two real buttons around an optional period label */
+.chartnav{gap:0;align-items:center}
+.chartnav button{width:var(--hit);height:var(--hit);display:grid;place-items:center;font-size:20px;line-height:1}
+.chartnav .span{font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-3);padding:0 4px;white-space:nowrap}
+.chartnav.lead{margin-left:calc((var(--hit) - 12px) / -2)}
+
+/* segmented controls, answer choices, buttons, fields */
+.seg button,.seg.sm button{min-height:var(--hit);display:flex;align-items:center;justify-content:center}
+.choice button{min-height:var(--hit)}
+.btn,.btn.sm{min-height:var(--hit);display:flex;align-items:center;justify-content:center}
+.btn.auto{display:inline-flex;min-height:var(--hit)}
+.field input,.field select{min-height:var(--hit)}
+.check{min-height:var(--hit)}
+
+/* prototype scaffolding: full-size, and clear of the tab bar including the home-indicator inset */
+.devbtn{min-height:var(--hit);min-width:var(--hit);display:inline-flex;align-items:center;justify-content:center;
+  bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 12px)}
+@media (min-width:900px){.devbtn{bottom:18px}}
+/* short chips ("Car", "CPF") are full height but were under 44 wide */
+.tagpick button{min-width:var(--hit);justify-content:flex-start}  /* left-aligned so every row starts on the margin */
+/* back links outside a top bar (sign-up) */
+.back{display:inline-flex;align-items:center;min-height:var(--hit)}
+/* the last row must be able to scroll clear of the tab bar AND the home indicator */
+.main{padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 30px)}
+@media (min-width:900px){.main{padding-bottom:70px}}
