@@ -13,6 +13,8 @@ function load() {
       const st = JSON.parse(raw);
       /* saved before onboarding existed: a signed-in account had already answered it */
       if (st.account && st.account.onboarded == null) st.account.onboarded = !!(st.account.signedIn && st.account.region);
+      /* saved before Home's filter had "Don't Show" */
+      if (st.settings) st.settings = Object.assign({ hideTypes:[], hideTags:[], hideTagMode:'OR' }, st.settings);
       return st;
     }
   } catch (e) {}
@@ -266,7 +268,8 @@ function applyFilter(list, f) {
   return out;
 }
 const homeFilter = () => ({ showOnly:S.settings.showOnly, types:S.settings.filterTypes,
-  tags:S.settings.filterTags, tagMode:S.settings.tagMode, archived:S.settings.filterArchived });
+  tags:S.settings.filterTags, tagMode:S.settings.tagMode, archived:S.settings.filterArchived,
+  exTypes:S.settings.hideTypes, exTags:S.settings.hideTags, exTagMode:S.settings.hideTagMode });
 const insightsFilter = () => ({ showOnly:S.settings.inShowOnly, types:S.settings.inTypes,
   tags:S.settings.inTags, tagMode:S.settings.inTagMode, archived:S.settings.inArchived,
   exTypes:S.settings.exTypes, exTags:S.settings.exTags, exTagMode:S.settings.exTagMode,
@@ -275,7 +278,7 @@ const homeHoldings = () => applyFilter(S.holdings, homeFilter());
 const insightsHoldings = () => applyFilter(S.holdings, insightsFilter());
 const homeFiltered = () => {
   const f = homeFilter();
-  return f.showOnly !== 'all' || f.types.length || f.tags.length || f.archived;
+  return f.showOnly !== 'all' || f.types.length || f.tags.length || f.archived || f.exTypes.length || f.exTags.length;
 };
 const insightsFiltered = () => {
   const s = S.settings;
@@ -1062,6 +1065,8 @@ function filterSummary() {
   if (S.settings.showOnly !== 'all') p.push(S.settings.showOnly === 'assets' ? 'Assets only' : 'Liabilities only');
   if (S.settings.filterTypes.length) p.push(S.settings.filterTypes.map(id => typeOf(id).name).join(', '));
   if (S.settings.filterTags.length) p.push(S.settings.filterTags.join(' ' + S.settings.tagMode + ' '));
+  if (S.settings.hideTypes.length) p.push('hiding ' + S.settings.hideTypes.map(id => typeOf(id).name).join(', '));
+  if (S.settings.hideTags.length) p.push('hiding ' + S.settings.hideTags.join(' ' + S.settings.hideTagMode + ' '));
   if (S.settings.filterArchived) p.push('including archived');
   return p.join(' · ');
 }
@@ -1883,7 +1888,8 @@ function sheetFilter(forInsights) {
     ? { forInsights:true, showOnly:s.inShowOnly, types:s.inTypes.slice(), tags:s.inTags.slice(), tagMode:s.inTagMode,
         exTypes:s.exTypes.slice(), exTags:s.exTags.slice(), exTagMode:s.exTagMode, archived:s.inArchived }
     : { forInsights:false, showOnly:s.showOnly, types:s.filterTypes.slice(), tags:s.filterTags.slice(),
-        tagMode:s.tagMode, archived:s.filterArchived });
+        tagMode:s.tagMode, exTypes:s.hideTypes.slice(), exTags:s.hideTags.slice(), exTagMode:s.hideTagMode,
+        archived:s.filterArchived });
   const d = S.draft;
   const tags = S.tags.length ? S.tags : SEED_TAGS;
   const chips = (items, sel, act, ex) => `<div class="tagpick">${items.map(i => `
@@ -1906,13 +1912,12 @@ function sheetFilter(forInsights) {
       <div class="sh-grp"><span class="grow">Tags</span>${modeToggle(d.tagMode, 'draft-tagmode')}</div>
       ${chips(tags.map(t => ({ id:t, name:t })), d.tags, 'draft-tag')}
 
-      ${forInsights ? `
-        <div style="text-align:center;margin:22px 0 4px;font-weight:650;font-size:max(var(--fs-min),calc(15px * var(--fs)))">Don't Show</div>
-        <div class="sh-grp"><span class="grow">Types</span></div>
-        ${chips(S.types.map(t => ({ id:t.id, name:typeName(t) })), d.exTypes, 'draft-extype', true)}
-        <div class="sh-grp"><span class="grow">Tags</span>${modeToggle(d.exTagMode, 'draft-extagmode')}</div>
-        ${chips(tags.map(t => ({ id:t, name:t })), d.exTags, 'draft-extag', true)}
-        <div class="hint" style="margin-top:10px">Hidden from Insights only. Home is unchanged.</div>` : ''}
+      <div class="sh-grp sh-split" style="justify-content:center"><span style="margin:0 auto">Don't Show</span></div>
+      <div class="sh-grp"><span class="grow">Types</span></div>
+      ${chips(S.types.map(t => ({ id:t.id, name:typeName(t) })), d.exTypes, 'draft-extype', true)}
+      <div class="sh-grp"><span class="grow">Tags</span>${modeToggle(d.exTagMode, 'draft-extagmode')}</div>
+      ${chips(tags.map(t => ({ id:t, name:t })), d.exTags, 'draft-extag', true)}
+      <div class="hint" style="margin-top:10px">${forInsights ? 'Hidden from Insights only. Home is unchanged.' : 'Hidden from Home only. Insights is unchanged.'}</div>
 
       <div class="sh-grp" style="justify-content:center;margin-top:20px"><span style="margin:0 auto">Filter Archived</span></div>
       <div class="seg" style="max-width:200px;margin:0 auto">
@@ -2097,25 +2102,31 @@ document.addEventListener('click', ev => {
       const key = { 'draft-type':'types', 'draft-tag':'tags', 'draft-extype':'exTypes', 'draft-extag':'exTags' }[a];
       const arr = S.draft[key];
       const i = arr.indexOf(v); i < 0 ? arr.push(v) : arr.splice(i, 1);
+      /* A type or tag is either shown only or not shown, never both: picking it on one side
+         takes it off the other. */
+      if (i < 0) { const other = S.draft[{ types:'exTypes', exTypes:'types', tags:'exTags', exTags:'tags' }[key]];
+        const j = other.indexOf(v); if (j >= 0) other.splice(j, 1); }
       sheetFilter(S.draft.forInsights); return;
     }
     case 'draft-tagmode': S.draft.tagMode = v; sheetFilter(S.draft.forInsights); return;
-    case 'draft-extagmode': S.draft.exTagMode = v; sheetFilter(true); return;
+    case 'draft-extagmode': S.draft.exTagMode = v; sheetFilter(S.draft.forInsights); return;
     case 'draft-archived': S.draft.archived = !!v; sheetFilter(S.draft.forInsights); return;
     case 'apply-filter': {
       const d = S.draft;
       if (v) { s.inShowOnly = d.showOnly; s.inTypes = d.types; s.inTags = d.tags; s.inTagMode = d.tagMode;
         s.exTypes = d.exTypes; s.exTags = d.exTags; s.exTagMode = d.exTagMode; s.inArchived = d.archived; }
       else { s.showOnly = d.showOnly; s.filterTypes = d.types; s.filterTags = d.tags;
-        s.tagMode = d.tagMode; s.filterArchived = d.archived; }
+        s.tagMode = d.tagMode; s.filterArchived = d.archived;
+        s.hideTypes = d.exTypes; s.hideTags = d.exTags; s.hideTagMode = d.exTagMode; }
       closeSheet(); rerender(); return;
     }
     case 'reset-filter': {
       S.draft = v ? { forInsights:true, showOnly:'all', types:[], tags:[], tagMode:'OR', exTypes:[], exTags:[], exTagMode:'OR', archived:false }
-                  : { forInsights:false, showOnly:'all', types:[], tags:[], tagMode:'OR', archived:false };
+                  : { forInsights:false, showOnly:'all', types:[], tags:[], tagMode:'OR', exTypes:[], exTags:[], exTagMode:'OR', archived:false };
       sheetFilter(!!v); return;
     }
-    case 'clear-filter': s.showOnly = 'all'; s.filterTypes = []; s.filterTags = []; s.filterArchived = false; rerender(); return;
+    case 'clear-filter': s.showOnly = 'all'; s.filterTypes = []; s.filterTags = []; s.filterArchived = false;
+      s.hideTypes = []; s.hideTags = []; rerender(); return;
     case 'clear-exclusions': s.exTypes = []; s.exTags = []; s.exHoldings = []; rerender(); return;
 
     case 'set-range': s.range = +v; rerender(); return;

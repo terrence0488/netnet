@@ -563,8 +563,11 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   it does. A chart that shows a line through one point, or a flat line at their only value, reads
   as a fact about their money.
 - **Given** sort and filter controls, **when** the user sorts by value, name, change or last
-  updated, or filters by type or tag, **then** list and totals reflect the filtered set and the
-  active filter is visible.
+  updated, filters by type or tag, or hides types or tags ("Don't Show"), **then** list and totals
+  reflect the filtered set and the active filter is visible, naming what is hidden. Hiding is often
+  the easier question: "everything except the car" is one tap, where "show only" would take eleven.
+  A type or tag is either shown only or hidden, never both. Home's filter and Insights' are separate,
+  and each says so.
 - **Given** a phone-width viewport, **when** any of the above is used, **then** it is fully usable
   without horizontal scrolling — mobile-first is the primary case, not a fallback.
 
@@ -709,7 +712,7 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   that period's change, ranked by contribution, in their default currency.
 - **Given** Insights Filters, **when** the user filters by type or tag, **then** every figure in the
   view recomputes over the filtered set only and the active filter is visible.
-- **Given** the Insights **"Don't Show" exclusion list** (which Home's filter does not have),
+- **Given** the Insights **"Don't Show" exclusion list** (Home has its own, which leaves Insights alone),
   **when** the user excludes a holding, type or tag, **then** it is dropped from Insights figures
   **without** changing Home totals or net worth, and the exclusion persists across sessions until
   cleared.
@@ -863,6 +866,7 @@ Founder's approval with the prototype.
 | 25 | A chart with too little data keeps its place as a labelled placeholder (a neutral sample under frosted glass, "Need more data", saying what makes it appear), on Home, a holding and Insights | J4, J11 |
 | 26 | Muse is Meta's agent; its setup starts with a message sent in the chat, and a listing in Meta's connector directory is the better path | J5 |
 | 27 | Trend charts can be read point by point (hover, tap, drag, keyboard); phone text is larger, with an 11px floor | J4, N7 |
+| 28 | Home's filter gains "Don't Show" (types and tags), like Insights'; a type or tag is shown only or hidden, never both | J4, J11 |
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves

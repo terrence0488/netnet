@@ -202,8 +202,10 @@ whether the warm paper survives a landing page; and the wordmark, which is still
     ranked by contribution. J11 requires it; the mockups have no such screen.
 12. **Carried-forward is marked**, and the Insights copy states that periods derive from value dates,
     not entry dates. Both are J11 requirements that a visual mockup cannot express.
-13. **"Don't Show" is explained, not just offered.** The exclusion note says in words that it changes
-    Insights only and leaves Home's net worth alone, because that distinction is invisible otherwise.
+13. **"Don't Show" is explained, not just offered.** Home's filter and Insights' each have it (Home's
+    added 2026-09-25 at the Founder's request), and each sheet says it hides from that screen only,
+    because which screen a filter touches is invisible otherwise. Picking a type or tag under one
+    half takes it off the other.
 14. **Staleness is surfaced**, not just labelled: Home shows a count of stale holdings with a route
     to the agent.
 

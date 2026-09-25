@@ -658,3 +658,5 @@ a.btn{text-decoration:none}
 /* The narrowest phones (320px): a section label and its link share one line at the larger type. */
 .section-h h2{white-space:nowrap}
 @media (max-width:359px){ .section-h{gap:6px} .section-h .link{letter-spacing:0} }
+/* The filter sheet's two halves, Show Only and Don't Show, split by a hairline. */
+.sheet .sh-grp.sh-split{border-top:1px solid var(--rule);margin-top:24px;padding-top:22px}

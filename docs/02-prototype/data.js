@@ -148,6 +148,7 @@ function seededState() {
       baseline:'last-quarter', defaultCcy:DEFAULT_CCY, sort:'value-desc', range:12,
       homeCard:0, pieMode:'%',
       showOnly:'all', filterTypes:[], filterTags:[], tagMode:'OR', filterArchived:false,
+      hideTypes:[], hideTags:[], hideTagMode:'OR',
       insightsView:'quarterly', insightsRange:16,
       inShowOnly:'all', inTypes:[], inTags:[], inTagMode:'OR',
       exTypes:[], exTags:[], exHoldings:[], exTagMode:'OR', inArchived:false,

@@ -51,7 +51,8 @@ raised **prompt card**, the one card in the system (design-system §1, §6). Mus
 (US-only at launch): its guide now starts with a message to send it, and its logo waits for
 Meta's official file (§9.6 item 26, `agents/README.md`). Then: the holding page's Update became
 a floating button that sinks at the bottom of the page; line charts can be read point by point;
-phone text is 15% larger with an 11px floor (§9.6 item 27; design-system §3, §5).
+phone text is 15% larger with an 11px floor (§9.6 item 27; design-system §3, §5). Home's filter
+gained "Don't Show" (§9.6 item 28).
 The functional suite had gone stale against the rework (it predated J1's return-to-Home and the
 universal t-retirement type) — tests live in the session scratchpad, not the repo, so they do not
 survive sessions. Re-run them before claiming anything passes.
