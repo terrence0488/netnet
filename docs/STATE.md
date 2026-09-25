@@ -26,6 +26,6 @@ while building B and C. **Confirm the brief with the Founder first**; assumed un
 change the look, not the product (flows, content rules §2.1, PRD behaviour stay). Suggested: each its own design-system
 doc and stylesheet over the shared `app.js`, switchable in PROTO, so all three run the same data.
 **Tests are now in the repo**: `node docs/02-prototype/tests/run.mjs` (22 suites, all clean at the
-lock). Variants must pass them; only checks on the look itself may differ. Still open: desktop layout
-review (Founder), Muse logo (`agents/README.md`). Never put design commentary in the prototype UI.
+lock). Variants must pass them; only checks on the look itself may differ. Desktop layout: approved by
+the Founder. Still open: Muse logo (`agents/README.md`). Never put design commentary in the prototype UI.
 Stage 3 notes: PRD §9.6 item 17 (packs admin portal), free plans allow custom MCP (confirm when building).

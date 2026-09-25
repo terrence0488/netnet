@@ -311,7 +311,8 @@ whether the warm paper survives a landing page; and the wordmark, which is still
    reach P-B and P-C in enough volume, since they carry the kill criteria.
 3. **`via` on `holding_created` — decided and built** (§3.5, §9.6 item 14): `guided` or `form`,
    shown in the PROTO drawer. (`starter` went with the starting tiles, §9.6 item 20.)
-4. **The desktop layout — open.** The Founder is reviewing the overall UI/UX; this gate waits on it.
+4. **The desktop layout — decided: approved as built** (Founder, 2026-09-25, after the full UI/UX
+   review).
 5. **Net Worth Goals — out of v1**, nothing to build or test. **Tags AND/OR — kept.** **Value Note
    and Mark on graph — out of scope** (Founder, 2026-09-24): removed from the prototype along with
    the data they wrote, their seeded examples and the export column, so nothing implies they exist.
