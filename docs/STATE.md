@@ -44,6 +44,9 @@ Then (2026-09-25): the PRD re-written so the Stage 2 revisions read as requireme
 voice, with §9.6 a revision table (Founder asked for this). The prototype has SG, MY and UK packs.
 "All+1" is gone. The out-of-date note now routes to the agent or the connect flow. The open
 questions are settled except the desktop layout, which the Founder is still reviewing.
+Since then: Back and Skip in the basics, "Other agent", real agent logos (LobeHub, MIT; Muse still
+unidentified), and charts with too little data now hold their place as a frosted placeholder,
+"Need more data" (§9.6 item 25; design-system §5 and the Chart placeholder component).
 The functional suite had gone stale against the rework (it predated J1's return-to-Home and the
 universal t-retirement type) — tests live in the session scratchpad, not the repo, so they do not
 survive sessions. Re-run them before claiming anything passes.

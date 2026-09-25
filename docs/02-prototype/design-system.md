@@ -231,6 +231,12 @@ instead: the inks and the chart hues never appear in the same role, so they are 
   a y-axis would say the same thing again. The scale covers only the side the bars use, so an
   all-positive run gets the full height. The pager above the chart names the window, so the bars'
   own labels are just "May" or "Q3".
+- **Too little data is a placeholder, never a gap.** A chart that cannot be drawn yet keeps its
+  place, so the screen does not change shape when the data arrives and the person sees what is
+  coming. It shows a fixed sample of its own shape in neutral ink under frosted glass, labelled
+  "Need more data" (see **Chart placeholder**, §6). The sample never wears `brand`, gain/loss or a
+  categorical hue and carries no numbers or dates, so it cannot be read as a result even where the
+  blur is not supported. Controls that act on data (range bar, pager, legend) are not shown on it.
 - **The trend line is `brand`**, not gain/loss. It is NetNet's mark, and the change figure beside it
   carries the semantics. A trend line that turned red on a bad quarter would put two conflicting
   signals in one glance.
@@ -253,7 +259,8 @@ Built by us, because they carry the brand:
 | **Inline chip** | Text-only, `label` scale, coloured. **No pill background** — a pill is a container. |
 | **Segmented control** | Ours: it carries brand and appears on data screens. |
 | **Button** | Ours. `brand` fill, paper-coloured text; secondary is ruled, not filled. |
-| **Empty state** | Typographic. A sentence and one action, never an illustration. |
+| **Empty state** | Typographic. A sentence and one action, never an illustration. A chart with too little data is not an empty state: see **Chart placeholder**. |
+| **Chart placeholder** | The chart's own shape (trend line with a fading wash, growth bars, stacked bars, or three lines), fixed, drawn in `ink-2` dark / `ink-3` light, under a full-bleed frosted layer: `paper` at 50% with a 4px backdrop blur (86% solid where blur is unsupported; the sample is dropped in forced-colours mode). On the glass: "Need more data" in `label` caps, `ink`; beneath it, where the screen has no other place to say it, one `body-sm` line in `ink-2` saying what makes the chart appear ("Update a holding next month, or add an earlier value, to see your trend."). Where several charts share a reason (Insights), the reason is said once, in the summary line, and each chart carries only the label. When data exists but the chosen range holds too little, the label is "Pick a longer range" and the range bar stays; when filters leave nothing, "Nothing to show". The sample is hidden from screen readers; the words are read. |
 | **Position ledger** | Figure rows as a ledger: bucket in `body`, what is in it in `meta` beneath (holding names; types for locked), amount in Fraunces; a `rule-strong` hairline above what you owe. No subtotal. How the first picture is set (PRD J1). |
 | **Choice row** | Answers to a fact question. Short answers: ruled buttons in `label` caps; the chosen one takes a `brand` rule, not a fill. Sentence answers: a stacked list of rows, the chosen one marked by a 3px `brand` bar. Never pills. |
 | **Consequence line** | `body-sm` in `ink-2`; the consequence in `ink` 600, the pack's reason after an em dash, then a `label`-scale **Change** link. States money, never a category (PRD J2). The amount ("the $X you could use") appears only where it moves as you type — the Add form. Elsewhere it would repeat the Position ledger. |

@@ -549,6 +549,14 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   to it and the baseline in force is labelled.
 - **Given** a holding, **when** opened, **then** the user sees its own trend, its change over the
   selected period, and its full history newest-first.
+- **Given** a new user whose holdings have one value each, or a holding with only one value,
+  **when** they open Home or that holding, **then** the trend keeps its place as a placeholder: a
+  sample of the chart's shape, in neutral ink, under frosted glass labelled "Need more data", with
+  one line saying what makes it appear (a later update, or a value with an earlier date). The
+  sample carries no figures or dates and never uses a data colour, so it cannot be mistaken for
+  the user's own trend. A chart that vanishes teaches a new user the product has less in it than
+  it does. A chart that shows a line through one point, or a flat line at their only value, reads
+  as a fact about their money.
 - **Given** sort and filter controls, **when** the user sorts by value, name, change or last
   updated, or filters by type or tag, **then** list and totals reflect the filtered set and the
   active filter is visible.
@@ -697,7 +705,10 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** a user with less history than the selected view needs — fewer than two periods carrying
   data, which is the normal case for most users in the first weeks after launch — **when** they open
   that view, **then** they see the periods they do have plus a plain statement of what is needed for
-  a comparison: never an empty grid, a fabricated 0% row, or an axis with one point.
+  a comparison, and each chart keeps its place as the same placeholder as Home's (J4): never an
+  empty grid, a fabricated 0% row, or an axis with one point. The statement is made once, not on
+  every chart. When filters or exclusions leave nothing, the view says that instead, because more
+  data would not help.
 - **Given** values added with past dates after the fact, **when** Insights is opened, **then** the
   affected periods recompute — periods derive from **value dates**, never from when the entry was
   made.
@@ -836,8 +847,9 @@ Founder's approval with the prototype.
 | 20 | The basics are part of onboarding, one question per screen; an empty Home offers one primary action and one secondary alternative (the agent, below a rule); the starting tiles and `via: starter` are gone | J1, §3.5 |
 | 21 | Packs carry their own default types and basics, with follow-ups after a yes; ten launch countries | §2.3, J2 |
 | 22 | Onboarding offers the agent as its alternative route; one connect flow everywhere, per client and platform, with screenshots; connected ends onboarding on a blank Home with the starting prompt; agent prompts for empty and stale Home; `{entry}` on connection events | J1, J5, J6, §3.5 |
-| 24 | Skip on every question of the basics; "Other agent" with a generic guide, so any MCP agent can connect; the connect flow drops its questions link (Back does it) | J1, J5 |
 | 23 | Back on every question of the basics (correct an answer, change yes to no, or return to where the basics began); no agent offer inside the basics; the Connect button turns through the agents it works with; Grok and Muse listed once their connector support is confirmed | J1, J5 |
+| 24 | Skip on every question of the basics; "Other agent" with a generic guide, so any MCP agent can connect; the connect flow drops its questions link (Back does it) | J1, J5 |
+| 25 | A chart with too little data keeps its place as a labelled placeholder (a neutral sample under frosted glass, "Need more data", saying what makes it appear), on Home, a holding and Insights | J4, J11 |
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves

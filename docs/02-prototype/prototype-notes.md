@@ -40,14 +40,14 @@ with one.
 | **J2** accessibility | Add form, holding page, Home | A fact question only where the type is ambiguous; otherwise the default and its reason in one line, with **Change**. The consequence is shown, never the category. "Not sure" is always allowed and never blocks saving |
 | **§2.3** jurisdiction packs | `packs.js`; Account → General → Where you live | SG pack and generic pack. Switching region relabels every type you have not renamed and re-words every reason, live |
 | **J3** record and correct | Holding detail → Update / Add Value / Edit Value / Delete | Back-dating, same-date warning |
-| **J4** see the picture | Home: trend, allocation, Position ledger (includes assets-vs-liabilities), baseline, sort, filters | Every % on screen is relative to the chosen baseline. Trend and change figures appear once there is history to show |
+| **J4** see the picture | Home: trend, allocation, Position ledger (includes assets-vs-liabilities), baseline, sort, filters | Every % on screen is relative to the chosen baseline. Change figures appear once there is history; until then the trend (and a holding's charts) hold their place as a frosted placeholder, "Need more data", saying what makes them appear |
 | **J5** connect the agent | Onboarding (the intro screen's "Let your AI agent do this" → **Connect to agent**, whose icon turns through ChatGPT, Claude, Grok and Muse every two seconds), the empty Home, a holding's "Ask your agent", the Agent tab | One flow everywhere: choose the agent → verify the email if needed → steps for this platform (phone or computer, switchable), each with a screenshot slot → NetNet's approval page (**Allow** / Cancel) → done. Two outside events are stood in for by dashed "Prototype:" buttons: opening the verification link, and the agent opening the approval page. On the agent route, Allow ends onboarding on a blank Home whose hint is the starting prompt and **Let Claude do it** (opens claude.ai with the prompt typed in). Screenshots: drop them into `connect/`; agent logos into `agents/` (see each README). Grok and Muse have generic draft steps until their connector support is confirmed. **Other agent** gives a generic guide (the address, and "add a custom connector"), with no platform switch or screenshots, so any MCP agent can connect. The connect flow has no questions link: Back returns to the intro. Logos for ChatGPT, Claude and Grok are in `agents/`; Muse's is still a placeholder. Revoke on the Agent tab |
 | **J6** agent assembles | Agent → Try it | Scripted turn: finds the existing holding rather than duplicating, then writes |
 | **J7** verify and undo | Activity | Single undo and whole-turn batch undo; web and agent changes in one list |
 | **J8** grounded advice | Agent → Try it (second half) | The affordability question answered off money you could use, with staleness caveats. **A scripted replay — see §8** |
 | **J9** stay current | Stale chips on Home and detail; the out-of-date note on Home; Account → Reminders | Cadence and a real opt-out. The note hands the job to a connected agent ("Ask Claude to update it", a prompt with no data in it), or offers to connect one |
 | **J10** own the data | Account → Export / Delete account | Export downloads JSON and CSV, including accessibility and the answer behind it |
-| **J11** insights | Insights tab | Monthly/Quarterly/Yearly; Growth, Assets vs Liabilities, Distribution Over Time; Insights Filters with "Don't Show"; period drill-down |
+| **J11** insights | Insights tab | Monthly/Quarterly/Yearly; Growth, Assets vs Liabilities, Distribution Over Time; Insights Filters with "Don't Show"; period drill-down. With too little history, each chart is a frosted placeholder and the summary line says what a comparison needs |
 | **§3.5** segment on every event | PROTO → events | `{segment}` rides on every event: `unknown` until onboarding, then whatever was chosen, or `unknown` if skipped. `signup_started` and `account_created` carry `{method}` |
 
 Deliberately **not** built, because they are not design questions: real auth, real OAuth, a real
@@ -245,8 +245,9 @@ whether the warm paper survives a landing page; and the wordmark, which is still
     / not decided / assets / you owe, where "you owe" is also stated against what you could use
     ("3.0× what you could use this month"). This is PRD §2.2 made concrete: arithmetic and defaults
     only, no inference, and it is also the §2.4 "arithmetic already done" layer rendered for a person.
-23. **No trend, no change figures and no baseline control until there is history.** For a new user
-    those are "+$0 0.00%" and an empty chart — noise exactly where the first picture has to land.
+23. **No change figures and no baseline control until there is history.** For a new user those are
+    "+$0 0.00%" — noise exactly where the first picture has to land. The trend is not removed: its
+    place holds a placeholder (item 30).
 24. **Sign-up is only a way in; region and segment come after it** (Founder, 2026-09-25). Sign-up
     is a provider or an email then a password. Then onboarding asks two questions, one per screen.
     Region is inferred and pre-selected, but the user must press Continue on it: the region decides
@@ -270,6 +271,17 @@ whether the warm paper survives a landing page; and the wordmark, which is still
     Log-in accepts any password for the account's email. No password is ever stored, not even in
     this prototype's `localStorage`. The production build must use the providers' official
     sign-in buttons.
+30. **A chart with too little data is a placeholder, not a gap** (Founder, 2026-09-25). Home's
+    trend, a holding's chart and all three Insights charts used to disappear, or be replaced by a
+    sentence, until there was history. Now each keeps its place: a fixed sample of its shape in
+    neutral ink under frosted glass, labelled "Need more data". Home and the holding page add one
+    line saying what makes it appear, a later update or an earlier value, because the "As of" date
+    means history can be backfilled today. The holding page shows one placeholder, not a carousel of
+    two. Insights says the reason once, in the summary line, and each chart shows only the label.
+    Range bar, pager and legend are not shown on a placeholder: they would act on nothing. If the
+    Insights filters leave nothing, the label is "Nothing to show" and the summary says the filters
+    are why, since more data would not help. If history exists but the chosen range holds too
+    little of it, the label is "Pick a longer range" and the range bar stays, because that is the fix.
 
 ## 7. Decisions — status after the Founder's review (2026-09-24)
 

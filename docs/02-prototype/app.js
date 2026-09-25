@@ -465,6 +465,51 @@ const typeColour = id => catColour(S.types.findIndex(t => t.id === id));
 function niceTicks(min, max, n) {
   const out = []; for (let i = 0; i <= n; i++) out.push(min + (max - min) * (i / n)); return out;
 }
+/* A chart with too little data to draw is not hidden: a sample of its shape sits under
+   frosted glass that says what is missing, so the screen keeps its layout and the person
+   learns what will appear. The sample is fixed (never random, never the person's figures),
+   has no numbers or dates, and is drawn in neutral ink, never a data colour, so nothing on
+   it can be read as a result — even where the blur is not supported. */
+const SAMPLE = [28, 40, 35, 50, 44, 58, 53, 66, 62, 78];
+let phSeq = 0;
+function chartPlaceholder(kind, o) {
+  o = o || {};
+  const h = o.px || 170, gid = 'ph-fade-' + (++phSeq);
+  const fx = i => (i / (SAMPLE.length - 1)) * 100;
+  const path = (vals, k) => vals.map((v, i) => (i ? 'L' : 'M') + fx(i).toFixed(2) + ' ' + (100 - v * k).toFixed(2)).join(' ');
+  const line = (d, op) => `<path class="ln" d="${d}" stroke="currentColor" stroke-opacity="${op}" vector-effect="non-scaling-stroke"/>`;
+  const area = (d, op) => `<path d="${d} L100 100 L0 100 Z" fill="url(#${gid})" opacity="${op}"/>`;
+  const fade = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="currentColor" stop-opacity=".5"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>`;
+  const grid = [25, 50, 75].map(y => `<line class="grid-l" x1="0" y1="${y}" x2="100" y2="${y}" vector-effect="non-scaling-stroke"/>`).join('');
+  const cols = (vals, draw) => vals.map((v, i) => draw(v, 100 / vals.length * i + 100 / vals.length / 2 - 4.5)).join('');
+  let body = '';
+  if (kind === 'line') {
+    const d = path(SAMPLE, 1);
+    body = fade + grid + area(d, 1) + line(d, 1);
+  } else if (kind === 'lines') {
+    const up = path(SAMPLE, 1), dn = path(SAMPLE.map(v => 30 - v / 6), 1), net = path(SAMPLE.map(v => v * .72), 1);
+    body = fade + grid + area(up, .8) + area(dn, .6) + line(up, 1) + line(dn, .75) + line(net, .5);
+  } else if (kind === 'bars') {
+    const z = 72;
+    body = `<line class="zero" x1="0" y1="${z}" x2="100" y2="${z}" vector-effect="non-scaling-stroke"/>` +
+      cols([38, 55, -16, 44, 66], (v, x) => `<rect x="${x.toFixed(2)}" y="${v > 0 ? z - v : z}" width="9" height="${Math.abs(v)}"
+        fill="currentColor" fill-opacity="${v > 0 ? .7 : .4}"/>`);
+  } else {
+    const z = 84;
+    body = cols([[26, 16, 9], [29, 17, 10], [31, 19, 10], [35, 21, 11], [40, 22, 12]], (segs, x) => {
+      let y = z;
+      return segs.map((v, j) => { y -= v; return `<rect x="${x.toFixed(2)}" y="${y}" width="9" height="${v - 1}"
+        fill="currentColor" fill-opacity="${[.72, .48, .28][j]}"/>`; }).join('') +
+        `<rect x="${x.toFixed(2)}" y="${z + 1}" width="9" height="12" fill="currentColor" fill-opacity=".3"/>`;
+    }) + `<line class="zero" x1="0" y1="${z}" x2="100" y2="${z}" vector-effect="non-scaling-stroke"/>`;
+  }
+  return `<div class="ph" style="height:${h}px">
+    <svg class="ph-sample" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${body}</svg>
+    <div class="ph-veil"><p class="ph-label">${esc(o.label || 'Need more data')}</p>${o.sub ? `<p class="ph-sub">${esc(o.sub)}</p>` : ''}</div>
+  </div>`;
+}
+
 /* Multi-series line/area chart — Home trend, Insights assets-vs-liabilities. */
 function lineChart(series, o) {
   o = o || {};
@@ -472,7 +517,7 @@ function lineChart(series, o) {
   const pts0 = series[0] ? series[0].points : [];
   const all = series.flatMap(s => s.points.map(p => p.y));
   if (!all.length || pts0.length < 2)
-    return '<div class="muted" style="padding:30px 0;text-align:center;font-size:13px">Not enough history to draw this yet.</div>';
+    return chartPlaceholder(series.length > 1 ? 'lines' : 'line', { px:h + 22, label:o.empty });
   let min = o.includeZero ? Math.min(0, ...all) : Math.min(...all), max = Math.max(...all);
   if (min === max) { min -= 1; max += 1; }
   const ticks = niceTicks(min, max, 3);
@@ -503,8 +548,8 @@ function lineChart(series, o) {
 function growthBars(periods, o) {
   o = o || {};
   const n = periods.length;
-  if (!n) return '<div class="muted" style="padding:30px 0;text-align:center;font-size:13px">No periods to show yet.</div>';
   const h = o.px || 170;
+  if (!n) return chartPlaceholder('bars', { px:h + 40, label:o.empty });
   const vals = periods.map(p => p.abs || 0);
   const top = Math.max(0, ...vals), bot = Math.min(0, ...vals), span = (top - bot) || 1;
   const fy = v => 2 + ((top - v) / span) * 96;
@@ -536,8 +581,8 @@ function growthBars(periods, o) {
 function stackedBars(dist, o) {
   o = o || {};
   const n = dist.length;
-  if (!n) return '';
   const h = o.px || 190;
+  if (!n) return chartPlaceholder('stacked', { px:h + 40, label:o.empty });
   let maxUp = 1, maxDn = 1;
   dist.forEach(d => {
     let up = 0, dn = 0;
@@ -672,7 +717,8 @@ function renderHome() {
         ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:150 })}
         <div class="rangebar">${HOME_RANGES.map(([l, v]) =>
           `<button data-act="set-range" data-v="${v}" class="${S.settings.range === v ? 'on' : ''}">${l}</button>`).join('')}</div>
-      </div>` : ''}
+      </div>` : list.length ? `<div class="o-trend card">${chartPlaceholder('line', { px:172,
+        sub:'Update a holding next month, or add an earlier value, to see your trend.' })}</div>` : ''}
 
       <div class="o-list"><div class="section-h"><h2>Holdings · ${list.length}</h2>
         <button class="link" data-act="open-sort">${esc(sortLabel())}</button></div>
@@ -1012,7 +1058,7 @@ function renderHolding(id) {
 
   ${hist.length > 1 ? `<div class="carousel" id="detail-carousel">
     <div class="slide"><div class="card">
-      ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:160 })}
+      ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:160, empty:'Pick a longer range' })}
       <div class="rangebar">${HOME_RANGES.map(([l, val]) =>
         `<button data-act="set-detail-range" data-v="${val}" class="${(S.settings.detailRange||0) === val ? 'on' : ''}">${l}</button>`).join('')}</div>
     </div></div>
@@ -1024,7 +1070,10 @@ function renderHolding(id) {
       </div>
     </div></div>
   </div>
-  <div class="dots">${[0,1].map(i => `<i class="${card === i ? 'on' : ''}"></i>`).join('')}</div>` : ''}
+  <div class="dots">${[0,1].map(i => `<i class="${card === i ? 'on' : ''}"></i>`).join('')}</div>`
+    : `<div class="card">${chartPlaceholder('line', { px:182, sub:hist.length
+        ? 'Update this next month, or add an earlier value, to see how it moves.'
+        : 'Add its first value, then update it as it changes.' })}</div>`}
 
   <div class="section-h" style="margin-top:18px"><h2>History · ${hist.length}</h2></div>
   <div class="card flush">${history || '<div class="empty"><p class="muted">No values yet.</p></div>'}</div>
@@ -1070,7 +1119,12 @@ function renderInsights() {
   const distTypes = [];
   dist.forEach(d => d.segs.forEach(s => { if (!distTypes.find(x => x.id === s.id)) distTypes.push(s); }));
 
+  /* Too little to compare: the charts keep their place, each as a placeholder, and the
+     summary line says once what is missing. */
   const noHistory = comparable.length === 0;
+  const filteredOut = !list.length && !!(insightsFiltered() || exclusionCount());
+  const empty = filteredOut ? 'Nothing to show' : null;
+  const noun = VIEW_NOUN[view].toLowerCase();
 
   $('#s-insights').innerHTML = `
   <div class="topbar"><h1>Insights</h1>
@@ -1088,49 +1142,47 @@ function renderInsights() {
     Your net worth on Home is unchanged. <button class="btn ghost sm auto" data-act="clear-exclusions">Clear</button></div>` : ''}
   ${insightsFiltered() ? `<div class="note" style="margin-top:12px"><b>Filtered.</b> Every figure below covers the filtered set only.</div>` : ''}
 
-  ${comparable.length ? `<p class="summary">Averaging <b class="num ${cls(avgAbs)}">${esc(compactSigned(avgAbs))}</b>
-    (${esc(pct(avgPct))}) a ${esc(VIEW_NOUN[view].toLowerCase())}
-    over the last ${comparable.length} ${esc(comparable.length === 1 ? VIEW_NOUN[view].toLowerCase() : VIEW_PLURAL[view])}.</p>` : ''}
-
-  ${noHistory ? `<div class="card" style="margin-top:14px">
-      <h3>Not enough history yet</h3>
-      <p class="muted" style="margin:8px 0 0;font-size:14px">A ${esc(VIEW_NOUN[view].toLowerCase())}-on-${esc(VIEW_NOUN[view].toLowerCase())}
-        comparison needs two ${esc(VIEW_PLURAL[view])} of values. The first one appears next ${esc(VIEW_NOUN[view].toLowerCase())}.</p></div>` : `
+  <p class="summary">${noHistory ? esc(filteredOut ? 'Nothing matches these filters.'
+      : !list.length ? 'Nothing tracked yet. Add what you have on Home to start.'
+      : `A ${noun}-on-${noun} comparison needs two ${VIEW_PLURAL[view]} of values. It starts next ${noun}, or now if you add an earlier value.`)
+    : `Averaging <b class="num ${cls(avgAbs)}">${esc(compactSigned(avgAbs))}</b>
+    (${esc(pct(avgPct))}) a ${esc(noun)}
+    over the last ${comparable.length} ${esc(comparable.length === 1 ? noun : VIEW_PLURAL[view])}.`}</p>
 
   <div class="grid" style="margin-top:14px">
     <div class="g6"><div class="card">
       <div class="chart-h"><h3>${esc(VIEW_ADJ[view])} growth</h3>
-        ${pager('insights-page', windowed, view, (page+1)*5 >= oldestFirst.length, page === 0)}</div>
-      <div style="margin-top:10px">${growthBars(windowed, { px:180 })}</div>
+        ${noHistory ? '' : pager('insights-page', windowed, view, (page+1)*5 >= oldestFirst.length, page === 0)}</div>
+      <div style="margin-top:10px">${noHistory ? chartPlaceholder('bars', { px:220, label:empty }) : growthBars(windowed, { px:180 })}</div>
     </div></div>
 
     <div class="g6"><div class="card">
       <div class="chart-h"><h3>Assets vs. liabilities</h3></div>
-      <div style="margin-top:12px">${lineChart([
+      <div style="margin-top:12px">${noHistory ? chartPlaceholder('lines', { px:202, label:empty }) : lineChart([
         { points:oldestFirst.map(p => ({ x:p.end, y:p.assets })), colour:'var(--gain)', fill:true },
         { points:oldestFirst.map(p => ({ x:p.end, y:p.liabilities })), colour:'var(--loss)', fill:true },
         { points:oldestFirst.map(p => ({ x:p.end, y:p.value })), colour:'var(--ink-3)' }
-      ], { px:180, includeZero:true })}</div>
-      <div class="legend"><div><i style="background:var(--gain)"></i>Assets</div>
+      ], { px:180, includeZero:true, empty:'Pick a longer range' })}</div>
+      ${noHistory ? '' : `<div class="legend"><div><i style="background:var(--gain)"></i>Assets</div>
         <div><i style="background:#7d8794"></i>Net worth</div>
-        <div><i style="background:var(--loss)"></i>Liabilities</div></div>
+        <div><i style="background:var(--loss)"></i>Liabilities</div></div>`}
     </div></div>
 
     <div class="g12"><div class="card">
       <div class="chart-h"><h3>Distribution</h3>
-        ${pager('insights-page', windowed, view, (page+1)*5 >= oldestFirst.length, page === 0)}</div>
-      <div class="legend" style="margin:8px 0 4px">${distTypes.map(s => `<div><i style="background:${s.colour}"></i>${esc(s.name)}</div>`).join('')}</div>
-      ${stackedBars(dist, { px:190 })}
+        ${noHistory ? '' : pager('insights-page', windowed, view, (page+1)*5 >= oldestFirst.length, page === 0)}</div>
+      ${noHistory ? chartPlaceholder('stacked', { px:230, label:empty }) : `<div class="legend" style="margin:8px 0 4px">${distTypes.map(s => `<div><i style="background:${s.colour}"></i>${esc(s.name)}</div>`).join('')}</div>
+      ${stackedBars(dist, { px:190 })}`}
     </div></div>
-  </div>`}
+  </div>
 
-  <div class="section-h"><h2>${esc(VIEW_NOUN[view])} by ${esc(VIEW_NOUN[view].toLowerCase())}</h2></div>
+  ${periods.length ? `<div class="section-h"><h2>${esc(VIEW_NOUN[view])} by ${esc(noun)}</h2></div>
   <div class="card flush">${periods.map(p => `
     <button class="row" data-go="#/period/${view}/${p.i}">
       <span class="grow"><span class="name">${esc(p.label)}${p.current ? ' <span class="chip">so far</span>' : ''}</span></span>
       <span class="amt"><b class="num ${p.abs == null ? 'muted' : cls(p.abs)}">${p.abs == null ? '—' : esc(compactSigned(p.abs))}</b>
         ${p.pct == null ? '' : `<span class="chg num ${cls(p.abs)}">${esc(pct(p.pct))}</span>`}</span>
-      <span class="chev">›</span></button>`).join('')}</div>`;
+      <span class="chev">›</span></button>`).join('')}</div>` : ''}`;
 }
 function exclusionSummary() {
   const s = S.settings;
