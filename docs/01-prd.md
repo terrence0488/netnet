@@ -428,8 +428,10 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** a new account, **when** it is created, **then** onboarding asks, one question per
   screen: where they live (inferred, then confirmed — §2.3 rule 2) and an optional segment. Then
   one screen — "Let's start by getting to know a little about your finances" — with **Start**,
-  which opens **the basics** (below), and one quiet alternative: connect their AI agent to start
-  (J5). In the basics, every answer is saved the moment it is given, and "Done for now" is one tap
+  which opens **the basics** (below). Below a rule, the agent is offered as the other way to start:
+  "Let your AI agent do this", with a secondary **Connect to agent** button (J5). It must be visible
+  enough to be a real choice, because the agent is what v1 is betting on (A1, M3), and never a
+  second filled button, because two equal choices stall a new user. In the basics, every answer is saved the moment it is given, and "Done for now" is one tap
   away on every screen, so onboarding never has to be cleared to reach Home.
 - **Given** the agent route, **when** the agent is connected, **then** onboarding is done and the
   user lands on a blank Home — no waiting state. The blank Home offers the starting prompt to copy
@@ -441,10 +443,11 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   finished it, and otherwise go straight to Home.
 - **Given** an empty account, **when** the user adds one holding with a value, **then** Home shows
   a net-worth total equal to that value with the holding listed under it.
-- **Given** an empty Home, **when** it is shown, **then** it offers **one** action and one quiet
-  alternative, never several equal-weight choices: a new user who cannot tell where to start
-  leaves. With no agent connected, the action is "Add what you have" (the basics) and the
-  alternative is connecting an agent (J5), not buried in settings. With an agent connected, it is
+- **Given** an empty Home, **when** it is shown, **then** it offers **one** primary action and one
+  secondary alternative, never several equal-weight choices: a new user who cannot tell where to
+  start leaves. With no agent connected, the action is "Add what you have" (the basics), and below a
+  rule the alternative is the same "Let your AI agent do this" block as in onboarding (J5), not
+  buried in settings. With an agent connected, it is
   the starting prompt, with "add it yourself" as the alternative.
 - **Given** a user who does not know what to list, **when** they meet the basics, **then** the
   questions are this market's common holdings (the pack's checklist) — suggestions, not a fixed
@@ -806,7 +809,7 @@ Founder's approval with the prototype.
 | 17 | Packs are administered content, with an admin portal later; four constraints binding now | §2.3, N10, §8 |
 | 18 | Sign-up asks only for a way in (Google, Apple, email and password); email verification does not block; log-in resumes unfinished onboarding; the landing page is a marketing page with its own design; `{method}` on sign-up events | J1, §3.4, §3.5 |
 | 19 | Where-you-live defaults to the country from IP, confirmed; every country listed alphabetically; the chosen country's currency becomes the default | §2.3, J2 |
-| 20 | The basics are part of onboarding, one question per screen; an empty Home offers one action and one quiet alternative; the starting tiles and `via: starter` are gone | J1, §3.5 |
+| 20 | The basics are part of onboarding, one question per screen; an empty Home offers one primary action and one secondary alternative (the agent, below a rule); the starting tiles and `via: starter` are gone | J1, §3.5 |
 | 21 | Packs carry their own default types and basics, with follow-ups after a yes; ten launch countries | §2.3, J2 |
 | 22 | Onboarding offers the agent as its alternative route; one connect flow everywhere, per client and platform, with screenshots; connected ends onboarding on a blank Home with the starting prompt; agent prompts for empty and stale Home; `{entry}` on connection events | J1, J5, J6, §3.5 |
 

@@ -541,3 +541,9 @@ a.btn{text-decoration:none}
 .urlbox.prompt{width:100%;margin:0 0 12px}
 .urlbox.prompt .grow{line-height:1.5}
 .auth > .link-sm{margin-left:-4px}
+/* the agent as the other way to start (intro screen, empty Home) */
+.alt-route{width:100%;margin-top:28px;padding-top:22px;border-top:1px solid var(--rule)}
+.alt-title{font-size:15px;font-weight:600;letter-spacing:-.012em;color:var(--ink);margin:0}
+.alt-sub{font-size:13px;color:var(--ink-3);margin:2px 0 14px}
+.btn-icon{gap:10px}
+.btn-icon svg{width:17px;height:17px;flex:none}

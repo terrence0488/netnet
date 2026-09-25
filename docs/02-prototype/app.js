@@ -825,11 +825,19 @@ function emptyHome() {
   </div>
   ${emptyNext()}`;
 }
+/* The agent as the other way to start, wherever the user is choosing how to begin: under a
+   rule, a subtitle and an outlined button with the agent's icon. Visible enough to be a real
+   choice, never a second filled button (design-system §2.1 rule 10). */
+const agentAlt = entry => `<div class="alt-route">
+    <p class="alt-title">Let your AI agent do this</p>
+    <p class="alt-sub">Works with Claude and ChatGPT.</p>
+    <button class="btn sec btn-icon" data-act="connect-start" data-v="${entry}">${ICON.agent}Connect to agent</button>
+  </div>`;
 function emptyNext() {
   const conn = activeConns()[0], cl = conn && clientByName(conn.client);
   if (!cl) return `<div class="empty-next">
     <button class="btn" data-act="basics-start">Add what you have</button>
-    <button class="link" data-act="connect-start" data-v="home">Or let your agent do it ›</button>
+    ${agentAlt('home')}
   </div>`;
   const c = cl[1];
   return `<div class="empty-next">
@@ -2219,8 +2227,7 @@ function renderWelcome(step) {
       <h1>Let’s start by getting to know a little about your finances.</h1>
       <p class="auth-sub">A few quick questions. Round numbers are fine, and you can change anything later.</p>
       <button class="btn" data-act="ob-start">Start</button>
-      <button class="link auth-alt" data-act="connect-start" data-v="onboarding">Or, connect your AI agent to start,
-        such as Claude or ChatGPT ›</button>`);
+      ${agentAlt('onboarding')}`);
     return;
   }
   if (step === '2') {

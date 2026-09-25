@@ -79,8 +79,12 @@ things look but never what may appear, so every screen showed everything it had.
    event that happens outside NetNet at a known point in a flow (opening the verification email,
    the agent opening NetNet's approval page) is stood in for by a dashed control labelled
    "Prototype:" at exactly that point, styled like the PROTO button so it never reads as product.
-10. **One primary action per screen.** A screen offers one thing to do next; any alternative is a
-    quiet link, never a second equal-weight button. The Founder found the old empty Home offering
+10. **One primary action per screen.** A screen offers one thing to do next, as its only filled
+    button. An alternative is a quiet link, or, when it is a genuine second route (the agent, on
+    the intro screen and the empty Home), a subtitled block below a rule with an **outlined**
+    button. Never a second filled button. The Founder found the agent too hidden as a link on the
+    intro screen. It is the route v1 is betting on, so it gets a real button, one step down in
+    weight. The Founder found the old empty Home offering
     four starts at once (the basics, the agent twice, a grid of starting tiles). A new user who
     cannot tell where to begin does not begin. The empty Home is now what §6 always said an empty
     state is: a sentence and one action.
@@ -254,6 +258,7 @@ Built by us, because they carry the brand:
 | **Choice row** | Answers to a fact question. Short answers: ruled buttons in `label` caps; the chosen one takes a `brand` rule, not a fill. Sentence answers: a stacked list of rows, the chosen one marked by a 3px `brand` bar. Never pills. |
 | **Consequence line** | `body-sm` in `ink-2`; the consequence in `ink` 600, the pack's reason after an em dash, then a `label`-scale **Change** link. States money, never a category (PRD J2). The amount ("the $X you could use") appears only where it moves as you type — the Add form. Elsewhere it would repeat the Position ledger. |
 | **Change line** | Under a hero figure: signed money · percentage, then "vs *baseline* ▾", which is itself the control that changes the baseline. |
+| **Alternative route** | Below a hairline rule: a `body` 600 subtitle ("Let your AI agent do this"), one `meta` line, then an outlined button with the agent icon. How a genuine second way to start is offered without competing with the primary (§2.1 rule 10). |
 | **Setup step** | A numbered step in `body-sm`, the client's own words in `ink` 600, then its screenshot in a hairline frame, at most 420px tall. A missing screenshot is a dashed placeholder naming the file to add (`connect/README.md`). |
 | **Amount entry** | The one place a number is *typed* at display size: Fraunces 600 · 30px on a single hairline that turns `brand` on focus, currency symbol in `ink-3`. Money is typeset the same way whether it is shown or entered. |
 
