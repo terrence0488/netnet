@@ -6,7 +6,7 @@ three, §2.3 added jurisdiction packs so the product is not permanently shaped b
 and §2.4 made the agent a target user with a falsifiable claim behind it. Also changed: §3, §4, J1,
 J2, J8, §8, N10 and N11. What changed and why: **§9.5**. Further amendments made on the Founder's
 direction at the Stage 2 review (J2 undecided state, G-D1/G-D3, §3.5 `via`, quiet agent provenance
-and no displayed exchange rate): **§9.6**.
+and no displayed exchange rate, admin-configurable packs, sign-up before onboarding): **§9.6**.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -248,7 +248,8 @@ Signups are the kill metric and there is no channel yet, so distribution ships a
   doesn't know where you stand* — with both proofs beneath it: for someone who has never added it
   up (P-A), and for someone whose numbers are real but stale and unreadable by their AI (P-B, P-C).
   It shows an agent answering a real question from a real balance sheet (screen recording, no
-  audio, no real data), and it never opens with "you don't know your net worth".
+  audio, no real data), and it never opens with "you don't know your net worth". It is a separate
+  marketing design, not a screen in the product; its call to action routes to sign-up (§9.6 item 18).
 - **G-D2** NetNet listed wherever MCP clients and users discover connectors (client connector
   directories, public MCP registries and lists).
 - **G-D3** A launch note the Founder can post, without rewriting it, to 3+ communities that
@@ -266,7 +267,7 @@ Channel selection and posting are Founder work; producing G-D1–G-D4 is in v1 s
 Analytics ranks with the MCP layer as a P1 deliverable. Without these events the launch produces
 no evidence and §3.3 cannot be applied. Minimum event set:
 
-`landing_view` · `signup_started` · `account_created` · `holding_created {source: web|agent, via: guided|form|starter}` ·
+`landing_view` · `signup_started {method: email|google|apple}` · `account_created {method}` · `holding_created {source: web|agent, via: guided|form|starter}` ·
 `value_recorded {source}` · `agent_connection_started {client}` ·
 `agent_connection_completed {client}` · `agent_connection_failed {step, client}` ·
 `agent_tool_called {tool, kind: read|write, outcome, latency_ms, client}` ·
@@ -275,7 +276,8 @@ no evidence and §3.3 cannot be applied. Minimum event set:
 `reminder_clicked` · `account_deleted`
 
 Every event above also carries **`{segment}`** (`starting_out` / `accumulating` / `established` /
-`unknown`), set at signup and never changed by us. Without it none of §3.2 is readable per segment,
+`unknown`), set during onboarding and never changed by us. `signup_started` and `account_created`
+fire before it is asked and carry `unknown`; per-segment readings join them to the account. Without it none of §3.2 is readable per segment,
 and §3.3 cannot be applied to the segment it is meant to judge.
 
 `via` is set only when `source` is `web`: **`guided`** for the guided basics (J1), **`starter`** for a
@@ -372,9 +374,16 @@ keep it trustworthy.
 Given/When/Then, one set per job. Presented in J-number order for reference; §5 gives priority.
 
 ### J1 — A first real picture, fast
-- **Given** a visitor on the landing page, **when** they sign up with email or a social provider,
-  **then** an account exists and they land on an empty Home with one obvious next action, and no
-  onboarding wizard to clear first.
+- **Given** a visitor on the sign-up page, **when** they sign up with a provider (Google, Apple) or
+  with an email and a password, **then** an account exists, and sign-up asked for nothing else.
+- **Given** a new account, **when** it is created, **then** onboarding asks two questions, one per
+  screen: where they live (inferred, then confirmed — §2.3 rule 2) and an optional segment. After
+  that they land on an empty Home with one obvious next action. Onboarding is those two questions
+  and nothing more: the guided basics stay on Home, not in a wizard to clear first.
+- **Given** an email sign-up, **when** the password is set, **then** a verification email is sent
+  and the user carries on without waiting for it. Provider sign-ups are already verified.
+- **Given** a returning user, **when** they log in, **then** they resume onboarding if they had not
+  finished it, and otherwise go straight to Home.
 - **Given** an empty account, **when** the user adds one holding with a value, **then** Home shows
   a net-worth total equal to that value with the holding listed under it.
 - **Given** a user who does not know what to list, **when** they view the empty state, **then**
@@ -395,8 +404,8 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   shown, **then** it states at least one thing the user did not type in — what they could actually
   use, what is locked and roughly until when, and what they owe against it. A total alone is not a
   first picture (§2.2, A12, M11).
-- **Given** any signup, **when** the account is created, **then** a coarse segment is recorded from
-  one skippable question, and every subsequent event carries it (§3.5).
+- **Given** any signup, **when** onboarding runs, **then** a coarse segment is recorded from one
+  skippable question, and every subsequent event carries it (§3.5).
 
 ### J2 — Track anything
 - **Given** the Add flow, **when** the user creates an asset, **then** they can set name, type,
@@ -738,6 +747,18 @@ rather than recorded as separately approved.
       user data.
     - **Editing packs grants no access to user data.** Configuring the world and reading anyone's
       balance sheet are separate permissions.
+18. **Sign-up is only a way in; onboarding comes after it; the landing page is a separate design**
+    (2026-09-25). Founder direction: sign-up and getting started must be as frictionless as
+    possible, and anything that can be set after sign-up is. Sign-up is a provider (Google, Apple)
+    or an email and a password. An email sign-up sends a verification link and does not wait for
+    it. Onboarding then asks where the user lives (§2.3 rule 2 still requires the confirmation)
+    and the optional segment, one question per screen. A returning user who logs in resumes
+    onboarding if unfinished, else goes to Home. J1's "no onboarding wizard to clear first" is kept
+    in spirit, and now means no *data-entry* wizard: the guided basics stay on Home. The landing page
+    (G-D1) leaves the product prototype for a dedicated marketing design whose call to action
+    routes to sign-up. `signup_started` and `account_created` gain `{method}`, so the launch shows
+    which way in people choose. Per-segment readings must join these two events to the account,
+    since the segment is not known when they fire.
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves

@@ -7,7 +7,15 @@ const LS = 'netnet-proto-v3';
 let S = null;   // loaded at the bottom of this file, once every helper exists
 
 function load() {
-  try { const raw = localStorage.getItem(LS); if (raw) return JSON.parse(raw); } catch (e) {}
+  try {
+    const raw = localStorage.getItem(LS);
+    if (raw) {
+      const st = JSON.parse(raw);
+      /* saved before onboarding existed: a signed-in account had already answered it */
+      if (st.account && st.account.onboarded == null) st.account.onboarded = !!(st.account.signedIn && st.account.region);
+      return st;
+    }
+  } catch (e) {}
   return hydrate(seededState());
 }
 function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} }
@@ -15,7 +23,7 @@ function reset(mode) {
   S = hydrate(mode === 'empty' ? emptyState() : seededState());
   save(); closeSheet();
   lastRoute = null; sessionStarted = false;
-  location.hash = mode === 'empty' ? '#/landing' : '#/home';
+  location.hash = mode === 'empty' ? '#/signup' : '#/home';
   render();
 }
 
@@ -1043,7 +1051,9 @@ function renderAgent() {
   <div class="grid">
     <div class="g7">
       ${!S.account.verified ? `<div class="note warn"><b>Verify your email first.</b> Connecting an agent needs
-        a verified account; everything else works without it.</div>` : ''}
+        a verified account; everything else works without it.
+        ${S.account.verifyResent ? `<div class="hint" style="margin-top:6px">Sent again to ${esc(S.account.email)}.</div>`
+          : `<button class="btn ghost sm auto" data-act="resend-verify">Resend the link</button>`}</div>` : ''}
       ${conns.map(c => `<div class="card">
         <div style="display:flex;align-items:center;gap:9px">
           <span style="width:9px;height:9px;border-radius:50%;background:var(--gain);display:block"></span>
@@ -1223,6 +1233,7 @@ function renderAccount() {
           <span class="sub">Erases all your data</span></span><span class="chev">›</span></button>
       </div>
       <div class="note">NetNet never sells your data or sees your documents.</div>
+      <div class="card flush"><button class="row" data-act="logout"><span class="grow"><span class="name">Log out</span></span></button></div>
     </div>
   </div>`;
 }
@@ -1678,12 +1689,24 @@ const TABS = [['#/home','Home',ICON.home],['#/insights','Insights',ICON.insights
    route (a chart pager, a range, undo). Only navigation moves the page to the top or counts
    as a screen view; an in-place update must leave the reader exactly where they were. */
 let lastRoute = null, lastInsightsView = null, sessionStarted = false;
+const AUTH_ROUTES = ['signup', 'login', 'welcome'];
+/* Where a visitor must be, whatever they asked for: signed out → sign up (or log in, if
+   this browser has an account); signed in but not onboarded → onboarding; signed in and
+   onboarded → never back to the auth screens. */
+function guardRoute(hash) {
+  const p0 = hash.replace(/^#\//, '').split('/')[0];
+  if (!S.account.signedIn) return ['signup', 'login'].includes(p0) ? hash : hasAccount() ? '#/login' : '#/signup';
+  if (!S.account.onboarded) return p0 === 'welcome' ? hash : '#/welcome';
+  return AUTH_ROUTES.includes(p0) ? '#/home' : hash;
+}
 function render(keepScroll) {
-  const hash = location.hash || (S.account.signedIn ? '#/home' : '#/landing');
+  let hash = location.hash || '#/home';
+  const to = guardRoute(hash);
+  if (to !== hash) { history.replaceState(null, '', to); hash = to; }
   const p = hash.replace(/^#\//, '').split('/');
   const navigated = hash !== lastRoute;
   lastRoute = hash;
-  const screens = { landing:'s-landing', signup:'s-signup', home:'s-home', holding:'s-holding',
+  const screens = { signup:'s-auth', login:'s-auth', welcome:'s-auth', home:'s-home', holding:'s-holding',
     add:'s-add', edit:'s-add', insights:'s-insights', period:'s-period', agent:'s-agent',
     activity:'s-activity', account:'s-account', sub:'s-sub' };
   let id = screens[p[0]] || 's-home';
@@ -1700,15 +1723,15 @@ function render(keepScroll) {
   else if (p[0] === 'activity') renderActivity();
   else if (p[0] === 'account') renderAccount();
   else if (p[0] === 'sub') renderSub(p[1]);
-  else if (p[0] === 'landing') renderLandingDemo();
-  else if (p[0] === 'signup') renderSignup();
+  else if (p[0] === 'signup' || p[0] === 'login') renderAuth(p[0], p[1]);
+  else if (p[0] === 'welcome') renderWelcome(p[1]);
 
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
-  const chrome = !['landing','signup'].includes(p[0]);
+  const chrome = !AUTH_ROUTES.includes(p[0]);
   $('#tabbar').classList.toggle('hidden', !chrome);
   $('#sidebar').style.display = chrome ? '' : 'none';
   // Hiding the sidebar removes it from the grid, and .main would then auto-place into
-  // the 232px sidebar track. Without chrome the shell is one column.
+  // the 232px sidebar track. Without chrome (sign-up, log-in, onboarding) the shell is one column.
   document.querySelector('.shell').classList.toggle('no-chrome', !chrome);
   $('#devbtn').style.display = chrome ? '' : 'none';
   const tabFor = { home:'#/home', holding:'#/home', add:'#/home', edit:'#/home', insights:'#/insights',
@@ -1721,20 +1744,6 @@ function render(keepScroll) {
     if (navigated || view !== lastInsightsView) fire('insights_viewed', { view });
     lastInsightsView = view;
   }
-}
-
-function renderLandingDemo() {
-  const el = $('#landing-demo');
-  if (!el || el.dataset.done) return;
-  el.dataset.done = '1';
-  const t = totals(hydrate(seededState()).holdings.filter(h => !h.archived));
-  el.innerHTML = `<div class="chat" style="padding:12px">
-    <div class="msg user" style="font-size:13.5px">Can I afford a $120k car?</div>
-    <div class="msg tool">netnet.get_position_summary → one call</div>
-    <div class="msg ai" style="font-size:13.5px">Yes, comfortably. You're worth <b>${esc(money(t.now))}</b>,
-      but only <b>${esc(money(t.accessible))}</b> of that is money you could use this month — your retirement
-      savings, your home and unvested shares are locked. You'd be selling equities to buy a depreciating asset.</div>
-  </div>`;
 }
 
 /* ================= wiring ================= */
@@ -1974,14 +1983,14 @@ document.addEventListener('click', ev => {
       reset('empty'); return;
     }
     case 'reset-seeded': reset('seeded'); return;
+    case 'logout': S.account.signedIn = false; S.signup = { email:S.account.email }; sessionStarted = false;
+      save(); location.hash = '#/login'; return;
+    case 'resend-verify': S.account.verifyResent = true; rerender(); return;
     case 'reset-empty': reset('empty'); return;
     case 'proto': sheetProto(); return;
     case 'proto-locale': try { v ? localStorage.setItem(PL, v) : localStorage.removeItem(PL); } catch (e) {} sheetProto(); return;
 
-    /* sign-up (J1, §2.3 rule 2) */
-    case 'su-region': Object.assign(S.signup, { region:v, other:false, err:false }); if (!S.signup.ccyTouched) S.signup.ccy = null; save(); renderSignup(); return;
-    case 'su-other': Object.assign(S.signup, { region:null, other:true }); if (!S.signup.ccyTouched) S.signup.ccy = null; save(); renderSignup(); return;
-    case 'su-seg': S.signup.segment = S.signup.segment === v ? null : v; save(); renderSignup(); return;
+    default: authAction(a, v, el); return;
   }
 });
 
@@ -2001,16 +2010,18 @@ document.addEventListener('change', ev => {
     paintAccess();
   }
   if (el.dataset.act === 'form-amount') paintAccess();
-  if (el.dataset.act === 'su-region-pick') { S.signup.region = el.value || null; S.signup.err = false;
-    S.signup.ccyTouched || (S.signup.ccy = null); save(); renderSignup(); }
-  if (el.dataset.act === 'su-ccy') { S.signup.ccy = el.value; S.signup.ccyTouched = true; save(); }
 });
 document.addEventListener('input', ev => {
   if (ev.target.id === 'f-amount') paintAccess();
-  if (ev.target.id === 'su-email') { S.signup.email = ev.target.value; save(); }
 });
 document.addEventListener('keydown', ev => {
   if (ev.key === 'Enter' && ev.target.id === 'g-amount') { ev.preventDefault(); guideAdd(); }
+  /* Enter submits the auth form it is in */
+  if (ev.key === 'Enter' && ['au-email', 'au-pw'].includes(ev.target.id)) {
+    ev.preventDefault();
+    const btn = document.querySelector('#s-auth [data-act="auth-email"], #s-auth [data-act="auth-create"], #s-auth [data-act="auth-login"]');
+    if (btn) btn.click();
+  }
 });
 
 $('#scrim').addEventListener('click', closeSheet);
@@ -2020,13 +2031,17 @@ $('#devbtn').addEventListener('click', sheetProto);
    re-renders call render() directly and must keep their sheet open. */
 window.addEventListener('hashchange', () => { closeSheet(); render(); });
 
-/* signup (J1). Region is inferred, then confirmed by one question — never
-   applied silently (§2.3 rule 2). Segment is one skippable question (§3.5). */
+/* ================= SIGN UP, LOG IN, ONBOARDING (J1) =================
+   Sign-up asks for nothing but a way in: a provider, or an email and a password.
+   Everything else waits until the account exists. Onboarding is then two questions:
+   where you live, which is confirmed and never applied silently (§2.3 rule 2), and an
+   optional segment (§3.5). The guided basics stay on Home, not in a wizard (J1). */
 const SEGMENTS = [
   { id:'starting_out', label:'Just starting out' },
   { id:'accumulating', label:'Building up — saving toward something big' },
   { id:'established',  label:'Established — a lot to keep track of' }
 ];
+const PROVIDERS = [['google', 'Google', 'you@gmail.com'], ['apple', 'Apple', 'you@icloud.com']];
 function inferRegion() {
   const sim = protoLocale();
   if (sim) return sim === 'none' ? null : sim;
@@ -2039,64 +2054,184 @@ function inferRegion() {
   } catch (e) {}
   return null;
 }
-function renderSignup() {
-  const f = S.signup || (S.signup = {});
-  const guess = inferRegion();
-  const showPicker = f.other || !guess;
-  const reg = regionOf(f.region) || regionOf(guess);
-  const ccy = f.ccy || (reg ? reg.ccy : 'USD');
-  $('#s-signup').innerHTML = `
-  <div style="max-width:440px;margin:0 auto;padding:20px 0 60px">
-    <button class="back" data-go="#/landing" style="color:var(--brand-text);font-weight:550">‹ Back</button>
-    <h1 style="font-size:25px;letter-spacing:-.025em;margin:14px 0 6px">Create your account</h1>
-    <p class="muted" style="margin:0 0 20px">About 30 seconds. Nothing to set up before you can start.</p>
-    <div class="field"><label>Email</label>
-      <input id="su-email" type="email" placeholder="you@example.com" autocomplete="email" value="${esc(f.email || '')}"></div>
-    <div class="field"><label>Where do you live?</label>
-      ${guess ? `<div class="choice">
-        <button data-act="su-region" data-v="${guess}" class="${f.region === guess && !f.other ? 'on' : ''}">${esc(regionOf(guess).name)}</button>
-        <button data-act="su-other" class="${f.other ? 'on' : ''}">Somewhere else</button></div>` : ''}
-      ${showPicker ? `<select id="su-region" data-act="su-region-pick" ${guess ? 'style="margin-top:12px"' : ''}>
-        <option value="">Choose…</option>${REGIONS.filter(r => r.code !== guess).map(r =>
-          `<option value="${r.code}" ${f.region === r.code ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}</select>` : ''}
-      <div class="hint">${guess && !f.region && !f.other ? 'Guessed from your browser. ' : ''}Sets the local names and
-        suggestions you see. You can still add anything, from anywhere.</div>
-      ${f.err ? '<div class="hint warn-t">Tell us where you live to carry on.</div>' : ''}</div>
-    <div class="field"><label>Totals in</label>
-      <select id="su-ccy" data-act="su-ccy">${CCYS.map(c => `<option ${c === ccy ? 'selected' : ''}>${c}</option>`).join('')}</select>
-      <div class="hint">You can still hold anything, in any currency.</div></div>
-    <div class="field"><label>Which is closest to you? <span class="opt-t">Optional</span></label>
-      <div class="choice col">${SEGMENTS.map(x =>
-        `<button data-act="su-seg" data-v="${x.id}" class="${f.segment === x.id ? 'on' : ''}">${esc(x.label)}</button>`).join('')}</div>
-      <div class="hint">Only used to see who NetNet works for. It changes nothing you see.</div></div>
-    <button class="btn" id="su-go">Continue</button>
-    <div style="text-align:center;color:var(--ink-3);font-size:12.5px;margin:10px 0">or</div>
-    <div style="display:flex;gap:10px">
-      <button class="btn sec" data-social="Google">Google</button>
-      <button class="btn sec" data-social="Apple">Apple</button>
-    </div>
-    <div class="note" style="margin:16px 0 0">We never ask for a bank login and never receive your
-      statements. <b>Your agent reads them where it runs; NetNet only ever sees the numbers written to it.</b></div>
-  </div>`;
+const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || '');
+const hasAccount = () => !!S.account.email;
+const draft = () => S.signup || (S.signup = {});
+
+function authShell(inner) {
+  $('#s-auth').innerHTML = `<div class="auth"><div class="brand auth-mark"><i></i>NetNet</div>${inner}</div>`;
 }
-document.addEventListener('click', ev => {
-  const b = ev.target.closest('#su-go, [data-social]');
-  if (!b) return;
-  const f = S.signup || (S.signup = {});
-  fire('signup_started', { method: b.dataset.social || 'email' });
-  const email = f.email || (b.dataset.social ? 'you@example.com' : '');
-  if (!b.dataset.social && !email) { alert('Enter an email.'); return; }
-  if (!f.region) { f.err = true; save(); renderSignup(); return; }
-  const r = regionOf(f.region);
-  Object.assign(S.account, { signedIn:true, verified:false, email,
+const providerButtons = () => PROVIDERS.map(([id, name]) =>
+  `<button class="btn sec" data-act="auth-provider" data-v="${id}">Continue with ${name}</button>`).join('');
+
+function renderAuth(route, step) {
+  const f = draft();
+  if (route === 'signup' && step === 'password') {
+    if (!f.email) { location.replace('#/signup'); return; }
+    authShell(`
+      <button class="back" data-go="#/signup">‹ Back</button>
+      <h1>Set a password</h1>
+      <p class="auth-sub">For ${esc(f.email)}</p>
+      <div class="field"><label for="au-pw">Password</label>
+        <div class="pw"><input id="au-pw" type="password" autocomplete="new-password" minlength="8">
+          <button type="button" class="link-sm" data-act="auth-reveal">Show</button></div>
+        <div class="hint ${f.err ? 'warn-t' : ''}">${f.err || 'At least 8 characters.'}</div></div>
+      <button class="btn" data-act="auth-create">Create account</button>`);
+    return;
+  }
+  if (route === 'login') {
+    authShell(`
+      <h1>Log in</h1>
+      ${f.notice ? `<p class="auth-sub">${esc(f.notice)}</p>` : ''}
+      <div class="auth-stack">${providerButtons()}</div>
+      <div class="or"><span>or</span></div>
+      <div class="field"><label for="au-email">Email</label>
+        <input id="au-email" type="email" autocomplete="email" inputmode="email" value="${esc(f.email || '')}"></div>
+      <div class="field"><label for="au-pw">Password</label>
+        <div class="pw"><input id="au-pw" type="password" autocomplete="current-password">
+          <button type="button" class="link-sm" data-act="auth-reveal">Show</button></div>
+        ${f.err ? `<div class="hint warn-t">${esc(f.err)}</div>` : ''}</div>
+      <button class="btn" data-act="auth-login">Log in</button>
+      <div class="auth-foot">
+        <button class="link-sm" data-act="auth-forgot">Forgot password?</button>
+        ${f.forgot ? `<div class="hint">${esc(f.forgot)}</div>` : ''}
+        <div>New to NetNet? <button class="link-sm" data-go="#/signup">Create an account</button></div>
+      </div>`);
+    return;
+  }
+  authShell(`
+    <h1>Create your account</h1>
+    <div class="auth-stack">${providerButtons()}</div>
+    <div class="or"><span>or</span></div>
+    <div class="field"><label for="au-email">Email</label>
+      <input id="au-email" type="email" autocomplete="email" inputmode="email" value="${esc(f.email || '')}">
+      ${f.err ? `<div class="hint warn-t">${esc(f.err)}</div>` : ''}</div>
+    <button class="btn" data-act="auth-email">Continue with email</button>
+    <div class="auth-foot"><div>Already have an account? <button class="link-sm" data-go="#/login">Log in</button></div></div>`);
+}
+
+/* Onboarding: after the account exists, before Home. Two questions, one screen each. */
+function renderWelcome(step) {
+  const f = draft();
+  if (step === '2') {
+    authShell(`
+      <div class="auth-step">2 of 2</div>
+      <h1>Which is closest to you?</h1>
+      <div class="choice col">${SEGMENTS.map(x =>
+        `<button data-act="ob-seg" data-v="${x.id}" class="${f.segment === x.id ? 'on' : ''}">${esc(x.label)}</button>`).join('')}</div>
+      <div class="hint" style="margin-top:10px">Optional. It changes nothing you see.</div>
+      <button class="btn" style="margin-top:22px" data-act="ob-finish">${f.segment ? 'Continue' : 'Skip'}</button>`);
+    return;
+  }
+  const guess = inferRegion();
+  if (f.region === undefined) f.region = guess || null;
+  const reg = regionOf(f.region);
+  const ccy = f.ccy || (reg ? reg.ccy : 'USD');
+  const picking = f.other || !guess;
+  authShell(`
+    ${S.account.verifySent && !S.account.verified ? `<p class="auth-sub">We’ve sent a link to ${esc(S.account.email)}
+      to verify your email. Carry on in the meantime.</p>` : ''}
+    <div class="auth-step">1 of 2</div>
+    <h1>Where do you live?</h1>
+    ${guess ? `<div class="choice">
+      <button data-act="ob-region" data-v="${guess}" class="${f.region === guess && !f.other ? 'on' : ''}">${esc(regionOf(guess).name)}</button>
+      <button data-act="ob-other" class="${f.other ? 'on' : ''}">Somewhere else</button></div>` : ''}
+    ${picking ? `<div class="field" style="margin-top:12px"><select id="ob-region" data-act="ob-region-pick" aria-label="Where you live">
+      <option value="">Choose…</option>${REGIONS.filter(r => r.code !== guess).map(r =>
+        `<option value="${r.code}" ${f.region === r.code ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}</select></div>` : ''}
+    <div class="hint" style="margin-top:10px">For local names and suggestions. You can still track anything.</div>
+    ${f.err ? `<div class="hint warn-t">${esc(f.err)}</div>` : ''}
+    ${reg ? `<div class="auth-ccy">Totals in ${f.ccyOpen
+      ? `<select id="ob-ccy" data-act="ob-ccy" aria-label="Currency for totals">${CCYS.map(c => `<option ${c === ccy ? 'selected' : ''}>${c}</option>`).join('')}</select>`
+      : `<b>${esc(ccy)}</b> <button class="link-sm" data-act="ob-ccy-open">Change</button>`}</div>` : ''}
+    <button class="btn" style="margin-top:22px" data-act="ob-next">Continue</button>`);
+}
+
+/* One account per browser in this prototype. A provider signs in to it if it exists,
+   and creates it if not; the provider's own consent screens are not simulated. */
+function createAccount(email, method) {
+  Object.assign(S.account, { email, signedIn:true, onboarded:false,
+    verified: method !== 'email', verifySent: method === 'email',
     name: email.split('@')[0] || 'there', initials: (email[0] || 'Y').toUpperCase(),
-    region: r.code, pack: r.pack || 'generic', segment: f.segment || 'unknown' });
-  S.settings.defaultCcy = f.ccy || r.ccy;
-  S.guide = { done:false, i:0, stage:'ask', answered:{}, last:null };
-  fire('account_created', {});
-  S.signup = null; save(); location.hash = '#/home';
+    region:null, pack:'generic', segment:'unknown', connections:[] });
+  fire('account_created', { method });
+  S.signup = { region:undefined }; save();
+  location.hash = '#/welcome';
+}
+function signIn() {
+  S.account.signedIn = true; S.signup = null; save();
+  location.hash = S.account.onboarded ? '#/home' : '#/welcome';
+}
+function authAction(a, v, el) {
+  const f = draft();
+  const val = id => (($('#' + id) || {}).value || '').trim();
+  switch (a) {
+    case 'auth-provider': {
+      const [, , email] = PROVIDERS.find(x => x[0] === v);
+      if (hasAccount()) { signIn(); return true; }
+      fire('signup_started', { method:v });
+      createAccount(email, v); return true;
+    }
+    case 'auth-email': {
+      const email = val('au-email').toLowerCase();
+      f.email = email; f.err = null;
+      if (!validEmail(email)) { f.err = 'Enter an email address.'; save(); renderAuth('signup'); return true; }
+      if (hasAccount() && S.account.email.toLowerCase() === email) {
+        S.signup = { email, notice:'You already have an account. Log in instead.' }; save();
+        location.hash = '#/login'; return true;
+      }
+      fire('signup_started', { method:'email' });
+      save(); location.hash = '#/signup/password'; return true;
+    }
+    case 'auth-create': {
+      /* The password is checked, never stored — not even by this prototype. */
+      if (val('au-pw').length < 8) { f.err = 'Use at least 8 characters.'; save(); renderAuth('signup', 'password'); return true; }
+      createAccount(f.email, 'email'); return true;
+    }
+    case 'auth-login': {
+      const email = val('au-email').toLowerCase();
+      f.email = email; f.notice = null; f.forgot = null;
+      if (!hasAccount() || S.account.email.toLowerCase() !== email || !val('au-pw')) {
+        f.err = 'That email and password don’t match.'; save(); renderAuth('login'); return true;
+      }
+      signIn(); return true;
+    }
+    case 'auth-forgot': {
+      const email = val('au-email');
+      f.email = email; f.err = null;
+      f.forgot = validEmail(email) ? 'If there’s an account for ' + email + ', a reset link is on its way.'
+                                   : 'Enter your email above first.';
+      save(); renderAuth('login'); return true;
+    }
+    case 'auth-reveal': {
+      const i = $('#au-pw'); if (!i) return true;
+      i.type = i.type === 'password' ? 'text' : 'password';
+      el.textContent = i.type === 'password' ? 'Show' : 'Hide'; return true;
+    }
+    case 'ob-region': Object.assign(f, { region:v, other:false, err:null }); if (!f.ccyTouched) f.ccy = null; save(); renderWelcome(); return true;
+    case 'ob-other': Object.assign(f, { region:null, other:true, err:null }); if (!f.ccyTouched) f.ccy = null; save(); renderWelcome(); return true;
+    case 'ob-ccy-open': f.ccyOpen = true; save(); renderWelcome(); return true;
+    case 'ob-next': {
+      const r = regionOf(f.region);
+      if (!r) { f.err = 'Choose where you live to carry on.'; save(); renderWelcome(); return true; }
+      Object.assign(S.account, { region:r.code, pack:r.pack || 'generic' });
+      S.settings.defaultCcy = f.ccy || r.ccy;
+      save(); location.hash = '#/welcome/2'; return true;
+    }
+    case 'ob-seg': f.segment = f.segment === v ? null : v; save(); renderWelcome('2'); return true;
+    case 'ob-finish': {
+      Object.assign(S.account, { segment:f.segment || 'unknown', onboarded:true });
+      S.guide = { done:false, i:0, stage:'ask', answered:{}, last:null };
+      S.signup = null; save(); location.hash = '#/home'; return true;
+    }
+  }
+  return false;
+}
+document.addEventListener('change', ev => {
+  const f = draft();
+  if (ev.target.id === 'ob-region') { f.region = ev.target.value || null; f.err = null; if (!f.ccyTouched) f.ccy = null; save(); renderWelcome(); }
+  if (ev.target.id === 'ob-ccy') { f.ccy = ev.target.value; f.ccyTouched = true; save(); }
 });
 
 S = load();
-fire('landing_view', {});
 render();

@@ -29,50 +29,9 @@
   <!-- ============ MAIN ============ -->
   <main class="main">
 
-    <!-- LANDING (G-D1). Leads with the one statement true for all three personas (PRD §2.5).
-         Seen before anyone has said where they live, so it names no local institution (§2.3). -->
-    <section class="screen" id="s-landing">
-      <div style="max-width:620px;margin:0 auto;padding:40px 0 60px">
-        <div class="brand" style="padding:0 0 26px"><i></i>NetNet</div>
-        <h1 style="font-size:30px;line-height:1.16;letter-spacing:-.03em">You can’t get useful advice from an AI
-          that doesn’t know where you stand.</h1>
-        <p style="font-size:16.5px;color:var(--ink-2);line-height:1.5;margin:18px 0">
-          Ask ChatGPT or Claude whether you can afford a car, or whether you’re on track, and you get a generic
-          answer. Not because the model is weak — because it has never seen your numbers.</p>
-        <p style="font-size:16.5px;color:var(--ink-2);line-height:1.5;margin:0 0 12px">
-          <b style="color:var(--ink)">Never added it all up?</b> A few quick questions — do you have this, roughly
-          how much — and NetNet shows what you could actually use this month, what’s locked away, and what you
-          owe against it. No spreadsheet, no bank login.</p>
-        <p style="font-size:16.5px;color:var(--ink-2);line-height:1.5;margin:0 0 24px">
-          <b style="color:var(--ink)">Already track it?</b> Then your numbers are real, just stale — and your AI
-          can’t read them. Connect your own agent once: it does the data entry, and every question after that is
-          answered against your actual balance sheet.</p>
-        <button class="btn" data-go="#/signup">Start free — no card, no bank login</button>
-
-        <div style="border:1px solid var(--rule);overflow:hidden;margin:26px 0">
-          <div style="padding:9px 13px;font-size:11.5px;color:var(--ink-3);font-weight:600;border-bottom:1px solid var(--rule)">
-            <span class="chip agent">Claude</span> connected to NetNet</div>
-          <div id="landing-demo"></div>
-        </div>
-
-        <ul style="padding-left:18px;color:var(--ink-2);line-height:1.55">
-          <li style="margin-bottom:10px"><b style="color:var(--ink)">Everything counts.</b> Retirement accounts,
-            property, the car, unvested shares, a brokerage in another currency, crypto. Your own types and tags —
-            not a fixed chart of accounts.</li>
-          <li style="margin-bottom:10px"><b style="color:var(--ink)">The agent keeps it current.</b> Drop a
-            statement into your agent and tell it to update NetNet. Every write is logged, attributed and undoable.</li>
-          <li style="margin-bottom:10px"><b style="color:var(--ink)">No bank logins.</b> No documents uploaded
-            to us. No AI in our backend — advice is your agent’s job, on your subscription.</li>
-          <li><b style="color:var(--ink)">Yours to take.</b> Full export, one-tap delete, never sold.</li>
-        </ul>
-        <div style="padding-top:22px;margin-top:24px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink-3)">
-          Free, permanently, for everything above — including unlimited agent reads and writes.<br>
-          Built in Singapore. Works wherever you live, in any currency.</div>
-      </div>
-    </section>
-
-    <!-- SIGN UP (J1) — rendered by app.js: region is inferred, then confirmed -->
-    <section class="screen" id="s-signup"></section>
+    <!-- SIGN UP, LOG IN, ONBOARDING (J1) — rendered by app.js. No landing page here:
+         that is a separate marketing design whose call to action routes to #/signup. -->
+    <section class="screen" id="s-auth"></section>
 
     <!-- JS-RENDERED -->
     <section class="screen" id="s-home"></section>

@@ -321,7 +321,7 @@ patterns**. After the fix there are none at either size, and no overlaps.
   was caught by the Founder switching between the Insights views.
 - **Hiding a grid item changes where everything else lands.** A `display:none` sidebar leaves the
   grid, and the content column auto-places into the sidebar's 232px track. Routes without chrome
-  (landing, sign-up) switch the shell to a single column rather than just hiding the sidebar.
+  (sign-up, log-in, onboarding) switch the shell to a single column rather than just hiding the sidebar.
   Shipped once; the Founder found the landing page poured into a 232px column on desktop.
 - **The agent margin gutter is reserved at every breakpoint.** It is 24px of the left margin, and
   rows offset their mark into it. Nothing else may occupy it.

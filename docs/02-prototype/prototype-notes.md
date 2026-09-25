@@ -25,7 +25,7 @@ HTML, CSS and JavaScript on purpose. Works offline.
 | Start from | Shaped like | What it shows |
 |---|---|---|
 | The sample account (default) | **P-C, Established** — ~S$1.84M, 12 holdings, SGD and USD, CPF, an HDB flat, unvested RSUs, a deliberately stale car | Everything at scale: Insights, history, agent writes, undo |
-| PROTO → empty account → sign up | **P-A or P-B** — whoever you say you are | Region confirmation, guided basics, the first picture, fact-based accessibility |
+| PROTO → empty account → sign up | **P-A or P-B** — whoever you say you are | Sign-up, onboarding (region, segment), guided basics, the first picture, fact-based accessibility |
 
 **All data in it is fictional.** It is not anyone's real balance sheet and must never be replaced
 with one.
@@ -34,8 +34,8 @@ with one.
 
 | Job | Where it is | Notes |
 |---|---|---|
-| **J1** first picture fast | Landing → Sign up → empty Home | Sign-up confirms region (one tap) and asks one optional segment question. Empty Home leads with **the basics** — "do you have this?", "roughly how much?" — answered in place, each yes saved at once, stoppable at any point. Starting categories and "let your agent do it" sit beside it as equals |
-| **J1** the first picture | Home, as soon as there is one holding | A line under the total says what you could use this month; the **Position** ledger says what is locked and until when, what needs selling first, and what you owe measured against what you could use. None of it was typed in |
+| **J1** first picture fast | Sign up → onboarding → empty Home | Sign-up is a provider (Google, Apple) or email then password; nothing else. Onboarding: where you live (inferred, one tap to confirm) and an optional segment, one per screen. Log out / log in from Account; logging in resumes onboarding if unfinished. Empty Home leads with **the basics** — "do you have this?", "roughly how much?" — answered in place, each yes saved at once, stoppable at any point. Starting categories and "let your agent do it" sit beside it as equals |
+| **J1** the first picture | Home, as soon as there is one holding | The **Position** ledger says what you could use this month, what needs selling first, what is locked, and what you owe. None of it was typed in |
 | **J2** track anything | Add Tracking → New Asset / New Liability; Manage Types; Manage Tags | User-defined taxonomy on top of universal types; rename/delete cascades to holdings |
 | **J2** accessibility | Add form, holding page, Home | A fact question only where the type is ambiguous; otherwise the default and its reason in one line, with **Change**. The consequence is shown, never the category. "Not sure" is always allowed and never blocks saving |
 | **§2.3** jurisdiction packs | `packs.js`; Account → General → Where you live | SG pack and generic pack. Switching region relabels every type you have not renamed and re-words every reason, live |
@@ -48,7 +48,7 @@ with one.
 | **J9** stay current | Stale chips on Home and detail; Account → Reminders | Cadence and a real opt-out |
 | **J10** own the data | Account → Export / Delete account | Export downloads JSON and CSV, including accessibility and the answer behind it |
 | **J11** insights | Insights tab | Monthly/Quarterly/Yearly; Growth, Assets vs Liabilities, Distribution Over Time; Insights Filters with "Don't Show"; period drill-down |
-| **§3.5** segment on every event | PROTO → events | `{segment}` rides on every event: `unknown` until sign-up, then whatever was chosen, or `unknown` if skipped |
+| **§3.5** segment on every event | PROTO → events | `{segment}` rides on every event: `unknown` until onboarding, then whatever was chosen, or `unknown` if skipped. `signup_started` and `account_created` carry `{method}` |
 
 Deliberately **not** built, because they are not design questions: real auth, real OAuth, a real
 MCP server, email sending, and anything on the reserved list in PRD §4.2.
@@ -86,7 +86,7 @@ there that type is SRS and the answer is not in doubt.
 | Conventions | Browser locale; currency from region | `en-SG`, SGD |
 
 **Where the region comes from.** Inferred from the browser's time zone, then its language tag;
-then **confirmed by one tap at sign-up**, never applied silently (§2.3 rule 2). Changeable
+then **confirmed by one tap in onboarding**, never applied silently (§2.3 rule 2). Changeable
 afterwards in Account → General. Any country without a pack gets generic, and the country is still
 recorded — that is the demand signal for which pack to write next.
 
@@ -236,9 +236,12 @@ whether the warm paper survives a landing page; and the wordmark, which is still
     only, no inference, and it is also the §2.4 "arithmetic already done" layer rendered for a person.
 23. **No trend, no change figures and no baseline control until there is history.** For a new user
     those are "+$0 0.00%" and an empty chart — noise exactly where the first picture has to land.
-24. **Region is a required one-tap answer at sign-up; segment is optional.** The region decides the
-    very next screen's checklist, so it cannot be skipped into a silent guess. Segment is J1's "one
-    skippable question".
+24. **Sign-up is only a way in; region and segment come after it** (Founder, 2026-09-25). Sign-up
+    is a provider or an email then a password. Then onboarding asks two questions, one per screen.
+    Region is inferred and pre-selected, but the user must press Continue on it: the region decides
+    the checklist on the next screen, so it cannot become a silent guess. Segment is J1's "one
+    skippable question". Currency follows the region, and a **Change** link sits beside it rather
+    than a third question.
 25. **The segment answer changes nothing on screen.** Everyone sees the same flow. If the UI adapted
     by segment, per-segment differences in M2–M11 would be partly our own doing, and §3.3's
     per-segment kill reading would stop being clean.
@@ -246,9 +249,16 @@ whether the warm paper survives a landing page; and the wordmark, which is still
     on the holding's own page.
 27. **Money and dates follow the pack's conventions** (the browser's own, for generic). A UK user
     sees £, a Malaysian sees RM — the generic pack does not degrade to dollar signs.
-28. **The landing page leads with PRD §2.5's line** — *you can't get useful advice from an AI that
-    doesn't know where you stand* — and carries both proofs beneath it: never added it up, and
-    already track it. It names no local institution, because nobody has said where they live yet.
+28. **The landing page is not in the prototype** (Founder, 2026-09-25). It is a marketing page and
+    gets its own dedicated design; its call to action routes to `#/signup`. Its brief stands (PRD
+    G-D1): lead with §2.5's line, *you can't get useful advice from an AI that doesn't know where
+    you stand*, carry both proofs beneath it, and name no local institution, because nobody has
+    said where they live yet.
+29. **What the prototype fakes at sign-up.** It holds one account per browser. The providers' own
+    consent screens are not simulated: Google or Apple signs in to that account, or creates it.
+    Log-in accepts any password for the account's email. No password is ever stored, not even in
+    this prototype's `localStorage`. The production build must use the providers' official
+    sign-in buttons.
 
 ## 7. Decisions — status after the Founder's review (2026-09-24)
 

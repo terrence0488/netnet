@@ -131,7 +131,7 @@ function seededState() {
   holdings.push(archivedExtra());
   return {
     mode:'seeded',
-    account: { email:'sam@example.com', name:'Sam Tan', initials:'ST', verified:true, signedIn:true,
+    account: { email:'sam@example.com', name:'Sam Tan', initials:'ST', verified:true, signedIn:true, onboarded:true,
       region:'SG', pack:'sg', segment:'established',
       connections:[{ id:'c-claude', client:'Claude', connectedAt:'2026-08-04T21:32:00Z',
                      lastCall:'2026-09-21T09:14:11Z', active:true }] },
@@ -160,7 +160,7 @@ function emptyState() {
   s.holdings = [];
   s.tags = [];
   s.events = [];
-  s.account = { email:'', name:'', initials:'', verified:false, signedIn:false, connections:[],
+  s.account = { email:'', name:'', initials:'', verified:false, signedIn:false, onboarded:false, connections:[],
                 region:null, pack:'generic', segment:'unknown' };
   s.guide = { done:false, i:0, stage:'ask', answered:{}, last:null };
   return s;

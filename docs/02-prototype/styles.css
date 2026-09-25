@@ -482,3 +482,32 @@ button.nw-chg{min-height:var(--hit);align-items:center}
 .turn-h{display:flex;align-items:center;gap:10px;padding:10px 0 6px;border-bottom:1px solid var(--rule);
   font-size:12px;color:var(--ink-3)}
 .turn-h span{flex:1}
+
+/* ==========================================================================
+   SIGN UP, LOG IN, ONBOARDING — one narrow column, one decision per screen
+   ========================================================================== */
+.auth{max-width:400px;margin:0 auto;padding:28px 0 60px}
+.auth-mark{padding:0 0 34px}
+.auth h1{font-size:25px;letter-spacing:-.025em;margin:0 0 22px;line-height:1.2}
+.auth .back{margin:-10px 0 10px}
+.auth-sub{font-size:14px;color:var(--ink-2);margin:-12px 0 22px;line-height:1.5}
+.auth-stack{display:flex;flex-direction:column;gap:10px}
+.or{display:flex;align-items:center;gap:12px;margin:20px 0 14px;font-size:12px;color:var(--ink-3)}
+.or::before,.or::after{content:'';flex:1;border-top:1px solid var(--rule)}
+/* the password and its Show toggle share one hairline */
+.pw{display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--rule-strong)}
+.pw:focus-within{border-bottom-color:var(--brand)}
+.field .pw input{flex:1;border-bottom:none}
+.pw .link-sm{margin-block:0}
+.auth .hint{font-size:12px;color:var(--ink-3);letter-spacing:0;line-height:1.5}
+.auth .hint.warn-t{color:var(--attention)}
+.auth-foot{margin-top:18px;font-size:13px;color:var(--ink-3);display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.auth-foot .hint{margin:0 0 6px}
+/* stacked links in the footer take their full height, so their targets never overlap (§6.1 rule 3) */
+.auth-foot{gap:0}
+.auth-foot .link-sm{margin-block:0}
+.auth-foot > .link-sm{margin-left:-4px}
+.auth-step{font-size:9.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px}
+.auth-ccy{margin-top:18px;font-size:14px;color:var(--ink-2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.auth-ccy b{color:var(--ink);font-weight:600}
+.auth-ccy select{width:auto;min-width:96px;min-height:var(--hit);font-size:16px;background:none;color:var(--ink);border:none;border-bottom:1px solid var(--rule-strong)}
