@@ -25,7 +25,9 @@ Two consequences run through everything below:
    something when they appear. Restraint in *how much*, boldness in *how loud*.
 
 The second ink is the part no competitor can copy without also building an agent layer, so it is
-treated as a first-class property of the system rather than a badge.
+treated as a first-class property of the system rather than a badge. It is also the **quiet** ink:
+it marks what the agent wrote and never competes with the figures. Who wrote a number matters
+when you are checking it, not while you are reading your position (Founder review, 2026-09-25).
 
 ### What this replaces
 The Founder's mockups are a **functional** brief — information architecture, flows, controls. They
@@ -42,9 +44,38 @@ on appearance. Where a mockup shows a card, this system shows a ruled section.
    only when content genuinely overlays other content (sheets, menus).
 3. **Colour carries meaning or it does not appear.** Six chromatic roles exist (§4.3). Decoration is
    not one of them.
-4. **Provenance is visible.** The user must always be able to see who wrote a number without asking.
-5. **Never encode by hue alone.** Gain and loss carry a sign and a direction as well as a colour.
-6. **Density is a feature.** This audience keeps spreadsheets. Do not pad the page to feel friendly.
+4. **Provenance is quiet, and always there.** A mark says an agent wrote a number; opening the
+   number says which agent and when. The agent's name is never louder than the figure.
+5. **Never encode by hue alone.** Gain and loss always carry a sign as well as a colour.
+6. **Density is a feature, repetition is not.** This audience keeps spreadsheets, so do not pad the
+   page to feel friendly. But dense means every figure earns its place, not that every figure is
+   shown twice (§2.1).
+
+### 2.1 Content — binding
+
+**One figure, one place.** Added after the Founder found the screens cluttered: an opened value
+repeated the amount, the change and the percentage from the row above it, added an exchange rate
+nobody asked for, and named the agent twice. The cause was a system gap. The system specified how
+things look but never what may appear, so every screen showed everything it had.
+
+1. **A figure appears once per screen.** A detail never restates its header, and a summary never
+   restates a row beside it.
+2. **One change figure per row.** The money (`+$59K`) by default, or the percentage when the list is
+   sorted by percentage. Only hero figures and period rows carry both. No change figure at all when
+   nothing changed. `0.00% ↑ $0` is noise.
+3. **Cents only when there are cents** (`$797,992`, `$28,100.53`). Totals never show cents.
+4. **Metadata is sentence case in `meta`.** Uppercase tracked `label` is for section labels and
+   controls only. A list whose every second line is shouting reads as complicated.
+5. **A label earns its place only when the value cannot speak for itself.** "Added 3 days ago by
+   Claude" rather than "Entered: 21 Sep 2026, 9:14 am · Claude (agent)".
+6. **Relative time answers "how recent?", absolute time answers "exactly when?"** An opened value
+   and a connection say "3 days ago". The audit log gives the timestamp.
+7. **A note must be actionable or a promise the user would otherwise doubt.** Filtered, stale,
+   hidden-from-Insights and "reminders never contain amounts" pass the test. Explanations of how a
+   screen works do not; they belong in these docs.
+8. **Stored is not the same as shown.** The exchange rate and its date are kept on every entry,
+   exported, and readable by the agent (PRD J2), but not displayed.
+9. **Prototype scaffolding lives in the PROTO sheet**, never on a product screen.
 
 ---
 
@@ -68,8 +99,8 @@ becoming decoration.
 | `figure-sm` | Fraunces 600 · 15px · −0.01em | Inline amounts in dense rows |
 | `body` | Inter 400 · 15px · −0.012em · 1.45 | Holding names, prose |
 | `body-sm` | Inter 400 · 13.5px | Summary rows, secondary prose |
-| `label` | Inter 600 · 9.5px · **0.2em** · uppercase | Section labels, metadata lines |
-| `meta` | Inter 400 · 11px | Dates, counts, axis ticks |
+| `label` | Inter 600 · 9.5px · **0.2em** · uppercase | Section labels, controls — never metadata (§2.1) |
+| `meta` | Inter 400 · 12px · sentence case · `ink-3` | Row metadata, dates, counts, axis ticks |
 | `pct` | Inter 500 · 11px · tabular | Change percentages |
 
 All figures set `font-variant-numeric: tabular-nums` so columns align and digits do not shift as
@@ -135,9 +166,9 @@ Colour appears for exactly six reasons. Anything else is `ink`, `ink-2`, `ink-3`
 | Role | Token | Appears as |
 |---|---|---|
 | NetNet's own mark | `brand` | Wordmark dot, trend line and wash, active tab, focus ring, primary button |
-| The agent wrote this | `agent` | Margin rule on the row, dot in the metadata line, audit-log entries |
-| Value went up | `gain` | Change figures, positive bars — always with `+` and `↑` |
-| Value went down | `loss` | Change figures, negative bars — always with `−` and `↓` |
+| The agent wrote this | `agent` | The margin mark on the row, at half strength — never text (§2.1) |
+| Value went up | `gain` | Change figures, positive bars — always with `+` |
+| Value went down | `loss` | Change figures, negative bars — always with `−` |
 | Needs attention | `attention` | Stale labels, reminder notices |
 | Category identity | chart palette (§5) | Charts only, never UI |
 
@@ -184,6 +215,10 @@ instead: the inks and the chart hues never appear in the same role, so they are 
 - **Fixed order, never cycled.** A ninth category folds into "Other" — it never gets a generated hue.
 - **Colour follows the entity, not its rank.** Filtering must not repaint the survivors.
 - **One axis.** Never two y-scales.
+- **Growth bars carry their values, so they carry no axis.** Each bar is labelled with its change;
+  a y-axis would say the same thing again. The scale covers only the side the bars use, so an
+  all-positive run gets the full height. The pager above the chart names the window, so the bars'
+  own labels are just "May" or "Q3".
 - **The trend line is `brand`**, not gain/loss. It is NetNet's mark, and the change figure beside it
   carries the semantics. A trend line that turned red on a bad quarter would put two conflicting
   signals in one glance.
@@ -198,17 +233,19 @@ Built by us, because they carry the brand:
 |---|---|
 | **Rule** | 1px `rule`. The primary structural device. |
 | **Section** | `label` + content, separated by rules. No background, no border, no radius. |
-| **Figure row** | Name + metadata left; amount (`figure-lg`) over change (`pct`) right-aligned. |
-| **Margin mark** | 3px `agent` bar in the gutter, full row height. The provenance device. |
+| **Figure row** | Name + metadata left; amount (`figure-lg`) over **one** change figure right-aligned (§2.1). |
+| **Margin mark** | 2px `agent` bar at half strength in the gutter, inset from the row's rules. The provenance device, quiet on purpose; the client is named only when the value is opened. |
+| **Opened value** | Only what the row does not already say: the original-currency amount if it differs, then a `meta` footer, "Added 3 days ago by Claude", with Edit and Delete. |
 | **Hero figure** | `display` amount, `label` above, change line below. |
 | **Trend** | 2px `brand` stroke, wash beneath at 22% dark / 14% light. No gridlines by default. |
 | **Inline chip** | Text-only, `label` scale, coloured. **No pill background** — a pill is a container. |
 | **Segmented control** | Ours: it carries brand and appears on data screens. |
 | **Button** | Ours. `brand` fill, paper-coloured text; secondary is ruled, not filled. |
 | **Empty state** | Typographic. A sentence and one action, never an illustration. |
-| **Position ledger** | Figure rows as a ledger: bucket in `body`, what is in it in `meta` beneath, amount in Fraunces; a `rule-strong` hairline above the subtotal, whose name is a `label`. How the first picture is set (PRD J1). |
+| **Position ledger** | Figure rows as a ledger: bucket in `body`, what is in it in `meta` beneath (holding names; types for locked), amount in Fraunces; a `rule-strong` hairline above what you owe. No subtotal. How the first picture is set (PRD J1). |
 | **Choice row** | Answers to a fact question. Short answers: ruled buttons in `label` caps; the chosen one takes a `brand` rule, not a fill. Sentence answers: a stacked list of rows, the chosen one marked by a 3px `brand` bar. Never pills. |
-| **Consequence line** | `body-sm` in `ink-2`; the consequence in `ink` 600, the amount in Fraunces, the pack's reason after an em dash, then a `label`-scale **Change** link. States money, never a category (PRD J2). |
+| **Consequence line** | `body-sm` in `ink-2`; the consequence in `ink` 600, the pack's reason after an em dash, then a `label`-scale **Change** link. States money, never a category (PRD J2). The amount ("the $X you could use") appears only where it moves as you type — the Add form. Elsewhere it would repeat the Position ledger. |
+| **Change line** | Under a hero figure: signed money · percentage, then "vs *baseline* ▾", which is itself the control that changes the baseline. |
 | **Amount entry** | The one place a number is *typed* at display size: Fraunces 600 · 30px on a single hairline that turns `brand` on focus, currency symbol in `ink-3`. Money is typeset the same way whether it is shown or entered. |
 
 Deferred to the platform, per the Founder's "brand chrome, native controls" decision:
@@ -247,9 +284,9 @@ thumb. So visual size and tap size are specified separately, and only the second
 4. **Grow the row, not the sentence.** A link in a row (section header, sheet header) makes the row
    `--hit` tall. A link *inside a sentence* keeps the line height and lets its target overflow the
    line box instead, so the prose does not break apart.
-5. **Indicators follow the text, not the box.** Selected states under range bars, chips and
-   "Change comparison" are text underlines, so a 44px box does not push the underline 14px away
-   from the word it marks.
+5. **Indicators follow the text, not the box.** Selected states under range bars and chips, and the
+   baseline in a change line, are text underlines, so a 44px box does not push the underline 14px
+   away from the word it marks.
 6. **A pager says what it is paging.** Bare ‹ › arrows are unreadable on a phone. The pager is
    ‹ *period* ›, and an arrow with nowhere to go is disabled rather than leading to an empty chart.
 

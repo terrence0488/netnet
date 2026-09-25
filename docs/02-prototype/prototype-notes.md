@@ -152,17 +152,20 @@ whether the warm paper survives a landing page; and the wordmark, which is still
 1. **The chart carousel is kept on the holding page** — trend, then period bars, with page dots. On
    Home it became a trend line beside a ranked allocation list when the design system replaced the
    donuts (§5); the Position ledger now carries the assets-vs-liabilities split.
-2. **Holding rows carry sparklines**, as in the mockups. The sparkline is coloured by the direction
-   of the line it actually draws, inverted for liabilities so a shrinking loan reads as good news.
+2. **Holding rows carry one change figure**, not the mockups' percentage-and-amount pair
+   (design-system §2.1).
 3. **Sort By, Comparison Options, Filters and Add Tracking** are the mockups' menus, with the same
    options — including Filters' `Show Only` / `Types` / `Tags` (OR-AND) / `Filter Archived` and
    the Reset / Cancel / Apply footer.
-4. **The detail page** keeps the stat-pill row (Type, Last update, Started on, ATH, YTD), the
-   monthly/quarterly/yearly bar chart, expandable value rows showing Default Currency, Original
-   Value, Amount Change and Percentage Change, and the bottom **Update** button.
-5. **Insights is the mockups' card stack**, not a list: stat cards, `<Period> Growth` bars with the
-   change labelled above each bar, `Assets vs. Liabilities` trend, and `Distribution Over Time`
-   stacked bars with liabilities below the zero line.
+4. **The detail page** keeps the monthly/quarterly/yearly bar chart, expandable value rows and the
+   bottom **Update** button. It drops the stat-pill row (Type, Last update, Started on, ATH, YTD):
+   each pill repeated something already on the page, or was a statistic nobody asked for. An opened
+   value shows only the original-currency amount and "Added 3 days ago by Claude", not the
+   mockups' five labelled lines that restated the row (Founder review, 2026-09-25).
+5. **Insights is the mockups' card stack**, not a list: `<Period> growth` bars with the change
+   labelled above each bar, `Assets vs. liabilities` trend, and `Distribution` stacked bars with
+   liabilities below the zero line. The stat cards became one sentence, the average change: the
+   other two cards repeated Home's total and the first row of the period list.
 
 **Departing from the mockups, on purpose**
 

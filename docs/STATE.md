@@ -26,6 +26,11 @@ undecided accessibility state, G-D1/G-D3 re-worded to §2.5, `via` on `holding_c
 wording AI-drafted and flagged for the Founder's reading). Net Worth Goals out; Tags AND/OR kept.
 Value Note and Mark on graph were ruled out of scope and removed from the prototype entirely.
 STILL OPEN: only the desktop layout (Founder reviewing UI/UX).
+UI/UX review so far (2026-09-25): chart pagers keep scroll position and disabled arrows no longer
+double-tap-zoom (9e0654b); then a content pass across every screen after the Founder found them
+cluttered — "one figure, one place" is now binding (design-system §2.1). Agent provenance is a quiet
+mark, with the client named only on an opened value; the exchange rate is stored, not shown (PRD
+§9.6 item 16, AI-drafted for the Founder's reading).
 The functional suite had gone stale against the rework (it predated J1's return-to-Home and the
 universal t-retirement type) — tests live in the session scratchpad, not the repo, so they do not
 survive sessions. Re-run them before claiming anything passes.

@@ -59,7 +59,7 @@ h1,h2,h3{margin:0;font-weight:600}
 }
 
 /* ---------- label: the system's signature. 0.2em tracking is load-bearing ---------- */
-.label,.section-h h2,.nw-label,.pill small,.ev{
+.label,.section-h h2,.nw-label,.ev{
   font-size:9.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3)}
 
 /* ---------- sections: rules, never containers ---------- */
@@ -67,7 +67,6 @@ h1,h2,h3{margin:0;font-weight:600}
   padding:18px 0 16px;margin:0;border-bottom:1px solid var(--rule)}
 .card.flush{padding:0}
 .card h3{font-size:15px;font-weight:600;letter-spacing:-.015em}
-.card .csub{font-size:11px;color:var(--ink-3);margin-top:3px}
 .section-h{display:flex;align-items:center;gap:10px;margin:20px 0 2px;padding-bottom:6px}
 .section-h h2{flex:1}
 .section-h .link{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-text)}
@@ -100,9 +99,11 @@ h1,h2,h3{margin:0;font-weight:600}
 .nw{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(40px,11vw,52px);
   letter-spacing:-.038em;line-height:1;margin:11px 0 13px;font-variant-numeric:tabular-nums}
 .nw-chg{font-size:13px;color:var(--ink-2)}
-.baseline-btn{display:inline-block;font-size:9.5px;font-weight:600;letter-spacing:.2em;
-  text-transform:uppercase;color:var(--ink-3);margin-top:11px;border-bottom:1px solid var(--rule-strong);padding-bottom:2px}
-.baseline-btn:hover{color:var(--ink);border-color:var(--ink-3)}
+/* The change line is its own control: the baseline's name changes the baseline. */
+button.nw-chg{display:inline-flex;align-items:baseline;gap:8px;flex-wrap:wrap;text-align:left}
+.nw-chg .vs{color:var(--ink-3);text-decoration:underline;text-decoration-color:var(--rule-strong);
+  text-underline-offset:4px}
+button.nw-chg:hover .vs{color:var(--ink);text-decoration-color:var(--ink-3)}
 
 /* ---------- rows ---------- */
 .row{display:flex;align-items:baseline;gap:12px;padding:12px 0;width:100%;text-align:left;
@@ -111,17 +112,17 @@ h1,h2,h3{margin:0;font-weight:600}
 .row:hover .name{color:var(--brand-text)}
 .row .grow{flex:1;min-width:0}
 .row .name{font-size:15px;font-weight:400;letter-spacing:-.012em;display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
-.row .sub{font-size:9.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin-top:5px}
+.row .sub{font-size:12px;font-weight:400;letter-spacing:-.005em;color:var(--ink-3);margin-top:3px}
 .row .amt{text-align:right;white-space:nowrap}
 .row .amt b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:18px;letter-spacing:-.015em;
   display:block;font-variant-numeric:tabular-nums}
 .row .amt .chg{font-size:11px;font-weight:500;font-variant-numeric:tabular-nums;display:block;margin-top:3px}
 .row .chev{color:var(--ink-3);flex:none;font-size:15px}
-.row .spark{width:46px;height:22px;flex:none;align-self:center}
 .row .dot{width:8px;height:8px;border-radius:2px;flex:none;align-self:center}
-/* the provenance device: the agent's ink, in the reserved gutter */
-.row.by-agent::before{content:'';position:absolute;left:calc(var(--gutter) * -1);top:0;bottom:-1px;
-  width:3px;background:var(--agent)}
+/* the provenance device: the agent's ink, in the reserved gutter. Quiet on purpose —
+   it answers "who wrote this?" when you look for it, and never competes with the figure. */
+.row.by-agent::before{content:'';position:absolute;left:calc(var(--gutter) * -1);top:14px;bottom:14px;
+  width:2px;border-radius:1px;background:var(--agent);opacity:.5}
 @media (min-width:900px){.row.by-agent::before{left:-18px}}
 
 .kv{display:flex;justify-content:space-between;gap:14px;padding:7px 0;font-size:13.5px}
@@ -133,9 +134,6 @@ h1,h2,h3{margin:0;font-weight:600}
 .chip{font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
   background:none;padding:0;border-radius:0;white-space:nowrap}
 .chip.stale{color:var(--attention)}
-.chip.agent{color:var(--agent-text)}
-.chip.agent::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;
-  background:var(--agent);margin-right:5px;vertical-align:middle}
 .chip.carried{color:var(--ink-3);font-style:italic;letter-spacing:.08em}
 .chip.on{color:var(--brand-text)}
 
@@ -292,12 +290,6 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12p
 .steps li{counter-increment:s;position:relative;padding-left:26px;margin-bottom:12px;font-size:13.5px;color:var(--ink-2)}
 .steps li::before{content:counter(s);position:absolute;left:0;top:1px;font-size:9.5px;font-weight:700;
   letter-spacing:.1em;color:var(--brand-text)}
-.pillrow{display:flex;gap:26px;overflow-x:auto;scrollbar-width:none;padding:14px 0;
-  border-bottom:1px solid var(--rule)}
-.pillrow::-webkit-scrollbar{display:none}
-.pill{flex:none;background:none;padding:0;text-align:left}
-.pill small{display:block;margin-bottom:5px}
-.pill b{font-size:13.5px;font-weight:500;letter-spacing:-.01em}
 .chat{padding:16px 0 4px;max-width:600px}
 .msg{max-width:88%;padding:11px 14px;margin-bottom:10px;font-size:14px;line-height:1.5;border-radius:2px}
 .msg.user{background:var(--brand);color:var(--brand-on);margin-left:auto}
@@ -316,21 +308,16 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12p
 .split{display:flex;height:3px;background:var(--rule);margin:10px 0}
 .split i{display:block}
 
-/* ---------- first picture (PRD J1, §2.2) ---------- */
-.lead{font-size:15px;color:var(--ink-2);letter-spacing:-.012em;margin:-2px 0 4px}
-.lead .amount{color:var(--ink);font-size:16px}
-.nw-wrap .lead + .nw-chg{margin-top:10px}
 
 /* Position as a ledger: bucket, what is in it, amount; a stronger rule above the subtotal */
 .ledger .lg-row{display:flex;align-items:baseline;gap:14px;padding:11px 0;border-bottom:1px solid var(--rule)}
 .ledger .lg-row:last-child{border-bottom:none}
 .ledger .lg-row .grow{flex:1;min-width:0}
 .ledger .lg-row .t{display:block;font-size:14px;letter-spacing:-.012em}
-.ledger .lg-row .s{display:block;font-size:11px;color:var(--ink-3);margin-top:3px;line-height:1.4;letter-spacing:0}
+.ledger .lg-row .s{display:block;font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.4;letter-spacing:0}
 .ledger .lg-row b{font-size:17px;letter-spacing:-.015em;white-space:nowrap}
 .ledger .lg-row b.neg{color:var(--ink)}
-.ledger .lg-row.total{border-top:1px solid var(--rule-strong);margin-top:-1px}
-.ledger .lg-row.total .t{font-size:9.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3)}
+.ledger .lg-row.owe{border-top:1px solid var(--rule-strong);margin-top:-1px}
 
 /* Guided assembly: sits on Home, not in a wizard */
 .guide{padding:4px 0 20px;border-bottom:1px solid var(--rule)}
@@ -381,8 +368,17 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12p
 @media (min-width:1500px){ .main{width:min(100%,1340px)} }
 @media (min-width:1800px){ .main{width:min(100%,1440px)} }
 
-/* Home: summary column leads in the DOM (mobile reads net worth → position →
-   holdings). On desktop it returns to the right without changing that order. */
+/* Home, phone: total → trend → position → holdings → allocation. The two columns
+   dissolve so their sections can be ordered as one list. */
+@media (max-width:899px){
+  #s-home .grid{display:flex;flex-direction:column}
+  #s-home .grid > .g5,#s-home .grid > .g7{display:contents}
+  #s-home .o-trend{order:1}#s-home .o-pos{order:2}#s-home .o-list{order:3}#s-home .o-alloc{order:4}
+}
+.list-foot{display:flex;justify-content:flex-end}
+.list-foot .link{font-size:12.5px;color:var(--ink-3)}
+.list-foot .link:hover{color:var(--ink)}
+/* Home, desktop: the summary (position, allocation) sits in the right column. */
 @media (min-width:900px){
   #s-home .grid > .g5{grid-column:8 / span 5 !important;grid-row:1}
   #s-home .grid > .g7{grid-column:1 / span 7 !important;grid-row:1}
@@ -417,11 +413,8 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12p
 .link-sm{display:inline-flex;align-items:center;min-height:var(--hit);min-width:var(--hit);
   padding:0 4px;margin-block:calc((var(--hit) - 1.4em) / -2);vertical-align:middle}
 
-/* "Change comparison": underline follows the text, not the taller box */
-.baseline-btn{display:inline-flex;align-items:center;min-height:var(--hit);margin-top:2px;
-  border-bottom:none;padding-bottom:0;text-decoration:underline;text-decoration-color:var(--rule-strong);
-  text-underline-offset:4px}
-.baseline-btn:hover{text-decoration-color:var(--ink-3)}
+/* the change line doubles as the baseline control */
+button.nw-chg{min-height:var(--hit);align-items:center}
 
 /* range bars become a strip of full-size cells; indicator stays under the text */
 .rangebar{gap:0;margin-top:2px}
@@ -461,3 +454,31 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12p
 /* the last row must be able to scroll clear of the tab bar AND the home indicator */
 .main{padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 30px)}
 @media (min-width:900px){.main{padding-bottom:70px}}
+
+/* ==========================================================================
+   CONTENT — design-system.md §2.1. One figure, one place.
+   ========================================================================== */
+.h-name{font-family:Fraunces,Georgia,serif;font-size:26px;font-weight:600;letter-spacing:-.028em;margin:9px 0 6px}
+.nw.h-nw{font-size:clamp(32px,9vw,42px);margin:6px 0 8px}
+/* an opened value: only what the row does not already say */
+.vx{padding:0 0 6px;border-bottom:1px solid var(--rule)}
+.vx .kv{padding:4px 0 2px;font-size:13px}
+.vx-foot{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3)}
+.vx-foot .grow{flex:1;min-width:0}
+.vx-foot .link-sm{margin-block:0}
+.vx-foot .link-sm:last-child{margin-right:-4px}
+.link-sm.danger{color:var(--loss)}
+.row.open{border-bottom-color:transparent}
+/* the empty Home's one line under the total */
+.nw-wrap .lead{font-size:15px;color:var(--ink-2);letter-spacing:-.012em;margin:-2px 0 4px}
+/* a one-sentence summary where a row of stat tiles used to be */
+.summary{font-size:14px;color:var(--ink-2);letter-spacing:-.01em;margin:14px 0 0;line-height:1.5}
+.summary b{font-weight:600}
+/* a chart's title and its pager on one line */
+.chart-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:var(--hit)}
+.chart-h h3{flex:1}
+.chart-h .chartnav{margin-right:calc((var(--hit) - 12px) / -2)}
+/* one agent turn in the activity log */
+.turn-h{display:flex;align-items:center;gap:10px;padding:10px 0 6px;border-bottom:1px solid var(--rule);
+  font-size:12px;color:var(--ink-3)}
+.turn-h span{flex:1}

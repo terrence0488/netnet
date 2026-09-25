@@ -5,7 +5,8 @@ First approved 2026-09-23. Amended and re-approved 2026-09-24: §2 widened from 
 three, §2.3 added jurisdiction packs so the product is not permanently shaped by its first market,
 and §2.4 made the agent a target user with a falsifiable claim behind it. Also changed: §3, §4, J1,
 J2, J8, §8, N10 and N11. What changed and why: **§9.5**. Further amendments made on the Founder's
-direction at the Stage 2 review (J2 undecided state, G-D1/G-D3, §3.5 `via`): **§9.6**.
+direction at the Stage 2 review (J2 undecided state, G-D1/G-D3, §3.5 `via`, quiet agent provenance
+and no displayed exchange rate): **§9.6**.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -435,7 +436,8 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   answer is qualified rather than quietly built on a guess.
 - **Given** a currency other than the user's default, **when** a value is saved, **then** the entry
   stores the original amount and currency *and* the default-currency conversion with the rate and
-  rate date used, both visible on the value row.
+  rate date used. The original amount is visible on the value; the rate and rate date are kept on
+  the entry, exported, and readable by the agent, but not displayed (§9.6 item 16).
 - **Given** the user's own taxonomy, **when** they add, rename, merge or delete a type or tag,
   **then** existing holdings follow the change and nothing is orphaned.
 - **Given** a holding no longer held, **when** the user archives it, **then** it leaves all totals
@@ -491,8 +493,8 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   agent can create the holdings, types and tags to match — assembly is a conversation, not only a
   document parse.
 - **Given** the user drops a statement into their agent and asks it to update NetNet, **when** the
-  agent writes, **then** the values appear in the web app tagged as agent-written with the client
-  name.
+  agent writes, **then** the values appear in the web app marked as agent-written, with the client
+  named on the value (§9.6 item 16).
 - **Given** an agent write that would duplicate a holding already tracked, **when** the tool is
   called, **then** the layer surfaces the likely match so the agent can update rather than
   duplicate.
@@ -712,6 +714,12 @@ rather than recorded as separately approved.
 14. **`via` added to `holding_created`** (§3.5), so guided assembly's contribution to M2 is readable.
 15. **Net Worth Goals, and the value Note and Mark on graph, stay out of v1**, with nothing to build
     or test for them. All three came from the mockups. The Tags AND/OR toggle stays.
+16. **Agent provenance is quiet, and the exchange rate is not displayed** (2026-09-25). The
+    Founder found the screens cluttered and the agent label too loud for how much it matters to
+    the user. J6 now asks for agent writes to be *marked*, with the client named on the value,
+    rather than labelled in every list. J2 still stores the rate and rate date on every
+    foreign-currency entry, and the export and the agent can read them, but the value row shows
+    only the original amount. Nothing about what is recorded changes, only what is shown.
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves
