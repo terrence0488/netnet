@@ -1,5 +1,8 @@
 # NetNet Design System — v1
 
+> **On this branch the look is variant B "Poster".** `design-system-b.md` replaces §1, §3, §4.1–4.2
+> and the appearance of §6. Everything else here still binds.
+
 Status: **awaiting Founder review** (chosen 2026-09-23, direction V2 "Two Inks"; four components
 added 2026-09-24 for the amended J1/J2 — §6)
 Owner: Product designer · Stage 2
