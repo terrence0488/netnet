@@ -155,8 +155,8 @@ h1,h2,h3{margin:0;font-weight:600}
 .tagpick button.ex.on{color:var(--loss);border-bottom-color:var(--loss)}
 .chartnav{display:flex;gap:10px}
 .chartnav button{color:var(--ink-3);font-size:15px}
-.chartnav button:hover{color:var(--ink)}
-.chartnav button[disabled]{opacity:.25;pointer-events:none}
+.chartnav button:not([aria-disabled="true"]):hover{color:var(--ink)}
+.chartnav button[aria-disabled="true"]{opacity:.25;cursor:default}
 
 .btn{display:block;width:100%;padding:13px;background:var(--brand);color:var(--brand-on);
   font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;text-align:center;border-radius:2px}
@@ -166,7 +166,7 @@ h1,h2,h3{margin:0;font-weight:600}
 .btn.danger{background:var(--loss);color:#fff}
 .btn.sm{padding:9px;font-size:10px}
 .btn.auto{width:auto;padding:7px 14px}
-.btn[disabled]{opacity:.4;pointer-events:none}
+.btn[aria-disabled="true"]{opacity:.4;cursor:default;filter:none}
 .btn-row{display:flex;gap:12px;margin:18px 0}
 @media (min-width:900px){.btn-row{max-width:420px}}
 

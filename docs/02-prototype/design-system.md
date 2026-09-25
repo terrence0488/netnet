@@ -257,6 +257,10 @@ thumb. So visual size and tap size are specified separately, and only the second
    element, because a scroll container (a sheet, the stat row) resets it for its contents. Pinch-zoom
    is never blocked: `user-scalable=no` fails WCAG 1.4.4 for low-vision users, and iOS ignores it.
 8. **Form fields are never smaller than 16px**, or iOS zooms into them on focus.
+9. **An unavailable control is still solid.** Mark it `aria-disabled="true"` and dim it; never use
+   the `disabled` attribute or `pointer-events: none`. Both make the control dead space to iOS, so
+   a double-tap on a greyed ‹ › falls through and zooms the page, which rule 7 exists to prevent.
+   Screen readers still announce it as unavailable, and the click handler ignores it.
 
 **Verified, not eyeballed.** Every tappable element on every screen and sheet is measured at phone
 width with touch emulated (target 44) and at desktop width with a mouse (target 32). Targets that
@@ -285,6 +289,11 @@ patterns**. After the fix there are none at either size, and no overlaps.
 - **The agent margin gutter is reserved at every breakpoint.** It is 24px of the left margin, and
   rows offset their mark into it. Nothing else may occupy it.
 - **No horizontal scrolling at phone width**, ever (PRD J4, J11).
+- **Only navigation moves the page.** Going to another screen starts at the top. An action that
+  updates the screen you are on (a chart pager, a range, a view switch, undo, expanding a row)
+  leaves the reader exactly where they were. A reader halfway down Insights who pages a chart
+  must still be looking at that chart. Shipped once; the Founder found every chart arrow
+  jumping to the top of the page.
 
 ---
 

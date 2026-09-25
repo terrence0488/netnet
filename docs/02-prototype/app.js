@@ -14,6 +14,7 @@ function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e)
 function reset(mode) {
   S = hydrate(mode === 'empty' ? emptyState() : seededState());
   save(); closeSheet();
+  lastRoute = null; sessionStarted = false;
   location.hash = mode === 'empty' ? '#/landing' : '#/home';
   render();
 }
@@ -897,9 +898,9 @@ function renderHolding(id) {
     <div class="slide"><div class="card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
         <div class="chartnav lead">
-          <button data-act="detail-page" data-v="1" ${noEarlier ? 'disabled' : ''} aria-label="Earlier periods">‹</button>
+          <button data-act="detail-page" data-v="1" ${noEarlier ? 'aria-disabled="true"' : ''} aria-label="Earlier periods">‹</button>
           <span class="span">${esc(windowLabel(pers, view))}</span>
-          <button data-act="detail-page" data-v="-1" ${page === 0 ? 'disabled' : ''} aria-label="Later periods">›</button>
+          <button data-act="detail-page" data-v="-1" ${page === 0 ? 'aria-disabled="true"' : ''} aria-label="Later periods">›</button>
         </div><span style="flex:1"></span>
       </div>
       ${growthBars(pers, { px:175 })}
@@ -1011,8 +1012,8 @@ function renderInsights() {
         <div style="flex:1"><h3>${esc(VIEW_ADJ[view])} Growth</h3>
           <div class="csub">${esc(VIEW_ADJ[view])} growth over the last ${windowed.length} ${esc(VIEW_PLURAL[view])}</div></div>
         <div class="chartnav">
-          <button data-act="insights-page" data-v="1" ${(page+1)*5 >= oldestFirst.length ? 'disabled' : ''} aria-label="Earlier periods">‹</button>
-          <button data-act="insights-page" data-v="-1" ${page === 0 ? 'disabled' : ''} aria-label="Later periods">›</button></div>
+          <button data-act="insights-page" data-v="1" ${(page+1)*5 >= oldestFirst.length ? 'aria-disabled="true"' : ''} aria-label="Earlier periods">‹</button>
+          <button data-act="insights-page" data-v="-1" ${page === 0 ? 'aria-disabled="true"' : ''} aria-label="Later periods">›</button></div>
       </div>
       <div style="margin-top:10px">${growthBars(windowed, { px:180 })}</div>
     </div></div>
@@ -1035,8 +1036,8 @@ function renderInsights() {
         <div style="flex:1"><h3>Distribution Over Time</h3>
           <div class="csub">Net worth distribution over the last ${windowed.length} ${esc(VIEW_PLURAL[view])}</div></div>
         <div class="chartnav">
-          <button data-act="insights-page" data-v="1" ${(page+1)*5 >= oldestFirst.length ? 'disabled' : ''} aria-label="Earlier periods">‹</button>
-          <button data-act="insights-page" data-v="-1" ${page === 0 ? 'disabled' : ''} aria-label="Later periods">›</button></div>
+          <button data-act="insights-page" data-v="1" ${(page+1)*5 >= oldestFirst.length ? 'aria-disabled="true"' : ''} aria-label="Earlier periods">‹</button>
+          <button data-act="insights-page" data-v="-1" ${page === 0 ? 'aria-disabled="true"' : ''} aria-label="Later periods">›</button></div>
       </div>
       <div class="legend" style="margin:8px 0 4px">${distTypes.map(s => `<div><i style="background:${s.colour}"></i>${esc(s.name)}</div>`).join('')}</div>
       ${stackedBars(dist, { px:190 })}
@@ -1054,7 +1055,6 @@ function renderInsights() {
 
   <div class="note">Periods are worked out from the <b>dates on your values</b>, not from when you typed
     them in. Add a back-dated value and the periods it belongs to recompute.</div>`;
-  fire('insights_viewed', { view });
 }
 function exclusionSummary() {
   const s = S.settings;
@@ -1131,7 +1131,7 @@ function renderAgent() {
 `}
         <div class="urlbox"><span class="mono">${MCP_URL}</span>
           <button class="btn ghost sm auto" data-act="copy-url">Copy</button></div>
-        <button class="btn" style="margin-top:14px" data-act="connect" ${!S.account.verified ? 'disabled' : ''}>I've pasted it — continue</button>
+        <button class="btn" style="margin-top:14px" data-act="connect" ${!S.account.verified ? 'aria-disabled="true"' : ''}>I've pasted it — continue</button>
         <button class="btn ghost sm" data-act="fail-connect">Simulate a failure (prototype)</button>
       </div>
     </div>
@@ -1748,9 +1748,15 @@ function sheetProto() {
 /* ================= router ================= */
 const TABS = [['#/home','Home',ICON.home],['#/insights','Insights',ICON.insights],
               ['#/agent','Agent',ICON.agent],['#/account','Account',ICON.account]];
+/* A render is either a navigation (the route changed) or an in-place update of the same
+   route (a chart pager, a range, undo). Only navigation moves the page to the top or counts
+   as a screen view; an in-place update must leave the reader exactly where they were. */
+let lastRoute = null, lastInsightsView = null, sessionStarted = false;
 function render(keepScroll) {
   const hash = location.hash || (S.account.signedIn ? '#/home' : '#/landing');
   const p = hash.replace(/^#\//, '').split('/');
+  const navigated = hash !== lastRoute;
+  lastRoute = hash;
   const screens = { landing:'s-landing', signup:'s-signup', home:'s-home', holding:'s-holding',
     add:'s-add', edit:'s-add', insights:'s-insights', period:'s-period', agent:'s-agent',
     activity:'s-activity', account:'s-account', sub:'s-sub' };
@@ -1782,8 +1788,13 @@ function render(keepScroll) {
   const tabFor = { home:'#/home', holding:'#/home', add:'#/home', edit:'#/home', insights:'#/insights',
     period:'#/insights', agent:'#/agent', activity:'#/agent', account:'#/account', sub:'#/account' }[p[0]];
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === tabFor));
-  if (!keepScroll) window.scrollTo(0, 0);
-  if (p[0] === 'home' && !keepScroll) fire('session_started', {});
+  if (navigated && !keepScroll) window.scrollTo(0, 0);
+  if (chrome && S.account.signedIn && !sessionStarted) { sessionStarted = true; fire('session_started', {}); }
+  if (p[0] === 'insights') {
+    const view = S.settings.insightsView;
+    if (navigated || view !== lastInsightsView) fire('insights_viewed', { view });
+    lastInsightsView = view;
+  }
 }
 
 function renderLandingDemo() {
@@ -1808,6 +1819,9 @@ document.addEventListener('click', ev => {
   if (tab) { location.hash = tab.dataset.tab; return; }
   const el = ev.target.closest('[data-act]');
   if (!el) return;
+  /* Unavailable controls use aria-disabled, not the disabled attribute: iOS treats a
+     disabled button as dead space and double-tap-zooms on it (§6.1 rule 9). */
+  if (el.getAttribute('aria-disabled') === 'true') return;
   const a = el.dataset.act, v = el.dataset.v, s = S.settings;
   const rerender = () => { save(); render(); };
   const keep = () => { save(); render(true); };
