@@ -574,7 +574,8 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   so the user asks Muse in the chat to add one from NetNet's address. Its guide therefore starts
   with a message to send, not a menu path. Meta's connector directory accepts MCP servers with
   OAuth, and a NetNet listing there would turn this into Muse's own one-tap add. Muse is US-only
-  at launch.
+  at launch but is offered everywhere: it is expected to reach other countries soon, and the
+  agent list stays one list rather than one per country.
 - **Given** an agent that is not on the list, **when** the user chooses **Other agent**, **then**
   they get a generic guide: add a custom connector (MCP server) in the agent's settings with this
   address, then Allow on NetNet's page. No platform split and no screenshots, because we cannot know
