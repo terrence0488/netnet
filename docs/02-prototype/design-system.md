@@ -76,6 +76,11 @@ things look but never what may appear, so every screen showed everything it had.
 8. **Stored is not the same as shown.** The exchange rate and its date are kept on every entry,
    exported, and readable by the agent (PRD J2), but not displayed.
 9. **Prototype scaffolding lives in the PROTO sheet**, never on a product screen.
+10. **One primary action per screen.** A screen offers one thing to do next; any alternative is a
+    quiet link, never a second equal-weight button. The Founder found the old empty Home offering
+    four starts at once (the basics, the agent twice, a grid of starting tiles). A new user who
+    cannot tell where to begin does not begin. The empty Home is now what §6 always said an empty
+    state is: a sentence and one action.
 
 ---
 

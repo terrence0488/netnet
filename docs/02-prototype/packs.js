@@ -4,6 +4,10 @@
    names a local institution, rule or default. Adding a market means adding an
    entry to PACKS (and a COUNTRY_PACK line pointing a country at it) — no change to the flow.
 
+   A pack lists only what differs from the common default (the generic pack), key by
+   key, so a new country is a short file. Its checklist replaces the common one whole;
+   its types are added to the universal ones, never instead of them.
+
    Two kinds of opinion are kept apart (§2.3):
    - opinions about the INTERACTION (ask a fact, default with a stated reason,
      show the consequence, never block saving) live in app.js and are universal;
@@ -124,32 +128,29 @@ const PACKS = {
         { id:'tied', label:'No, it’s tied up',   access:'locked',     reason:'you said it’s tied up' } ] }
     },
 
-    /* The guided list for someone who does not know what to list (J1). Each item
-       asks only "do you have this?" and "roughly how much?". Where a type needs a
-       fact to settle it, the fact is folded into the first question (`answer`). */
-    checklist: [
-      { u:'cash',       name:'Bank accounts',      ask:'Do you have money in a bank account?',
-        amount:'Roughly how much, across all of them?' },
-      { u:'retirement', name:'Retirement savings', ask:'Do you have a pension or retirement savings?',
-        amount:'Roughly how much?', hint:'Your provider’s app or latest statement shows the total.' },
-      { u:'listed',     name:'Investments',        ask:'Any investments — shares, funds, an investing app?',
-        amount:'Roughly what are they worth today?' },
-      { u:'property',   name:'Home', answer:'yes', ask:'Do you own the home you live in?',
-        amount:'Roughly what would it sell for?' },
-      { u:'vehicle',    name:'Car',                ask:'Do you own a car?',
-        amount:'Roughly what would it sell for?' },
-      { u:'loan',       name:'Loans',              ask:'Do you owe anything — a student loan, car loan, mortgage or card balance?',
-        amount:'Roughly how much, all together?' }
-    ],
+    /* Extra default types, on top of the universal ones. The common default adds none:
+       a pack adds a type only where it is common enough in that country to deserve its
+       own name (Singapore's car loan). Each is a local name for universal behaviour. */
+    types: [],
 
-    /* One-tap starting points on the empty state (J1): suggestions, not a chart of accounts. */
-    starters: [
-      { u:'cash',       sub:'Bank accounts, deposits' },
-      { u:'retirement', sub:'Workplace or state pension' },
-      { u:'property',   sub:'Home or investment' },
-      { u:'vehicle',    sub:'Car, motorbike' },
-      { u:'listed',     sub:'Brokerage, funds' },
-      { u:'loan',       sub:'Mortgage, car, student' }
+    /* The basics: the guided list for someone who does not know what to list (J1), asked
+       in onboarding, one question per screen. Each item asks only "do you have this?"
+       and "roughly how much?". Where a type needs a fact to settle it, the fact is folded
+       into the question (`answer`). `onlyIf` asks a follow-up only after a yes to the
+       item it names. `type` files the answer under one of this pack's own types. */
+    checklist: [
+      { id:'bank',    u:'cash',       name:'Bank accounts',      ask:'Do you have money in a bank account?',
+        amount:'Roughly how much, across all of them?' },
+      { id:'pension', u:'retirement', name:'Retirement savings', ask:'Do you have a pension or retirement savings?',
+        amount:'Roughly how much?', hint:'Your provider’s app or latest statement shows the total.' },
+      { id:'invest',  u:'listed',     name:'Investments',        ask:'Any investments — shares, funds, an investing app?',
+        amount:'Roughly what are they worth today?' },
+      { id:'home',    u:'property',   name:'Home', answer:'yes', ask:'Do you own the home you live in?',
+        amount:'Roughly what would it sell for?' },
+      { id:'car',     u:'vehicle',    name:'Car',                ask:'Do you own a car?',
+        amount:'Roughly what would it sell for?' },
+      { id:'owed',    u:'loan',       name:'Loans',              ask:'Do you owe anything — a student loan, car loan, mortgage or card balance?',
+        amount:'Roughly how much, all together?' }
     ]
   },
 
@@ -179,28 +180,32 @@ const PACKS = {
                     until:'until retirement age' }
     },
 
-    checklist: [
-      { u:'cash',       name:'Bank accounts', ask:'Do you have money in a bank account?',
-        amount:'Roughly how much, across all of them?' },
-      { u:'retirement', name:'CPF',           ask:'Do you have CPF savings?',
-        amount:'Roughly how much, all accounts together?', hint:'The CPF app shows your total.' },
-      { u:'listed',     name:'Investments',   ask:'Any investments — shares, funds, a robo-advisor?',
-        amount:'Roughly what are they worth today?' },
-      { u:'property',   name:'Home', answer:'yes', ask:'Do you own the home you live in?',
-        amount:'Roughly what would it sell for?' },
-      { u:'vehicle',    name:'Car',           ask:'Do you own a car?',
-        amount:'Roughly what would it sell for?' },
-      { u:'loan',       name:'Loans',         ask:'Do you owe anything — a study loan, car loan, home loan or card balance?',
-        amount:'Roughly how much, all together?' }
+    /* Car loans are common in Singapore, so a car loan is a default type of its own
+       rather than a generic "Loan". A country where cars are usually bought outright
+       (Japan, say) stays on the common default and never sees it. */
+    types: [
+      { key:'car_loan', u:'loan', label:'Car loan', example:'e.g. DBS car loan' }
     ],
 
-    starters: [
-      { u:'cash',       sub:'Bank accounts, fixed deposits' },
-      { u:'retirement', sub:'OA, SA, MA' },
-      { u:'property',   sub:'HDB, condo, landed' },
-      { u:'vehicle',    sub:'Car, motorcycle' },
-      { u:'listed',     sub:'Brokerage, robo, funds' },
-      { u:'loan',       sub:'Car, study, personal' }
+    /* Home and car each get a follow-up about the loan on them, because in Singapore
+       that is usually the biggest thing owed; "anything else" then catches the rest. */
+    checklist: [
+      { id:'bank',      u:'cash',       name:'Bank accounts', ask:'Do you have money in a bank account?',
+        amount:'Roughly how much, across all of them?' },
+      { id:'cpf',       u:'retirement', name:'CPF',           ask:'Do you have CPF savings?',
+        amount:'Roughly how much, all accounts together?', hint:'The CPF app shows your total.' },
+      { id:'invest',    u:'listed',     name:'Investments',   ask:'Any investments — shares, funds, a robo-advisor?',
+        amount:'Roughly what are they worth today?' },
+      { id:'home',      u:'property',   name:'Home', answer:'yes', ask:'Do you own the home you live in?',
+        amount:'Roughly what would it sell for?' },
+      { id:'home_loan', u:'mortgage',   name:'Home loan', onlyIf:'home', ask:'Is there a home loan on it?',
+        amount:'Roughly how much is left to pay?', hint:'Your latest loan statement shows what’s outstanding.' },
+      { id:'car',       u:'vehicle',    name:'Car',           ask:'Do you own a car?',
+        amount:'Roughly what would it sell for?' },
+      { id:'car_loan',  u:'loan', type:'car_loan', name:'Car loan', onlyIf:'car', ask:'Is there a car loan on it?',
+        amount:'Roughly how much is left to pay?' },
+      { id:'owed',      u:'loan',       name:'Other loans',   ask:'Anything else you owe — a study loan, a personal loan or a card balance?',
+        amount:'Roughly how much, all together?' }
     ]
   }
 };

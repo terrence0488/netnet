@@ -24,7 +24,9 @@ const SEED_TYPES = [
   { id:'t-loan',       universal:'loan',       name:null },
   { id:'t-wrapper',    universal:'wrapper',    name:null },
   { id:'t-card',       universal:'card',       name:null },
-  { id:'t-other',      universal:'other',      name:null }
+  { id:'t-other',      universal:'other',      name:null },
+  /* the SG pack's own default type (packs.js `types`): a local name for a universal loan */
+  { id:'t-car_loan',    universal:'loan',       name:null, key:'car_loan', label:'Car loan' }
 ];
 const SEED_TAGS = ['Emergency','Cash Equivalent','Growth','Dividend','High Risk',
                    'Low Risk','Long Term','Short Term','Tax-Advantaged'];
@@ -71,7 +73,7 @@ const HOLDING_SPECS = [
   { id:'h-endowus',name:'Endowus Core',          type:'t-listed',tags:['Growth','Long Term'], ccy:'SGD', start:74300,  growth:0.0094, vol:0.031, every:1,  months:40 },
   { id:'h-btc',    name:'Bitcoin (self-custody)',type:'t-crypto',tags:['High Risk','Short Term'],ccy:'USD',start:14800,  growth:0.0215, vol:0.110, every:1,  months:40 },
   { id:'h-hdbloan',name:'HDB loan',              type:'t-mortgage',  tags:[], kind:'liability',     ccy:'SGD', start:392000, growth:-0.0030,vol:0.0004,every:3,  months:40 },
-  { id:'h-carloan',name:'Car loan',              type:'t-loan',  tags:[], kind:'liability',     ccy:'SGD', start:62400,  growth:-0.0155,vol:0.0004,every:3,  months:40 }
+  { id:'h-carloan',name:'Car loan',              type:'t-car_loan',  tags:[], kind:'liability',     ccy:'SGD', start:62400,  growth:-0.0155,vol:0.0004,every:3,  months:40 }
 ];
 
 /* Values the agent wrote, so J6/J7 have something real to show. The most recent
@@ -160,6 +162,8 @@ function emptyState() {
   const s = seededState();
   s.mode = 'empty';
   s.holdings = [];
+  /* universal types only; the pack's own are added once the country is confirmed */
+  s.types = SEED_TYPES.filter(t => !t.key).map(t => ({ ...t }));
   s.tags = [];
   s.events = [];
   s.account = { email:'', name:'', initials:'', verified:false, signedIn:false, onboarded:false, connections:[],

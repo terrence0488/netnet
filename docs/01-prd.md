@@ -6,8 +6,8 @@ three, §2.3 added jurisdiction packs so the product is not permanently shaped b
 and §2.4 made the agent a target user with a falsifiable claim behind it. Also changed: §3, §4, J1,
 J2, J8, §8, N10 and N11. What changed and why: **§9.5**. Further amendments made on the Founder's
 direction at the Stage 2 review (J2 undecided state, G-D1/G-D3, §3.5 `via`, quiet agent provenance
-and no displayed exchange rate, admin-configurable packs, sign-up before onboarding, region from IP):
-**§9.6**.
+and no displayed exchange rate, admin-configurable packs, sign-up before onboarding, region from IP,
+the basics in onboarding, per-country types and ~10 packs at launch): **§9.6**.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -102,9 +102,13 @@ Singapore app that cannot leave, so the two kinds of opinion are kept apart:
 | **Opinions about the interaction** — ask a fact not a category, default with a stated reason, show the consequence, never block saving | Universal | The product. Never localised. |
 | **Opinions about the world** — which holdings are common here, what they are called, which are locked and why | Per jurisdiction | A **jurisdiction pack**: data, not code |
 
-A pack supplies the starting-point checklist, local labels for universal types, default accessibility
-per type with the one-line reason shown to the user, the disambiguating question for each ambiguous
-type, and currency and date conventions.
+A pack supplies the starting-point checklist (the basics, including follow-ups asked only after a
+yes: "is there a car loan on it?"), local labels for universal types, **its own default types** on
+top of the universal ones where a thing is common enough there to deserve a name (a car loan in
+Singapore; not in Japan, where cars are mostly bought outright), default accessibility per type with
+the one-line reason shown to the user, the disambiguating question for each ambiguous type, and
+currency and date conventions. **A pack lists only what differs from the common default**, so a new
+country is a short file, and the common default is itself editable (§9.6 items 17 and 21).
 
 **Types are universal; only labels are local.** NetNet does not ship "CPF" as a type — it ships a
 mandatory-retirement type that the SG pack labels CPF, and that is EPF, MPF, Superannuation, 401(k)
@@ -129,8 +133,11 @@ Four rules, binding:
    user's agent already understands; J2's open taxonomy and J6's assembly mean it can create it
    correctly. Unpacked markets are served on day one by the thing the product is already for.
 
-**In v1:** the pack machinery, the **SG pack**, and the **generic pack**. Further markets are pack
-data added without a release — in future by a human admin through an admin portal (§9.6 item 17). The machinery is the part that is expensive to retrofit; the second
+**In v1:** the pack machinery, the **generic pack**, and packs for **about ten countries**, with
+every other country on the generic pack until demand says otherwise (§9.6 item 21). Each pack is
+reviewed by someone who knows that market before it ships, because a wrong pack is worse than none
+(rule 2 below). Further markets are pack data added without a release — in future by a human admin
+through an admin portal (§9.6 item 17). The machinery is the part that is expensive to retrofit; the second
 pack is cheap and should wait for demand.
 
 ### 2.4 The agent is a user too — and the thing v1 is really betting on
@@ -270,7 +277,7 @@ Channel selection and posting are Founder work; producing G-D1–G-D4 is in v1 s
 Analytics ranks with the MCP layer as a P1 deliverable. Without these events the launch produces
 no evidence and §3.3 cannot be applied. Minimum event set:
 
-`landing_view` · `signup_started {method: email|google|apple}` · `account_created {method}` · `holding_created {source: web|agent, via: guided|form|starter}` ·
+`landing_view` · `signup_started {method: email|google|apple}` · `account_created {method}` · `holding_created {source: web|agent, via: guided|form}` ·
 `value_recorded {source}` · `agent_connection_started {client}` ·
 `agent_connection_completed {client}` · `agent_connection_failed {step, client}` ·
 `agent_tool_called {tool, kind: read|write, outcome, latency_ms, client}` ·
@@ -283,8 +290,8 @@ Every event above also carries **`{segment}`** (`starting_out` / `accumulating` 
 fire before it is asked and carry `unknown`; per-segment readings join them to the account. Without it none of §3.2 is readable per segment,
 and §3.3 cannot be applied to the segment it is meant to judge.
 
-`via` is set only when `source` is `web`: **`guided`** for the guided basics (J1), **`starter`** for a
-starting-point tile, **`form`** for the Add form. Without it nothing can say whether guided assembly
+`via` is set only when `source` is `web`: **`guided`** for the basics (J1), **`form`** for the Add
+form. (`starter` went with the empty Home's starting-point tiles, §9.6 item 20.) Without it nothing can say whether guided assembly
 is what gets P-A to M2 — a guided "yes" and a typed holding would be indistinguishable. It carries
 no amounts, so N9 is unaffected.
 
@@ -379,30 +386,31 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 ### J1 — A first real picture, fast
 - **Given** a visitor on the sign-up page, **when** they sign up with a provider (Google, Apple) or
   with an email and a password, **then** an account exists, and sign-up asked for nothing else.
-- **Given** a new account, **when** it is created, **then** onboarding asks two questions, one per
-  screen: where they live (inferred, then confirmed — §2.3 rule 2) and an optional segment. After
-  that they land on an empty Home with one obvious next action. Onboarding is those two questions
-  and nothing more: the guided basics stay on Home, not in a wizard to clear first.
+- **Given** a new account, **when** it is created, **then** onboarding asks, one question per
+  screen: where they live (inferred, then confirmed — §2.3 rule 2), an optional segment, and then
+  **the basics** (below). Every answer is saved the moment it is given, and "Done for now" is one
+  tap away on every screen, so onboarding never has to be cleared to reach Home.
 - **Given** an email sign-up, **when** the password is set, **then** a verification email is sent
   and the user carries on without waiting for it. Provider sign-ups are already verified.
 - **Given** a returning user, **when** they log in, **then** they resume onboarding if they had not
   finished it, and otherwise go straight to Home.
 - **Given** an empty account, **when** the user adds one holding with a value, **then** Home shows
   a net-worth total equal to that value with the holding listed under it.
-- **Given** a user who does not know what to list, **when** they view the empty state, **then**
-  they are offered starting categories relevant to this market (cash, CPF, property, vehicle,
-  investments, loans) as one-tap starting points they can rename or ignore — suggestions, not a
-  fixed chart of accounts.
-- **Given** the empty state, **when** the user would rather delegate assembly, **then** connecting
-  an agent (J5) is offered there as a first-class alternative to typing, not buried in settings.
+- **Given** an empty Home, **when** it is shown, **then** it offers **one** action — "Add what you
+  have", which reopens the basics — and one quiet alternative, connecting an agent (J5), not buried
+  in settings. Never several equal-weight choices: a new user who cannot tell where to start leaves.
+- **Given** a user who does not know what to list, **when** they meet the basics, **then** the
+  questions are this market's common holdings (the pack's checklist) — suggestions, not a fixed
+  chart of accounts.
 - **Given** any signup attempt, **when** it succeeds or fails, **then** `signup_started` /
   `account_created` fire with no amounts attached.
 - **Given** an unverified email, **when** the user uses the app, **then** they can — but agent
   connection (J5) requires verification first.
-- **Given** a user who has never computed a net worth (P-A), **when** they reach the empty state,
-  **then** they are walked through a short list of things people commonly hold — a bank account,
-  CPF, a loan, a car — answering only "do you have this?" and "roughly how much?", and may stop at
-  any point with whatever they entered already counted.
+- **Given** a user who has never computed a net worth (P-A), **when** they finish sign-up, **then**
+  they are walked through a short list of things people commonly hold — a bank account, CPF, a
+  loan, a car — one question per screen, answering only "do you have this?" and "roughly how
+  much?", with a follow-up only after a yes where the pack has one ("is there a loan on it?"). They
+  may stop at any point with whatever they entered already counted.
 - **Given** a first picture of two or three holdings and **no agent connected**, **when** Home is
   shown, **then** it states at least one thing the user did not type in — what they could actually
   use, what is locked and roughly until when, and what they owe against it. A total alone is not a
@@ -750,6 +758,9 @@ rather than recorded as separately approved.
       user data.
     - **Editing packs grants no access to user data.** Configuring the world and reading anyone's
       balance sheet are separate permissions.
+
+    Everything a pack holds is in scope for the portal, including its own default types and its
+    basics (§9.6 item 21).
 18. **Sign-up is only a way in; onboarding comes after it; the landing page is a separate design**
     (2026-09-25). Founder direction: sign-up and getting started must be as frictionless as
     possible, and anything that can be set after sign-up is. Sign-up is a provider (Google, Apple)
@@ -768,6 +779,25 @@ rather than recorded as separately approved.
     third-party call from the browser. Choosing "somewhere else" lists every country
     alphabetically, with none pinned to the top, so the product does not read as Singapore's.
     Every country is recordable, packed or not, and its currency becomes the default for totals.
+20. **The basics move out of Home into onboarding; the empty Home offers one action** (2026-09-25).
+    Founder direction. Mixing the basics with the agent (twice) and a grid of starting tiles on one
+    screen left a new user unsure where to start and afraid of a wrong move — the paralysis that
+    ends in closing the app. The basics now follow the segment question as their own screens, one
+    question each, every answer saved on the spot, "Done for now" always one tap away. Home shows
+    the picture, never a questionnaire. An empty Home has one action, "Add what you have", and one
+    quiet link to the agent. The starting-point tiles are gone, with `via: starter`; the basics
+    already are this market's starting categories. This reverses the earlier reading of J1 (§9.6
+    item 18): the basics may live in onboarding, provided nothing there ever has to be finished.
+21. **Default types and the basics are per country; about ten countries get packs at launch**
+    (2026-09-25). Founder direction. A pack can add its own default types on top of the universal
+    ones (Singapore and Malaysia: a car loan, because car loans are common there; not Japan, where
+    cars are usually bought outright) and its own basics, including follow-ups asked only after a
+    yes. Every other country shares the common default. Configuration stays simple because a pack
+    lists only what differs from the common default. Proposed launch list, **for the Founder to
+    confirm**: Singapore, Malaysia, Indonesia, the Philippines, Thailand, Vietnam, Hong Kong, India,
+    Australia and the United Kingdom — the first users' region, then where they come from, move to
+    and hold assets. The United States and Japan are the obvious alternates. Each pack is reviewed by
+    someone who knows that market before it ships. All of it is admin-editable later (item 17).
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves

@@ -25,7 +25,7 @@ HTML, CSS and JavaScript on purpose. Works offline.
 | Start from | Shaped like | What it shows |
 |---|---|---|
 | The sample account (default) | **P-C, Established** — ~S$1.84M, 12 holdings, SGD and USD, CPF, an HDB flat, unvested RSUs, a deliberately stale car | Everything at scale: Insights, history, agent writes, undo |
-| PROTO → empty account → sign up | **P-A or P-B** — whoever you say you are | Sign-up, onboarding (region, segment), guided basics, the first picture, fact-based accessibility |
+| PROTO → empty account → sign up | **P-A or P-B** — whoever you say you are | Sign-up, onboarding (region, segment, the basics), the first picture, fact-based accessibility |
 
 **All data in it is fictional.** It is not anyone's real balance sheet and must never be replaced
 with one.
@@ -34,7 +34,7 @@ with one.
 
 | Job | Where it is | Notes |
 |---|---|---|
-| **J1** first picture fast | Sign up → onboarding → empty Home | Sign-up is a provider (Google, Apple) or email then password; nothing else. Onboarding: where you live (inferred, one tap to confirm) and an optional segment, one per screen. Log out / log in from Account; logging in resumes onboarding if unfinished. Empty Home leads with **the basics** — "do you have this?", "roughly how much?" — answered in place, each yes saved at once, stoppable at any point. Starting categories and "let your agent do it" sit beside it as equals |
+| **J1** first picture fast | Sign up → onboarding → empty Home | Sign-up is a provider (Google, Apple) or email then password; nothing else. Onboarding: where you live (inferred, one tap to confirm) and an optional segment, one per screen. Log out / log in from Account; logging in resumes onboarding where it was left. Then **the basics**, one question per screen, each yes saved at once, "Done for now" always available. Home shows the picture; an empty Home offers only "Add what you have" and a quiet link to the agent (Founder, 2026-09-25). The basics ask only "do you have this?" and "roughly how much?" |
 | **J1** the first picture | Home, as soon as there is one holding | The **Position** ledger says what you could use this month, what needs selling first, what is locked, and what you owe. None of it was typed in |
 | **J2** track anything | Add Tracking → New Asset / New Liability; Manage Types; Manage Tags | User-defined taxonomy on top of universal types; rename/delete cascades to holdings |
 | **J2** accessibility | Add form, holding page, Home | A fact question only where the type is ambiguous; otherwise the default and its reason in one line, with **Change**. The consequence is shown, never the category. "Not sure" is always allowed and never blocks saving |
@@ -65,8 +65,9 @@ shape that admin would be editing.
 
 | PRD §2.3 says a pack supplies | Field | Notes |
 |---|---|---|
-| The starting-point checklist | `checklist`, `starters` | The guided basics, and the one-tap categories on the empty state |
+| The starting-point checklist | `checklist` | The basics. `onlyIf` asks a follow-up only after a yes (SG: home → home loan, car → car loan); a follow-up shares its question's number, so "4 of 6" never jumps to "4 of 7". `type` files the answer under the pack's own type |
 | Local labels for universal types | `labels`, `examples` | Types store no name until the user renames one, so labels always follow the current pack |
+| Its own default types | `types` | Added on top of the universal ones, never instead: SG adds **Car loan** (a local name for a universal loan). Added when the country is confirmed; changing country later adds, never removes |
 | Default accessibility per type, with the one-line reason | `defaults` | `{ access, reason, until }` — `until` is what Home prints beside a locked amount |
 | The disambiguating question for each ambiguous type | `questions` | Each answer carries its own `access`, `reason`, `until` |
 | Currency and date conventions | `locale`, `currency` | Generic uses the browser's own conventions; currency comes from the region |
@@ -81,8 +82,8 @@ there that type is SRS and the answer is not in doubt.
 |---|---|---|
 | Mandatory retirement | "Retirement account" — locked until you're eligible to withdraw | "CPF" — same rule, reason names CPF |
 | Tax-advantaged | "Tax-advantaged account" — asks the penalty question | "SRS" — locked by default, reason names SRS |
-| Guided basics | Bank, pension, investments, own home, car, anything owed | Bank, CPF, investments, own home, car, anything owed |
-| Starters' sub-lines | "Workplace or state pension", "Home or investment" | "OA, SA, MA", "HDB, condo, landed" |
+| The basics | Bank, pension, investments, own home, car, anything owed | Bank, CPF, investments, own home → home loan?, car → car loan?, anything else owed |
+| Own default types | none | Car loan |
 | Conventions | Browser locale; currency from region | `en-SG`, SGD |
 
 **Where the region comes from.** In the product, the **country detected from the visitor's IP**,
@@ -225,15 +226,16 @@ whether the warm paper survives a landing page; and the wordmark, which is still
 
 **Added in the rework (amended J1, J2, §2.3)**
 
-19. **Guided assembly lives on Home, not in a wizard.** J1 forbids an onboarding wizard to clear
-    first, and also asks that P-A be walked through a list. Both hold if the list *is* the empty
-    Home's one obvious action: each "yes" creates the holding immediately, the total above it moves
-    as they answer, and **Stop here** loses nothing.
+19. **The basics are the last part of onboarding, one question per screen** (Founder, 2026-09-25;
+    this reverses the first version, which put them on Home beside the agent and a tile grid). Each
+    "yes" creates the holding immediately and shows what it counts toward; **Done for now** on
+    every screen loses nothing, so nothing here has to be finished. Home is left to show the
+    picture. An empty Home has one action, "Add what you have", which reopens the basics.
 20. **Facts are folded into the checklist question.** J1 allows only "do you have this?" and
     "roughly how much?"; J2 needs "do you live here?" for property. "Do you own **the home you live
     in**?" satisfies both — the fact is the question.
-21. **The checklist skips what you already have** — add CPF from a starter and the CPF question is
-    not asked.
+21. **The checklist skips what you already have** — add CPF with + first, and the CPF question is
+    not asked. A follow-up is asked after a yes, or when the thing it follows is already there.
 22. **The first picture is a sentence and a ledger.** Under the total: *You could use $4,000 of it
     this month.* Below: the Position ledger — could use / sell first / locked away with **until when**
     / not decided / assets / you owe, where "you owe" is also stated against what you could use
@@ -274,8 +276,8 @@ whether the warm paper survives a landing page; and the wordmark, which is still
 2. **G-D1 and G-D3 — decided: re-worded to §2.5** (§9.6 item 13). The Founder delegated the wording,
    so it is AI-drafted and flagged for reading at this gate. G-D3 now also requires the launch to
    reach P-B and P-C in enough volume, since they carry the kill criteria.
-3. **`via` on `holding_created` — decided and built** (§3.5, §9.6 item 14): `guided`, `starter` or
-   `form`, shown in the PROTO drawer. Verified on all three entry paths.
+3. **`via` on `holding_created` — decided and built** (§3.5, §9.6 item 14): `guided` or `form`,
+   shown in the PROTO drawer. (`starter` went with the starting tiles, §9.6 item 20.)
 4. **The desktop layout — open.** The Founder is reviewing the overall UI/UX; this gate waits on it.
 5. **Net Worth Goals — out of v1**, nothing to build or test. **Tags AND/OR — kept.** **Value Note
    and Mark on graph — out of scope** (Founder, 2026-09-24): removed from the prototype along with
@@ -329,7 +331,7 @@ tap? Is the segment question neutral, or does anyone bristle at it? Does anyone 
 (J1, §2.3 rule 2)
 
 **Task 2 — First picture (5 min).** "Get your actual situation into this, roughly." *Watch: which
-route — the basics, a starter, or the agent? P-A: do they get to the end, or stop — and does what
+route — the basics to the end, "Done for now", or the agent? P-A: do they get to the end, or stop — and does what
 was counted feel right? P-C: how fast do they leave the basics?* Then point at Home: **"What is this
 telling you that you didn't already know?"** *This is the J1 first-picture criterion and A12/M11. If
 the answer is "nothing", the first picture has failed, whatever else went well.* (J1, M2, M11)

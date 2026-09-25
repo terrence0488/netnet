@@ -97,15 +97,33 @@ const ccyOptions = selected => [selected, ...ALL_CCYS.filter(c => c !== selected
   .map(c => `<option ${c === selected ? 'selected' : ''}>${c}</option>`).join('');
 const LIAB = UNIVERSAL_TYPES.filter(u => u.side === 'liability').map(u => u.id);
 
-/* A type shows the user's own name if they renamed it, else the pack's label. */
-const typeName = t => t.name || packVal('labels', t.universal) || 'Other';
+/* A pack's own default type ("Car loan"): a local name for universal behaviour. */
+const packTypeDef = key => (pack().types || []).find(x => x.key === key) ||
+  (PACKS.generic.types || []).find(x => x.key === key) || null;
+/* A type shows the user's own name if they renamed it, else the pack's label. A pack's
+   own type keeps the label it arrived with if the user later moves to a pack without it. */
+const typeName = t => t.name || (t.key && (packTypeDef(t.key) || {}).label) || t.label ||
+  packVal('labels', t.universal) || 'Other';
+const typeExample = typeId => {
+  const t = S.types.find(x => x.id === typeId) || {};
+  return (t.key && (packTypeDef(t.key) || {}).example) || packVal('examples', t.universal || 'other') || '';
+};
+/* Add the current pack's own types. Never removes one: packs set defaults, they never
+   restrict (§2.3 rule 3), and a type may already have holdings in it. */
+function applyPackTypes() {
+  (pack().types || []).forEach(d => {
+    if (!S.types.some(t => t.key === d.key))
+      S.types.push({ id:'t-' + d.key, universal:d.u, name:null, key:d.key, label:d.label });
+  });
+}
 function typeOf(id) {
   const t = S.types.find(x => x.id === id) || { id:'t-other', universal:'other', name:null };
   return Object.assign({}, t, { name:typeName(t) });
 }
 const universalOf = (typeId, s) => ((s || S).types.find(t => t.id === typeId) || { universal:'other' }).universal;
+/* The plain type for a universal behaviour — never a pack's own type such as "Car loan". */
 function typeForUniversal(u) {
-  let t = S.types.find(x => x.universal === u && !x.name) || S.types.find(x => x.universal === u);
+  let t = S.types.find(x => x.universal === u && !x.name && !x.key) || S.types.find(x => x.universal === u && !x.key);
   if (!t) { t = { id:uid('t'), universal:u, name:null }; S.types.push(t); }
   return t;
 }
@@ -638,8 +656,6 @@ function renderHome() {
     ${hasHistory ? changeLine(t.abs, t.pct) : ''}
   </div>
 
-  ${guideBlock()}
-
   <div class="grid">
     <div class="g5">
       <div class="o-pos"><div class="section-h"><h2>Position</h2></div>
@@ -698,55 +714,71 @@ function positionLedger(list, t) {
   </div>`;
 }
 
-/* ---- guided assembly (J1, P-A). Not a wizard: it sits on Home, every "yes"
-   is saved the moment it is answered, and stopping loses nothing. ---- */
+/* ---- the basics (J1, P-A). Asked in onboarding, one question per screen, after
+   where-you-live and the segment; reachable again from the empty Home. Every "yes"
+   is saved the moment it is answered, "Done for now" is always one tap away, and
+   nothing asked here is final. Follow-ups (`onlyIf`) are asked only after a yes. ---- */
+const newGuide = () => ({ done:false, i:0, stage:'ask', answered:{}, last:null });
+const guideItems = () => packList('checklist');
+function typeForItem(item) {
+  if (item.type) { applyPackTypes(); const t = S.types.find(x => x.key === item.type); if (t) return t; }
+  return typeForUniversal(item.u);
+}
 function guideCovered(item) {
-  return S.holdings.some(h => !h.archived && universalOf(h.typeId) === item.u &&
+  const t = typeForItem(item);
+  return S.holdings.some(h => !h.archived && h.typeId === t.id &&
     (!item.answer || (h.accessBasis && h.accessBasis.a === item.answer)));
 }
+function guideApplies(item) {
+  if (!item.onlyIf) return true;
+  const parent = guideItems().find(x => x.id === item.onlyIf);
+  return S.guide.answered[item.onlyIf] === 'yes' || (parent && guideCovered(parent));
+}
 function guideCurrent() {
-  const items = packList('checklist');
+  const items = guideItems();
   for (let i = S.guide.i || 0; i < items.length; i++) {
-    if (S.guide.answered[i] || guideCovered(items[i])) continue;
-    return { item:items[i], idx:i, total:items.length };
+    const it = items[i];
+    if (S.guide.answered[it.id] || !guideApplies(it) || guideCovered(it)) continue;
+    /* a follow-up shares its question's number, so "3 of 6" never jumps to "3 of 7" */
+    const base = items.filter(x => !x.onlyIf);
+    const anchor = it.onlyIf ? items.find(x => x.id === it.onlyIf) : it;
+    return { item:it, idx:i, n:base.indexOf(anchor) + 1, total:base.length };
   }
   return null;
 }
-function guideBlock() {
-  const g = S.guide;
-  if (!g || g.done) return '';
+function renderBasics() {
+  const g = S.guide || (S.guide = newGuide());
   const cur = guideCurrent();
+  if (!cur) { finishBasics(); return; }
+  const { item, n, total } = cur;
   const last = g.last && holdingOf(g.last);
+  const started = last || Object.keys(g.answered).length;
   const lastLine = last ? `<div class="guide-last">Added <b>${esc(last.name)}</b>,
       <span class="amount">${esc(money(Math.abs(latest(last).base)))}</span>.
       ${last.kind === 'asset' ? consequence(last.access, (reasonFor(last) || {}).reason, null)
         : 'Subtracted from your net worth.'}</div>` : '';
-  if (!cur) {
-    /* The list is finished: confirm the last answer once, then step aside. */
-    g.done = true; save();
-    return lastLine ? `<div class="guide">${lastLine}</div>` : '';
-  }
-  const { item, idx, total } = cur;
-  const conns = (S.account.connections || []).filter(c => c.active);
-  return `<div class="guide" id="guide">
-    ${lastLine}
-    <div class="section-h"><h2>The basics · ${idx + 1} of ${total}</h2>
-      <button class="link" data-act="guide-stop">Stop here</button></div>
+  authShell(`
+    <div class="basics-top"><span class="auth-step">What you have · ${n} of ${total}</span>
+      <button class="link-sm" data-act="guide-stop">Done for now</button></div>
+    ${lastLine || (!started && g.stage !== 'amount' ? `<p class="auth-sub">A few quick questions. Round numbers are fine,
+      and you can change anything later.</p>` : '')}
     ${g.stage === 'amount' ? `
-      <div class="guide-q">${esc(item.amount)}</div>
+      <p class="basics-asked">${esc(item.ask)} <b>Yes</b></p>
+      <h1>${esc(item.amount)}</h1>
       <div class="amt-in"><span>${esc(sym())}</span>
         <input id="g-amount" type="number" inputmode="decimal" min="0" placeholder="0" aria-label="${esc(item.amount)}">
         <button class="btn auto" data-act="guide-add">Add</button></div>
-      <div class="hint">${esc(item.hint || 'A round number is fine. You can correct it any time.')}</div>
-      <button class="link-sm" data-act="guide-back">‹ Back</button>`
+      <div class="hint" style="margin-top:10px">${esc(item.hint || 'A round number is fine. You can change it any time.')}</div>
+      <button class="link-sm basics-back" data-act="guide-back">‹ Back</button>`
     : `
-      <div class="guide-q">${esc(item.ask)}</div>
-      <div class="choice"><button data-act="guide-yes">Yes</button><button data-act="guide-no">No</button></div>`}
-    ${!conns.length ? `<div class="guide-alt">Rather have your agent do this?
-      <button class="link-sm" data-go="#/agent">Connect it</button></div>` : ''}
-  </div>`;
+      <h1>${esc(item.ask)}</h1>
+      <div class="choice basics-yn"><button data-act="guide-yes">Yes</button><button data-act="guide-no">No</button></div>`}`);
 }
-
+function finishBasics() {
+  S.guide.done = true; S.guide.last = null;
+  Object.assign(S.account, { onboarded:true, obStep:null });
+  save(); location.hash = '#/home';
+}
 function guideAdd() {
   const cur = guideCurrent();
   const el = $('#g-amount');
@@ -755,56 +787,36 @@ function guideAdd() {
   if (!(amount >= 0)) { el.classList.add('bad'); el.focus(); return; }
   const { item, idx } = cur;
   const kind = LIAB.includes(item.u) ? 'liability' : 'asset';
-  const t = typeForUniversal(item.u);
-  /* A fact folded into the checklist question ("the home you live in") is
-     recorded as that fact's answer; otherwise the type's usual default. */
+  const t = typeForItem(item);
+  /* A fact folded into the question ("the home you live in") is recorded as that
+     fact's answer; otherwise the type's usual default. */
   const basis = kind === 'liability' ? null
     : item.answer ? { q:item.u, a:item.answer } : (startingBasis(t.id) || { q:'unset' });
   const h = createHolding({ name:item.name, kind, typeId:t.id, ccy:S.settings.defaultCcy,
     amount, date:TODAY, basis, via:'guided' });
   Object.assign(S.guide, { i:idx + 1, stage:'ask', last:h.id });
-  S.guide.answered[idx] = 'yes';
+  S.guide.answered[item.id] = 'yes';
   save(); render(true);
-  const g = $('#guide');
-  if (g && g.getBoundingClientRect().top < 0) g.scrollIntoView({ block:'start' });
 }
 
+/* Empty Home: a sentence and one action (design-system §6), plus one quiet alternative. */
 function emptyHome() {
-  const g = S.guide || {};
-  const starters = packList('starters');
   return `
   <div class="topbar">
     <div class="avatar">${esc(S.account.initials || '·')}</div>
     <div class="greet"><small>${esc(greeting())}</small><b>${esc(S.account.name || 'there')}</b></div>
-    <button class="iconbtn" data-act="open-add-menu">${ICON.plus}</button>
+    <button class="iconbtn" data-act="open-add-menu" title="Add tracking">${ICON.plus}</button>
   </div>
   <div class="nw-wrap">
     <div class="label">Net worth</div>
     <div class="nw muted">${esc(money(0))}</div>
     <div class="lead">Nothing here yet.</div>
   </div>
-  ${g.done || !guideCurrent() ? `<div class="btn-row"><button class="btn" data-act="guide-resume">Walk me through the basics</button></div>`
-    : guideBlock()}
-  <div class="grid">
-    <div class="g7">
-      <div class="section-h"><h2>Or add something specific</h2></div>
-      <div class="pad"><div class="cats">
-        ${starters.map(s => `<button data-act="quick-add" data-v="${esc(s.u)}">${esc(packVal('labels', s.u))}<small>${esc(s.sub)}</small></button>`).join('')}
-      </div>
-</div>
-    </div>
-    <div class="g5">
-      <div class="section-h"><h2>Rather not type it in?</h2></div>
-      <div class="card">
-        <h3>Let your agent assemble it</h3>
-        <p class="muted" style="margin:6px 0 14px;font-size:14px">Connect Claude or ChatGPT, then describe what
-          you have or drop in a statement. You can undo anything it adds.</p>
-        <button class="btn" data-go="#/agent">Connect your agent</button>
-      </div>
-    </div>
+  <div class="empty-next">
+    <button class="btn" data-act="basics-start">Add what you have</button>
+    <button class="link" data-go="#/agent">Or let your agent do it ›</button>
   </div>`;
 }
-
 
 const SORTS = [['name','Name'],['updated','Last Update'],['value-desc','Value (High to Low)'],
                ['value-asc','Value (Low to High)'],['type','Type'],['chg-pct','Change Percentage'],['chg-val','Change Value']];
@@ -1352,8 +1364,7 @@ function renderAdd(kind, presetType, editId) {
   const typeId = h ? h.typeId : (choices.find(t => t.id === presetType) || choices[0]).id;
   S.form = { typeId, basis: h ? (h.accessBasis || { q:'unset' }) : startingBasis(typeId), changing:false,
              editId: h ? h.id : null,
-             /* §3.5 `via`: only a starter tile opens the form with a preset type */
-             via: !h && presetType ? 'starter' : 'form' };
+             via:'form' };
   const title = h ? 'Edit ' + (k === 'asset' ? 'Asset' : 'Liability') : 'New ' + (k === 'asset' ? 'Asset' : 'Liability');
   $('#s-add').innerHTML = `
   <div class="topbar">
@@ -1366,7 +1377,7 @@ function renderAdd(kind, presetType, editId) {
       <button class="${k === 'asset' ? 'on' : ''}" data-go="#/add/asset">Asset</button>
       <button class="${k === 'liability' ? 'on' : ''}" data-go="#/add/liability">Liability</button></div>` : ''}
     <div class="field"><label>${k === 'asset' ? 'Asset' : 'Liability'} Name</label>
-      <input id="f-name" value="${esc(h ? h.name : '')}" placeholder="${esc(packVal('examples', universalOf(typeId)) || '')}"></div>
+      <input id="f-name" value="${esc(h ? h.name : '')}" placeholder="${esc(typeExample(typeId))}"></div>
     <div class="field"><label>Type</label>
       <select id="f-type" data-act="form-type">${choices.map(t => `<option value="${t.id}" ${
         typeId === t.id ? 'selected' : ''}>${esc(typeName(t))}</option>`).join('')}</select></div>
@@ -1703,7 +1714,8 @@ const AUTH_ROUTES = ['signup', 'login', 'welcome'];
 function guardRoute(hash) {
   const p0 = hash.replace(/^#\//, '').split('/')[0];
   if (!S.account.signedIn) return ['signup', 'login'].includes(p0) ? hash : hasAccount() ? '#/login' : '#/signup';
-  if (!S.account.onboarded) return p0 === 'welcome' ? hash : '#/welcome';
+  if (!S.account.onboarded)
+    return ['welcome', 'basics'].includes(p0) ? hash : S.account.obStep === 'basics' ? '#/basics' : '#/welcome';
   return AUTH_ROUTES.includes(p0) ? '#/home' : hash;
 }
 function render(keepScroll) {
@@ -1713,7 +1725,7 @@ function render(keepScroll) {
   const p = hash.replace(/^#\//, '').split('/');
   const navigated = hash !== lastRoute;
   lastRoute = hash;
-  const screens = { signup:'s-auth', login:'s-auth', welcome:'s-auth', home:'s-home', holding:'s-holding',
+  const screens = { signup:'s-auth', login:'s-auth', welcome:'s-auth', basics:'s-auth', home:'s-home', holding:'s-holding',
     add:'s-add', edit:'s-add', insights:'s-insights', period:'s-period', agent:'s-agent',
     activity:'s-activity', account:'s-account', sub:'s-sub' };
   let id = screens[p[0]] || 's-home';
@@ -1732,9 +1744,10 @@ function render(keepScroll) {
   else if (p[0] === 'sub') renderSub(p[1]);
   else if (p[0] === 'signup' || p[0] === 'login') renderAuth(p[0], p[1]);
   else if (p[0] === 'welcome') renderWelcome(p[1]);
+  else if (p[0] === 'basics') renderBasics();
 
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
-  const chrome = !AUTH_ROUTES.includes(p[0]);
+  const chrome = !AUTH_ROUTES.includes(p[0]) && p[0] !== 'basics';
   $('#tabbar').classList.toggle('hidden', !chrome);
   $('#sidebar').style.display = chrome ? '' : 'none';
   // Hiding the sidebar removes it from the grid, and .main would then auto-place into
@@ -1819,17 +1832,14 @@ document.addEventListener('click', ev => {
     case 'detail-page': S.detailPage = Math.max(0, (S.detailPage || 0) + +v); rerender(); return;
     case 'expand-value': S.expanded = S.expanded === v ? null : v; rerender(); return;
 
-    case 'quick-add':
-      location.hash = '#/add/' + (LIAB.includes(v) ? 'liability' : 'asset') + '/' + typeForUniversal(v).id; return;
-
     /* guided assembly (J1) */
     case 'guide-yes': S.guide.stage = 'amount'; keep(); setTimeout(() => { const i = $('#g-amount'); if (i) i.focus(); }, 30); return;
     case 'guide-back': S.guide.stage = 'ask'; keep(); return;
-    case 'guide-no': { const c = guideCurrent(); if (c) { S.guide.answered[c.idx] = 'no'; S.guide.i = c.idx + 1; }
+    case 'guide-no': { const c = guideCurrent(); if (c) { S.guide.answered[c.item.id] = 'no'; S.guide.i = c.idx + 1; }
       S.guide.stage = 'ask'; S.guide.last = null; keep(); return; }
     case 'guide-add': guideAdd(); return;
-    case 'guide-stop': S.guide.done = true; S.guide.last = null; keep(); return;
-    case 'guide-resume': S.guide = { done:false, i:0, stage:'ask', answered:{}, last:null }; keep(); return;
+    case 'guide-stop': finishBasics(); return;
+    case 'basics-start': S.guide = newGuide(); save(); location.hash = '#/basics'; return;
 
     /* accessibility, in the Add/Edit form (J2) */
     case 'form-answer':
@@ -2009,11 +2019,11 @@ document.addEventListener('change', ev => {
   if (el.dataset.act === 'set-ccy') { S.settings.defaultCcy = el.value; save(); render(); }
   if (el.dataset.act === 'set-region') {
     const r = regionOf(el.value); if (!r) return;
-    S.account.region = r.code; S.account.pack = r.pack || 'generic'; save(); render();
+    S.account.region = r.code; S.account.pack = r.pack || 'generic'; applyPackTypes(); save(); render();
   }
   if (el.dataset.act === 'form-type') {
     S.form.typeId = el.value; S.form.basis = startingBasis(el.value); S.form.changing = false;
-    const n = $('#f-name'); if (n) n.placeholder = packVal('examples', universalOf(el.value)) || '';
+    const n = $('#f-name'); if (n) n.placeholder = typeExample(el.value);
     paintAccess();
   }
   if (el.dataset.act === 'form-amount') paintAccess();
@@ -2040,9 +2050,9 @@ window.addEventListener('hashchange', () => { closeSheet(); render(); });
 
 /* ================= SIGN UP, LOG IN, ONBOARDING (J1) =================
    Sign-up asks for nothing but a way in: a provider, or an email and a password.
-   Everything else waits until the account exists. Onboarding is then two questions:
-   where you live, which is confirmed and never applied silently (§2.3 rule 2), and an
-   optional segment (§3.5). The guided basics stay on Home, not in a wizard (J1). */
+   Everything else waits until the account exists. Onboarding is then: where you live,
+   confirmed and never applied silently (§2.3 rule 2); an optional segment (§3.5); and
+   the basics, one question per screen, which Home no longer mixes with anything else. */
 const SEGMENTS = [
   { id:'starting_out', label:'Just starting out' },
   { id:'accumulating', label:'Building up — saving toward something big' },
@@ -2176,7 +2186,8 @@ function createAccount(email, method) {
 }
 function signIn() {
   S.account.signedIn = true; S.signup = null; save();
-  location.hash = S.account.onboarded ? '#/home' : '#/welcome';
+  /* Home, or wherever onboarding was left — guardRoute decides */
+  location.hash = '#/home';
 }
 function authAction(a, v, el) {
   const f = draft();
@@ -2232,13 +2243,14 @@ function authAction(a, v, el) {
       if (!r) { f.err = 'Choose where you live to carry on.'; save(); renderWelcome(); return true; }
       Object.assign(S.account, { region:r.code, pack:r.pack || 'generic' });
       S.settings.defaultCcy = f.ccy || r.ccy;
+      applyPackTypes();
       save(); location.hash = '#/welcome/2'; return true;
     }
     case 'ob-seg': f.segment = f.segment === v ? null : v; save(); renderWelcome('2'); return true;
     case 'ob-finish': {
-      Object.assign(S.account, { segment:f.segment || 'unknown', onboarded:true });
-      S.guide = { done:false, i:0, stage:'ask', answered:{}, last:null };
-      S.signup = null; save(); location.hash = '#/home'; return true;
+      Object.assign(S.account, { segment:f.segment || 'unknown', obStep:'basics' });
+      S.guide = newGuide();
+      S.signup = null; save(); location.hash = '#/basics'; return true;
     }
   }
   return false;

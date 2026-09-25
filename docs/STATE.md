@@ -34,7 +34,10 @@ mark, with the client named only on an opened value; the exchange rate is stored
 sign-up became only a way in (Google, Apple, or email then password), with region and segment in a
 two-question onboarding afterwards, plus log-in and log-out (PRD §9.6 item 18). Where-you-live now
 defaults to the IP-detected country (simulated in PROTO) and lists every country alphabetically
-(§9.6 item 19).
+(§9.6 item 19). Then the basics moved into onboarding (one question per screen) and the empty Home
+became one action plus a quiet agent link (§9.6 item 20); packs gained per-country default types and
+follow-up questions, SG adds Car loan, and ~10 launch packs are proposed for the Founder to confirm
+(§9.6 item 21).
 The functional suite had gone stale against the rework (it predated J1's return-to-Home and the
 universal t-retirement type) — tests live in the session scratchpad, not the repo, so they do not
 survive sessions. Re-run them before claiming anything passes.
