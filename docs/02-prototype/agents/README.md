@@ -8,7 +8,7 @@ seconds, and the "Which AI agent do you use?" list shows each one's logo.
 | ChatGPT | `chatgpt.svg` | In place: OpenAI's mark |
 | Claude | `claude.svg` | In place |
 | Grok | `grok.svg` | In place |
-| Muse | `muse.svg` | **Missing** — which product "Muse" is still needs confirming; shows an "M" until then |
+| Muse | `muse.svg` | **Missing.** Meta's Muse (launched September 2026). Its mark, an "M" drawn by Jessica Hische, is in no open icon set yet: LobeHub (1.95.1) and Simple Icons (16.32.0) have only the older Meta AI orbit, which is not Muse's logo. Meta's newsroom and muse.ai are blocked from the build environment, so the file has to be added by hand from Meta's press assets. Shows an "M" until then |
 | Other agent | none | Uses NetNet's own generic agent icon |
 
 **Source.** The three logos come from LobeHub's open-source AI icon set

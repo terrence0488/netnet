@@ -44,9 +44,12 @@ Then (2026-09-25): the PRD re-written so the Stage 2 revisions read as requireme
 voice, with §9.6 a revision table (Founder asked for this). The prototype has SG, MY and UK packs.
 "All+1" is gone. The out-of-date note now routes to the agent or the connect flow. The open
 questions are settled except the desktop layout, which the Founder is still reviewing.
-Since then: Back and Skip in the basics, "Other agent", real agent logos (LobeHub, MIT; Muse still
-unidentified), and charts with too little data now hold their place as a frosted placeholder,
-"Need more data" (§9.6 item 25; design-system §5 and the Chart placeholder component).
+Since then: Back and Skip in the basics, "Other agent", real agent logos (LobeHub, MIT), and
+charts with too little data now hold their place as a frosted placeholder, "Need more data"
+(§9.6 item 25; design-system §5 and the Chart placeholder component). Then prompts became a
+raised **prompt card**, the one card in the system (design-system §1, §6). Muse is Meta's agent
+(US-only at launch): its guide now starts with a message to send it, and its logo waits for
+Meta's official file (§9.6 item 26, `agents/README.md`).
 The functional suite had gone stale against the rework (it predated J1's return-to-Home and the
 universal t-retirement type) — tests live in the session scratchpad, not the repo, so they do not
 survive sessions. Re-run them before claiming anything passes.

@@ -20,6 +20,9 @@ const START_PROMPT = 'Help me set up NetNet. Ask me what I have, one thing at a 
    what is stale itself, through the MCP layer. */
 const REFRESH_PROMPT = 'Some of my NetNet holdings are out of date. Find them and help me update them.';
 
+/* Muse adds connectors by being asked in the chat, so its first step is a message to send. */
+const MUSE_ASK = `Add a custom connector called NetNet. Its MCP server is ${MCP_URL}, and it signs in with OAuth.`;
+
 /* The agents the "Connect to agent" button cycles through, in this order, one every two
    seconds. Each one's logo is agents/<id>.svg (see agents/README.md). */
 const ROLL = ['chatgpt', 'claude', 'grok', 'muse'];
@@ -60,7 +63,7 @@ const CLIENTS = {
     }
   },
 
-  /* DRAFT, unverified: listed at the Founder's request. Before launch, confirm each app
+  /* DRAFT, unverified: listed at the Founder's request. Before launch, confirm Grok
      accepts a custom remote MCP connector, then replace these generic steps with its own. */
   grok: {
     name: 'Grok',
@@ -78,19 +81,26 @@ const CLIENTS = {
       ]
     }
   },
+  /* Meta's Muse (launched 8 Sep 2026: iOS, Android, muse.ai, macOS, WhatsApp; US only so
+     far, with no date for Singapore, Malaysia or the UK). The app has no connector settings
+     screen: you ask Muse in the chat and it builds a custom connector from an MCP address.
+     OAuth sign-in works, by early testers' accounts with some back-and-forth. Meta's connector
+     directory (open to developers since 18 Sep) takes an MCP server with OAuth; a NetNet
+     listing there would replace these steps with Muse's own one-tap add. Check against the
+     live app before launch. */
   muse: {
     name: 'Muse',
     deepLink: null,
     guides: {
       computer: [
-        { text:'In Muse’s settings, find where you add a **custom connector**.' },
-        { text:'Add one named NetNet, with this address:', url:true },
-        { text:'Approve it, then press **Allow** on the NetNet page that opens.' }
+        { text:'In Muse, send this message:', ask:MUSE_ASK },
+        { text:'Muse sets up the connector and tests it. When it asks you to sign in, open the link it gives you.' },
+        { text:'Press **Allow** on the NetNet page that opens.' }
       ],
       phone: [
-        { text:'In the Muse app’s settings, find where you add a **custom connector**.' },
-        { text:'Add one named NetNet, with this address:', url:true },
-        { text:'Approve it, then tap **Allow** on the NetNet page that opens.' }
+        { text:'In the Muse app, send this message:', ask:MUSE_ASK },
+        { text:'Muse sets up the connector and tests it. When it asks you to sign in, tap the link it gives you.' },
+        { text:'Tap **Allow** on the NetNet page that opens.' }
       ]
     }
   },

@@ -570,6 +570,11 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   paste or store. The steps and screenshots are administered content (§2.3), because the clients'
   own screens change without notice. So is the client list itself: Claude and ChatGPT at launch,
   and any other agent (Grok, Muse) once it is confirmed to accept a custom remote MCP connector.
+  Muse (Meta, launched September 2026) takes connectors differently: there is no settings screen,
+  so the user asks Muse in the chat to add one from NetNet's address. Its guide therefore starts
+  with a message to send, not a menu path. Meta's connector directory accepts MCP servers with
+  OAuth, and a NetNet listing there would turn this into Muse's own one-tap add. Muse is US-only
+  at launch.
 - **Given** an agent that is not on the list, **when** the user chooses **Other agent**, **then**
   they get a generic guide: add a custom connector (MCP server) in the agent's settings with this
   address, then Allow on NetNet's page. No platform split and no screenshots, because we cannot know
@@ -850,6 +855,7 @@ Founder's approval with the prototype.
 | 23 | Back on every question of the basics (correct an answer, change yes to no, or return to where the basics began); no agent offer inside the basics; the Connect button turns through the agents it works with; Grok and Muse listed once their connector support is confirmed | J1, J5 |
 | 24 | Skip on every question of the basics; "Other agent" with a generic guide, so any MCP agent can connect; the connect flow drops its questions link (Back does it) | J1, J5 |
 | 25 | A chart with too little data keeps its place as a labelled placeholder (a neutral sample under frosted glass, "Need more data", saying what makes it appear), on Home, a holding and Insights | J4, J11 |
+| 26 | Muse is Meta's agent; its setup starts with a message sent in the chat, and a listing in Meta's connector directory is the better path | J5 |
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves

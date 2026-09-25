@@ -948,6 +948,11 @@ const agentLogo = id => (CLIENTS[id] || {}).generic ? `<span class="alogo" aria-
    every two seconds (timer below). */
 const agentRoll = () => `<span class="agent-roll" aria-hidden="true"><i class="on">${ICON.agent}</i>${
   ROLL.map(id => `<i>${agentLogo(id)}</i>`).join('')}</span>`;
+/* A message to send the agent: the one card in the system, a slip raised off the page,
+   because it is a thing the user picks up and takes to another app (design-system §6,
+   Prompt card). Copy sits inside it only when the screen's primary action is not already Copy. */
+const promptCard = (text, copy) => `<div class="prompt-card"><p class="pc-text">${esc(text)}</p>${copy
+  ? `<div class="pc-foot"><button class="btn ghost sm auto" data-act="copy-prompt" data-v="${esc(text)}">Copy</button></div>` : ''}</div>`;
 function emptyNext() {
   const conn = activeConns()[0], cl = conn && clientByName(conn.client);
   if (!cl) return `<div class="empty-next">
@@ -957,8 +962,7 @@ function emptyNext() {
   const c = cl[1];
   return `<div class="empty-next">
     <p class="empty-hint">${esc(c.name)} is connected. Ask it to set things up:</p>
-    <div class="urlbox prompt"><span class="grow">${esc(START_PROMPT)}</span>
-      ${c.deepLink ? `<button class="btn ghost sm auto" data-act="copy-prompt" data-v="${esc(START_PROMPT)}">Copy</button>` : ''}</div>
+    ${promptCard(START_PROMPT, !!c.deepLink)}
     ${c.deepLink
       ? `<a class="btn" href="${esc(c.deepLink + encodeURIComponent(START_PROMPT))}" target="_blank" rel="noopener">Let ${esc(c.name)} do it</a>`
       : `<button class="btn" data-act="copy-prompt" data-v="${esc(START_PROMPT)}">Copy the prompt</button>`}
@@ -1304,6 +1308,7 @@ function renderConnect(id, step) {
     <ol class="steps guide-steps">${c.guides[plat].map((st, i) => `<li>${md(st.text)}
       ${st.url ? `<div class="urlbox"><span class="mono">${MCP_URL}</span>
         <button class="btn ghost sm auto" data-act="copy-url">Copy</button></div>` : ''}
+      ${st.ask ? promptCard(st.ask, true) : ''}
       ${c.generic ? '' : `<figure class="shot"><img src="connect/${id}-${plat}-${i + 1}.png" alt="" loading="lazy"
         onerror="this.parentNode.classList.add('missing')"><figcaption>Screenshot · connect/${id}-${plat}-${i + 1}.png</figcaption></figure>`}
     </li>`).join('')}</ol>
@@ -1870,8 +1875,7 @@ function sheetAskAgent(hid) {
       <p class="muted" style="font-size:14px;margin:0">Paste this into ${conns.length ? esc(conns.map(c => c.client).join(' or '))
         : 'Claude or ChatGPT'}. ${conns.length ? 'It can read this holding, work it out with you, and set the answer — and you can undo anything it changes.'
         : 'Connect it first, so it can see this holding.'}</p>
-      <div class="urlbox"><span class="grow">${esc(text)}</span>
-        <button class="btn ghost sm auto" data-act="copy-prompt" data-v="${esc(text)}">Copy</button></div>
+      ${promptCard(text, true)}
       ${conns.length ? '' : '<button class="btn" style="margin-top:14px" data-act="connect-start" data-v="holding">Connect your agent</button>'}
     </div>`);
 }

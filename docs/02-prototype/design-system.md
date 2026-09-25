@@ -21,6 +21,8 @@ Two consequences run through everything below:
 
 1. **Structure is typographic, not container-based.** No cards. Sections are separated by hairline
    rules and space. Nothing floats. This is what makes it look considered rather than assembled.
+   One exception, deliberate: the **prompt card** (§6). A message the user takes to their agent is
+   an object, not a section, so it is the one thing on the page drawn as one.
 2. **Colour is scarce and loud.** The page is near-monochrome so that the two fluorescent inks mean
    something when they appear. Restraint in *how much*, boldness in *how loud*.
 
@@ -41,7 +43,8 @@ on appearance. Where a mockup shows a card, this system shows a ruled section.
 1. **The figure is the hero.** Amounts get the display face, the most space, and the tightest
    tracking. Everything else recedes.
 2. **A rule, not a box.** When something needs separating, use a hairline. Reach for a container
-   only when content genuinely overlays other content (sheets, menus).
+   only when content genuinely overlays other content (sheets, menus, the chart placeholder's
+   glass), or when it is a thing the user picks up and takes elsewhere (the prompt card).
 3. **Colour carries meaning or it does not appear.** Six chromatic roles exist (§4.3). Decoration is
    not one of them.
 4. **Provenance is quiet, and always there.** A mark says an agent wrote a number; opening the
@@ -269,6 +272,7 @@ Built by us, because they carry the brand:
 | **Agent roll** | The 18px icon slot on "Connect to agent": the generic agent icon, then each supported agent's logo in turn, two seconds each, counted from when the button appears. Each logo rises in and out (550ms, ease-out), drawn as a silhouette in the button's ink so any official file fits both themes. Still under reduced motion; hidden from screen readers. Missing logo files show the agent's initial in a circle (`agents/README.md`). |
 | **Agent logo** | The same silhouette at 18px beside an agent's name in lists ("Which AI agent do you use?", the Agent tab). ChatGPT's, Claude's and Grok's marks come from LobeHub's open-source AI icon set (`agents/README.md`); "Other agent" uses NetNet's own agent icon. |
 | **Setup step** | A numbered step in `body-sm`, the client's own words in `ink` 600, then its screenshot in a hairline frame, at most 420px tall. A missing screenshot is a dashed placeholder naming the file to add (`connect/README.md`). |
+| **Prompt card** | A message to send the agent (the starting prompt on the blank Home, "Ask your agent", Muse's first setup step): the one card in the system, a slip raised off the page. `body` 15px in `ink` on its own surface (`#1D1D22` dark, `#FFFDF8` light), a 1px edge, 4px corners, and a soft two-layer shadow; the edge alone survives forced-colours mode. **Copy** sits inside it, bottom right, unless the screen's primary action is already Copy. An address (the MCP URL) is a setting, not a message, and stays a ruled mono box. Founder, 2026-09-25: in a ruled row the prompt blended into the page, and it is the one thing on that screen the user must act on. |
 | **Amount entry** | The one place a number is *typed* at display size: Fraunces 600 · 30px on a single hairline that turns `brand` on focus, currency symbol in `ink-3`. Money is typeset the same way whether it is shown or entered. |
 
 Deferred to the platform, per the Founder's "brand chrome, native controls" decision:
