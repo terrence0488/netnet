@@ -20,6 +20,21 @@ const audit = name => p.evaluate(name=>{
       const ox=Math.min(a.right,c.right)-Math.max(a.left,c.left), oy=Math.min(a.bottom,c.bottom)-Math.max(a.top,c.top);
       if (ox>1 && oy>1 && getComputedStyle(kids[i]).position!=='absolute' && getComputedStyle(kids[j]).position!=='absolute')
         out.push(`collide in ${row.className||row.tagName}: "${kids[i].textContent.trim().slice(0,20)}" × "${kids[j].textContent.trim().slice(0,20)}"`); } });
+  // a control's parts spill out of it (a segmented control wider than its tray)
+  document.querySelectorAll('.seg').forEach(s=>{ if(!vis(s) || s.closest('.sheet:not(.on)')) return; const r=s.getBoundingClientRect();
+    [...s.children].filter(vis).forEach(k=>{ const c=k.getBoundingClientRect(); if (c.left<r.left-1 || c.right>r.right+1) out.push(`spills out of its control: "${k.textContent.trim().slice(0,20)}"`); }); });
+  // a field wider than the column it sits in (iOS gives date inputs an intrinsic width)
+  document.querySelectorAll('.field input, .field select, .field textarea, .field .pw, .field .amt-in').forEach(e=>{ if(!vis(e) || e.closest('.sheet:not(.on)')) return;
+    const f=e.closest('.field').getBoundingClientRect(), r=e.getBoundingClientRect(); if (r.right>f.right+1) out.push(`field wider than its column: ${e.id||e.className||e.tagName}`); });
+  // text touching the edge of a drawn card (a card with an outline or a fill needs inner padding)
+  document.querySelectorAll('.card').forEach(card=>{ if(!vis(card)) return; const cs=getComputedStyle(card);
+    if (parseFloat(cs.borderLeftWidth)===0 && cs.backgroundColor==='rgba(0, 0, 0, 0)') return;
+    const r=card.getBoundingClientRect();
+    card.querySelectorAll('*').forEach(e=>{ if(!vis(e) || ![...e.childNodes].some(n=>n.nodeType===3 && n.textContent.trim())) return;
+      const t=document.createRange(); t.selectNodeContents(e); const b=t.getBoundingClientRect();
+      if (b.width && (b.left<r.left+8 || b.right>r.right-8)) out.push(`text on the card's edge: "${e.textContent.trim().slice(0,24)}"`); });
+    card.querySelectorAll('input[type=checkbox]').forEach(e=>{ if(!vis(e)) return; const b=e.getBoundingClientRect();
+      if (b.left<r.left+8 || b.right>r.right-8) out.push(`control on the card's edge: ${e.dataset.v||'checkbox'}`); }); });
   // one-line labels that wrap
   document.querySelectorAll('.axis > span, .xl > div, .bl > div, .rangebar button, .tab, .seg button, .label, .section-h h2, .section-h .link, .chip, .nw-label, .yt, .legend div, .navitem, .btn, .ph-label, .chart-h .chartnav span').forEach(e=>{
     if(!vis(e) || e.closest('.sheet:not(.on)')) return;
@@ -62,10 +77,12 @@ await check('agent', new Function(seeded('#/agent')));
 await check('agent chat', ()=>{ location.hash='#/agent/chat'; render(); });
 await check('activity', ()=>{ location.hash='#/activity'; render(); });
 await check('account', ()=>{ location.hash='#/account'; render(); });
-await check('sheet add value', ()=>{ location.hash='#/holding/h-ibkr'; render(); sheetValue('h-ibkr', null); });
-await check('sheet filter', ()=>{ closeSheet(); location.hash='#/home'; render(); sheetFilter(false); });
-await check('sheet insights filter', ()=>{ closeSheet(); S.draft=null; location.hash='#/insights'; render(); sheetFilter(true); });
-await check('sheet ask agent', ()=>{ closeSheet(); location.hash='#/holding/h-ibkr'; render(); sheetAskAgent('h-ibkr'); });
+await check('view settings', ()=>{ location.hash='#/sub/view'; render(); });
+await check('reminders', ()=>{ location.hash='#/sub/reminders'; render(); });
+await check('sheet add value', ()=>{ location.hash='#/holding/h-ibkr'; render(); setTimeout(()=>sheetValue('h-ibkr', null), 60); });
+await check('sheet filter', ()=>{ closeSheet(); location.hash='#/home'; render(); setTimeout(()=>sheetFilter(false), 60); });
+await check('sheet insights filter', ()=>{ closeSheet(); S.draft=null; location.hash='#/insights'; render(); setTimeout(()=>sheetFilter(true), 60); });
+await check('sheet ask agent', ()=>{ closeSheet(); location.hash='#/holding/h-ibkr'; render(); setTimeout(()=>sheetAskAgent('h-ibkr'), 60); });
 await check('sheet proto', ()=>{ closeSheet(); sheetProto(); });
 console.log(`\n${dev}: ${total} issues; page errors: ${errs.join(' | ')||'none'}`);
 await b.close();
