@@ -1,36 +1,30 @@
 # Project State
 
 ## Current
-Stage: Prototype
+Stage: Architecture (Stage 3)
 Phase: n/a
-Status: not-started
-Next action: `stage: prototype`
+Status: not-started — Stage 2 approved 2026-09-26
+Next action: `continue` in a **new session** → run Stage 3 (`stage: architecture`). Inputs:
+`docs/01-prd.md`, `docs/02-prototype/prototype-notes.md`. Work from `main`, which holds the approved
+Stage 2 work (merged 2026-09-26).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
 |---|---|---|---|
-| Discovery | **approved** | 2026-09-23 | `docs/00-discovery.md`; §1/§3/§4 reframed same day, re-confirmed with the PRD approval |
-| PRD | **approved** | 2026-09-23 | `docs/01-prd.md`; four gate decisions taken as recommended |
-| Prototype | not-started | | |
+| Discovery | **approved** | 2026-09-23 | `docs/00-discovery.md`; §1/§3/§4 reframed same day |
+| PRD | **approved** | 2026-09-23 | Original, single-beachhead version |
+| PRD (amended) | **approved** | 2026-09-24 | Three personas, jurisdiction packs, agent as a user → `01-prd.md` §9.5 |
+| Prototype | **approved** | 2026-09-26 | Design B "Poster" (branch `claude/design-b-retro`), with PRD §9.6 revisions 12–28 and the carousel's desktop layout. A and C kept on their branches, unmerged |
 | Architecture | not-started | | |
 | Plan | not-started | | |
 | P1 | not-started | | |
 
 ## Handoff note (last session)
-Stage 1 approved. docs/01-prd.md is settled: 11 jobs with Given/When/Then acceptance criteria
-(section 6) are the contract Stage 4 plans against and Stage 6 tests against.
-What the Founder decided in this session, all already in the doc: the problem is reframed - AI
-cannot advise without knowing where the user stands, so advice is the premise and tracking the
-means; vision broad but beachhead narrow, selected on financial literacy so no market education is
-needed; Insights ships in the MVP (J11), overriding the recommendation to defer; accessibility is a
-first-class holding attribute; Claude is the launch-blocking MCP client with ChatGPT a dated
-fast-follow; {client} rides on the connection and tool-call events so M3 splits by client.
-NEXT: Stage 2, the prototype. Input is docs/01-prd.md only.
-ASK THE FOUNDER FOR THE MOCKUP IMAGES FIRST. J11 (Insights) was specified from the README line
-alone - those frames have never been seen, and the prototype cannot get them right blind. Never
-commit them.
-WATCH OUT: Stage 2 is design, not stack. No hosting, framework or database opinions - that is
-Stage 3, and an earlier session already drifted there once.
-MAIN: fast-forwarded to 286bc18 with the Founder's approval, so main carries Stage 0 and Stage 1.
-Per-session branches hold nothing unique once merged - main is the checkpoint of record and docs/ is
-the memory.
+**Stage 2 approved** (Founder, 2026-09-26): the prototype in design B "Poster", the PRD §9.6
+revisions made during the review, and the Home carousel's desktop layout. Merged into `main`
+2026-09-26 (from `claude/design-b-retro`).
+A "Two Inks" (`claude/zealous-dijkstra-3yebuo`) and C "Calm" (`claude/design-c-soft`) are
+reference only; never merge them. Stage 3 inputs: `01-prd.md`, `prototype-notes.md` (§8 risks
+carry Stage 3 asks: versioned packs, history pagination, charting library). Also for Stage 3: PRD
+§9.6 item 17 (packs admin portal), free plans allow custom MCP (confirm), native-build rules in
+`design-system.md` §9, Muse logo (`agents/README.md`). Tests: `node docs/02-prototype/tests/run.mjs`.

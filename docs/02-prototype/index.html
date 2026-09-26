@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NetNet — Stage 2 prototype</title>
+<meta name="description" content="Clickable design prototype for NetNet. All data is fictional.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ============ SIDEBAR (desktop only) ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><i></i>NetNet</div>
+    <button class="navitem" data-tab="#/home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6"/><path d="M6 10v10h12V10"/></svg>Home</button>
+    <button class="navitem" data-tab="#/insights">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l5-6 4 4 7-8"/><path d="M4 20h16"/></svg>Insights</button>
+    <button class="navitem" data-tab="#/agent">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V4"/><circle cx="9" cy="13" r="1.1" fill="currentColor"/><circle cx="15" cy="13" r="1.1" fill="currentColor"/></svg>Agent</button>
+    <button class="navitem" data-go="#/activity">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg>Activity</button>
+    <button class="navitem" data-tab="#/account">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c1.2-3.7 3.9-5.6 7.2-5.6s6 1.9 7.2 5.6"/></svg>Account</button>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+
+    <!-- SIGN UP, LOG IN, ONBOARDING (J1) — rendered by app.js. No landing page here:
+         that is a separate marketing design whose call to action routes to #/signup. -->
+    <section class="screen" id="s-auth"></section>
+
+    <!-- JS-RENDERED -->
+    <section class="screen" id="s-home"></section>
+    <section class="screen" id="s-holding"></section>
+    <section class="screen" id="s-add"></section>
+    <section class="screen" id="s-insights"></section>
+    <section class="screen" id="s-period"></section>
+    <section class="screen" id="s-agent"></section>
+    <section class="screen" id="s-chat"></section>
+    <section class="screen" id="s-activity"></section>
+    <section class="screen" id="s-account"></section>
+    <section class="screen" id="s-sub"></section>
+  </main>
+</div>
+
+<!-- ============ TAB BAR (mobile) ============ -->
+<nav class="tabbar hidden" id="tabbar"><div class="tabbar-inner">
+  <button class="tab" data-tab="#/home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6"/><path d="M6 10v10h12V10"/></svg>Home</button>
+  <button class="tab" data-tab="#/insights">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l5-6 4 4 7-8"/><path d="M4 20h16"/></svg>Insights</button>
+  <button class="tab" data-tab="#/agent">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V4"/><circle cx="9" cy="13" r="1.1" fill="currentColor"/><circle cx="15" cy="13" r="1.1" fill="currentColor"/></svg>Agent</button>
+  <button class="tab" data-tab="#/account">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c1.2-3.7 3.9-5.6 7.2-5.6s6 1.9 7.2 5.6"/></svg>Account</button>
+</div></nav>
+
+<div class="scrim" id="scrim"></div>
+<div class="sr" id="lc-live" aria-live="polite"></div>
+<div class="sheet" id="sheet"></div>
+<button class="devbtn" id="devbtn">PROTO</button>
+
+<script src="packs.js"></script>
+<script src="connectors.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

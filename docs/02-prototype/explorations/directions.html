@@ -1,0 +1,188 @@
+<!doctype html><html><head><meta charset="utf-8"><title>NetNet — design directions</title>
+<style>
+@font-face{font-family:Fraunces;src:url(../fonts/fraunces.woff2)format("woff2");font-weight:100 900}
+@font-face{font-family:InstrumentSerif;src:url(../fonts/instrumentserif.woff2)format("woff2")}
+@font-face{font-family:SpaceGrotesk;src:url(../fonts/spacegrotesk.woff2)format("woff2");font-weight:100 900}
+@font-face{font-family:Bricolage;src:url(../fonts/bricolage.woff2)format("woff2");font-weight:100 900}
+@font-face{font-family:Archivo;src:url(../fonts/archivo.woff2)format("woff2");font-weight:100 900}
+@font-face{font-family:Inter;src:url(../fonts/inter.woff2)format("woff2");font-weight:100 900}
+@font-face{font-family:JB;src:url(../fonts/jetbrains.woff2)format("woff2");font-weight:100 900}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#4a4a4a;font-family:Inter,sans-serif}
+.dir{padding:28px}
+.dir h2{color:#fff;font-size:22px;letter-spacing:-.02em;font-weight:700}
+.dir .idea{color:#ffd9a0;font-size:13.5px;margin:4px 0 2px;font-style:italic}
+.dir p{color:#cfcfcf;font-size:12.5px;max-width:860px;line-height:1.5;margin-bottom:16px}
+.pair{display:flex;gap:18px}
+.ph{width:390px;height:840px;overflow:hidden;border-radius:22px;position:relative}
+.num{font-variant-numeric:tabular-nums}
+</style></head><body><div id="out"></div>
+<script>
+const TREND=[18,22,20,27,25,31,29,36,34,41,39,44,48,46,54,58,56,64,68,74];
+const A=[['IBKR','Stocks','798,412','+7.98',1,0],['HDB flat','Property','710,000','+0.00',0,0],
+['CPF Ordinary','CPF','117,440','+2.18',1,0],['Acme RSU','Equity','141,280','+1.98',0,0],
+['Toyota Altis','Automobile','126,300','+0.00',0,1]];
+const L=[['HDB loan','Loan','349,100','+0.91'],['Car loan','Loan','33,600','+4.55']];
+
+/* ============ 1 · STATEMENT ============ */
+function statement(t){
+ const line=(v,c,w)=>{const mn=Math.min(...v),mx=Math.max(...v),s=(mx-mn)||1;
+  const d=v.map((y,i)=>(i?'L':'M')+(i/(v.length-1)*100).toFixed(2)+' '+(100-((y-mn)/s)*100).toFixed(2)).join(' ');
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:96px;display:block">
+   <path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" vector-effect="non-scaling-stroke"/></svg>`;};
+ const R=`border-bottom:1px solid ${t.rule}`;
+ const lbl=`font-size:9.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${t.i2}`;
+ const row=(n,ty,v,c,ag,st,neg)=>`<div style="display:flex;align-items:baseline;gap:10px;padding:11px 0;${R}">
+   <div style="flex:1"><div style="font-size:14.5px;letter-spacing:-.01em">${n}</div>
+    <div style="${lbl};margin-top:3px">${ty}${ag?` &nbsp;·&nbsp; <span style="color:${t.ag}">agent</span>`:''}${st?` &nbsp;·&nbsp; <span style="color:${t.neg}">stale</span>`:''}</div></div>
+   <div style="text-align:right"><div class="num" style="font-family:Fraunces;font-size:17px;font-weight:600;letter-spacing:-.01em">${neg?'−':''}$${v}</div>
+    <div class="num" style="font-size:11px;color:${c==='+0.00'?t.i2:t.pos};margin-top:2px">${c}%</div></div></div>`;
+ return `<div class="ph" style="background:${t.bg};color:${t.ink};padding:26px 24px">
+  <div style="display:flex;align-items:center;${R};padding-bottom:12px">
+   <div style="font-family:Fraunces;font-weight:700;font-size:17px;letter-spacing:-.02em;flex:1">NetNet</div>
+   <div style="${lbl}">23 Sept 2026</div></div>
+  <div style="padding:26px 0 18px;${R}">
+   <div style="${lbl}">Net worth</div>
+   <div class="num" style="font-family:Fraunces;font-weight:600;font-size:52px;letter-spacing:-.035em;line-height:1;margin:10px 0 12px">$1,843,688</div>
+   <div style="font-size:13px;color:${t.i2}">
+    <span class="num" style="color:${t.pos}">+$88,412 &nbsp; +5.01%</span> &nbsp;·&nbsp; vs last quarter</div></div>
+  <div style="padding:16px 0 6px;${R}">${line(TREND,t.ink,1.25)}
+   <div style="display:flex;justify-content:space-between;${lbl};margin-top:8px"><span>Sept 2025</span><span>Sept 2026</span></div></div>
+  <div style="padding:14px 0 4px;${R}">
+   ${[['Assets','2,225,988',0],['Liabilities','382,300',1],['Readily accessible','1,044,641',0]].map(x=>
+   `<div style="display:flex;padding:7px 0"><div style="flex:1;font-size:13.5px;color:${t.i2}">${x[0]}</div>
+    <div class="num" style="font-size:13.5px;font-weight:500">${x[2]?'−':''}$${x[1]}</div></div>`).join('')}</div>
+  <div style="display:flex;padding:18px 0 4px;${R}"><div style="${lbl};flex:1">Holdings</div><div style="${lbl}">12</div></div>
+  ${A.slice(0,4).map(h=>row(h[0],h[1],h[2],h[3],h[4],h[5],0)).join('')}
+  ${L.slice(0,1).map(h=>row(h[0],h[1],h[2],h[3],0,0,1)).join('')}
+ </div>`;}
+
+/* ============ 2 · HORIZON ============ */
+function horizon(t){
+ const mn=Math.min(...TREND),mx=Math.max(...TREND),sp=(mx-mn)||1;
+ const d=TREND.map((y,i)=>(i?'L':'M')+(i/(TREND.length-1)*100).toFixed(2)+' '+(100-((y-mn)/sp)*74-13).toFixed(2)).join(' ');
+ const bar=(pct,up)=>`<div style="width:34px;height:20px;position:relative">
+   <div style="position:absolute;${up?'bottom:10px':'top:10px'};left:0;width:100%;height:${Math.max(2,pct*9).toFixed(1)}px;
+   background:${up?t.pos:t.neg};border-radius:1px;opacity:.85"></div>
+   <div style="position:absolute;top:10px;left:0;width:100%;height:1px;background:${t.rule}"></div></div>`;
+ const row=(h,up)=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 24px">
+   ${bar(up?parseFloat(h[2].replace(/,/g,''))/800000:parseFloat(h[2].replace(/,/g,''))/400000,up)}
+   <div style="flex:1"><div style="font-family:SpaceGrotesk;font-size:14px;font-weight:500;letter-spacing:-.01em">${h[0]}
+    ${h[4]?`<span style="font-size:9px;font-weight:700;color:${t.ag};letter-spacing:.1em;margin-left:6px">AGENT</span>`:''}
+    ${h[5]?`<span style="font-size:9px;font-weight:700;color:${t.warn};letter-spacing:.1em;margin-left:6px">STALE</span>`:''}</div>
+    <div style="font-size:10.5px;color:${t.i2};margin-top:2px;letter-spacing:.04em">${h[1].toUpperCase()}</div></div>
+   <div class="num" style="font-family:SpaceGrotesk;font-size:14.5px;font-weight:500">${up?'':'−'}$${h[2]}</div></div>`;
+ return `<div class="ph" style="background:${t.bg};color:${t.ink}">
+  <div style="position:relative;height:290px;background:linear-gradient(180deg,${t.g2},${t.bg})">
+   <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+    <defs><linearGradient id="hz" x1="0" y1="0" x2="0" y2="1">
+     <stop offset="0" stop-color="${t.acc}" stop-opacity=".30"/><stop offset="1" stop-color="${t.acc}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${d} L100 100 L0 100 Z" fill="url(#hz)"/>
+    <path d="${d}" fill="none" stroke="${t.acc}" stroke-width="2.4" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>
+   <div style="position:absolute;top:26px;left:24px;right:24px;display:flex;align-items:center">
+    <div style="font-family:SpaceGrotesk;font-weight:700;font-size:15px;letter-spacing:.12em;flex:1">NETNET</div>
+    <div style="font-size:10px;letter-spacing:.14em;color:${t.i2}">SAM TAN</div></div>
+   <div style="position:absolute;bottom:0;left:0;right:0;height:150px;
+     background:linear-gradient(180deg,transparent,${t.scrim} 42%,${t.scrim})"></div>
+   <div style="position:absolute;bottom:22px;left:24px;right:24px">
+    <div style="font-size:9.5px;letter-spacing:.2em;color:${t.i2};font-weight:600">NET WORTH</div>
+    <div class="num" style="font-family:SpaceGrotesk;font-weight:700;font-size:44px;letter-spacing:-.04em;line-height:1.05;margin:5px 0 7px">$1,843,688</div>
+    <span class="num" style="font-family:SpaceGrotesk;font-size:13px;font-weight:500;color:${t.acc}">▲ +$88,412 · +5.01%</span></div></div>
+  <div style="display:flex;align-items:center;gap:10px;padding:18px 24px 6px">
+   <div style="font-size:9.5px;letter-spacing:.2em;font-weight:700;color:${t.pos}">ABOVE THE LINE</div>
+   <div style="flex:1;height:1px;background:${t.rule}"></div>
+   <div class="num" style="font-size:11px;color:${t.i2}">$2,225,988</div></div>
+  ${A.map(h=>row(h,1)).join('')}
+  <div style="display:flex;align-items:center;gap:10px;padding:14px 24px 6px">
+   <div style="font-size:9.5px;letter-spacing:.2em;font-weight:700;color:${t.neg}">BELOW THE LINE</div>
+   <div style="flex:1;height:1px;background:${t.rule}"></div>
+   <div class="num" style="font-size:11px;color:${t.i2}">−$382,300</div></div>
+  ${L.map(h=>row(h,0)).join('')}
+ </div>`;}
+
+/* ============ 3 · MARGIN ============ */
+function margin(t){
+ const RAIL=34;
+ const row=(n,ty,v,c,ag,st,neg,note)=>`
+  <div style="display:flex;border-bottom:1px solid ${t.rule}">
+   <div style="width:${RAIL}px;flex:none;border-right:1px solid ${t.rule};background:${ag?t.agBg:'transparent'};
+     position:relative;display:grid;place-items:center">
+     ${ag?`<div style="position:absolute;left:-1px;top:0;bottom:0;width:3px;background:${t.ag}"></div>
+     <div style="font-family:JB;font-size:8.5px;font-weight:700;color:${t.ag};writing-mode:vertical-rl;letter-spacing:.14em">AGENT</div>`:''}
+   </div>
+   <div style="flex:1;padding:11px 14px;display:flex;align-items:baseline;gap:10px">
+    <div style="flex:1"><div style="font-family:Archivo;font-size:14.5px;font-weight:600;letter-spacing:-.015em">${n}
+      ${st?`<span style="font-family:JB;font-size:9px;color:${t.neg};margin-left:6px">STALE</span>`:''}</div>
+     <div style="font-family:JB;font-size:10px;color:${t.i2};margin-top:3px;letter-spacing:.02em">${ty}${note?`  ·  ${note}`:''}</div></div>
+    <div style="text-align:right">
+     <div class="num" style="font-family:JB;font-size:14px;font-weight:500">${neg?'−':''}$${v}</div>
+     <div class="num" style="font-family:JB;font-size:10px;color:${c==='+0.00'?t.i2:t.pos};margin-top:3px">${c}%</div></div></div></div>`;
+ return `<div class="ph" style="background:${t.bg};color:${t.ink}">
+  <div style="display:flex;border-bottom:1px solid ${t.rule}">
+   <div style="width:${RAIL}px;flex:none;border-right:1px solid ${t.rule};display:grid;place-items:center;padding:14px 0">
+    <div style="width:13px;height:13px;border:2.5px solid ${t.ag};border-radius:3px"></div></div>
+   <div style="flex:1;padding:15px 14px;display:flex;align-items:center">
+    <div style="font-family:Archivo;font-weight:700;font-size:15px;letter-spacing:-.02em;flex:1">NetNet</div>
+    <div style="font-family:JB;font-size:10px;color:${t.i2}">SAM TAN</div></div></div>
+
+  <div style="display:flex;border-bottom:1px solid ${t.rule}">
+   <div style="width:${RAIL}px;flex:none;border-right:1px solid ${t.rule}"></div>
+   <div style="flex:1;padding:22px 14px 20px">
+    <div style="font-family:JB;font-size:9.5px;letter-spacing:.16em;color:${t.i2}">NET WORTH · 23.09.2026</div>
+    <div class="num" style="font-family:Archivo;font-weight:700;font-size:46px;letter-spacing:-.045em;line-height:1;margin:9px 0 10px">$1,843,688</div>
+    <div style="display:flex;gap:8px;align-items:center">
+     <span class="num" style="font-family:JB;font-size:12px;color:${t.pos};font-weight:500">+$88,412</span>
+     <span class="num" style="font-family:JB;font-size:12px;color:${t.pos};font-weight:500">+5.01%</span>
+     <span style="font-family:JB;font-size:10px;color:${t.i2}">VS LAST QUARTER</span></div></div></div>
+
+  <div style="display:flex;border-bottom:1px solid ${t.rule}">
+   <div style="width:${RAIL}px;flex:none;border-right:1px solid ${t.rule};display:grid;place-items:center">
+    <div style="position:absolute"></div></div>
+   <div style="flex:1;padding:14px">
+    ${[['ASSETS','2,225,988',0],['LIABILITIES','382,300',1],['ACCESSIBLE','1,044,641',0]].map(x=>
+    `<div style="display:flex;padding:5px 0"><div style="flex:1;font-family:JB;font-size:10.5px;letter-spacing:.1em;color:${t.i2}">${x[0]}</div>
+     <div class="num" style="font-family:JB;font-size:12.5px;font-weight:500;${x[2]?`color:${t.neg}`:''}">${x[2]?'−':''}$${x[1]}</div></div>`).join('')}</div></div>
+
+  <div style="display:flex;border-bottom:1px solid ${t.rule}">
+   <div style="width:${RAIL}px;flex:none;border-right:1px solid ${t.rule}"></div>
+   <div style="flex:1;padding:14px 14px 10px">
+    <div style="font-family:JB;font-size:9.5px;letter-spacing:.16em;color:${t.i2};margin-bottom:8px">12 MONTHS</div>
+    ${(()=>{const mn=Math.min(...TREND),mx=Math.max(...TREND),sp=(mx-mn)||1;
+      const d=TREND.map((y,i)=>(i?'L':'M')+(i/(TREND.length-1)*100).toFixed(2)+' '+(100-((y-mn)/sp)*92-4).toFixed(2)).join(' ');
+      return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:62px;display:block">
+       <path d="${d}" fill="none" stroke="${t.ink}" stroke-width="1.5" vector-effect="non-scaling-stroke"
+        stroke-linejoin="miter" shape-rendering="crispEdges"/></svg>`;})()}
+    <div style="display:flex;justify-content:space-between;font-family:JB;font-size:9px;color:${t.i2};margin-top:6px">
+     <span>2025.09</span><span>2026.09</span></div></div></div>
+  <div style="display:flex;border-bottom:1px solid ${t.rule};background:${t.bg2}">
+   <div style="width:${RAIL}px;flex:none;border-right:1px solid ${t.rule}"></div>
+   <div style="flex:1;padding:8px 14px;font-family:JB;font-size:9.5px;letter-spacing:.16em;color:${t.i2}">WHO WROTE THIS · 12 HOLDINGS</div></div>
+
+  ${row('IBKR','STOCKS','798,412','+7.98',1,0,0,'TODAY')}
+  ${row('HDB flat','PROPERTY','710,000','+0.00',0,0,0,'4 MONTHS AGO')}
+  ${row('CPF Ordinary','CPF','117,440','+2.18',1,0,0,'4 WEEKS AGO')}
+  ${row('Toyota Altis','AUTOMOBILE','126,300','+0.00',0,1,0,'2 YEARS AGO')}
+  ${row('HDB loan','LOAN','349,100','+0.91',0,0,1,'4 WEEKS AGO')}
+ </div>`;}
+
+const D=[
+{k:'statement',n:'1 · STATEMENT',idea:'“Not an app. A statement.”',
+ p:'No cards, no containers — full-bleed sections divided by hairline rules, like a beautifully typeset private-bank statement. Authority comes from typography and restraint rather than colour. Headline figures in Fraunces, a high-contrast display serif; everything else small, wide-tracked Inter. Near-monochrome on warm paper, so the only colour on screen carries meaning.',
+ f:statement,
+ dark:{bg:'#121110',ink:'#F2EEE5',i2:'#8C8675',rule:'#2B2825',pos:'#6FBF95',neg:'#E0796A',ag:'#A3A3E8'},
+ light:{bg:'#F7F4ED',ink:'#16130E',i2:'#6E6759',rule:'#DED7C7',pos:'#2F6B4F',neg:'#A33A2E',ag:'#4A4A96'}},
+{k:'horizon',n:'2 · HORIZON',idea:'“Your position is a line. Everything sits above or below it.”',
+ p:'One graphic idea carried everywhere. The trend is not a card — it is the page, full-bleed behind the header. Below it the holdings literally split: assets above the line, liabilities below, each row carrying a small marker showing which side it is on. Space Grotesk throughout for a technical, engineered voice. Magenta as the brand because it is the one strong hue that can never be mistaken for a gain or a loss.',
+ f:horizon,
+ dark:{bg:'#07080F',g2:'#141833',ink:'#F2F3FA',i2:'#8A8FA8',rule:'#1E2338',scrim:'#07080F',acc:'#F0479B',pos:'#35D07F',neg:'#FF5A45',warn:'#FFC24D',ag:'#3BE0E8'},
+ light:{bg:'#FFFFFF',g2:'#F2EFFA',ink:'#07080F',i2:'#5E637A',rule:'#E4E3EE',scrim:'#FFFFFF',acc:'#C81E74',pos:'#17855A',neg:'#CE3A24',warn:'#8A5A00',ag:'#0E7490'}},
+{k:'margin',n:'3 · MARGIN',idea:'“A ledger with a margin. You write the body — your agent writes the margin.”',
+ p:'The layout is derived from the one thing no competitor has: two authors. A permanent rail runs down the left of every screen carrying provenance, and anything the agent wrote is marked in it like an annotation in a book. Archivo for names, JetBrains Mono for every figure and label, so it reads as a ledger. The brand colour IS the agent colour — the only chroma in the interface marks what your agent did.',
+ f:margin,
+ dark:{bg:'#0E0E10',bg2:'#161618',ink:'#F5F5F4',i2:'#8A8A88',rule:'#242427',pos:'#3ECF8E',neg:'#F5705A',ag:'#9A7BFF',agBg:'#17132B'},
+ light:{bg:'#FCFBF9',bg2:'#F4F2EE',ink:'#121212',i2:'#76736E',rule:'#E7E4DF',pos:'#167A4B',neg:'#C2301C',ag:'#5B3DF5',agBg:'#F1EDFF'}}];
+
+document.getElementById('out').innerHTML=D.map(d=>`<div class="dir" id="d-${d.k}">
+ <h2>${d.n}</h2><div class="idea">${d.idea}</div><p>${d.p}</p>
+ <div class="pair">${d.f(d.dark)}${d.f(d.light)}</div></div>`).join('');
+</script></body></html>

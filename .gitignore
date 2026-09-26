@@ -32,3 +32,10 @@ docs/reference/mockups/*.jpeg
 docs/reference/mockups/*.webp
 docs/reference/mockups/*.gif
 docs/reference/mockups/*.pdf
+
+# Mockups/screenshots dropped anywhere else — same rule, they may carry real data
+/mockups/
+**/mockups/*.png
+**/mockups/*.jpg
+**/mockups/*.jpeg
+**/mockups/*.webp
