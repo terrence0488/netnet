@@ -633,3 +633,14 @@ a.btn{text-decoration:none}
 .section-h h2{white-space:nowrap}
 @media (max-width:359px){ .section-h{gap:6px} .section-h h2{font-size:max(var(--fs-min),calc(15.5px * var(--fs)))} }
 .sheet .sh-grp.sh-split{border-top:1px solid var(--rule);margin-top:24px;padding-top:22px}
+
+/* ---------- fixes from the Founder's iPhone review (2026-09-26) ---------- */
+/* Switch rows inside a card get the card's inner padding, like every other row. */
+.card .switch{padding:14px 20px}
+/* The OR/AND toggle is sized by its 44px buttons, not by the fixed width app.js gives it
+   (88px fits only the 32–36px mouse targets). */
+.sh-grp .seg{width:auto!important;flex:none}
+/* iOS gives date inputs an intrinsic width and centres the date: make them fill the column like any field. */
+.field input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;text-align:left}
+.field input[type=date]::-webkit-date-and-time-value{text-align:left}
+.two>*{min-width:0}
