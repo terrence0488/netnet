@@ -660,3 +660,26 @@ a.btn{text-decoration:none}
 @media (max-width:359px){ .section-h{gap:6px} .section-h .link{letter-spacing:0} }
 /* The filter sheet's two halves, Show Only and Don't Show, split by a hairline. */
 .sheet .sh-grp.sh-split{border-top:1px solid var(--rule);margin-top:24px;padding-top:22px}
+
+/* ---------- Home: trend and allocation share one place (Founder, 2026-09-26) ----------
+   Phone: a carousel, swiped sideways, with dots. Computer: the two side by side on the grid's
+   7/5 columns. The line chart's own touch reading (press and hold, then drag) is unchanged;
+   a plain sideways swipe moves the carousel. */
+.chart-h .link{font-size:max(var(--fs-min),calc(11px * var(--fs)));font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-text)}
+.o-alloc .chart-h{margin-bottom:4px}
+.dots.swipe-dots{display:flex;justify-content:center;gap:8px;padding:12px 0 2px}
+.swipe-dots i{width:6px;height:6px;border-radius:50%;background:var(--rule-strong)}
+.swipe-dots i.on{background:var(--brand)}
+@media (max-width:899px){
+  .carousel.swipe{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;
+    gap:var(--gutter);margin:0 calc(var(--gutter) * -1);padding:0 var(--gutter);scroll-padding:0 var(--gutter);scrollbar-width:none}
+  .carousel.swipe::-webkit-scrollbar{display:none}
+  .carousel.swipe>.slide{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always}
+}
+@media (min-width:900px){
+  .carousel.swipe{display:grid;grid-template-columns:repeat(12,1fr);gap:0 44px}
+  .carousel.swipe>.slide{grid-column:span 12}
+  .carousel.swipe.two>.slide:first-child{grid-column:span 7}
+  .carousel.swipe.two>.slide:last-child{grid-column:span 5}
+  .dots.swipe-dots{display:none}
+}
