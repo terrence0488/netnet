@@ -1,7 +1,7 @@
 # NetNet Design System — v2 "Poster"
 
 Status: **chosen by the Founder, 2026-09-26** (variant B "Poster", over A "Two Inks" and C "Calm");
-awaiting the Stage 2 gate
+approved with the prototype, 2026-09-26
 Owner: Product designer · Stage 2
 
 > This is the design system, not a style guide written after the fact. It is the thing the

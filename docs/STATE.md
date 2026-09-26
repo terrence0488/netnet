@@ -1,11 +1,12 @@
 # Project State
 
 ## Current
-Stage: Prototype (rework)
+Stage: Architecture (Stage 3)
 Phase: n/a
-Status: in-progress — design B "Poster" chosen and folded in; Stage 2 at its gate
-Next action: the Founder reviews the Stage 2 gate (prototype + PRD §9.6 revisions) and replies
-`approve prototype`. Then a **new session** runs `continue` → Stage 3 (Architecture).
+Status: not-started — Stage 2 approved 2026-09-26
+Next action: `continue` in a **new session** → run Stage 3 (`stage: architecture`). Inputs:
+`docs/01-prd.md`, `docs/02-prototype/prototype-notes.md`. Work on branch `claude/design-b-retro`
+(the approved Stage 2 line) unless the Founder has merged it to `main`.
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -13,19 +14,17 @@ Next action: the Founder reviews the Stage 2 gate (prototype + PRD §9.6 revisio
 | Discovery | **approved** | 2026-09-23 | `docs/00-discovery.md`; §1/§3/§4 reframed same day |
 | PRD | **approved** | 2026-09-23 | Original, single-beachhead version |
 | PRD (amended) | **approved** | 2026-09-24 | Three personas, jurisdiction packs, agent as a user → `01-prd.md` §9.5 |
-| Prototype | at gate | | Design B "Poster" chosen 2026-09-26 (branch `claude/design-b-retro`); A and C kept on their branches |
+| Prototype | **approved** | 2026-09-26 | Design B "Poster" (branch `claude/design-b-retro`), with PRD §9.6 revisions 12–28 and the carousel's desktop layout. A and C kept on their branches, unmerged |
 | Architecture | not-started | | |
 | Plan | not-started | | |
 | P1 | not-started | | |
 
 ## Handoff note (last session)
-**The Founder chose design B "Poster"** (2026-09-26). The Stage 2 line is now `claude/design-b-retro`;
-`design-system.md` is B's system (the separate `design-system-b.md` was folded in and removed).
-**A and C are kept, not merged**: A "Two Inks" on `claude/zealous-dijkstra-3yebuo`, C "Calm" on
-`claude/design-c-soft`. Never merge those into the Stage 2 line; they are reference only.
-Also this session: Home's trend and allocation became a swipeable carousel on a phone (side by side
-on a computer) in all three designs; B dropped its Home ticker; three iPhone layout bugs fixed.
-Tests: `node docs/02-prototype/tests/run.mjs` (23 suites, all clean on B).
-At the gate: PRD §9.6 rows 12–28 (AI-drafted), and the desktop change from the carousel
-(prototype-notes §7 item 7). Stage 3 notes: PRD §9.6 item 17 (packs admin portal), free plans allow
-custom MCP, native-build rules in design-system §9, Muse logo (`agents/README.md`).
+**Stage 2 approved** (Founder, 2026-09-26): the prototype in design B "Poster", the PRD §9.6
+revisions made during the review, and the Home carousel's desktop layout. The approved line is
+branch `claude/design-b-retro`; `main` still holds the Stage 1 PRD until the Founder merges it.
+A "Two Inks" (`claude/zealous-dijkstra-3yebuo`) and C "Calm" (`claude/design-c-soft`) are
+reference only; never merge them. Stage 3 inputs: `01-prd.md`, `prototype-notes.md` (§8 risks
+carry Stage 3 asks: versioned packs, history pagination, charting library). Also for Stage 3: PRD
+§9.6 item 17 (packs admin portal), free plans allow custom MCP (confirm), native-build rules in
+`design-system.md` §9, Muse logo (`agents/README.md`). Tests: `node docs/02-prototype/tests/run.mjs`.

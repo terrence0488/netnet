@@ -6,8 +6,8 @@ three, §2.3 added jurisdiction packs so the product is not permanently shaped b
 and §2.4 made the agent a target user with a falsifiable claim behind it (what changed and why:
 **§9.5**). **Revised again during the Stage 2 review, 2026-09-24/25:** sign-up and onboarding, the
 agent route, per-country packs and their administration, and what the product shows. Those
-revisions are written into the requirements below and listed in **§9.6**; they await the Founder's
-approval at the Stage 2 gate.
+revisions are written into the requirements below and listed in **§9.6**; approved by the Founder
+with the prototype at the Stage 2 gate, 2026-09-26.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -846,8 +846,8 @@ connect flow carries no plan warning. Stage 3 confirms this when building.
 
 ### 9.6 Revisions during the Stage 2 review — 2026-09-24/25
 
-Written into the requirements above; listed here so the gate can see what moved. They await the
-Founder's approval with the prototype.
+Written into the requirements above; listed here so the gate can see what moved. Approved by the
+Founder with the prototype, 2026-09-26.
 
 | # | What changed | Where |
 |---|---|---|

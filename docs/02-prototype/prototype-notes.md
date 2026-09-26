@@ -1,6 +1,6 @@
 # 02 — Prototype notes
 
-Status: **awaiting Founder review** · Stage owner: Product designer
+Status: **approved by the Founder 2026-09-26** (Stage 2 gate) · Stage owner: Product designer
 Reworked 2026-09-24 against the amended PRD: J1 (guided assembly, first picture, segment), J2
 (accessibility as facts, never a classification) and §2.3 (jurisdiction packs, as data).
 Inputs: `docs/01-prd.md` (approved as amended 2026-09-24), the Founder's iOS mockups (shared
@@ -326,7 +326,7 @@ rules for Stage 3; dark mode checked on a real phone.
    `design-system.md` is now B's system; A and C are kept on their branches.
 7. **Home's trend and allocation share a carousel under the total** (Founder, 2026-09-26). On a
    computer the two sit side by side above holdings and position, which changes the desktop layout
-   approved on 2026-09-25 — **to confirm at the gate.**
+   approved on 2026-09-25; accepted with the prototype's approval (2026-09-26).
 
 ## 8. Risks and open questions
 
