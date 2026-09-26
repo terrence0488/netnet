@@ -3,10 +3,9 @@
 ## Current
 Stage: Prototype (rework)
 Phase: n/a
-Status: in-progress — variants B and C built; waiting on the Founder's A / B / C choice
-Next action: the Founder compares A / B / C and picks one (or asks for changes). Then the chosen
-variant becomes the prototype's design, and Stage 2 goes to the gate. Stage 2 is **not** approved;
-`approve prototype` comes after the choice.
+Status: in-progress — design B "Poster" chosen and folded in; Stage 2 at its gate
+Next action: the Founder reviews the Stage 2 gate (prototype + PRD §9.6 revisions) and replies
+`approve prototype`. Then a **new session** runs `continue` → Stage 3 (Architecture).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -14,21 +13,19 @@ variant becomes the prototype's design, and Stage 2 goes to the gate. Stage 2 is
 | Discovery | **approved** | 2026-09-23 | `docs/00-discovery.md`; §1/§3/§4 reframed same day |
 | PRD | **approved** | 2026-09-23 | Original, single-beachhead version |
 | PRD (amended) | **approved** | 2026-09-24 | Three personas, jurisdiction packs, agent as a user → `01-prd.md` §9.5 |
-| Prototype | in-progress | | A ("Two Inks", cd1513d) · B ("Poster") · C ("Calm") built 2026-09-25, one branch each; awaiting the Founder's choice |
+| Prototype | at gate | | Design B "Poster" chosen 2026-09-26 (branch `claude/design-b-retro`); A and C kept on their branches |
 | Architecture | not-started | | |
 | Plan | not-started | | |
 | P1 | not-started | | |
 
 ## Handoff note (last session)
-**Three designs, one product, one branch each** (Founder's brief, 2026-09-25: UI only; flows,
-function and content stay; content may bend to fit a look):
-- **A "Two Inks"** — `claude/zealous-dijkstra-3yebuo` (locked at cd1513d). `design-system.md`.
-- **B "Poster"** (bold retro) — `claude/design-b-retro`. `design-system-b.md`: cream, black
-  outlines, hard shadows, tomato; Unbounded + Space Grotesk.
-- **C "Calm"** (clean, soft, spacious) — `claude/design-c-soft`. `design-system-c.md`: white cards
-  on a pale ground, indigo hero, coral glow; Plus Jakarta Sans.
-B and C change only `styles.css`, fonts and their design doc; `app.js`, data and tests are A's,
-and all 22 suites pass on each. Each variant doc lists what it replaces; A's §2.1, §5, §6.1, §7 bind.
-On the choice: merge that branch's look, fold its doc into `design-system.md`, rerun the tests,
-then present the Stage 2 gate. Still open: Muse logo (`agents/README.md`). Stage 3 notes: PRD §9.6
-item 17 (packs admin portal), free plans allow custom MCP (confirm when building).
+**The Founder chose design B "Poster"** (2026-09-26). The Stage 2 line is now `claude/design-b-retro`;
+`design-system.md` is B's system (the separate `design-system-b.md` was folded in and removed).
+**A and C are kept, not merged**: A "Two Inks" on `claude/zealous-dijkstra-3yebuo`, C "Calm" on
+`claude/design-c-soft`. Never merge those into the Stage 2 line; they are reference only.
+Also this session: Home's trend and allocation became a swipeable carousel on a phone (side by side
+on a computer) in all three designs; B dropped its Home ticker; three iPhone layout bugs fixed.
+Tests: `node docs/02-prototype/tests/run.mjs` (23 suites, all clean on B).
+At the gate: PRD §9.6 rows 12–28 (AI-drafted), and the desktop change from the carousel
+(prototype-notes §7 item 7). Stage 3 notes: PRD §9.6 item 17 (packs admin portal), free plans allow
+custom MCP, native-build rules in design-system §9, Muse logo (`agents/README.md`).

@@ -1,44 +1,44 @@
-# NetNet Design System — v1
+# NetNet Design System — v2 "Poster"
 
-> **On this branch the look is variant B "Poster".** `design-system-b.md` replaces §1, §3, §4.1–4.2
-> and the appearance of §6. Everything else here still binds.
-
-Status: **awaiting Founder review** (chosen 2026-09-23, direction V2 "Two Inks"; four components
-added 2026-09-24 for the amended J1/J2 — §6)
+Status: **chosen by the Founder, 2026-09-26** (variant B "Poster", over A "Two Inks" and C "Calm");
+awaiting the Stage 2 gate
 Owner: Product designer · Stage 2
 
 > This is the design system, not a style guide written after the fact. It is the thing the
 > prototype is built from, and the thing Stage 4 plans component work against.
 
+**History.** v1 was "Two Inks" (a typeset ledger in two fluorescent inks, no cards). Three looks were
+then built over the same product: A "Two Inks", B "Poster", C "Calm". The Founder chose B. A and C
+are kept, unmerged, on their own branches (`claude/zealous-dijkstra-3yebuo`,
+`claude/design-c-soft`); their design docs live there. Everything below that is not about the look
+(content rules §2.1, chart rules §5, hit targets §6.1, layout §7) was written for v1 and carried
+over unchanged.
+
 ---
 
 ## 1. The idea
 
-**A ledger, typeset and printed in two inks. One ink is you. The other is your agent.**
+**A poster printed on cream stock: black outlines, hard offset shadows, one tomato ink.**
 
-NetNet is not a dashboard. It is a statement of where someone stands, and its authority has to
-come from the same place a good financial document's does: typography, alignment, restraint, and
-figures you can trust at a glance.
+NetNet is made of **objects**. Every section is a card with a 2px outline and a 4px offset shadow,
+as if cut out and pinned to a board. The loudness comes from shape and weight, not from many
+colours: the page is cream, ink and one tomato, with a royal blue that only ever says "your agent
+wrote this".
 
-Two consequences run through everything below:
+What that means, concretely:
 
-1. **Structure is typographic, not container-based.** No cards. Sections are separated by hairline
-   rules and space. Nothing floats. This is what makes it look considered rather than assembled.
-   Two exceptions, both deliberate: the **floating Update** on a holding page (§6), which must be
-   reachable however long the history, and the **prompt card** (§6). A message the user takes to their agent is
-   an object, not a section, so it is the one thing on the page drawn as one.
-2. **Colour is scarce and loud.** The page is near-monochrome so that the two fluorescent inks mean
-   something when they appear. Restraint in *how much*, boldness in *how loud*.
+1. **Cards, not rules.** Sections are cards; rows inside a card are separated by soft rules.
+2. **The hero is a tomato card** with two sparkles in its corner. Its change figure sits on a
+   cream sticker so gain and loss keep their contrast on the orange.
+3. **Controls look pressable.** Outlined buttons with a hard shadow that collapses when pressed;
+   chosen segments and answers fill tomato; the chosen range is an ink pill.
 
-The second ink is the part no competitor can copy without also building an agent layer, so it is
-treated as a first-class property of the system rather than a badge. It is also the **quiet** ink:
-it marks what the agent wrote and never competes with the figures. Who wrote a number matters
-when you are checking it, not while you are reading your position (Founder review, 2026-09-25).
+Reference: the Founder's brief, "a bold colourful retro/vintage style", with a subscription-app
+mockup set (cream stock, black outlines, hard shadows, tomato orange, a wide chunky display face).
 
 ### What this replaces
-The Founder's mockups are a **functional** brief — information architecture, flows, controls. They
-are an iOS app's visual language and are not the visual target. Everything in §3–§8 supersedes them
-on appearance. Where a mockup shows a card, this system shows a ruled section.
+The Founder's original mockups are a **functional** brief — information architecture, flows,
+controls — and are not the visual target. Everything in §3–§8 supersedes them on appearance.
 
 ---
 
@@ -46,11 +46,10 @@ on appearance. Where a mockup shows a card, this system shows a ruled section.
 
 1. **The figure is the hero.** Amounts get the display face, the most space, and the tightest
    tracking. Everything else recedes.
-2. **A rule, not a box.** When something needs separating, use a hairline. Reach for a container
-   only when content genuinely overlays other content (sheets, menus, the chart placeholder's
-   glass), or when it is a thing the user picks up and takes elsewhere (the prompt card).
-3. **Colour carries meaning or it does not appear.** Six chromatic roles exist (§4.3). Decoration is
-   not one of them.
+2. **A card, not a line.** Each section is one outlined card. Inside it, rows are split by soft
+   rules, never by more cards. A card inside a card is how the poster turns into clutter.
+3. **Colour carries meaning, with one exception.** Six chromatic roles exist (§4.3). Mustard is
+   the one decorative colour, and it never touches data.
 4. **Provenance is quiet, and always there.** A mark says an agent wrote a number; opening the
    number says which agent and when. The agent's name is never louder than the figure.
 5. **Never encode by hue alone.** Gain and loss always carry a sign as well as a colour.
@@ -100,43 +99,35 @@ things look but never what may appear, so every screen showed everything it had.
 
 ## 3. Typography
 
-| Face | Role | Why |
-|---|---|---|
-| **Fraunces** 600 | Monetary amounts only — hero, row amounts, section totals | High-contrast display serif. No consumer finance app sets money in a serif, and it is the single strongest signal that this is a document rather than a dashboard. |
-| **Inter** 400/500/600 | Everything else — names, labels, percentages, dates, counts, UI | Neutral workhorse with true tabular figures. Identical rendering on web and React Native. |
+| Face | Role |
+|---|---|
+| **Unbounded** 600–800 | Wide, chunky display face. Money (hero, rows, ledger, readouts), screen titles, section heads, the wordmark. |
+| **Space Grotesk** 400–700 | Everything else: names, labels, percentages, dates, UI. Slightly quirky, true tabular figures. |
 
-**The dividing line:** Fraunces for *amounts of money*. Inter for *everything else, including
-percentages*. A percentage is a measurement, not a sum — keeping it in Inter stops the serif from
-becoming decoration.
+**The dividing line:** the display face for *money and headings*; the text face for everything
+else, including percentages. A percentage is a measurement, not a sum. Both faces carry `tnum`, and
+all figures set `font-variant-numeric: tabular-nums` so columns align and digits do not shift.
 
 ### Scale
 
-| Token | Face / size / tracking | Used for |
+| Token | Setting | Used for |
 |---|---|---|
-| `display` | Fraunces 600 · 50px · −0.038em · 1.0 | Net worth, period totals |
-| `figure-lg` | Fraunces 600 · 18px · −0.015em | Row amounts |
-| `figure-sm` | Fraunces 600 · 15px · −0.01em | Inline amounts in dense rows |
-| `body` | Inter 400 · 15px · −0.012em · 1.45 | Holding names, prose |
-| `body-sm` | Inter 400 · 13.5px | Summary rows, secondary prose |
-| `label` | Inter 600 · 9.5px · **0.2em** · uppercase | Section labels, controls — never metadata (§2.1) |
-| `meta` | Inter 400 · 12px · sentence case · `ink-3` | Row metadata, dates, counts, axis ticks |
-| `pct` | Inter 500 · 11px · tabular | Change percentages |
-
-All figures set `font-variant-numeric: tabular-nums` so columns align and digits do not shift as
-values update.
+| `display` | Unbounded 700 · `clamp(28px, 8.6vw, 46px)` · −0.045em | Net worth, period totals (wide face, so it sizes smaller than a narrow one would) |
+| `figure` | Unbounded 600 · 15px · −0.03em | Row and ledger amounts |
+| `heading` | Unbounded 700 · 13.5px section heads, 13px card titles, 18px screen titles, 23px sign-up titles | Headings |
+| `body` | Space Grotesk 500–600 · 15px | Holding names (600), prose |
+| `body-sm` | Space Grotesk 400 · 13.5px | Secondary prose |
+| `label` | Space Grotesk 700 · 10.5px · 0.12em · uppercase | Section labels, field labels — never metadata (§2.1) |
+| `meta` | Space Grotesk 400 · 12px · sentence case · `ink-3` | Row metadata, dates, counts, axis ticks |
+| `pct` | Space Grotesk 700 · 11.5px · tabular | Change figures under row amounts |
 
 **On a phone, every size above is 15% larger, and nothing is smaller than 11px** (Founder,
 2026-09-25: the small text was a strain to read). The sizes in the table are the computer's.
 The phone scale is one multiplier (`--fs`) and one floor (`--fs-min`), so the hierarchy is kept
-exactly. A `label` reads 11px on a phone, `meta` 13.8px, `body` 17.25px. Display figures already
-size to the viewport and are not scaled. Where larger text crowds a row on the narrowest phones,
-spacing gives way first: tracking on links, gaps, three axis dates instead of four. The `label`
-tracking never gives way. Production should also follow the reader's own text-size setting
-(Dynamic Type, Android font scale) on top of this.
-
-**The 0.2em label tracking is load-bearing.** It is what makes a small uppercase label read as
-typesetting rather than as a cramped UI string, and it is the most copied-wrong detail in the
-system. Do not reduce it.
+exactly. Display figures already size to the viewport and are not scaled. Where larger text crowds
+a row on the narrowest phones, spacing gives way first. Production should also follow the reader's
+own text-size setting (Dynamic Type, Android font scale) on top of this; Unbounded is wide, so the
+largest accessibility sizes need a rule for money that no longer fits (Stage 3).
 
 ---
 
@@ -145,69 +136,56 @@ system. Do not reduce it.
 Every value below is measured, not chosen by eye. Contrast figures are WCAG ratios against that
 theme's ground.
 
-### 4.1 Dark (reference theme)
+Light (cream) is the reference theme; dark (espresso) follows the OS. Contrast is measured against
+the card surface, where most text sits.
 
-| Token | Hex | Contrast | Role |
+| Token | Light | Dark | Role |
 |---|---|---|---|
-| `paper` | `#101013` | — | The ground |
-| `paper-2` | `#16161A` | — | Raised surfaces only: sheets, menus |
-| `ink` | `#F4F2EE` | 16.99 | Primary text and amounts |
-| `ink-2` | `#A29D95` | 7.05 | Secondary text |
-| `ink-3` | `#7D786F` | 4.33 | Labels, axis ticks, metadata |
-| `rule` | `#2A2A2E` | 1.33 | Hairlines (decorative, exempt) |
-| **`brand`** | `#FF2E88` | 5.43 | Fluorescent magenta — NetNet's ink |
-| **`agent`** | `#25D8E8` | 10.91 | Cyan — the agent's ink |
-| `gain` | `#6FBF95` | 8.65 | Positive change |
-| `loss` | `#E0796A` | 6.43 | Negative change |
-| `attention` | `#D9A441` | 8.45 | Stale, warnings |
+| `paper` | `#F2EADB` | `#1B1712` | The board |
+| `card` | `#FFFAF1` | `#2A231B` | Every card, sheet, field |
+| `ink` | `#1A1714` | `#F5EDDF` | Text, amounts |
+| `ink-2` | `#4A433A` | `#D2C5AF` | Secondary text (8.2:1 light) |
+| `ink-3` | `#6B6255` | `#A7987F` | Meta, labels (5.8 / 5.5) |
+| `rule` | `#E3D7C1` | `#3E3529` | Rules inside cards (decorative, exempt) |
+| `edge` | `#1A1714` | `#E8DCC6` | Card and control outlines |
+| `drop` | `#1A1714` | `#000` | The hard offset shadow |
+| **`brand`** | `#F0643A` | `#FF7438` | Tomato — NetNet's ink |
+| `brand-text` | `#B23C0C` | `#FF8F5E` | Tomato as text (5.7 / 6.9) |
+| `brand-on` | `#1A1714` | `#1A1714` | Ink on tomato (5.6 / 6.6) — black on orange, as in the reference |
+| **`agent`** | `#2F5BD6` | `#7C98FF` | Royal blue — the agent's ink |
+| `agent-text` | `#2447B0` | `#9DB2FF` | Blue as text (7.8 / 7.6) |
+| `gain` | `#22703F` | `#6FCF8E` | Positive change (5.8 / 8.1) |
+| `loss` | `#B4232F` | `#FF6B81` | Negative change (6.3 / 5.7) — crimson/rose, kept clear of the tomato |
+| `attention` | `#8A5A00` | `#F2B640` | Stale, warnings; notes sit on `warn-bg` `#FBE6B5` / `#3A2E14` |
+| `sun` | `#F4B63F` | `#F2B640` | Mustard, **decoration only** (§4.3) |
 
-### 4.2 Light
-
-| Token | Hex | Contrast | Role |
-|---|---|---|---|
-| `paper` | `#F7F4ED` | — | Warm paper stock |
-| `paper-2` | `#EFEBE1` | — | Raised surfaces only |
-| `ink` | `#16130E` | 16.86 | Primary text and amounts |
-| `ink-2` | `#56503F` | 7.31 | Secondary text |
-| `ink-3` | `#7A7364` | 4.28 | Labels, axis ticks, metadata |
-| `rule` | `#DFD8C8` | 1.29 | Hairlines (decorative, exempt) |
-| **`brand`** | `#E4006B` | 4.24 | Magenta — **marks only** |
-| **`brand-text`** | `#C2005C` | 5.54 | Magenta as small text |
-| **`agent`** | `#00808F` | 4.26 | Cyan — **marks only** |
-| **`agent-text`** | `#046370` | 6.32 | Cyan as small text |
-| `gain` | `#2F6B4F` | 5.73 | Positive change |
-| `loss` | `#A33A2E` | 5.97 | Negative change |
-| `attention` | `#7A5600` | 6.05 | Stale, warnings |
-
-**Why light mode splits the inks into two tokens.** At full fluorescence on paper both inks land
-near 4.2:1 — fine for a rule, a dot or a 2px trend line, below the 4.5:1 a small bold label needs.
-So light mode carries a darker sibling for text. The underlying rule is worth stating plainly:
-
-> **The fluorescent is a mark, not a typeface colour.** When it must be text, it darkens.
-
-Dark mode needs no split; both inks clear 4.5:1 there.
+**The risk to watch:** tomato brand and red loss are neighbours. They are separated by hue (orange vs
+crimson), by role (brand is never a figure's colour) and by sign (loss always carries `−`).
 
 ### 4.3 The six chromatic roles
 
-Colour appears for exactly six reasons. Anything else is `ink`, `ink-2`, `ink-3` or `rule`.
+Colour appears for exactly six reasons, plus one decorative colour. Anything else is `ink`,
+`ink-2`, `ink-3`, `rule` or `edge`.
 
 | Role | Token | Appears as |
 |---|---|---|
-| NetNet's own mark | `brand` | Wordmark dot, trend line and wash, active tab, focus ring, primary button |
-| The agent wrote this | `agent` | The margin mark on the row, at half strength — never text (§2.1) |
+| NetNet's own mark | `brand` | Hero card, wordmark sparkle, trend line and wash, active tab, primary button, chosen segment |
+| The agent wrote this | `agent` | The bar on a row's inner edge, at 75% — never text (§2.1) |
 | Value went up | `gain` | Change figures, positive bars — always with `+` |
 | Value went down | `loss` | Change figures, negative bars — always with `−` |
 | Needs attention | `attention` | Stale labels, reminder notices |
 | Category identity | chart palette (§5) | Charts only, never UI |
+| *Decoration* | `sun` | Step numbers, the prompt card's tab, the "Need more data" sticker. Never data, never beside gain or loss, never in a chart |
 
 ### 4.4 Rules that hold the system together
 
-1. **Gain and loss are never fluorescent.** Four loud colours on one page means none of them reads.
-2. **The two inks never appear inside a categorical chart**, and chart hues never appear as UI
+1. **Gain and loss are never the loudest thing.** They are dark greens and crimsons on cream, so
+   the tomato hero stays the one loud surface.
+2. **Brand and agent never appear inside a categorical chart**, and chart hues never appear as UI
    chrome. Two colour systems, zero overlap in usage.
 3. **Green and red are reserved for direction.** They are never a brand colour and never a category.
-4. **`paper-2` is for overlays only.** Using it to make a card is how this system degrades back into
-   the dashboard it is trying not to be.
+4. **The hard shadow is for cards and controls you can press.** Text, icons and chart marks never
+   get one; that is where the poster turns into a toy.
 
 ---
 
@@ -254,13 +232,15 @@ instead: the inks and the chart hues never appear in the same role, so they are 
   categorical hue and carries no numbers or dates, so it cannot be read as a result even where the
   blur is not supported. Controls that act on data (range bar, pager, legend) are not shown on it.
 - **Every line chart can be read point by point.** A dashed crosshair snaps to the nearest date; a
-  dot marks each series there; the readout gives the date in `meta` and each value in Fraunces,
+  dot marks each series there; the readout gives the date in `meta` and each value in the display face,
   **value first**, keyed by a short stroke of its series colour, largest first. It sits at the top
   of the plot beside the crosshair, flipping sides past the middle so it never covers the dot, on
   a paper halo rather than a box. Mouse: hover. Touch: tap a point, or press and hold, then drag,
   to scrub; a plain swipe still scrolls. Keyboard: focus, then ← → (Home, End, Esc). Screen
   readers hear each reading. The readout adds precision; every figure it shows is also on the
   page (the hero, the history, the period list), so it never gates a value.
+- **The look.** A 3px trend line over a tomato wash, dotted gridlines, a solid ink zero line,
+  outlined legend swatches, and allocation bars as 12px outlined pills.
 - **The trend line is `brand`**, not gain/loss. It is NetNet's mark, and the change figure beside it
   carries the semantics. A trend line that turned red on a bad quarter would put two conflicting
   signals in one glance.
@@ -273,29 +253,36 @@ Built by us, because they carry the brand:
 
 | Component | Notes |
 |---|---|
-| **Rule** | 1px `rule`. The primary structural device. |
-| **Section** | `label` + content, separated by rules. No background, no border, no radius. |
-| **Figure row** | Name + metadata left; amount (`figure-lg`) over **one** change figure right-aligned (§2.1). |
-| **Margin mark** | 2px `agent` bar at half strength in the gutter, inset from the row's rules. The provenance device, quiet on purpose; the client is named only when the value is opened. |
+| **Card** | `card` fill, 2px `edge`, 14px radius, 4px/4px hard shadow in `drop`. The primary structural device. Rows inside are padded 16px and split by 1.5px `rule`. |
+| **Section** | A heading in the display face above a card. |
+| **Figure row** | Name + metadata left; amount (`figure`) over **one** change figure right-aligned (§2.1). |
+| **Margin mark** | 4px `agent` bar on the card's inside left edge, at 75%. The provenance device, quiet on purpose; the client is named only when the value is opened. |
 | **Opened value** | Only what the row does not already say: the original-currency amount if it differs, then a `meta` footer, "Added 3 days ago by Claude", with Edit and Delete. |
-| **Hero figure** | `display` amount, `label` above, change line below. |
-| **Trend** | 2px `brand` stroke, wash beneath at 22% dark / 14% light. No gridlines by default. |
-| **Inline chip** | Text-only, `label` scale, coloured. **No pill background** — a pill is a container. |
-| **Segmented control** | Ours: it carries brand and appears on data screens. |
-| **Button** | Ours. `brand` fill, paper-coloured text; secondary is ruled, not filled. |
+| **Hero figure** | A tomato card with two sparkles in its corner: `label`, `display` amount and change line in `brand-on`; the change figure on a cream pill so gain and loss keep their contrast. On a holding page the name and consequence line sit on it too. |
+| **Trend** | 3px `brand` stroke, wash beneath at 22% light / 26% dark. No gridlines by default. |
+| **Inline chip** | Text at `label` scale, coloured; "stale" is an outlined sticker on `warn-bg`. |
+| **Segmented control** | An outlined tray with a 3px shadow; the chosen segment fills tomato. |
+| **Button** | Tomato, 2px outline, 10px radius, 3px hard shadow that collapses when pressed. Secondary: `card` fill. Ghost: underlined text. |
 | **Empty state** | Typographic. A sentence and one action, never an illustration. A chart with too little data is not an empty state: see **Chart placeholder**. |
-| **Chart placeholder** | The chart's own shape (trend line with a fading wash, growth bars, stacked bars, or three lines), fixed, drawn in `ink-2` dark / `ink-3` light, under a full-bleed frosted layer: `paper` at 50% with a 4px backdrop blur (86% solid where blur is unsupported; the sample is dropped in forced-colours mode). On the glass: "Need more data" in `label` caps, `ink`; beneath it, where the screen has no other place to say it, one `body-sm` line in `ink-2` saying what makes the chart appear ("Update a holding next month, or add an earlier value, to see your trend."). Where several charts share a reason (Insights), the reason is said once, in the summary line, and each chart carries only the label. When data exists but the chosen range holds too little, the label is "Pick a longer range" and the range bar stays; when filters leave nothing, "Nothing to show". The sample is hidden from screen readers; the words are read. |
-| **Position ledger** | Figure rows as a ledger: bucket in `body`, what is in it in `meta` beneath (holding names; types for locked), amount in Fraunces; a `rule-strong` hairline above what you owe. No subtotal. How the first picture is set (PRD J1). |
-| **Choice row** | Answers to a fact question. Short answers: ruled buttons in `label` caps; the chosen one takes a `brand` rule, not a fill. Sentence answers: a stacked list of rows, the chosen one marked by a 3px `brand` bar. Never pills. |
+| **Chart placeholder** | The chart's own shape (trend line with a fading wash, growth bars, stacked bars, or three lines), fixed, drawn in `ink-2` dark / `ink-3` light, under a full-bleed frosted layer: `card` at 55% with a 4px backdrop blur (88% solid where blur is unsupported; the sample is dropped in forced-colours mode). On the glass: "Need more data" on a mustard sticker; beneath it, where the screen has no other place to say it, one `body-sm` line in `ink-2` saying what makes the chart appear ("Update a holding next month, or add an earlier value, to see your trend."). Where several charts share a reason (Insights), the reason is said once, in the summary line, and each chart carries only the label. When data exists but the chosen range holds too little, the label is "Pick a longer range" and the range bar stays; when filters leave nothing, "Nothing to show". The sample is hidden from screen readers; the words are read. |
+| **Position ledger** | Figure rows as a ledger: bucket in `body`, what is in it in `meta` beneath (holding names; types for locked), amount in the display face; a dashed 2px rule above what you owe. No subtotal. How the first picture is set (PRD J1). |
+| **Choice row** | Answers to a fact question: outlined buttons with shadows; the chosen one fills tomato. Sentence answers stack. |
 | **Consequence line** | `body-sm` in `ink-2`; the consequence in `ink` 600, the pack's reason after an em dash, then a `label`-scale **Change** link. States money, never a category (PRD J2). The amount ("the $X you could use") appears only where it moves as you type — the Add form. Elsewhere it would repeat the Position ledger. |
 | **Change line** | Under a hero figure: signed money · percentage, then "vs *baseline* ▾", which is itself the control that changes the baseline. |
-| **Alternative route** | Below a hairline rule: a `body` 600 subtitle ("Let your AI agent do this"), one `meta` line naming the agents, then an outlined button whose icon is the **agent roll**. How a genuine second way to start is offered without competing with the primary (§2.1 rule 10). |
+| **Alternative route** | Below a 2px rule: a `body` 600 subtitle ("Let your AI agent do this"), one `meta` line naming the agents, then an outlined button whose icon is the **agent roll**. How a genuine second way to start is offered without competing with the primary (§2.1 rule 10). |
 | **Agent roll** | The 18px icon slot on "Connect to agent": the generic agent icon, then each supported agent's logo in turn, two seconds each, counted from when the button appears. Each logo rises in and out (550ms, ease-out), drawn as a silhouette in the button's ink so any official file fits both themes. Still under reduced motion; hidden from screen readers. Missing logo files show the agent's initial in a circle (`agents/README.md`). |
 | **Agent logo** | The same silhouette at 18px beside an agent's name in lists ("Which AI agent do you use?", the Agent tab). ChatGPT's, Claude's and Grok's marks come from LobeHub's open-source AI icon set (`agents/README.md`); "Other agent" uses NetNet's own agent icon. |
-| **Setup step** | A numbered step in `body-sm`, the client's own words in `ink` 600, then its screenshot in a hairline frame, at most 420px tall. A missing screenshot is a dashed placeholder naming the file to add (`connect/README.md`). |
-| **Floating action** | The holding page's **Update**: the `brand` button with a plus, 48px tall, floating bottom-right on the content column's edge, 16px above the tab bar (24px from the bottom on a computer), with a soft shadow. At the very bottom of the page it sinks behind the tab bar (off the bottom on a computer), so it never sits on the last value, and it resurfaces as soon as the page scrolls back up. It comes back when it takes keyboard focus. Under reduced motion it goes and comes without sliding. A page too short to scroll keeps it up and leaves room under its last row. The only floating control in the system, on the one page whose list grows without limit (Founder, 2026-09-25). |
-| **Prompt card** | A message to send the agent (the starting prompt on the blank Home, "Ask your agent", Muse's first setup step): the one card in the system, a slip raised off the page. `body` 15px in `ink` on its own surface (`#1D1D22` dark, `#FFFDF8` light), a 1px edge, 4px corners, and a soft two-layer shadow; the edge alone survives forced-colours mode. **Copy** sits inside it, bottom right, unless the screen's primary action is already Copy. An address (the MCP URL) is a setting, not a message, and stays a ruled mono box. Founder, 2026-09-25: in a ruled row the prompt blended into the page, and it is the one thing on that screen the user must act on. |
-| **Amount entry** | The one place a number is *typed* at display size: Fraunces 600 · 30px on a single hairline that turns `brand` on focus, currency symbol in `ink-3`. Money is typeset the same way whether it is shown or entered. |
+| **Setup step** | A numbered step (the number on a mustard disc), the client's own words in `ink` 600, then its screenshot in an outlined frame, at most 420px tall. A missing screenshot is a dashed placeholder naming the file to add (`connect/README.md`). |
+| **Floating action** | The holding page's **Update**: a tomato pill with a plus, outlined, 52px tall, with a 4px hard shadow, floating bottom-right in line with the amounts inside the cards, 16px above the tab bar (24px from the bottom on a computer). At the very bottom of the page it sinks behind the tab bar (off the bottom on a computer), so it never sits on the last value, and it resurfaces as soon as the page scrolls back up. It comes back when it takes keyboard focus. Under reduced motion it goes and comes without sliding. A page too short to scroll keeps it up and leaves room under its last row. The only floating control in the system, on the one page whose list grows without limit (Founder, 2026-09-25). |
+| **Prompt card** | A message to send the agent (the starting prompt on the blank Home, "Ask your agent", Muse's first setup step): a card with a mustard tab on its top edge, `body` 15px in `ink`. **Copy** sits inside it, bottom right, unless the screen's primary action is already Copy. An address (the MCP URL) is a setting, not a message, and sits in a dashed mono box. |
+| **Amount entry** | The one place a number is *typed* at display size: Unbounded 600 · 24px in a boxed field that takes a tomato shadow on focus, currency symbol in `ink-3`. |
+| **Icon button** | An outlined disc with a 2px shadow (the reference's menu and settings buttons). |
+| **Fields** | Boxed: 2px outline, `card` fill; focus adds a tomato hard shadow. |
+| **Range bar / filter chips** | The chosen range is an ink pill; filter chips are outlined pills that fill tomato (or `loss` for Don't Show). The pill is drawn inside the 44px target. |
+| **Home carousel** | Trend and allocation cards (§7), swiped sideways on a phone; the scroller keeps room for the hard shadows. Dots are outlined circles; the current one is a tomato pill. |
+| **Tab bar** | `card` fill, 2px top outline, cells split by rules; the active tab gets a 4px tomato bar on top. Sidebar: the active item is a tomato pill. |
+| **Sheet** | `card`, outlined, 22px top corners; a centred card with a 6px shadow on a computer. |
+| **Wordmark** | Unbounded 800 with a four-point tomato sparkle for the dot. |
 
 Deferred to the platform, per the Founder's "brand chrome, native controls" decision:
 
@@ -316,7 +303,7 @@ ambiguous, ask which side of that line it falls on rather than deciding case by 
 ### 6.1 Hit targets — binding
 
 **What a control looks like is a design choice. What you can tap is a contract.** This system draws
-controls as 9.5px tracked labels and hairline chips, which is right for the look and wrong for a
+controls as small labels and slim pills, which is right for the look and wrong for a
 thumb. So visual size and tap size are specified separately, and only the second is a rule.
 
 | Token | Value | Applies |
@@ -396,15 +383,19 @@ patterns**. After the fix there are none at either size, and no overlaps.
   React Native so a component reads `bg-paper text-ink` on both.
 - **Both themes are authored, not derived.** Dark is not an inverted light. Every token is declared
   twice and measured against its own ground.
-- **Fonts** are committed under `fonts/` (SIL OFL, redistribution permitted). Stage 3 decides how
-  they are served, including `expo-font` on native.
+- **Fonts** (Unbounded, Space Grotesk) are committed under `fonts/` (SIL OFL, redistribution
+  permitted). Stage 3 decides how they are served, including `expo-font` on native, where each
+  weight should ship as its own static file (variable fonts are unreliable on Android).
 - **Verify, do not eyeball.** Any change to a chart colour re-runs the palette validator; any change
   to a text token re-runs the contrast check. Both are cheap and both have already caught real
   failures in this system's own development.
 
-## 9. Open questions — settled at the Stage 2 review (2026-09-25)
+## 9. Open questions
 
-1. **Fraunces for row amounts, or hero only?** Every monetary amount stays in the serif.
-2. **Does the light theme's warm paper survive a landing page?** Moved to the landing page's own
-   design, which is now separate from the product (PRD G-D1).
-3. **A wordmark still needs drawing.** Deferred: the dot stays a placeholder for now.
+1. **A wordmark still needs drawing.** The sparkle stands in for now.
+2. **Native build (Stage 3).** The look carries to iOS and Android without web-only tricks. Three
+   things need a rule there: platform sheets and switches take the palette but not the full outline
+   treatment; Unbounded at the largest accessibility text sizes; frosted placeholders on Android
+   below 12 fall back to the solid veil.
+3. **Dark mode on real phones.** The cream outline on espresso is measured, but not yet checked on
+   a device.

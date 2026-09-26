@@ -133,10 +133,14 @@ The templates are universal and live in `app.js`; every reason after the dash co
 
 `design-system.md` is the spec; this is the short version of how it came about.
 
-The prototype is built on **NetNet v1 — "Two Inks"**, chosen by the Founder on 2026-09-23 after
-three rounds. The idea: *a ledger, typeset and printed in two inks — one ink is you, the other is
-your agent.* Structure is typographic (hairline rules, no cards); colour is scarce and loud.
-Fraunces sets every monetary amount, Inter sets everything else.
+The prototype is built on **NetNet v2 — "Poster"**, chosen by the Founder on 2026-09-26. It
+started as v1, **"Two Inks"** (2026-09-23, after three rounds): *a ledger, typeset and printed in
+two inks, one for you and one for your agent*, with hairline rules and no cards. Before the Stage 2
+gate the Founder asked for two more looks over the same product: **B "Poster"** (bold retro:
+cream stock, black outlines, hard offset shadows, one tomato ink, Unbounded + Space Grotesk) and
+**C "Calm"** (clean and soft: white cards, an indigo hero, Plus Jakarta Sans). All three ran the
+same `app.js` and passed the same tests. The Founder chose B; A and C are kept on their branches
+(`claude/zealous-dijkstra-3yebuo`, `claude/design-c-soft`).
 
 The first round was rejected outright, and the reason is worth keeping: it started from a palette
 rather than an idea, and produced four recolourings of the same generic dashboard. `explorations/`
@@ -144,8 +148,8 @@ holds the whole record, including that failure.
 
 **Decisions this locked in, beyond appearance**
 
-- The agent's ink is a *structural* device, not a badge — a cyan rule in a reserved 24px gutter,
-  used identically on Home, value history and the audit log.
+- The agent's ink is a *structural* device, not a badge — a blue bar on a row's inner edge (a
+  cyan rule in v1), used identically on Home, value history and the audit log.
 - The allocation donut was replaced by a ranked list; its direct labels satisfy the light-mode
   relief rule the chart validator flagged.
 - The trend line is the brand ink, never gain/loss.
@@ -154,8 +158,8 @@ holds the whole record, including that failure.
 The rework added four components, all inside the system rather than beside it — the **Position
 ledger**, the **choice row**, the **consequence line** and the **amount entry** (`design-system.md` §6).
 
-**Still open** (`design-system.md` §9): whether Fraunces should set row amounts or the hero only;
-whether the warm paper survives a landing page; and the wordmark, which is still a placeholder dot.
+**Still open** (`design-system.md` §9): the wordmark (a sparkle stands in); three native-build
+rules for Stage 3; dark mode checked on a real phone.
 
 ## 6. Design decisions
 
@@ -318,6 +322,11 @@ whether the warm paper survives a landing page; and the wordmark, which is still
 5. **Net Worth Goals — out of v1**, nothing to build or test. **Tags AND/OR — kept.** **Value Note
    and Mark on graph — out of scope** (Founder, 2026-09-24): removed from the prototype along with
    the data they wrote, their seeded examples and the export column, so nothing implies they exist.
+6. **The look — decided: B "Poster"** (Founder, 2026-09-26), over A "Two Inks" and C "Calm".
+   `design-system.md` is now B's system; A and C are kept on their branches.
+7. **Home's trend and allocation share a carousel under the total** (Founder, 2026-09-26). On a
+   computer the two sit side by side above holdings and position, which changes the desktop layout
+   approved on 2026-09-25 — **to confirm at the gate.**
 
 ## 8. Risks and open questions
 
