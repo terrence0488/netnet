@@ -387,7 +387,6 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:max
   #s-home .grid{display:flex;flex-direction:column}
   #s-home .grid > .g5,#s-home .grid > .g7{display:contents}
   #s-home .o-trend{order:1}#s-home .o-pos{order:2}#s-home .o-list{order:3}#s-home .o-alloc{order:4}
-  #s-home .o-trend{margin-top:18px}
 }
 .list-foot{display:flex;justify-content:flex-end;margin-top:-10px}
 .list-foot .link{font-size:max(var(--fs-min),calc(13px * var(--fs)));font-weight:600;color:var(--ink-2)}
@@ -395,7 +394,6 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:max
 @media (min-width:900px){
   #s-home .grid > .g5{grid-column:8 / span 5 !important;grid-row:1}
   #s-home .grid > .g7{grid-column:1 / span 7 !important;grid-row:1}
-  #s-home .o-trend{margin-top:22px}
 }
 
 /* ==========================================================================
@@ -660,3 +658,29 @@ a.btn{text-decoration:none}
 .field input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;text-align:left}
 .field input[type=date]::-webkit-date-and-time-value{text-align:left}
 .two>*{min-width:0}
+
+/* ---------- Home: trend and allocation share one place (Founder, 2026-09-26) ----------
+   Phone: a carousel of two cards, swiped sideways, with dots. Computer: side by side on the
+   grid's 7/5 columns. The scroller keeps room for the cards' hard shadows. */
+.o-charts{margin-top:18px}
+.chart-h .link{font-size:max(var(--fs-min),calc(12px * var(--fs)));font-weight:700;letter-spacing:.02em;color:var(--brand-text)}
+.o-alloc .chart-h{margin-bottom:2px}
+.carousel.swipe>.slide{margin:0}
+.dots.swipe-dots{display:flex;justify-content:center;gap:8px;padding:10px 0 0}
+.swipe-dots i{width:10px;height:10px;border-radius:50%;border:var(--bw) solid var(--edge);background:var(--card)}
+.swipe-dots i.on{background:var(--brand);width:22px;border-radius:99px}
+@media (max-width:899px){
+  .carousel.swipe{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;
+    gap:var(--gutter);margin:0 calc(var(--gutter) * -1);padding:0 var(--gutter) calc(var(--off) + 2px);
+    scroll-padding:0 var(--gutter);scrollbar-width:none}
+  .carousel.swipe::-webkit-scrollbar{display:none}
+  .carousel.swipe>.slide{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always}
+}
+@media (min-width:900px){
+  .o-charts{margin-top:22px}
+  .carousel.swipe{display:grid;grid-template-columns:repeat(12,1fr);gap:0 32px}
+  .carousel.swipe>.slide{grid-column:span 12}
+  .carousel.swipe.two>.slide:first-child{grid-column:span 7}
+  .carousel.swipe.two>.slide:last-child{grid-column:span 5}
+  .dots.swipe-dots{display:none}
+}

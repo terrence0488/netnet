@@ -106,6 +106,7 @@ and the line-chart readout on a small ink tag instead of A's paper halo.
 | **Range bar / filter chips** | The chosen range is an ink pill; filter chips are outlined pills that fill tomato (or `loss` for Don't Show). The pill is drawn inside the 44px target. |
 | **Choice row** | Outlined buttons with shadows; chosen fills tomato. Never a bare rule. |
 | **Fields** | Boxed: 2px outline, `card` fill; focus adds a tomato hard shadow. Amount entry is boxed too, in Unbounded. |
+| **Home carousel** | Trend and allocation cards swiped sideways on a phone; the scroller keeps room for the hard shadows. Dots are outlined circles; the current one is a tomato pill. Side by side on a computer. |
 | **Tab bar** | `card` fill, 2px top outline, cells split by rules; the active tab gets a 4px tomato bar on top. Sidebar: the active item is a tomato pill. |
 | **Sheet** | `card`, outlined, 22px top corners; a centred card with a 6px shadow on a computer. |
 | **Prompt card** | A card with a mustard tab on its top edge. |
