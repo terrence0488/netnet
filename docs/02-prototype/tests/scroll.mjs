@@ -57,7 +57,8 @@ t('re-opening Insights fires insights_viewed again', await count('insights_viewe
 
 // Home range bar keeps position
 await p.tap('#tabbar [data-tab="#/home"]'); await p.waitForTimeout(300);
-const rbar=await p.$('.rangebar button:not(.on)');
+/* the right-most range: the PROTO button (scaffolding, fixed bottom-left) can sit over the first */
+const rbar=(await p.$$('#s-home .rangebar button:not(.on)')).pop();
 await rbar.scrollIntoViewIfNeeded(); await p.evaluate(()=>window.scrollBy(0,-40)); await p.waitForTimeout(80);
 const hy=await sy(); await rbar.tap(); await p.waitForTimeout(200);
 t('Home range bar keeps scroll position', Math.abs(await sy()-hy)<=2, `before ${hy} after ${await sy()}`);
