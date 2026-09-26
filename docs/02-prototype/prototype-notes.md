@@ -163,8 +163,10 @@ whether the warm paper survives a landing page; and the wordmark, which is still
 
 1. **The holding page stacks its two charts**, trend then period bars. The mockups' carousel with
    page dots became a stack in the design-system rebuild, so both are visible without swiping. On
-   Home it became a trend line beside a ranked allocation list when the design system replaced the
-   donuts (§5); the Position ledger now carries the assets-vs-liabilities split.
+   Home the trend line and a ranked allocation list (which replaced the donuts, §5) are the
+   mockups' carousel again: swiped sideways on a phone, side by side on a computer, right under
+   the total (Founder, 2026-09-26: the allocation was a long scroll away at the bottom). The
+   Position ledger carries the assets-vs-liabilities split.
 2. **Holding rows carry one change figure**, not the mockups' percentage-and-amount pair
    (design-system §2.1).
 3. **Sort By, Comparison Options, Filters and Add Tracking** are the mockups' menus, with the same

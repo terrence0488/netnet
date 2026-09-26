@@ -45,8 +45,9 @@ t('no "Change comparison" button', !(await txt('#s-home')).includes('Change comp
 await p.click('#s-home .nw-chg'); await p.waitForTimeout(200);
 t('tapping the change line opens the comparison sheet', (await txt('#sheet')).includes('Comparison'));
 await p.evaluate(()=>closeSheet());
-const order=await p.evaluate(()=>['.o-trend','.o-pos','.o-list','.o-alloc'].map(s=>Math.round(document.querySelector('#s-home '+s).getBoundingClientRect().top)));
-t('phone order: trend → position → holdings → allocation', order.every((y,i)=>!i||y>order[i-1]), order.join(' < '));
+const order=await p.evaluate(()=>['.o-trend','.o-alloc','.o-pos','.o-list'].map(s=>Math.round(document.querySelector('#s-home '+s).getBoundingClientRect().top)));
+t('phone order: trend and allocation side by side in one carousel → position → holdings',
+  order[0]===order[1] && order[1]<order[2] && order[2]<order[3], order.join(' · '));
 
 // prototype scaffolding lives in the PROTO sheet, not on product screens
 await p.evaluate(()=>{S.account.verified=false; save(); location.hash='#/agent';}); await p.waitForTimeout(250);

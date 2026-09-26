@@ -758,8 +758,25 @@ function renderHome() {
   }).join('');
   const archived = S.holdings.filter(h => h.archived).length;
 
-  /* Phone order: total → trend → position → holdings → allocation. Desktop puts the
-     summary (position, allocation) in the right column; see styles.css. */
+  /* The trend and the allocation share one place under the total: on a phone a carousel you
+     swipe between, on a computer two cards side by side. Then position, then holdings (Founder,
+     2026-09-26: the allocation was a long scroll away at the bottom). See styles.css. */
+  const slides = [];
+  if (hasHistory) slides.push(`<div class="slide o-trend card">
+        <div class="chart-h"><h3>Trend</h3></div>
+        ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:150, label:homeFiltered() ? 'Filtered total' : 'Net worth' })}
+        <div class="rangebar">${HOME_RANGES.map(([l, v]) =>
+          `<button data-act="set-range" data-v="${v}" class="${S.settings.range === v ? 'on' : ''}">${l}</button>`).join('')}</div>
+      </div>`);
+  else if (list.length) slides.push(`<div class="slide o-trend card">
+        <div class="chart-h"><h3>Trend</h3></div>
+        ${chartPlaceholder('line', { px:172, sub:'Update a holding next month, or add an earlier value, to see your trend.' })}</div>`);
+  if (segs.length > 1) slides.push(`<div class="slide o-alloc card">
+        <div class="chart-h"><h3>Allocation</h3>
+          <button class="link" data-act="pie-mode" data-v="${S.settings.pieMode === '$' ? '%' : '$'}">${S.settings.pieMode === '$' ? 'Show %' : 'Show ' + esc(sym())}</button></div>
+        ${allocationList(segs, S.settings.pieMode)}</div>`);
+  const hc = Math.min(S.homeCard || 0, Math.max(0, slides.length - 1));
+
   $('#s-home').innerHTML = `
   <div class="topbar">
     <div class="wordmark"><i></i>NetNet</div>
@@ -777,31 +794,45 @@ function renderHome() {
     ${hasHistory ? changeLine(t.abs, t.pct) : ''}
   </div>
 
+  ${slides.length ? `<div class="o-charts">
+    <div class="carousel swipe${slides.length > 1 ? ' two' : ''}" id="home-carousel" role="group" aria-label="Trend and allocation">
+      ${slides.join('')}</div>
+    ${slides.length > 1 ? `<div class="dots swipe-dots" aria-hidden="true">${slides.map((_, i) =>
+      `<i class="${i === hc ? 'on' : ''}"></i>`).join('')}</div>` : ''}
+  </div>` : ''}
+
   <div class="grid">
     <div class="g5">
       <div class="o-pos"><div class="section-h"><h2>Position</h2></div>
       ${positionLedger(list, t)}
       ${stale ? staleNote(stale) : ''}</div>
-
-      ${segs.length > 1 ? `<div class="o-alloc"><div class="section-h"><h2>Allocation</h2>
-        <button class="link" data-act="pie-mode" data-v="${S.settings.pieMode === '$' ? '%' : '$'}">${S.settings.pieMode === '$' ? 'Show %' : 'Show ' + esc(sym())}</button></div>
-      <div class="card">${allocationList(segs, S.settings.pieMode)}</div></div>` : ''}
     </div>
 
     <div class="g7">
-      ${hasHistory ? `<div class="o-trend card">
-        ${lineChart([{ points:pts, colour:'var(--brand)', fill:true }], { px:150, label:homeFiltered() ? 'Filtered total' : 'Net worth' })}
-        <div class="rangebar">${HOME_RANGES.map(([l, v]) =>
-          `<button data-act="set-range" data-v="${v}" class="${S.settings.range === v ? 'on' : ''}">${l}</button>`).join('')}</div>
-      </div>` : list.length ? `<div class="o-trend card">${chartPlaceholder('line', { px:172,
-        sub:'Update a holding next month, or add an earlier value, to see your trend.' })}</div>` : ''}
-
       <div class="o-list"><div class="section-h"><h2>Holdings · ${list.length}</h2>
         <button class="link" data-act="open-sort">${esc(sortLabel())}</button></div>
       <div class="card flush">${rows || '<div class="empty"><p class="muted">Nothing matches this filter.</p></div>'}</div>
       ${archived ? `<div class="list-foot"><button class="link" data-go="#/sub/archived">${archived} archived ›</button></div>` : ''}</div>
     </div>
   </div>`;
+}
+
+/* Home's trend/allocation carousel: keep the slide the reader was on across re-renders (Show $ / %,
+   a range, a filter, coming back from a holding), and move the dots as it is swiped. Runs after the
+   screen is shown, since a hidden carousel has no width to scroll by. */
+function bindHomeCarousel() {
+  const el = $('#home-carousel');
+  if (!el || el.children.length < 2) return;
+  const step = () => Math.max(1, el.children[1].offsetLeft - el.children[0].offsetLeft);
+  const n = el.children.length, hc = Math.min(S.homeCard || 0, n - 1);
+  el.scrollLeft = hc * step();
+  el.onscroll = () => {
+    const i = Math.min(n - 1, Math.max(0, Math.round(el.scrollLeft / step())));
+    if (i !== (S.homeCard || 0)) {
+      S.homeCard = i;
+      document.querySelectorAll('#s-home .swipe-dots i').forEach((d, j) => d.classList.toggle('on', j === i));
+    }
+  };
 }
 
 /* Out-of-date holdings. With an agent connected, one tap hands it the job (the prompt
@@ -2043,6 +2074,7 @@ function render(keepScroll) {
   if (navigated && !keepScroll) window.scrollTo(0, 0);
   fabSink();
   bindCharts();
+  if (id === 's-home') bindHomeCarousel();
   if (chrome && S.account.signedIn && !sessionStarted) { sessionStarted = true; fire('session_started', {}); }
   if (p[0] === 'insights') {
     const view = S.settings.insightsView;
