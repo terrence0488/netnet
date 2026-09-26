@@ -28,9 +28,7 @@ What that changes, concretely:
    rows inside a card are separated by soft rules.
 2. **The hero is a tomato card** with two sparkles in its corner. Its change figure sits on a
    cream sticker so gain and loss keep their contrast on the orange.
-3. **A ticker band** runs under the Home top bar (`✦ NETNET ✦ NET WORTH …`). It is decoration
-   only: hidden from screen readers, carries no figure, so §2.1 "one figure, one place" holds.
-4. **Controls look pressable.** Outlined buttons with a hard shadow that collapses when pressed;
+3. **Controls look pressable.** Outlined buttons with a hard shadow that collapses when pressed;
    chosen segments and answers fill tomato; the chosen range is an ink pill.
 
 Principles kept from A: the figure is the hero; never encode by hue alone; provenance is quiet;
@@ -101,7 +99,6 @@ and the line-chart readout on a small ink tag instead of A's paper halo.
 |---|---|
 | **Card** | `card` fill, 2px `edge`, 14px radius, 4px/4px hard shadow in `drop`. Rows inside are padded 16px and split by 1.5px `rule`. |
 | **Hero figure** | Tomato card; label, figure and baseline control in `brand-on`; change figure on a cream pill. On a holding page the name and consequence line sit on it too. |
-| **Ticker** | 34px tomato band, outlined, under the Home top bar. Full-bleed on a phone, a rounded strip on a computer. Pure CSS, `aria`-hidden. |
 | **Margin mark** | 4px `agent` bar on the inside left edge of the card, at 75%. |
 | **Icon button** | Outlined disc with a 2px shadow (the reference's menu and settings buttons). |
 | **Button** | Tomato, outlined, 10px radius, 3px hard shadow that collapses on press. Secondary: `card` fill. Ghost: underlined text. |

@@ -110,15 +110,6 @@ h1,h2,h3{margin:0;font-weight:700}
 .iconbtn:hover{background:var(--paper)}.iconbtn.on{background:var(--brand);color:var(--brand-on)}
 .iconbtn svg{width:18px;height:18px}
 
-/* The Home ticker: a tomato band under the top bar, the poster's signature. Decoration only:
-   its text is hidden from screen readers and carries no figure. */
-#s-home .topbar{position:relative;margin-bottom:50px}
-#s-home .topbar::after{content:"\2726  NETNET \2726  NET WORTH \2726  NETNET \2726  NET WORTH \2726  NETNET \2726  NET WORTH \2726  NETNET \2726  NET WORTH \2726  NETNET \2726  NET WORTH \2726  NETNET \2726  NET WORTH \2726  " / "";
-  position:absolute;left:calc(var(--gutter) * -1);right:calc(var(--gutter) * -1);top:calc(100% + 4px);height:34px;
-  background:var(--brand);color:var(--brand-on);border-block:var(--bw) solid var(--edge);
-  font-family:var(--display);font-weight:700;font-size:max(var(--fs-min),calc(11px * var(--fs)));letter-spacing:.06em;line-height:30px;
-  white-space:nowrap;overflow:hidden;text-indent:10px;pointer-events:none}
-@media (min-width:900px){ #s-home .topbar::after{left:0;right:0;border:var(--bw) solid var(--edge);border-radius:var(--r-sm)} }
 
 /* ---------- hero figure: the tomato card ---------- */
 .nw-wrap{position:relative;padding:20px 18px 14px;margin:0 0 6px;background:var(--brand);color:var(--brand-on);
