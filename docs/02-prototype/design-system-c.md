@@ -104,6 +104,7 @@ as in the reference.
 | **Filter chips** | `tint` pills; chosen fills indigo (or `loss` for Don't Show). Drawn inside the 44px target. |
 | **Choice row** | `tint` pills; chosen fills indigo. Stacked answers are white cards; chosen is indigo-tint with an indigo ring. |
 | **Fields** | Filled `tint`, 12px radius, no border; focus turns white with an indigo ring. Amount entry: 30px weight 300. |
+| **Home carousel** | Trend and allocation cards swiped sideways on a phone, with room kept for the soft shadows. Page indicator: small grey dots, the current one an indigo pill, as in the reference. Side by side on a computer. |
 | **Tab bar** | Frosted white, a hairline and a faint shadow above; the active icon sits on an indigo-tint pill. Sidebar: the active item is an indigo-tint pill. |
 | **Sheet** | White, 28px top corners, large soft shadow; the scrim blurs the page slightly. |
 | **Notes** | Tinted rounded boxes, no borders (`tint`, `warn-bg`, `agent-tint`). |
