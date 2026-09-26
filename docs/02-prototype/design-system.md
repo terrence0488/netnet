@@ -369,6 +369,13 @@ patterns**. After the fix there are none at either size, and no overlaps.
   grid, and the content column auto-places into the sidebar's 232px track. Routes without chrome
   (sign-up, log-in, onboarding) switch the shell to a single column rather than just hiding the sidebar.
   Shipped once; the Founder found the landing page poured into a 232px column on desktop.
+- **Home's trend and allocation share one place, under the total** (Founder, 2026-09-26). On a
+  phone they are a carousel: one card each, full width, swiped sideways with snap, two dots
+  beneath. The line chart's own reading (press and hold, then drag) is unchanged, so a plain
+  swipe moves the carousel. The slide a reader is on survives a re-render (Show $, a range, a
+  filter, coming back from a holding). On a computer the two sit side by side on the grid's 7/5
+  columns, with no dots, above holdings and position. With one type there is no allocation, and
+  the trend stands alone.
 - **The agent margin gutter is reserved at every breakpoint.** It is 24px of the left margin, and
   rows offset their mark into it. Nothing else may occupy it.
 - **No horizontal scrolling at phone width**, ever (PRD J4, J11).

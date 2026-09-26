@@ -7,7 +7,7 @@ import path from 'path';
 const here = path.dirname(fileURLToPath(import.meta.url));
 /* PASS/FAIL suites, then the audits, each with the line that means "clean". */
 const SUITES = ['func','content','scroll','auth','geo','basics','agent','packs','back','skip','via',
-  'ph','pc','fab','lc','filt'];
+  'ph','pc','fab','lc','filt','car'];
 const AUDITS = [
   ['smoke', [], /NO ERRORS/],
   ['touch', [], / 0 undersized/],

@@ -31,6 +31,7 @@ there is put back afterwards.
 | `fab` | Floating Update on the holding page, sinking at the bottom |
 | `lc` | Reading line charts by hover, touch and keyboard |
 | `filt` | Home filter's Don't Show; Insights' own |
+| `car` | Home's trend/allocation carousel on a phone; side by side on a computer |
 | `smoke` | Every screen renders without errors (screenshots) |
 | `touch` | Every control's tap target is at least 44px on a phone |
 | `wide` | Layout at 1600–2560px |
