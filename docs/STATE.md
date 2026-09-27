@@ -23,7 +23,7 @@ Stage 2 work (merged 2026-09-26).
 **Stage 2 approved** (Founder, 2026-09-26): the prototype in design B "Poster", the PRD §9.6
 revisions made during the review, and the Home carousel's desktop layout. Merged into `main`
 2026-09-26 (from `claude/design-b-retro`).
-A "Two Inks" (`claude/zealous-dijkstra-3yebuo`) and C "Calm" (`claude/design-c-soft`) are
+A "Two Inks" (`claude/design-a-two-inks`) and C "Calm" (`claude/design-c-soft`) are
 reference only; never merge them. Stage 3 inputs: `01-prd.md`, `prototype-notes.md` (§8 risks
 carry Stage 3 asks: versioned packs, history pagination, charting library). Also for Stage 3: PRD
 §9.6 item 17 (packs admin portal), free plans allow custom MCP (confirm), native-build rules in
