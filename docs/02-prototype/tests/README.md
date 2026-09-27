@@ -32,6 +32,7 @@ there is put back afterwards.
 | `lc` | Reading line charts by hover, touch and keyboard |
 | `filt` | Home filter's Don't Show; Insights' own |
 | `car` | Home's trend/allocation carousel on a phone; side by side on a computer |
+| `notif` | The comeback reminder (PRD J12): Home's one-time card, the browser's prompt, Settings → Notifications, push first and email otherwise, the wording, the daytime window, events; the security email on connecting an agent (J5) |
 | `smoke` | Every screen renders without errors (screenshots) |
 | `touch` | Every control's tap target is at least 44px on a phone |
 | `wide` | Layout at 1600–2560px |

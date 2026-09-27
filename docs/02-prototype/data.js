@@ -152,11 +152,25 @@ function seededState() {
       insightsView:'quarterly', insightsRange:16,
       inShowOnly:'all', inTypes:[], inTags:[], inTagMode:'OR',
       exTypes:[], exTags:[], exHoldings:[], exTagMode:'OR', inArchived:false,
-      showZeroBounds:true, showDefaultCcy:true,
-      reminderCadence:'monthly', reminderOptOut:false
+      showZeroBounds:true, showDefaultCcy:true
     },
+    /* The comeback reminder (PRD J12). Sam has push on for a phone, and was sent the security
+       email (J5) when Claude was connected. This browser has not been asked yet, so Home offers it. */
+    notif: newNotif(
+      [{ id:'d-pixel', label:'Android · Chrome', platform:'phone', lastUsed:'2026-09-20T08:12:00Z' }],
+      [{ id:'m-sec-claude', kind:'security', channel:'email', client:'Claude', to:'sam@example.com', at:'2026-08-04T21:32:00Z' }]),
     events: []
   };
+}
+
+/* Reminders and notifications (PRD J12). `perm` is this browser's notification permission
+   (default | granted | denied) and `thisOn` whether this device receives push; `devices` are
+   the account's OTHER devices with push on. `outbox` holds what NetNet sent outside itself
+   (reminders, security emails), for the PROTO drawer to show. `day` is the simulated calendar
+   (days after TODAY) and `away` the days since the person last checked NetNet. */
+function newNotif(devices, outbox) {
+  return { reminders:true, email:true, perm:'default', thisOn:false, card:{ notNow:0, until:null },
+           devices:devices || [], outbox:outbox || [], day:0, away:0, failNext:false };
 }
 
 function emptyState() {
@@ -170,5 +184,6 @@ function emptyState() {
   s.account = { email:'', name:'', initials:'', verified:false, signedIn:false, onboarded:false, connections:[],
                 region:null, pack:'generic', segment:'unknown' };
   s.guide = { done:false, i:0, stage:'ask', answered:{}, last:null };
+  s.notif = newNotif([], []);
   return s;
 }

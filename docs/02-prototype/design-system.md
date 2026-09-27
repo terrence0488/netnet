@@ -83,8 +83,10 @@ things look but never what may appear, so every screen showed everything it had.
    exported, and readable by the agent (PRD J2), but not displayed.
 9. **Prototype scaffolding lives in the PROTO sheet**, never on a product screen. One exception: an
    event that happens outside NetNet at a known point in a flow (opening the verification email,
-   the agent opening NetNet's approval page) is stood in for by a dashed control labelled
-   "Prototype:" at exactly that point, styled like the PROTO button so it never reads as product.
+   the agent opening NetNet's approval page, the browser's permission prompt) is stood in for by a
+   dashed control labelled "Prototype:" at exactly that point, styled like the PROTO button so it
+   never reads as product. What arrives outside NetNet (a push on a lock screen, an email in an
+   inbox) is shown from the PROTO sheet, never on a product screen.
 10. **One primary action per screen.** A screen offers one thing to do next, as its only filled
     button. An alternative is a quiet link, or, when it is a genuine second route (the agent, on
     the intro screen and the empty Home), a subtitled block below a rule with an **outlined**
@@ -173,7 +175,7 @@ Colour appears for exactly six reasons, plus one decorative colour. Anything els
 | The agent wrote this | `agent` | The bar on a row's inner edge, at 75% — never text (§2.1) |
 | Value went up | `gain` | Change figures, positive bars — always with `+` |
 | Value went down | `loss` | Change figures, negative bars — always with `−` |
-| Needs attention | `attention` | Stale labels, reminder notices |
+| Needs attention | `attention` | Stale labels, reminder notices, a blocked notification permission |
 | Category identity | chart palette (§5) | Charts only, never UI |
 | *Decoration* | `sun` | Step numbers, the prompt card's tab, the "Need more data" sticker. Never data, never beside gain or loss, never in a chart |
 
@@ -283,6 +285,10 @@ Built by us, because they carry the brand:
 | **Tab bar** | `card` fill, 2px top outline, cells split by rules; the active tab gets a 4px tomato bar on top. Sidebar: the active item is a tomato pill. |
 | **Sheet** | `card`, outlined, 22px top corners; a centred card with a 6px shadow on a computer. |
 | **Wordmark** | Unbounded 800 with a four-point tomato sparkle for the dot. |
+| **Nudge card** | Home's one-time offer to turn on push (PRD J12): a note's outline (2px `edge`, 10px radius, `card`), **no hard shadow**, a bell in `ink-2`, one `body` sentence, then an outlined **Turn on** and a **Not now** link in `ink-3`. Below the Position ledger, never a pop-up. Its result (on, or blocked with where to allow it) replaces it as one `body-sm` line until the person leaves the screen. The quietest object that still asks for something. |
+| **Browser prompt stand-in** | Prototype only (§2.1 rule 9): where the browser's own permission prompt would appear, a dashed box in the system face, tagged "Prototype: the browser's own prompt", with the browser's question and dashed **Block** / **Allow**. |
+| **Email** | NetNet's messages outside the app (the comeback reminder, the security email): `card` with a 2px outline, the wordmark, **one line** in the display face at 18px, at most one `body-sm` line beneath, **at most one button** (tomato), then a `meta` footer above a rule saying why it was sent and, for reminders, a one-click unsubscribe. Never an amount, a total, a holding, type or tag name (N9); the subject repeats the line. A link in a sentence keeps the sentence's size. |
+| **Push** | Title "NetNet"; body is the reminder line, plus "Just ask *agent*." when one is connected. Nothing else can be styled: the operating system draws it. The prototype shows it on a lock screen drawn in the OS's own neutral colours, not NetNet's tokens. |
 
 Deferred to the platform, per the Founder's "brand chrome, native controls" decision:
 

@@ -684,3 +684,76 @@ a.btn{text-decoration:none}
   .carousel.swipe.two>.slide:last-child{grid-column:span 5}
   .dots.swipe-dots{display:none}
 }
+
+/* ---------- the comeback reminder (PRD J12; design-system §6, Nudge card) ----------
+   Home's offer to turn on push is a quiet card: a note's outline, no hard shadow, one
+   outlined button and a link. It sits below the Position ledger and never interrupts. */
+.nudge{border:var(--bw) solid var(--edge);border-radius:var(--r-sm);background:var(--card);padding:12px 14px;margin:16px 0}
+.nudge p,.nudge.done{display:flex;gap:10px;align-items:flex-start;line-height:1.45}
+.nudge p{font-size:max(var(--fs-min),calc(14px * var(--fs)));color:var(--ink)}
+.nudge.done{font-size:max(var(--fs-min),calc(13px * var(--fs)));color:var(--ink-2)}
+.nudge svg{width:18px;height:18px;flex:none;margin-top:1px;color:var(--ink-2)}
+.nudge-acts{display:flex;align-items:center;gap:12px;margin:10px 0 0 28px}
+/* The browser's own permission prompt, stood in for: dashed, in the system face, never NetNet's look. */
+.bprompt{margin:12px 0 2px;padding:10px 12px 12px;border:1px dashed var(--ink-3);border-radius:8px;background:var(--paper);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.bprompt-tag{font-size:max(var(--fs-min),calc(9.5px * var(--fs)));font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.bprompt-q{font-size:max(var(--fs-min),calc(14px * var(--fs)));color:var(--ink);margin:6px 0 10px;line-height:1.4}
+.bprompt-b{display:flex;gap:8px;justify-content:flex-end}
+.bprompt-b button{min-height:var(--hit);min-width:84px;padding:0 14px;border:1px dashed var(--ink-3);border-radius:6px;
+  font-size:max(var(--fs-min),calc(13.5px * var(--fs)));font-weight:600;color:var(--ink)}
+.bprompt-b button:hover{border-style:solid}
+.switch-ask{padding:0 16px 14px;border-bottom:1.5px solid var(--rule)}
+.switch .sub .warn-t{color:var(--attention)}
+.card .row > .muted{font-size:max(var(--fs-min),calc(13px * var(--fs)))}
+
+/* ---------- what arrives outside NetNet (prototype previews, opened from PROTO) ---------- */
+.proto-status{padding:0 22px 8px;font-size:max(var(--fs-min),calc(12.5px * var(--fs)));color:var(--ink-2);line-height:1.5}
+.proto-status.warn-t{color:var(--attention)}
+.out-cap{font-size:max(var(--fs-min),calc(12px * var(--fs)));color:var(--ink-3);line-height:1.5;margin:0 0 14px;
+  padding:8px 10px;border:1px dashed var(--rule-strong)}
+/* A phone's lock screen. It depicts the operating system, so it keeps the OS's own neutral
+   colours in both themes and uses none of NetNet's tokens. */
+.lock{max-width:292px;margin:0 auto 16px;padding:34px 12px 30px;border:6px solid #111;border-radius:36px;
+  background:linear-gradient(165deg,#34465f 0%,#1a212c 55%,#0e1117 100%);color:#fff;text-align:center;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.lock-time{font-size:56px;font-weight:300;letter-spacing:-.02em;line-height:1}
+.lock-date{font-size:max(var(--fs-min),14px);opacity:.85;margin-top:6px}
+.lock-note{display:block;width:100%;margin-top:40px;padding:10px 12px 12px;border-radius:18px;text-align:left;
+  background:rgba(246,246,248,.95);color:#16181c;line-height:1.35}
+.ln-app{display:flex;align-items:center;gap:6px;font-size:max(var(--fs-min),11.5px);color:#5b5f66}
+.lock-note b,.desk-note b{display:block;font-size:max(var(--fs-min),14px);margin-top:3px}
+.ln-body{display:block;font-size:max(var(--fs-min),14px)}
+.ln-icon{position:relative;display:inline-block;width:16px;height:16px;flex:none;border-radius:4px;background:#F0643A}
+.ln-icon::after{content:'';position:absolute;inset:4px;background:#1A1714;
+  clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%)}
+/* a computer's notification banner, when a computer was reached too */
+.desk{margin:0 0 16px;padding:14px;border-radius:12px;background:linear-gradient(165deg,#3b4a5e,#222a35);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.desk-note{display:flex;gap:10px;align-items:flex-start;width:100%;padding:10px 12px;border-radius:12px;text-align:left;
+  background:rgba(246,246,248,.95);color:#16181c;line-height:1.35}
+.desk-note .ln-icon{width:28px;height:28px;border-radius:7px;margin-top:2px}
+.desk-note .ln-icon::after{inset:7px}
+.desk-note b{margin-top:0}
+/* An email, as it sits in the inbox and then opened. The inbox row is the mail app's; the
+   message itself is NetNet's: cream, the wordmark, one line in the display face, one button. */
+.mail{display:flex;flex-direction:column;gap:12px}
+.mail-inbox{padding:10px 12px;border:1px solid var(--rule-strong);border-radius:10px;background:var(--paper);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4}
+.mi-top{display:flex;justify-content:space-between;gap:10px;font-size:max(var(--fs-min),calc(13.5px * var(--fs)))}
+.mi-top span{color:var(--ink-3);font-size:max(var(--fs-min),calc(12px * var(--fs)))}
+.mi-subj{font-size:max(var(--fs-min),calc(13.5px * var(--fs)));font-weight:600;color:var(--ink)}
+.mi-snip{font-size:max(var(--fs-min),calc(13px * var(--fs)));color:var(--ink-3)}
+.mail-open{padding:14px 18px 16px;border:var(--bw) solid var(--edge);border-radius:var(--r);background:var(--card)}
+.mail-meta{font-size:max(var(--fs-min),calc(12px * var(--fs)));color:var(--ink-3);padding-bottom:10px;margin-bottom:14px;border-bottom:1.5px solid var(--rule)}
+.mail-open h4{font-family:var(--display);font-size:max(var(--fs-min),calc(18px * var(--fs)));font-weight:700;letter-spacing:-.03em;line-height:1.25;margin:14px 0 8px}
+.mail-open p{font-size:max(var(--fs-min),calc(14.5px * var(--fs)));color:var(--ink-2);line-height:1.5;margin:0 0 14px}
+.mail-open .btn{margin:4px 0 0}
+.mail-open .mail-foot{font-size:max(var(--fs-min),calc(12px * var(--fs)));color:var(--ink-3);margin:18px 0 0;padding-top:12px;border-top:1.5px solid var(--rule)}
+.mail-link{color:var(--brand-text);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.nudge-acts .link-sm{color:var(--ink-3);font-weight:600;margin-block:0}
+.nudge-acts .link-sm:hover{color:var(--ink)}
+/* a link inside an email's sentence keeps the sentence's size (design-system §6.1 rule 4) */
+.mail-open .mail-link{font-size:inherit;padding:0 2px}
+/* an unavailable switch is dimmed and stays solid (design-system §6.1 rule 9) */
+.switch input[aria-disabled="true"]{opacity:.45;cursor:default}

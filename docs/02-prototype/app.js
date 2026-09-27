@@ -15,6 +15,11 @@ function load() {
       if (st.account && st.account.onboarded == null) st.account.onboarded = !!(st.account.signedIn && st.account.region);
       /* saved before Home's filter had "Don't Show" */
       if (st.settings) st.settings = Object.assign({ hideTypes:[], hideTags:[], hideTagMode:'OR' }, st.settings);
+      /* saved before the comeback reminder (J12): the old stale-holding email opt-out carries over */
+      if (!st.notif) {
+        st.notif = newNotif([], []);
+        if (st.settings && st.settings.reminderOptOut) st.notif.email = false;
+      }
       return st;
     }
   } catch (e) {}
@@ -24,7 +29,7 @@ function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e)
 function reset(mode) {
   S = hydrate(mode === 'empty' ? emptyState() : seededState());
   save(); closeSheet();
-  lastRoute = null; sessionStarted = false;
+  lastRoute = null; sessionStarted = false; nudgeSeen = null;
   location.hash = mode === 'empty' ? '#/signup' : '#/home';
   render();
 }
@@ -716,7 +721,8 @@ const ICON = {
   insights:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l5-6 4 4 7-8"/><path d="M4 20h16"/></svg>',
   agent:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V4"/><circle cx="9" cy="13" r="1.1" fill="currentColor"/><circle cx="15" cy="13" r="1.1" fill="currentColor"/></svg>',
   account:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c1.2-3.7 3.9-5.6 7.2-5.6s6 1.9 7.2 5.6"/></svg>',
-  activity:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg>'
+  activity:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2.5h-15z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/></svg>'
 };
 function greeting() {
   const h = new Date().getHours();
@@ -805,7 +811,8 @@ function renderHome() {
     <div class="g5">
       <div class="o-pos"><div class="section-h"><h2>Position</h2></div>
       ${positionLedger(list, t)}
-      ${stale ? staleNote(stale) : ''}</div>
+      ${stale ? staleNote(stale) : ''}
+      ${nudgeCard()}</div>
     </div>
 
     <div class="g7">
@@ -1342,7 +1349,7 @@ function renderAgent() {
         <div style="display:flex;align-items:center;gap:9px">
           <span style="width:9px;height:9px;border-radius:50%;background:var(--gain);display:block"></span>
           <h3 style="flex:1">${esc(c.client)}</h3></div>
-        <div class="muted" style="font-size:max(var(--fs-min),calc(12.5px * var(--fs)));margin:4px 0 0 18px">Connected ${esc(fmtDate(c.connectedAt.slice(0, 10)))}
+        <div class="muted" style="font-size:max(var(--fs-min),calc(12.5px * var(--fs)));margin:4px 0 0 18px">Connected ${esc(dayMonth(c.connectedAt))}
           · last used ${esc(since(c.lastCall))}</div>
         <div style="display:flex;gap:8px;margin-top:14px">
           <button class="btn sm" data-go="#/agent/chat">Try it</button>
@@ -1542,7 +1549,7 @@ function renderAccount() {
            ['view','View Settings',''],
            ['types','Manage Types', S.types.length + ''],
            ['tags','Manage Tags', S.tags.length + ''],
-           ['reminders','Reminders', S.settings.reminderOptOut ? 'Off' : 'On']]
+           ['notifications','Notifications', S.notif.reminders ? 'On' : 'Off']]
           .map(([k, l, v]) => `<button class="row" data-go="#/sub/${k}">
             <span class="grow"><span class="name" style="font-weight:550">${esc(l)}</span></span>
             <span class="muted" style="font-size:max(var(--fs-min),calc(13px * var(--fs)))">${esc(v)}</span><span class="chev">›</span></button>`).join('')}
@@ -1619,18 +1626,8 @@ function renderSub(name) {
         }).join('')}
       </div>
 `;
-  } else if (name === 'reminders') {
-    html = B('Reminders') + `
-      <div class="card flush">
-        <label class="switch"><span class="grow"><b>Email me when holdings go stale</b>
-          <div class="sub">Never sent after you opt out</div></span>
-          <input type="checkbox" data-act="toggle-reminders" ${!S.settings.reminderOptOut ? 'checked' : ''}></label>
-      </div>
-      ${!S.settings.reminderOptOut ? `<div class="section-h"><h2>How often</h2></div>
-      <div class="card flush">${['weekly','monthly','quarterly'].map(c => `
-        <button class="opt" data-act="set-cadence" data-v="${c}"><span class="grow">${c[0].toUpperCase() + c.slice(1)}</span>
-          ${S.settings.reminderCadence === c ? '<span class="tick">✓</span>' : ''}</button>`).join('')}</div>` : ''}
-      <div class="note">Reminders never contain amounts.</div>`;
+  } else if (name === 'notifications' || name === 'reminders') {
+    html = B('Notifications') + notificationSettings();
   } else if (name === 'export') {
     html = B('Export') + `<div class="card">
       <h3>Everything, in one file</h3>
@@ -1660,6 +1657,220 @@ function renderSub(name) {
         || '<div class="empty"><p class="muted">Nothing archived.</p></div>'}</div>`;
   }
   $('#s-sub').innerHTML = html;
+}
+
+/* ================= COMEBACK REMINDER (J12) =================
+   The one message NetNet sends to bring someone back: after 30 days without checking
+   NetNet (opening it, or the agent reading or writing through it), then every 30 days
+   while they stay away. By push to every device where it is on; by email, to a verified
+   address, only when no device has it on or every push fails. Never an amount, a total or
+   a name (N9). The prototype has no server and no service worker, so the browser's own
+   permission prompt and everything that arrives outside NetNet (a lock screen, an inbox)
+   are stood in for, and the PROTO drawer moves the calendar. */
+const REMINDER_LINE = 'Your net worth is due for an update.';
+const addDays = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10);
+/* the simulated calendar: TODAY plus however many days PROTO has skipped */
+const simToday = () => addDays(TODAY, S.notif.day);
+const platform = () => isPhone() ? 'phone' : 'computer';
+
+/* Whether this browser can receive web push. An iPhone or iPad in a Safari tab cannot (only
+   a Home Screen web app can), and then no push option appears anywhere (J12). PROTO can
+   pretend either way, so the email-only path can be tried on any machine. */
+const PP = 'netnet-proto-push';
+function protoPush() { try { return localStorage.getItem(PP); } catch (e) { return null; } }
+const realPush = () => 'PushManager' in window && 'Notification' in window;
+const pushCapable = () => { const o = protoPush(); return o ? o === 'yes' : realPush(); };
+
+function thisDeviceLabel() {
+  const ua = navigator.userAgent;
+  const os = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android'
+    : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux|CrOS/.test(ua) ? 'Computer' : 'This device';
+  const br = /Edg\//.test(ua) ? 'Edge' : /Firefox|FxiOS/.test(ua) ? 'Firefox' : /Chrome|CriOS/.test(ua) ? 'Chrome'
+    : /Safari/.test(ua) ? 'Safari' : 'Browser';
+  return os + ' · ' + br;
+}
+/* Every device a reminder would reach by push right now: this one if it is on, then the others. */
+const pushTargets = () => (S.notif.thisOn ? [{ id:'this', label:thisDeviceLabel(), platform:platform() }] : [])
+  .concat(S.notif.devices.map(d => ({ id:d.id, label:d.label, platform:d.platform })));
+/* The agent a reminder names: the connected one used most recently, if any. */
+const reminderAgent = () => {
+  const c = activeConns().slice().sort((a, b) => (b.lastCall || '').localeCompare(a.lastCall || ''))[0];
+  return c ? c.client : null;
+};
+/* Opening NetNet, or the agent using it, is "checking": the clock starts again. */
+function checkedNow() { if (S.notif) S.notif.away = 0; }
+
+/* Where to allow notifications once the browser has blocked them: one line, for this device. */
+function whereToAllow() {
+  let standalone = false;
+  try { standalone = matchMedia('(display-mode: standalone)').matches; } catch (e) {}
+  if (standalone) return 'To allow them, turn on notifications for NetNet in your phone’s settings.';
+  return isPhone() ? 'To allow them, tap the icon beside the address, then Permissions.'
+                   : 'To allow them, click the icon beside the address and turn on Notifications.';
+}
+
+/* The Home card: offered once this device can take push and has not decided, after the first
+   picture, never during sign-up or the basics (renderHome shows it only with a holding). */
+function nudgeState() {
+  const n = S.notif;
+  if (n.flash && n.flash.where === 'home') return n.flash.result;
+  if (n.asking === 'home') return 'asking';
+  if (!pushCapable() || !n.reminders || n.perm !== 'default' || n.thisOn) return null;
+  if (n.card.notNow >= 2 || (n.card.until && simToday() < n.card.until)) return null;
+  return 'offer';
+}
+function nudgeCard() {
+  const st = nudgeState();
+  if (!st) return '';
+  if (st === 'granted') return `<div class="nudge done" role="status">${ICON.bell}<span>Notifications are on for this device.</span></div>`;
+  if (st === 'denied') return `<div class="nudge done" role="status">${ICON.bell}<span>Notifications are blocked in this browser.
+    ${esc(whereToAllow())}</span></div>`;
+  return `<div class="nudge">
+    <p>${ICON.bell}<span>Want a gentle nudge on this device if you haven’t looked in a while?</span></p>
+    ${st === 'asking' ? browserAsk('home') : `<div class="nudge-acts">
+      <button class="btn sec sm auto" data-act="push-on" data-v="home">Turn on</button>
+      <button class="link-sm" data-act="push-not-now">Not now</button></div>`}</div>`;
+}
+/* Stands in for the browser's own permission prompt, which follows the tap on Turn on and is
+   the only thing that ever triggers it. Dashed and in the system face, so it never reads as NetNet. */
+const browserAsk = entry => `<div class="bprompt" role="group" aria-label="Prototype: the browser’s own prompt">
+  <div class="bprompt-tag">Prototype: the browser’s own prompt</div>
+  <div class="bprompt-q">netnet.app wants to show notifications</div>
+  <div class="bprompt-b"><button data-act="push-perm" data-v="denied" data-e="${entry}">Block</button>
+    <button data-act="push-perm" data-v="granted" data-e="${entry}">Allow</button></div></div>`;
+
+/* Settings → Notifications: the master switch, this device, email, the other devices. The
+   security email is listed too, because it keeps coming after Reminders is off. */
+function notificationSettings() {
+  const n = S.notif;
+  const thisSub = n.flash && n.flash.where === 'settings' && n.flash.result === 'granted' ? 'On. Reminders come here, not by email.'
+    : n.perm === 'denied' ? `<span class="warn-t">Blocked in this browser. ${esc(whereToAllow())}</span>`
+    : n.thisOn ? 'Reminders come here, not by email.'
+    : n.perm === 'default' ? 'Your browser will ask you first.' : '';
+  const emailSub = S.account.verified && S.account.email
+    ? `Only when no device has notifications on. Sent to ${esc(S.account.email)}.`
+    : 'Only to a verified address, and yours isn’t verified yet.';
+  return `
+    <div class="card flush">
+      <label class="switch"><span class="grow"><b>Reminders</b>
+        <div class="sub">A gentle nudge after a month without checking NetNet, yourself or through your agent.</div></span>
+        <input type="checkbox" data-act="notif-master" ${n.reminders ? 'checked' : ''}></label>
+    </div>
+    ${n.reminders ? `<div class="section-h"><h2>How they reach you</h2></div>
+    <div class="card flush">
+      ${pushCapable() ? `<label class="switch"><span class="grow"><b>Notifications on this device</b>
+          ${thisSub ? `<div class="sub">${thisSub}</div>` : ''}</span>
+          <input type="checkbox" data-act="notif-this" ${n.thisOn ? 'checked' : ''} ${n.perm === 'denied' ? 'aria-disabled="true"' : ''}></label>
+        ${n.asking === 'settings' ? `<div class="switch-ask">${browserAsk('settings')}</div>` : ''}` : ''}
+      <label class="switch"><span class="grow"><b>Email reminders</b>
+        <div class="sub">${emailSub}</div></span>
+        <input type="checkbox" data-act="notif-email" ${n.email ? 'checked' : ''}></label>
+    </div>
+    ${n.devices.length ? `<div class="section-h"><h2>Other devices</h2></div>
+    <div class="card flush">${n.devices.map(d => `<div class="row">
+      <div class="grow"><span class="name">${esc(d.label)}</span><div class="sub">Last used ${esc(since(d.lastUsed))}</div></div>
+      <button class="btn ghost sm auto" data-act="device-remove" data-v="${d.id}">Remove</button></div>`).join('')}</div>` : ''}
+    <div class="note">Reminders never include an amount or a holding name.</div>` : ''}
+    <div class="section-h"><h2>Security</h2></div>
+    <div class="card flush"><div class="row">
+      <div class="grow"><span class="name">Email when an agent is connected</span>
+        <div class="sub">Sent straight away, every time. It can’t be turned off.</div></div>
+      <span class="muted">Always</span></div></div>`;
+}
+
+/* ---- sending: what the daily job would do on day 30, 60, 90… (simulated from PROTO) ---- */
+/* Inside 08:00–21:00 in the person's own time: now if it is daytime, else the next 08:00. */
+function deliveryAt() {
+  const now = new Date(), d = new Date(simToday() + 'T00:00:00'), h = now.getHours();
+  if (h >= 21) d.setDate(d.getDate() + 1);
+  const day = h >= 8 && h < 21;
+  d.setHours(day ? h : 8, day ? now.getMinutes() : 0, 0, 0);
+  return d.toISOString();
+}
+function sendReminder() {
+  const n = S.notif;
+  if (!n.reminders) return 'Reminders are off, so nothing was sent.';
+  let to = pushTargets();
+  /* a push service answering "gone": the device is dropped, and email takes over if none is left */
+  if (to.length && n.failNext) {
+    to.forEach(d => fire('push_disabled', { platform:d.platform, by:'browser' }));
+    n.thisOn = false; n.devices = []; to = [];
+  }
+  n.failNext = false;
+  const base = { id:uid('m'), kind:'reminder', at:deliveryAt(), day:n.away, agent:reminderAgent() };
+  let m;
+  if (to.length) m = Object.assign(base, { channel:'push', targets:to });
+  else if (n.email && S.account.verified && S.account.email) m = Object.assign(base, { channel:'email', to:S.account.email });
+  else return n.email ? 'No device has notifications on and the email address isn’t verified, so nothing was sent.'
+                      : 'No device has notifications on and reminder emails are off, so nothing was sent.';
+  n.outbox.unshift(m);
+  fire('reminder_sent', { channel:m.channel });
+  return m;
+}
+function reminderRoute() {
+  const n = S.notif, d = pushTargets().length;
+  if (!n.reminders) return 'reminders are off';
+  if (d) return `a reminder would go by push to ${d} device${d > 1 ? 's' : ''}`;
+  if (n.email && S.account.verified && S.account.email) return 'a reminder would go by email';
+  return 'a reminder would reach no one';
+}
+const outsideLabel = m => m.kind === 'security' ? `Security email · ${m.client} connected`
+  : `Reminder by ${m.channel} · day ${m.day}`;
+const clock = iso => new Date(iso).toLocaleTimeString(LOC(), { hour:'numeric', minute:'2-digit' });
+const dayMonth = iso => new Date(iso).toLocaleDateString(LOC(), { day:'numeric', month:'short', year:'numeric' });
+
+/* What arrives outside NetNet, shown from the PROTO drawer. The push is drawn on a phone's
+   lock screen (and as a computer's banner when a computer was reached); the emails in an
+   inbox and opened. Every word here is product copy; only the caption is scaffolding. */
+function sheetOutside(id) {
+  const m = S.notif.outbox.find(x => x.id === id);
+  if (!m) return;
+  const body = m.kind === 'reminder' ? REMINDER_LINE + (m.agent ? ` Just ask ${m.agent}.` : '') : '';
+  let cap, html;
+  if (m.kind === 'security') {
+    cap = `Security email to ${m.to || S.account.email}, sent the moment ${m.client} was connected. Email only, never push; it can’t be turned off.`;
+    html = mailView(m, `${m.client} was connected to your NetNet`, `
+      <h4>${esc(m.client)} was connected to your NetNet</h4>
+      <p>On ${esc(dayMonth(m.at))} at ${esc(clock(m.at))}, you allowed ${esc(m.client)} to see your holdings and their history,
+        and to add or update them.</p>
+      <p>Not you? <button class="link-sm mail-link" data-act="mail-revoke">Revoke it</button></p>
+      <p class="mail-foot">We send this every time an agent is connected. It can’t be turned off.</p>`);
+  } else if (m.channel === 'push') {
+    const phone = m.targets.some(d => d.platform === 'phone'), desk = m.targets.some(d => d.platform === 'computer');
+    cap = `Reminder, day ${m.day} away: by push to ${listNames(m.targets.map(d => d.id === 'this' ? 'this device (' + d.label + ')' : d.label))}, at ${clock(m.at)} (inside 08:00–21:00 their time).`;
+    html = (phone ? `<div class="lock" aria-label="A phone’s lock screen">
+        <div class="lock-time">${esc(clock(m.at).replace(/\s?[ap]\.?m\.?$/i, ''))}</div>
+        <div class="lock-date">${esc(new Date(m.at).toLocaleDateString(LOC(), { weekday:'long', day:'numeric', month:'long' }))}</div>
+        <button class="lock-note" data-act="open-reminder" data-v="${m.id}">
+          <span class="ln-app"><i class="ln-icon"></i>Chrome · netnet.app · now</span>
+          <b>NetNet</b><span class="ln-body">${esc(body)}</span></button>
+      </div>` : '') + (desk ? `<div class="desk" aria-label="A computer’s notification">
+        <button class="desk-note" data-act="open-reminder" data-v="${m.id}">
+          <i class="ln-icon"></i><span><b>NetNet</b><span class="ln-app">netnet.app</span><span class="ln-body">${esc(body)}</span></span></button>
+      </div>` : '');
+  } else {
+    cap = `Reminder, day ${m.day} away: by email to ${m.to}, because no device has notifications on. At ${clock(m.at)}, inside 08:00–21:00 their time.`;
+    html = mailView(m, REMINDER_LINE, `
+      <h4>${esc(REMINDER_LINE)}</h4>
+      ${m.agent ? `<p>Just ask ${esc(m.agent)}.</p>` : ''}
+      <button class="btn auto" data-act="open-reminder" data-v="${m.id}">Open NetNet</button>
+      <p class="mail-foot">We send this after a month away from NetNet, and never more than once a month.
+        ${m.unsubscribed ? '<b>Reminder emails are off.</b>'
+          : `<button class="link-sm mail-link" data-act="mail-unsub" data-v="${m.id}">Turn off reminder emails</button>`}</p>`);
+  }
+  sheet(`<div class="sh-head"><button data-act="proto">‹ PROTO</button><h3>Outside NetNet</h3>
+      <button data-act="close-sheet">Close</button></div>
+    <div class="sh-body"><p class="out-cap">Prototype · ${esc(cap)}</p>${html}</div>`);
+}
+/* An email as it sits in the inbox, then opened: NetNet's own look, one line, at most one button. */
+function mailView(m, subject, inner) {
+  const snip = m.kind === 'security' ? 'Not you? Revoke it.' : (m.agent ? `Just ask ${m.agent}. ` : '') + 'Open NetNet';
+  return `<div class="mail">
+    <div class="mail-inbox" aria-label="In the inbox"><div class="mi-top"><b>NetNet</b><span>${esc(clock(m.at))}</span></div>
+      <div class="mi-subj">${esc(subject)}</div><div class="mi-snip">${esc(snip)}</div></div>
+    <div class="mail-open"><div class="mail-meta">From NetNet · to ${esc(m.to || S.account.email)}</div>
+      <div class="wordmark"><i></i>NetNet</div>${inner}</div>
+  </div>`;
 }
 
 /* ================= ADD / EDIT HOLDING (J2) ================= */
@@ -2001,6 +2212,7 @@ function sheetProto() {
     <button class="opt" data-act="reset-seeded"><span class="grow">Reset to the sample account</span></button>
     <button class="opt" data-act="reset-empty"><span class="grow">Start from an empty account (first-run)</span></button>
     ${!S.account.verified ? '<button class="opt" data-act="mock-verify"><span class="grow">Mark email verified</span></button>' : ''}
+    ${protoReminder()}
     <div class="sh-grp" style="padding:0 22px">Country detected from IP, for the next sign-up</div>
     ${[['', 'Use this browser’s time zone'], ['SG', 'Singapore'], ['MY', 'Malaysia'], ['GB', 'United Kingdom'], ['DE', 'Germany'], ['none', 'Not detected']]
       .map(([v, l]) => `<button class="opt" data-act="proto-locale" data-v="${v}"><span class="grow">${l}</span>${tick((protoLocale() || '') === v)}</button>`).join('')}
@@ -2012,13 +2224,36 @@ function sheetProto() {
       names (N9).</div>`);
 }
 
+/* The comeback reminder's controls (J12): move the calendar, stand in for the agent checking
+   NetNet, make push fail, pretend this browser can or cannot take push, and open whatever
+   NetNet has sent outside itself. */
+let protoNotice = null;
+function protoReminder() {
+  const n = S.notif, agent = reminderAgent();
+  const status = (n.away ? `Last checked NetNet ${n.away} days ago` : 'Checked NetNet today') + ' · ' + reminderRoute() + '.';
+  const note = protoNotice; protoNotice = null;
+  return `<div class="sh-grp" style="padding:0 22px">Comeback reminder</div>
+    <p class="proto-status">${esc(status)}</p>
+    ${note ? `<p class="proto-status warn-t" role="status">${esc(note)}</p>` : ''}
+    <button class="opt" data-act="sim-away"><span class="grow">Skip 30 days without checking NetNet</span></button>
+    ${agent ? `<button class="opt" data-act="sim-agent"><span class="grow">${esc(agent)} reads NetNet, which counts as checking</span></button>` : ''}
+    <button class="opt" data-act="sim-fail"><span class="grow">Next reminder: every push fails</span>${tick(n.failNext)}</button>
+    <div class="sh-grp" style="padding:0 22px">Can this browser receive push?</div>
+    ${[['', `As it really is (${realPush() ? 'yes' : 'no'})`], ['yes', 'Yes, like Chrome on Android or a computer'], ['no', 'No, like Safari in an iPhone tab']]
+      .map(([v, l]) => `<button class="opt" data-act="proto-push" data-v="${v}"><span class="grow">${l}</span>${tick((protoPush() || '') === v)}</button>`).join('')}
+    <button class="opt" data-act="proto-forget"><span class="grow">Forget this browser’s notification choice</span></button>
+    ${n.outbox.length ? `<div class="sh-grp" style="padding:0 22px">Sent outside NetNet</div>
+    ${n.outbox.map(m => `<button class="opt" data-act="see-outside" data-v="${m.id}"><span class="grow">${esc(outsideLabel(m))}</span>
+      <span class="muted">${esc(dayMonth(m.at))}</span></button>`).join('')}` : ''}`;
+}
+
 /* ================= router ================= */
 const TABS = [['#/home','Home',ICON.home],['#/insights','Insights',ICON.insights],
               ['#/agent','Agent',ICON.agent],['#/account','Account',ICON.account]];
 /* A render is either a navigation (the route changed) or an in-place update of the same
    route (a chart pager, a range, undo). Only navigation moves the page to the top or counts
    as a screen view; an in-place update must leave the reader exactly where they were. */
-let lastRoute = null, lastInsightsView = null, sessionStarted = false;
+let lastRoute = null, lastInsightsView = null, sessionStarted = false, nudgeSeen = null;
 const AUTH_ROUTES = ['signup', 'login', 'welcome'];
 /* Where a visitor must be, whatever they asked for: signed out → sign up (or log in, if
    this browser has an account); signed in but not onboarded → onboarding; signed in and
@@ -2038,6 +2273,8 @@ function render(keepScroll) {
   const p = hash.replace(/^#\//, '').split('/');
   const navigated = hash !== lastRoute;
   lastRoute = hash;
+  /* the one-line result of a push choice, and a browser prompt still up, belong to the screen they were on */
+  if (navigated) { S.notif.flash = null; S.notif.asking = null; }
   const screens = { signup:'s-auth', login:'s-auth', welcome:'s-auth', basics:'s-auth', connect:'s-auth', home:'s-home', holding:'s-holding',
     add:'s-add', edit:'s-add', insights:'s-insights', period:'s-period', agent:'s-agent',
     activity:'s-activity', account:'s-account', sub:'s-sub' };
@@ -2075,7 +2312,14 @@ function render(keepScroll) {
   fabSink();
   bindCharts();
   if (id === 's-home') bindHomeCarousel();
-  if (chrome && S.account.signedIn && !sessionStarted) { sessionStarted = true; fire('session_started', {}); }
+  if (chrome && S.account.signedIn && !sessionStarted) { sessionStarted = true; checkedNow(); fire('session_started', {}); }
+  /* the offer to turn on push was seen: once per showing of the Home card (a second showing
+     follows a Not now), and each time Settings → Notifications opens with this device undecided */
+  if (id === 's-home' && nudgeState() === 'offer' && S.holdings.some(h => !h.archived) && nudgeSeen !== S.notif.card.notNow) {
+    nudgeSeen = S.notif.card.notNow; fire('push_prompt_shown', { entry:'home' });
+  }
+  if (navigated && p[0] === 'sub' && ['notifications', 'reminders'].includes(p[1])
+      && pushCapable() && S.notif.reminders && S.notif.perm === 'default') fire('push_prompt_shown', { entry:'settings' });
   if (p[0] === 'insights') {
     const view = S.settings.insightsView;
     if (navigated || view !== lastInsightsView) fire('insights_viewed', { view });
@@ -2266,6 +2510,9 @@ document.addEventListener('click', ev => {
       const c = CLIENTS[v], now = new Date().toISOString();
       S.account.connections.push({ id:uid('c'), client:c.name, connectedAt:now, lastCall:now, active:true });
       fire('agent_connection_completed', { client:c.name, entry:S.connectEntry || 'agent' });
+      /* the security email goes at once, email only, whatever the Reminders settings say (J5) */
+      S.notif.outbox.unshift({ id:uid('m'), kind:'security', channel:'email', client:c.name, to:S.account.email, at:now });
+      fire('security_email_sent', { client:c.name });
       /* On the agent route, connecting IS the end of onboarding: a blank Home follows. */
       if (!S.account.onboarded) { Object.assign(S.account, { onboarded:true, obStep:null }); S.guide = Object.assign(newGuide(), { done:true }); }
       S.connectNotice = null; save();
@@ -2286,6 +2533,7 @@ document.addEventListener('click', ev => {
     case 'chat-next': {
       S.chatStep = (S.chatStep || 0) + 1;
       const stepDef = SCRIPT[S.chatStep - 1];
+      if (stepDef && stepDef.who === 'tool') checkedNow();
       if (stepDef && stepDef.write) {
         const h = holdingOf('h-ibkr');
         if (h && !h.values.some(x => x.turn === 'turn-demo')) {
@@ -2304,7 +2552,6 @@ document.addEventListener('click', ev => {
     }
     case 'chat-reset': S.chatStep = 0; rerender(); return;
 
-    case 'set-cadence': s.reminderCadence = v; rerender(); return;
     case 'new-type': {
       const n = prompt('Name the new type'); if (!n) return;
       /* The user's own type has no universal meaning, so its holdings get the
@@ -2358,8 +2605,70 @@ document.addEventListener('click', ev => {
       fire('account_deleted', {});
       reset('empty'); return;
     }
+    /* the comeback reminder (J12) */
+    case 'push-on':
+      if (S.notif.perm === 'granted') { S.notif.thisOn = true; S.notif.flash = { where:v, result:'granted' };
+        fire('push_enabled', { platform:platform() }); }
+      else S.notif.asking = v;
+      keep(); return;
+    case 'push-perm': {
+      const n = S.notif, entry = el.dataset.e;
+      n.asking = null; n.perm = v; n.flash = { where:entry, result:v };
+      fire('push_prompt_result', { entry, result:v });
+      if (v === 'granted') { n.thisOn = true; fire('push_enabled', { platform:platform() }); }
+      keep(); return;
+    }
+    case 'push-not-now': {
+      const c = S.notif.card;
+      c.notNow++; c.until = c.notNow >= 2 ? null : addDays(simToday(), 30);
+      fire('push_prompt_result', { entry:'home', result:'not_now' });
+      keep(); return;
+    }
+    case 'device-remove': {
+      const d = S.notif.devices.find(x => x.id === v); if (!d) return;
+      S.notif.devices = S.notif.devices.filter(x => x.id !== v);
+      fire('push_disabled', { platform:d.platform, by:'user' });
+      keep(); return;
+    }
+    case 'sim-away': {
+      S.notif.day += 30; S.notif.away += 30;
+      const m = sendReminder(); save(); render(true);
+      if (typeof m === 'string') { protoNotice = m; sheetProto(); } else sheetOutside(m.id);
+      return;
+    }
+    case 'sim-agent': {
+      const c = activeConns().find(x => x.client === reminderAgent());
+      if (c) c.lastCall = new Date().toISOString();
+      fire('agent_tool_called', { tool:'get_net_worth', kind:'read', outcome:'ok', latency_ms:180, client:reminderAgent() });
+      checkedNow(); protoNotice = reminderAgent() + ' read NetNet, so the clock starts again. No reminder is due.';
+      save(); sheetProto(); return;
+    }
+    case 'sim-fail': S.notif.failNext = !S.notif.failNext; save(); sheetProto(); return;
+    case 'proto-push': try { v ? localStorage.setItem(PP, v) : localStorage.removeItem(PP); } catch (e) {}
+      render(true); sheetProto(); return;
+    case 'proto-forget':
+      Object.assign(S.notif, { perm:'default', thisOn:false, asking:null, flash:null, card:{ notNow:0, until:null } });
+      nudgeSeen = null; save(); render(true); sheetProto(); return;
+    case 'see-outside': sheetOutside(v); return;
+    /* tapping the notification, or Open NetNet in the email: Home, in a new session */
+    case 'open-reminder': {
+      const m = S.notif.outbox.find(x => x.id === v);
+      if (m) { m.opened = true; fire('reminder_opened', { channel:m.channel }); }
+      closeSheet(); sessionStarted = false; lastRoute = null; save();
+      if (location.hash === '#/home') render(); else location.hash = '#/home';
+      return;
+    }
+    case 'mail-unsub': {
+      const m = S.notif.outbox.find(x => x.id === v);
+      S.notif.email = false; if (m) m.unsubscribed = true;
+      save(); render(true); sheetOutside(v); return;
+    }
+    case 'mail-revoke': closeSheet(); location.hash = '#/agent'; return;
+
     case 'reset-seeded': reset('seeded'); return;
-    case 'logout': S.account.signedIn = false; S.signup = { email:S.account.email }; sessionStarted = false;
+    case 'logout':
+      if (S.notif.thisOn) { S.notif.thisOn = false; fire('push_disabled', { platform:platform(), by:'signout' }); }
+      S.account.signedIn = false; S.signup = { email:S.account.email }; sessionStarted = false;
       save(); location.hash = '#/login'; return;
     case 'resend-verify': S.account.verifyResent = true; rerender(); return;
     case 'reset-empty': reset('empty'); return;
@@ -2374,7 +2683,17 @@ document.addEventListener('change', ev => {
   const el = ev.target.closest('[data-act]');
   if (!el) return;
   if (el.dataset.act === 'toggle-setting') { S.settings[el.dataset.v] = el.checked; save(); render(); }
-  if (el.dataset.act === 'toggle-reminders') { S.settings.reminderOptOut = !el.checked; save(); render(); }
+  if (el.dataset.act === 'notif-master') { S.notif.reminders = el.checked; S.notif.asking = null; save(); render(true); }
+  if (el.dataset.act === 'notif-email') { S.notif.email = el.checked; save(); render(true); }
+  if (el.dataset.act === 'notif-this') {
+    const n = S.notif;
+    /* blocked by the browser: the switch stays off, and its line says where to allow them */
+    if (el.getAttribute('aria-disabled') === 'true') { el.checked = false; return; }
+    if (!el.checked) { n.thisOn = false; n.asking = null; n.flash = null; fire('push_disabled', { platform:platform(), by:'user' }); }
+    else if (n.perm === 'granted') { n.thisOn = true; n.flash = { where:'settings', result:'granted' }; fire('push_enabled', { platform:platform() }); }
+    else n.asking = 'settings';
+    save(); render(true);
+  }
   if (el.dataset.act === 'set-ccy') { S.settings.defaultCcy = el.value; save(); render(); }
   if (el.dataset.act === 'set-region') {
     const r = regionOf(el.value); if (!r) return;

@@ -22,6 +22,8 @@ hosting. Those are Stage 3 decisions. Do not read this as an architecture propos
 
 The **PROTO** button resets the sample account, switches to an empty first-run account, shows
 the analytics events as they fire, and can pretend the browser is in another country so the region
-question can be tested from anywhere.
+question can be tested from anywhere. It also runs the comeback reminder (PRD J12): skip 30 days
+without checking NetNet, pretend the browser can or cannot receive push, and open what NetNet sent
+outside itself (the push on a lock screen, the email in an inbox, the security email).
 
 All money in here is invented. Never replace it with real financial data.

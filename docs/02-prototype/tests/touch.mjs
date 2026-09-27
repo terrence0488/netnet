@@ -42,7 +42,7 @@ const sheet=async (h,sel)=>{await go(h);const el=await p.$(sel);if(el){await el.
 await go('#/home'); await p.evaluate(()=>{reset('seeded');}); await p.waitForTimeout(300);
 let all=[];
 const routes=['#/home','#/holding/h-dbs','#/add/asset','#/insights','#/period/quarterly/1','#/agent','#/agent/chat','#/activity','#/account',
- '#/sub/general','#/sub/view','#/sub/types','#/sub/tags','#/sub/reminders','#/sub/region','#/sub/export','#/sub/delete','#/sub/archived'];
+ '#/sub/general','#/sub/view','#/sub/types','#/sub/tags','#/sub/notifications','#/sub/region','#/sub/export','#/sub/delete','#/sub/archived'];
 for(const r of routes){await go(r); all=all.concat(await audit(r));}
 // sign-up, log-in and onboarding are only reachable signed out / not yet onboarded
 await p.evaluate(()=>{ S.account.signedIn=false; S.signup={email:'x@example.com'}; save(); });
@@ -58,6 +58,15 @@ const sheets=[['#/home','[data-act="open-filter"]','sheet:filters'],['#/home','[
  ['#/holding/h-dbs','[data-act="add-value"]','sheet:add-value'],['#/holding/h-dbs','[data-act="holding-menu"]','sheet:holding-menu'],
  ['#/insights','[data-act="open-insights-filter"]','sheet:insights-filters'],['#/home','#devbtn','sheet:proto']];
 for(const [h,s,n] of sheets){ if(await sheet(h,s)) all=all.concat(await audit(n)); else console.log('(could not open '+n+')'); }
+// the comeback reminder (J12): the browser-prompt stand-in on Home and in Settings, and what arrives outside NetNet
+const state=async (name,fn)=>{ await p.evaluate(fn); await p.waitForTimeout(300); all=all.concat(await audit(name)); };
+await state('home:push-asking', ()=>{ closeSheet(); reset('seeded'); S.notif.asking='home'; save(); render(true); });
+await state('home:push-denied', ()=>{ S.notif.asking=null; S.notif.flash={ where:'home', result:'denied' }; save(); render(true); });
+await state('notifications:asking', ()=>{ reset('seeded'); location.hash='#/sub/notifications'; render(); S.notif.asking='settings'; save(); render(true); });
+await state('notifications:blocked', ()=>{ S.notif.asking=null; S.notif.perm='denied'; save(); render(true); });
+await state('sheet:outside-push', ()=>{ S.notif.perm='default'; save(); sheetProto(); document.querySelector('#sheet [data-act="sim-away"]').click(); });
+await state('sheet:outside-email', ()=>{ closeSheet(); S.notif.devices=[]; save(); sheetProto(); document.querySelector('#sheet [data-act="sim-away"]').click(); });
+await state('sheet:outside-security', ()=>{ closeSheet(); sheetOutside('m-sec-claude'); });
 const coarse=await p.evaluate(()=>matchMedia('(pointer: coarse)').matches);
 // group by component so the fix list reads as patterns, not 200 rows
 const groups={}; all.forEach(x=>{(groups[x.key]=groups[x.key]||[]).push(x);});

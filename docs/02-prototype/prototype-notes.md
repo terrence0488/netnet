@@ -1,6 +1,8 @@
 # 02 — Prototype notes
 
 Status: **approved by the Founder 2026-09-26** (Stage 2 gate) · Stage owner: Product designer
+**Re-opened 2026-09-27** for the comeback reminder and the security email (PRD §9.8, J5, J12):
+awaiting the Founder's approval. What was added is in §10.
 Reworked 2026-09-24 against the amended PRD: J1 (guided assembly, first picture, segment), J2
 (accessibility as facts, never a classification) and §2.3 (jurisdiction packs, as data).
 Inputs: `docs/01-prd.md` (approved as amended 2026-09-24), the Founder's iOS mockups (shared
@@ -18,6 +20,8 @@ HTML, CSS and JavaScript on purpose. Works offline.
 - The **PROTO** button (bottom right) resets to the sample account, switches to an empty
   first-run account, shows the analytics events as they fire, and can **pretend the browser is in
   Singapore, Malaysia, the UK, or nowhere**, so the region question can be tested from anywhere.
+  It also runs the **comeback reminder**: skip 30 days, let the agent check NetNet, make push fail,
+  pretend this browser can or cannot receive push, and open what NetNet sent outside itself (§10).
 - State is kept in `localStorage`, so your changes survive a reload until you reset.
 
 **Two ways in, one per kind of user.**
@@ -45,13 +49,16 @@ with one.
 | **J6** agent assembles | Agent → Try it | Scripted turn: finds the existing holding rather than duplicating, then writes |
 | **J7** verify and undo | Activity | Single undo and whole-turn batch undo; web and agent changes in one list |
 | **J8** grounded advice | Agent → Try it (second half) | The affordability question answered off money you could use, with staleness caveats. **A scripted replay — see §8** |
-| **J9** stay current | Stale chips on Home and detail; the out-of-date note on Home; Account → Reminders | Cadence and a real opt-out. The note hands the job to a connected agent ("Ask Claude to update it", a prompt with no data in it), or offers to connect one |
+| **J9** stay current | Stale chips on Home and detail; the out-of-date note on Home | In the app only. The note hands the job to a connected agent ("Ask Claude to update it", a prompt with no data in it), or offers to connect one. The scheduled stale-holding email and its cadence setting are gone (PRD §9.8): the reminder outside the app is J12's |
+| **J12** comeback reminder | Home's one-time card below the Position ledger; Account → Notifications; PROTO → Comeback reminder | Asked once on Home after the first picture (Turn on / Not now), the browser's own prompt after the tap (stood in for), one-line granted and blocked states. Settings: Reminders, this device, email reminders, other devices. PROTO skips 30 days and shows the reminder as it arrives: a lock screen for push, an inbox for email. See §10 |
+| **J5** security email | Sent on every **Allow**; PROTO → Sent outside NetNet | "Claude was connected to your NetNet", when, and "Not you? Revoke it" to the Agent tab. Email only, cannot be turned off; listed under Settings → Notifications → Security. The sample account holds the one sent when Claude was connected |
 | **J10** own the data | Account → Export / Delete account | Export downloads JSON and CSV, including accessibility and the answer behind it |
 | **J11** insights | Insights tab | Monthly/Quarterly/Yearly; Growth, Assets vs Liabilities, Distribution Over Time; Insights Filters with "Don't Show"; period drill-down. With too little history, each chart is a frosted placeholder and the summary line says what a comparison needs |
 | **§3.5** segment on every event | PROTO → events | `{segment}` rides on every event: `unknown` until onboarding, then whatever was chosen, or `unknown` if skipped. `signup_started` and `account_created` carry `{method}` |
 
 Deliberately **not** built, because they are not design questions: real auth, real OAuth, a real
-MCP server, email sending, and anything on the reserved list in PRD §4.2.
+MCP server, email sending, a service worker and real web push, and anything on the reserved list
+in PRD §4.2.
 
 ## 3. Jurisdiction packs (PRD §2.3, N10)
 
@@ -413,3 +420,93 @@ picture (A12 is wrong, and P-A should be dropped per §3.3); nobody reaching for
 
 Per the workflow, any learnings from these sessions go back into `01-prd.md` **before** this stage
 is approved.
+
+## 10. The comeback reminder and the security email (re-opened 2026-09-27)
+
+Built from PRD §9.8 "Consequences downstream", J5 (security email), J9 and J12, in design B
+"Poster". Nothing else in the prototype changed, apart from two small fixes noted at the end.
+
+**Try it.** Sample account → Home: the card is below the Position ledger. Account → Notifications for
+the settings. PROTO → **Skip 30 days without checking NetNet** to see a reminder arrive; PROTO →
+**Sent outside NetNet** lists everything sent so far, including the security email from when Claude
+was connected. To see the email path, remove the Android phone in Settings first, or pick PROTO →
+"No, like Safari in an iPhone tab".
+
+### What is on screen
+
+| Where | What |
+|---|---|
+| **Home** | A quiet card below the Position ledger (and the out-of-date note): a bell, "Want a gentle nudge on this device if you haven't looked in a while?", an outlined **Turn on** and a **Not now** link. It appears only with a first picture, on a browser that can receive push, where this device has not decided and Reminders is on. Never on an empty Home, never during sign-up or the basics |
+| **Turn on** | The browser's own prompt follows the tap, stood in for by a dashed "Prototype: the browser's own prompt" box with **Block** and **Allow** (design-system §2.1 rule 9). Allow: the card becomes one line, "Notifications are on for this device." Block: one line, "Notifications are blocked in this browser. To allow them, tap the icon beside the address, then Permissions." (a computer says "click … and turn on Notifications"; an installed app says "in your phone's settings"). Either way the card is gone on the next visit, and NetNet never asks again |
+| **Not now** | Hides the card for 30 days; a second Not now hides it for good. The switch stays in Settings |
+| **Account → Notifications** (replaces Account → Reminders) | **Reminders** (the master switch). Under "How they reach you": **Notifications on this device** (only where the browser can receive push; blocked shows the where-to-allow line in `attention` and the switch dimmed) and **Email reminders** ("Only when no device has notifications on. Sent to …"). **Other devices** with Remove. "Reminders never include an amount or a holding name." Then **Security**: "Email when an agent is connected · Always", which cannot be switched. Reminders off hides the channels and devices: nothing is sent by any channel |
+| **The push** (PROTO) | A phone's lock screen: "Chrome · netnet.app · now", title **NetNet**, "Your net worth is due for an update. Just ask Claude." A computer that was reached gets a notification banner too. Tapping it opens Home as a new visit |
+| **The email** (PROTO) | The inbox row (subject is the same line), then the email opened: wordmark, the line in the display face, "Just ask Claude.", one button **Open NetNet**, and a footer: "We send this after a month away from NetNet, and never more than once a month. Turn off reminder emails" (one click) |
+| **The security email** (PROTO) | "Claude was connected to your NetNet"; "On 5 Aug 2026 at 5:32 am, you allowed Claude to see your holdings and their history, and to add or update them."; "Not you? **Revoke it**" to the Agent tab; "We send this every time an agent is connected. It can't be turned off." Sent on every Allow, whatever the Reminders settings |
+
+### The rules the prototype runs (so they can be watched in PROTO)
+
+- **Checking** is opening NetNet (a new session) or the connected agent reading or writing through
+  it. PROTO's "Claude reads NetNet" and the agent demo's tool calls both restart the clock.
+- **Who gets what:** push to every device where it is on (this one and the others); email only when
+  none is on, or when every push fails (PROTO → "every push fails" drops the devices with
+  `push_disabled {by: browser}` and falls back to email). Email only to a verified address. Nothing
+  at all when Reminders is off, or when there is no push and no usable email; PROTO says which.
+- **Monthly while away:** each skip of 30 days without checking sends the next one (day 30, 60, 90…).
+- **Daytime only:** a reminder due at night goes at 08:00 their time; in the daytime it goes then.
+- **The agent named** is the connected one used most recently; with none, the line stands alone.
+- **Sign-out** turns this device's push off (`push_disabled {by: signout}`). Signed in again, the
+  card does not come back (the browser already decided) and the switch turns it on without a prompt.
+
+**Events** (PROTO shows them): `push_prompt_shown {entry: home|settings}`, `push_prompt_result
+{entry, result: granted|denied|not_now}`, `push_enabled {platform}`, `push_disabled {platform, by}`,
+`reminder_sent {channel}`, `reminder_opened {channel}`, `security_email_sent {client}`. None carries an
+amount or any message text (tested).
+
+### Design decisions (numbering continues §6)
+
+34. **The card is a note, not a card with a shadow.** Outlined, no hard shadow, one outlined button
+    and a link: it is the quietest object that still reads as something to act on. It sits below the
+    Position ledger (the PRD's placement), so the first picture is read before anything is asked.
+35. **The confirmation lives where the tap was.** Granted and blocked are one line in the card (or
+    under the switch) until the person leaves the screen; there is no toast and no second screen.
+36. **Blocked is final on Home, explained in Settings.** Once the browser says no, NetNet cannot ask
+    again (the browser would refuse silently), so the switch is dimmed and says where to allow it.
+37. **"Your browser will ask you first."** under the undecided switch. The browser's prompt is the
+    one thing NetNet does not control, so the person is told it is coming.
+38. **Reminders off hides the channels.** "No reminder by any channel" is shown by the page itself
+    rather than by three switches that no longer do anything.
+39. **The security email is listed in Settings, as "Always".** Someone who turns Reminders off and
+    then gets an email when they connect ChatGPT would otherwise doubt the switch (§2.1 rule 7). Its
+    row has no switch, so it cannot look like a setting that failed.
+40. **The email explains itself in its footer**, and the explanation is also the reassurance: "after
+    a month away … never more than once a month". No count of days, no "you haven't …".
+41. **The previews are scaffolding in a sheet**, opened from PROTO, with a dashed caption saying who
+    was reached, when and why. The lock screen and the inbox row keep the OS's and the mail app's own
+    look; the email itself is NetNet's. `push_prompt_shown {entry: settings}` fires when Settings →
+    Notifications opens with this device undecided (the offer is on screen), the settings-side
+    equivalent of the Home card being seen.
+
+**Two small fixes made along the way.** The Agent tab gave a connection's date in UTC, so the
+sample Claude connection read "4 Aug" while the security email, in Singapore time, said "5 Aug";
+both now use the person's own time zone. The seeded settings lost the old cadence fields.
+
+### Open questions for the Founder
+
+1. **The launch agent list in the prototype** still shows Grok, Muse and "Other agent" (PRD §9.7
+   row 29 parks them; that row is approved with the architecture). Recommended: park them in the
+   prototype now, in this re-opened stage, so the prototype matches J5 — it is a list change plus
+   two test updates.
+2. **`push_disabled` on account deletion.** J12 says it fires "in each case", but `by` has no value
+   for deletion (`user|browser|signout`). Recommended: leave it to `account_deleted`, which already
+   fires, and say so in §3.5 at the Stage 3 revision.
+3. **Should the Security row stay in Settings?** (decision 39). Recommended: yes.
+
+### User test (add to §9, after Task 7, 2 minutes)
+
+**Task 8 — Coming back.** Sample account, Home. "What is this card asking you?" *Watch: do they read
+it as a nudge or a nag? Do they expect Turn on to show something from the browser?* Then PROTO →
+skip 30 days, show the lock screen, then the email. "You got this after a month away. What do you
+do? Is there anything on it you wouldn't want someone else to see?" *Watch: tone (A14); whether
+"Just ask Claude." is understood; that nothing on it feels private (N9).* (J12, M13)
+
