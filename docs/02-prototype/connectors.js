@@ -24,8 +24,9 @@ const REFRESH_PROMPT = 'Some of my NetNet holdings are out of date. Find them an
 const MUSE_ASK = `Add a custom connector called NetNet. Its MCP server is ${MCP_URL}, and it signs in with OAuth.`;
 
 /* The agents the "Connect to agent" button cycles through, in this order, one every two
-   seconds. Each one's logo is agents/<id>.svg (see agents/README.md). */
-const ROLL = ['chatgpt', 'claude', 'grok', 'muse'];
+   seconds. Each one's logo is agents/<id>.svg (see agents/README.md). At launch: ChatGPT and
+   Claude, plus "Other agent" in the list (PRD J5, §9.7 row 29). */
+const ROLL = ['chatgpt', 'claude'];
 
 const CLIENTS = {
   claude: {
@@ -63,10 +64,13 @@ const CLIENTS = {
     }
   },
 
-  /* DRAFT, unverified: listed at the Founder's request. Before launch, confirm Grok
-     accepts a custom remote MCP connector, then replace these generic steps with its own. */
+  /* PARKED until after launch (PRD §9.7 row 29; Founder, 2026-09-27): kept as content, never
+     offered. `parked` keeps a client out of every list and every route; delete the flag to offer it.
+     DRAFT, unverified: before offering it, confirm Grok accepts a custom remote MCP connector,
+     then replace these generic steps with its own. */
   grok: {
     name: 'Grok',
+    parked: true,
     deepLink: null,
     guides: {
       computer: [
@@ -88,8 +92,10 @@ const CLIENTS = {
      directory (open to developers since 18 Sep) takes an MCP server with OAuth; a NetNet
      listing there would replace these steps with Muse's own one-tap add. Check against the
      live app before launch. */
+  /* PARKED until after launch, like Grok. */
   muse: {
     name: 'Muse',
+    parked: true,
     deepLink: null,
     guides: {
       computer: [

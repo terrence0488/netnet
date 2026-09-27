@@ -27,7 +27,7 @@ there is put back afterwards.
 | `packs` | SG, MY and UK packs: types, questions, follow-ups |
 | `via` | `via` on `holding_created`; the undecided accessibility state (counts toward net worth, never toward what you could use) |
 | `ph` | Chart placeholders ("Need more data") |
-| `pc` | Prompt card; Muse's setup message |
+| `pc` | Prompt card; a parked agent (Muse) is not reachable |
 | `fab` | Floating Update on the holding page, sinking at the bottom |
 | `lc` | Reading line charts by hover, touch and keyboard |
 | `filt` | Home filter's Don't Show; Insights' own |

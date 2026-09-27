@@ -10,7 +10,8 @@ revisions are written into the requirements below and listed in **§9.6**; appro
 with the prototype at the Stage 2 gate, 2026-09-26.
 **Amended and approved by the Founder 2026-09-27: a gentle comeback reminder, by web push or
 email, and a security email when an agent is connected** (§9.8; J9 and J12 revised, M13, A14, §3.5, §4.1, §8). Re-opened from the Stage 3
-review on the Founder's request.
+review on the Founder's request. **At the prototype gate (2026-09-27)** the Founder kept "Other
+agent" at launch (J5, §9.7 row 29) and settled `push_disabled` on account deletion (J12).
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -591,15 +592,16 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   switchable), each step with a screenshot, and the connector URL, with no token to generate,
   paste or store. The steps and screenshots are administered content (§2.3), because the clients'
   own screens change without notice. So is the client list itself: **Claude and ChatGPT at
-  launch, and only those two** (Founder, 2026-09-27). Grok, Muse and the generic "Other agent"
-  guide below are **parked until after launch** (§9.7); what follows about them is kept for then.
+  launch, plus the generic "Other agent" guide below** (Founder, 2026-09-27; "Other agent"
+  confirmed at the prototype gate the same day). Grok and Muse are **parked until after launch**
+  (§9.7); what follows about them is kept for then.
   Muse (Meta, launched September 2026) takes connectors differently: there is no settings screen,
   so the user asks Muse in the chat to add one from NetNet's address. Its guide therefore starts
   with a message to send, not a menu path. Meta's connector directory accepts MCP servers with
   OAuth, and a NetNet listing there would turn this into Muse's own one-tap add. Muse is US-only
   at launch but is offered everywhere: it is expected to reach other countries soon, and the
   agent list stays one list rather than one per country.
-- *(Parked until after launch, §9.7.)* **Given** an agent that is not on the list, **when** the user chooses **Other agent**, **then**
+- **Given** an agent that is not on the list, **when** the user chooses **Other agent**, **then**
   they get a generic guide: add a custom connector (MCP server) in the agent's settings with this
   address, then Allow on NetNet's page. No platform split and no screenshots, because we cannot know
   its screens. Any agent that supports remote MCP with OAuth works; the named list is a
@@ -769,8 +771,10 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   - **Other devices** with notifications on ("Android · Chrome", last used), each with **Remove**.
   Changes apply at once. Every reminder email has a one-click unsubscribe that turns email reminders off.
 - **Given** a person signs out on a device, **when** they do, **then** that device gets no further
-  push until it is turned on again after signing in. **Given** account deletion, every reminder stops
-  at once. `push_disabled {by}` fires in each case, and also when a browser reports a subscription gone.
+  push until it is turned on again after signing in, and `push_disabled {by: signout}` fires.
+  **Given** account deletion, every reminder stops at once; `account_deleted` records it, and no
+  `push_disabled` fires. `push_disabled {by: browser}` fires when a browser reports a subscription
+  gone, and `{by: user}` when the person turns a device off or removes it.
 
 ### J10 — Own the data (A7)
 - **Given** an account, **when** the user exports, **then** they receive a complete
@@ -957,11 +961,12 @@ Founder with the prototype, 2026-09-26.
 ### 9.7 Revisions at the Stage 3 review — 2026-09-27
 
 Founder decisions, taken while reviewing the architecture. Rows 29–30 are approved with the
-architecture at the Stage 3 gate. Row 31 was approved with the §9.8 amendment on 2026-09-27.
+architecture at the Stage 3 gate. Row 31 was approved with the §9.8 amendment on 2026-09-27. Row 29
+was amended by the Founder at the prototype gate, 2026-09-27: "Other agent" stays at launch.
 
 | # | What changed | Where |
 |---|---|---|
-| 29 | The launch agent list is **Claude and ChatGPT only**. Grok, Muse and the generic "Other agent" guide are parked until after launch. The Connect button's icon turns through the two launch agents. The server stays standard remote MCP with OAuth and no client-specific code, so any MCP agent can still connect technically; only the guides and the list are parked | J5 |
+| 29 | The launch agent list is **Claude and ChatGPT, plus the generic "Other agent" guide** (amended at the prototype gate, 2026-09-27). Grok and Muse are parked until after launch. The Connect button's icon turns through the two named launch agents. The server stays standard remote MCP with OAuth and no client-specific code, so any MCP agent can still connect technically; only the guides and the list are parked | J5 |
 | 30 | Which plans of each client allow a custom connector is parked. It changes guide content and directory submissions, not the product | §9.5 |
 | 31 | **A gentle comeback reminder joins v1** (Founder, 2026-09-27): after 30 days without checking NetNet (app or agent), then monthly while away; by web push where it is on, by email otherwise. It replaces J9's scheduled stale-holding email. A security email (never push) is sent when an agent is connected. Wording: "Your net worth is due for an update." Specified in §9.8, J5 and J12. **Approved 2026-09-27** | §3.2, §3.5, §4.1, §8, J5, J9, J12 |
 

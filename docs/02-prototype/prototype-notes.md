@@ -1,8 +1,8 @@
 # 02 — Prototype notes
 
 Status: **approved by the Founder 2026-09-26** (Stage 2 gate) · Stage owner: Product designer
-**Re-opened 2026-09-27** for the comeback reminder and the security email (PRD §9.8, J5, J12):
-awaiting the Founder's approval. What was added is in §10.
+**Re-opened 2026-09-27** for the comeback reminder and the security email (PRD §9.8, J5, J12), and
+**approved by the Founder 2026-09-27**. What was added is in §10.
 Reworked 2026-09-24 against the amended PRD: J1 (guided assembly, first picture, segment), J2
 (accessibility as facts, never a classification) and §2.3 (jurisdiction packs, as data).
 Inputs: `docs/01-prd.md` (approved as amended 2026-09-24), the Founder's iOS mockups (shared
@@ -45,7 +45,7 @@ with one.
 | **§2.3** jurisdiction packs | `packs.js`; Account → General → Where you live | SG pack and generic pack. Switching region relabels every type you have not renamed and re-words every reason, live |
 | **J3** record and correct | Holding detail → Update / Add Value / Edit Value / Delete | Back-dating, same-date warning |
 | **J4** see the picture | Home: trend, allocation, Position ledger (includes assets-vs-liabilities), baseline, sort, filters | Every % on screen is relative to the chosen baseline. Change figures appear once there is history; until then the trend (and a holding's charts) hold their place as a frosted placeholder, "Need more data", saying what makes them appear |
-| **J5** connect the agent | Onboarding (the intro screen's "Let your AI agent do this" → **Connect to agent**, whose icon turns through ChatGPT, Claude, Grok and Muse every two seconds), the empty Home, a holding's "Ask your agent", the Agent tab | One flow everywhere: choose the agent → verify the email if needed → steps for this platform (phone or computer, switchable), each with a screenshot slot → NetNet's approval page (**Allow** / Cancel) → done. Two outside events are stood in for by dashed "Prototype:" buttons: opening the verification link, and the agent opening the approval page. On the agent route, Allow ends onboarding on a blank Home whose hint is the starting prompt and **Let Claude do it** (opens claude.ai with the prompt typed in). Screenshots: drop them into `connect/`; agent logos into `agents/` (see each README). Grok has generic draft steps until its connector support is confirmed. Muse (Meta) has no connector settings: its first step is a message to send it, as a prompt card. **Other agent** gives a generic guide (the address, and "add a custom connector"), with no platform switch or screenshots, so any MCP agent can connect. The connect flow has no questions link: Back returns to the intro. Logos for ChatGPT, Claude and Grok are in `agents/`; Muse's new mark is in no open icon set yet, so it shows an "M" until the official file is dropped in. Revoke on the Agent tab |
+| **J5** connect the agent | Onboarding (the intro screen's "Let your AI agent do this" → **Connect to agent**, whose icon turns through ChatGPT and Claude every two seconds), the empty Home, a holding's "Ask your agent", the Agent tab | One flow everywhere: choose the agent → verify the email if needed → steps for this platform (phone or computer, switchable), each with a screenshot slot → NetNet's approval page (**Allow** / Cancel) → done. Two outside events are stood in for by dashed "Prototype:" buttons: opening the verification link, and the agent opening the approval page. On the agent route, Allow ends onboarding on a blank Home whose hint is the starting prompt and **Let Claude do it** (opens claude.ai with the prompt typed in). Screenshots: drop them into `connect/`; agent logos into `agents/` (see each README). **At launch the list is ChatGPT, Claude and Other agent** (Founder, 2026-09-27); Grok and Muse are parked in `connectors.js` (`parked`), kept for after launch and reachable by no list or address. **Other agent** gives a generic guide (the address, and "add a custom connector"), with no platform switch or screenshots, so any MCP agent can connect. The connect flow has no questions link: Back returns to the intro. Logos for ChatGPT and Claude are in `agents/`. Revoke on the Agent tab |
 | **J6** agent assembles | Agent → Try it | Scripted turn: finds the existing holding rather than duplicating, then writes |
 | **J7** verify and undo | Activity | Single undo and whole-turn batch undo; web and agent changes in one list |
 | **J8** grounded advice | Agent → Try it (second half) | The affordability question answered off money you could use, with staleness caveats. **A scripted replay — see §8** |
@@ -491,16 +491,13 @@ amount or any message text (tested).
 sample Claude connection read "4 Aug" while the security email, in Singapore time, said "5 Aug";
 both now use the person's own time zone. The seeded settings lost the old cadence fields.
 
-### Open questions for the Founder
+### Answered by the Founder at the gate (2026-09-27)
 
-1. **The launch agent list in the prototype** still shows Grok, Muse and "Other agent" (PRD §9.7
-   row 29 parks them; that row is approved with the architecture). Recommended: park them in the
-   prototype now, in this re-opened stage, so the prototype matches J5 — it is a list change plus
-   two test updates.
-2. **`push_disabled` on account deletion.** J12 says it fires "in each case", but `by` has no value
-   for deletion (`user|browser|signout`). Recommended: leave it to `account_deleted`, which already
-   fires, and say so in §3.5 at the Stage 3 revision.
-3. **Should the Security row stay in Settings?** (decision 39). Recommended: yes.
+1. **The launch agent list is ChatGPT, Claude and "Other agent".** Grok and Muse are parked. The
+   prototype now offers only those three (the button's icon turns through ChatGPT and Claude), and
+   PRD J5 and §9.7 row 29 were amended to keep "Other agent", which they had parked.
+2. **The Security row stays** in Settings → Notifications (decision 39).
+3. **Account deletion fires no `push_disabled`;** `account_deleted` records it. Written into J12.
 
 ### User test (add to §9, after Task 7, 2 minutes)
 

@@ -29,7 +29,7 @@ t('below a rule: "Let your AI agent do this" and an outlined "Connect to agent" 
   && !!(await p.$('#s-auth .alt-route .btn.sec svg')) && await alt.evaluate(e=>getComputedStyle(e).borderTopStyle)==='solid');
 await p.click('#s-auth .alt-route .btn'); await p.waitForTimeout(200);
 t('→ Which AI agent do you use?', await hash(p)==='#/connect' && (await p.textContent('#s-auth')).includes('Which AI agent do you use?'));
-t('…every supported agent plus "Other agent", and no questions link (Back does that)', (await p.$$('[data-act="connect-client"]')).length===5 && !(await p.$('#s-auth [data-act="ob-start"]')));
+t('…the launch agents (ChatGPT, Claude) plus "Other agent", and no questions link (Back does that)', (await p.$$('[data-act="connect-client"]')).length===3 && !(await p.$('#s-auth [data-act="ob-start"]')));
 await p.click('[data-act="connect-client"][data-v="claude"]'); await p.waitForTimeout(200);
 t('email sign-up, not yet verified → the gate', (await p.textContent('#s-auth')).includes('Verify your email first') && !(await p.$('.guide-steps')));
 await p.click('.proto-mock'); await p.waitForTimeout(200);

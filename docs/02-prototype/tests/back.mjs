@@ -67,22 +67,24 @@ await ctx.close();
 // ================= the agent roll
 ({p, ctx, errs}=await toIntro());
 const on=()=>p.$eval('#s-auth .agent-roll', r=>[...r.children].findIndex(x=>x.classList.contains('on')));
-t('the button starts on the generic agent icon', await on()===0 && (await p.$$('#s-auth .agent-roll > i')).length===5);
-t('"Works with ChatGPT, Claude, Grok, Muse, or any agent that supports MCP."', (await p.textContent('#s-auth .alt-sub'))==='Works with ChatGPT, Claude, Grok, Muse, or any agent that supports MCP.');
+t('the button starts on the generic agent icon', await on()===0 && (await p.$$('#s-auth .agent-roll > i')).length===3);
+t('"Works with ChatGPT and Claude, or any agent that supports MCP."', (await p.textContent('#s-auth .alt-sub'))==='Works with ChatGPT and Claude, or any agent that supports MCP.');
 const seen=[await on()];
 await p.waitForTimeout(1000); seen.push(await on()); for (let k=0;k<5;k++){ await p.waitForTimeout(2050); seen.push(await on()); }
-t('the agent icon holds its first 2 seconds, then ChatGPT → Claude → Grok → Muse, every 2 seconds', seen.join()==='0,0,1,2,3,4,0', seen.join());
-const marks=await p.$$eval('#s-auth .agent-roll .alogo', l=>l.map(x=>[x.classList.contains('missing'), x.querySelector('b').textContent]));
-t('ChatGPT, Claude and Grok show their logos; Muse, with no file, its initial', marks.map(m=>m[0]).join()==='false,false,false,true' && marks[3][1]==='M', JSON.stringify(marks));
+t('the agent icon holds its first 2 seconds, then ChatGPT → Claude, every 2 seconds, and round again', seen.join()==='0,0,1,2,0,1,2', seen.join());
+const marks=await p.$$eval('#s-auth .agent-roll .alogo', l=>l.map(x=>x.classList.contains('missing')));
+t('ChatGPT and Claude show their logos', marks.join()==='false,false', JSON.stringify(marks));
 t('screen readers hear "Connect to agent", not the logos', (await p.getByRole('button', { name:'Connect to agent', exact:true }).count())===1);
 await p.click('#s-auth .alt-route .btn'); await p.waitForTimeout(200);
 const rows=await p.$$eval('[data-act="connect-client"]', l=>l.map(x=>x.textContent.trim()));
 t('each agent row is announced by its name alone', (await p.getByRole('button', { name:'Claude', exact:true }).count())===1);
-t('the choice list shows the four and "Other agent", each with a logo', rows.length===5 && (await p.$$('[data-act="connect-client"] .alogo')).length===5 && rows[4].endsWith('Other agent'), rows.join(' | '));
-await p.click('[data-act="connect-client"][data-v="grok"]'); await p.waitForTimeout(200);
-t('Grok has (draft) steps', (await p.textContent('#s-auth h1'))==='Connect Grok' && (await p.$$('.guide-steps li')).length===3);
+t('the choice list shows ChatGPT, Claude and "Other agent", each with a logo', rows.length===3 && (await p.$$('[data-act="connect-client"] .alogo')).length===3 && rows[2].endsWith('Other agent'), rows.join(' | '));
+t('Grok and Muse are parked: not offered', !(await p.$('[data-act="connect-client"][data-v="grok"]')) && !(await p.$('[data-act="connect-client"][data-v="muse"]')));
+for (const id of ['grok','muse']) { await p.evaluate(id=>{ location.hash='#/connect/'+id; }, id); await p.waitForTimeout(200);
+  t(`…and ${id}'s address shows the list instead`, (await p.textContent('#s-auth h1'))==='Which AI agent do you use?' && (await p.$$('[data-act="connect-client"]')).length===3); }
+await p.click('[data-act="connect-client"][data-v="other"]'); await p.waitForTimeout(200);
 await p.click('.proto-mock'); await p.waitForTimeout(150); await p.click('[data-act="connect-allow"]'); await p.waitForTimeout(250);
-t('Grok has no prefilled-prompt link → Home offers "Copy the prompt"', (await p.textContent('#s-home .empty-next .btn:not(.ghost)')).trim()==='Copy the prompt');
+t('an agent with no prefilled-prompt link → Home offers "Copy the prompt"', (await p.textContent('#s-home .empty-next .btn:not(.ghost)')).trim()==='Copy the prompt');
 t('no page errors (roll)', !errs.length, errs.join('|'));
 await ctx.close();
 
@@ -92,12 +94,18 @@ await p.waitForTimeout(4300);
 t('reduced motion → it stays on the agent icon', await p.$eval('#s-auth .agent-roll', r=>[...r.children].findIndex(x=>x.classList.contains('on')))===0);
 await ctx.close();
 
-// a dropped-in logo is used (Muse's slot: the only one without a file)
-await withFile(DIR+'/agents/muse.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>', async () => {
-  ({p, ctx, errs}=await toIntro());
+// a missing logo shows the agent's initial, and a file dropped into agents/ is used at once.
+// Every launch agent has its file, so a stand-in agent ("zed") is added to the roll for this.
+const withZed=p=>p.evaluate(()=>{ CLIENTS.zed={ name:'Zed', deepLink:null, guides:{} }; ROLL.push('zed'); render(); });
+({p, ctx, errs}=await toIntro()); await withZed(p); await p.waitForTimeout(300);
+let st=await p.$$eval('#s-auth .agent-roll .alogo', l=>l.map(x=>[x.classList.contains('missing'), x.querySelector('b').textContent]));
+t('a logo file not yet dropped in shows the initial', st.map(m=>m[0]).join()==='false,false,true' && st[2][1]==='Z', JSON.stringify(st));
+await ctx.close();
+await withFile(DIR+'/agents/zed.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>', async () => {
+  ({p, ctx, errs}=await toIntro()); await withZed(p);
   await p.waitForTimeout(300);
-  const st=await p.$$eval('#s-auth .agent-roll .alogo', l=>l.map(x=>x.classList.contains('missing')));
-  t('a logo dropped into agents/ is used at once', st.join()==='false,false,false,false', st.join());
+  st=await p.$$eval('#s-auth .agent-roll .alogo', l=>l.map(x=>x.classList.contains('missing')));
+  t('a logo dropped into agents/ is used at once', st.join()==='false,false,false', st.join());
   await ctx.close();
 });
 await b.close();

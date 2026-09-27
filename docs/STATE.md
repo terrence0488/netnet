@@ -1,13 +1,16 @@
 # Project State
 
 ## Current
-Stage: Prototype (Stage 2, re-opened) — comeback reminder and security email screens
+Stage: Architecture (Stage 3) — revision after the reminder amendment
 Phase: n/a
-Status: awaiting-approval — built 2026-09-27; see `docs/02-prototype/prototype-notes.md` §10
-Next action: Founder reviews the prototype (sample account → Home card; Account → Notifications;
-PROTO → Skip 30 days / Sent outside NetNet) and replies `approve prototype`, with answers to the
-three open questions in `prototype-notes.md` §10. After approval: `continue` in a **new session**
-→ `stage: architecture`: revise §7.10/§9.3 for J12 and the security email, then the Stage 3 gate.
+Status: not-started — prototype (reminder screens) approved 2026-09-27
+Next action: `continue` in a **new session** → `stage: architecture`: revise `docs/03-architecture.md`
+§7.10/§9.3 for J12 (comeback reminder: `last_checked_at`, the 30-day job in daytime bands, push first
+with email fallback, the device list, the events) and the J5 security email (sent at once, email
+only); drop the scheduled stale-holding email; correct the launch agent list (§ near line 67: Claude,
+ChatGPT **and "Other agent"**; Grok and Muse parked). Inputs: `docs/01-prd.md` (J5, J9, J12, §3.5,
+§9.7, §9.8), `docs/02-prototype/prototype-notes.md` §10, `docs/03-architecture.md`, `CONVENTIONS.md`.
+Then the Stage 3 gate.
 **Branch:** work from `claude/eager-heisenberg-ytll3f` (not `main`); it holds Stage 3 and the PRD
 amendment. It merges into `main` once the architecture is approved.
 
@@ -19,17 +22,17 @@ amendment. It merges into `main` once the architecture is approved.
 | PRD (amended) | **approved** | 2026-09-24 | Three personas, jurisdiction packs, agent as a user → `01-prd.md` §9.5 |
 | Prototype | **approved** | 2026-09-26 | Design B "Poster" (branch `claude/design-b-retro`), with PRD §9.6 revisions 12–28 and the carousel's desktop layout. A and C kept on their branches, unmerged |
 | PRD (amendment: comeback reminder) | **approved** | 2026-09-27 | §9.8 + J5 security email, J9, J12, M13, A14; wording option C |
-| Prototype (reminder screens) | awaiting-approval | | Built 2026-09-27: Home card, Account → Notifications, lock screen / email / security email previews, PROTO "Skip 30 days". `prototype-notes.md` §10 |
-| Architecture | on hold | | `docs/03-architecture.md` (Vercel + Neon), `CONVENTIONS.md`; revise §7.10/§9.3 after the PRD amendment |
+| Prototype (reminder screens) | **approved** | 2026-09-27 | Home card, Account → Notifications, lock screen / email / security email previews, PROTO "Skip 30 days" (`prototype-notes.md` §10). At the gate: "Other agent" stays at launch (PRD J5, §9.7 row 29 amended; Grok, Muse parked); Security row kept; deletion fires no `push_disabled` |
+| Architecture | not-started (revision) | | `docs/03-architecture.md` (Vercel + Neon), `CONVENTIONS.md`; revise §7.10/§9.3 for J12 and the security email, and the launch agent list, then the gate |
 | Plan | not-started | | |
 | P1 | not-started | | |
 
 ## Handoff note (last session)
-**Reminder screens built** (Stage 2 re-opened, 2026-09-27), in design B "Poster", per PRD §9.8, J5,
-J9, J12. Home: a quiet card below the Position ledger (Turn on → a dashed stand-in for the browser's
-prompt → one-line on/blocked; Not now ×2). Account → Notifications replaces Reminders (master, this
-device, email, other devices, and a Security row "Always"). PROTO: skip 30 days, agent check, push
-fails, can/can't receive push, and "Sent outside NetNet" (lock screen, inbox, security email). New
-test suite `tests/notif.mjs` (78 checks); all 24 suites clean. Open for the Founder
-(`prototype-notes.md` §10): park Grok/Muse/Other in the prototype now (recommended);
-`push_disabled` on deletion; keep the Security row. Architecture stays on hold until approval.
+**Prototype (reminder screens) approved** by the Founder, 2026-09-27. Built per PRD §9.8, J5, J9,
+J12 in design B "Poster": Home's one-time push card, Account → Notifications (master, this device,
+email, other devices, Security "Always"), and PROTO previews of the push, the reminder email and the
+security email (`prototype-notes.md` §10). At the gate the Founder kept **"Other agent" at launch**
+(Claude, ChatGPT, Other; Grok and Muse parked), which amended PRD J5 and §9.7 row 29, and settled
+that account deletion fires no `push_disabled` (J12). The prototype matches: Grok and Muse are
+`parked` in `connectors.js`. All 24 test suites clean. `03-architecture.md` still says "Claude and
+ChatGPT only" and still describes the stale-holding email: both are the next session's to revise.

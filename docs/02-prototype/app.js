@@ -1050,7 +1050,7 @@ function emptyHome() {
    choice, never a second filled button (design-system §2.1 rule 10). */
 const agentAlt = entry => `<div class="alt-route">
     <p class="alt-title">Let your AI agent do this</p>
-    <p class="alt-sub">Works with ${esc(ROLL.map(id => CLIENTS[id].name).join(', '))}, or any agent that supports MCP.</p>
+    <p class="alt-sub">Works with ${esc(listNames(ROLL.map(id => CLIENTS[id].name)))}, or any agent that supports MCP.</p>
     <button class="btn sec btn-icon" data-act="connect-start" data-v="${entry}">${agentRoll()}Connect to agent</button>
   </div>`;
 const listNames = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
@@ -1340,7 +1340,7 @@ function renderPeriod(view, i) {
 /* ================= AGENT (J5) ================= */
 function renderAgent() {
   const conns = activeConns();
-  const unconnected = Object.entries(CLIENTS).filter(([, c]) => c.generic || !conns.some(x => x.client === c.name));
+  const unconnected = launchClients().filter(([, c]) => c.generic || !conns.some(x => x.client === c.name));
   $('#s-agent').innerHTML = `
   <div class="topbar"><h1>Your agent</h1></div>
   <div class="grid">
@@ -1376,6 +1376,8 @@ function renderAgent() {
    server, so the two outside events (opening the verification link, the agent opening
    NetNet's approval page) are simulated by clearly marked prototype buttons. */
 const activeConns = () => (S.account.connections || []).filter(c => c.active);
+/* The agents offered: every client that is not parked (connectors.js). */
+const launchClients = () => Object.entries(CLIENTS).filter(([, c]) => !c.parked);
 const clientByName = n => Object.entries(CLIENTS).find(([, c]) => c.name === n) || null;
 const md = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
 const isPhone = () => { try { return matchMedia('(pointer:coarse)').matches && innerWidth < 900; } catch (e) { return false; } };
@@ -1384,13 +1386,14 @@ function connectBack() {
   return S.connectEntry === 'agent' ? '#/agent' : '#/home';
 }
 function renderConnect(id, step) {
+  /* a parked agent is not offered, even by its address: the list instead */
+  const c = CLIENTS[id] && !CLIENTS[id].parked ? CLIENTS[id] : null;
   /* back to the choice of agent if that is where they came from, else to where they started */
-  const back = `<button class="back" data-go="${id && S.connectEntry !== 'agent' ? '#/connect' : connectBack()}">‹ Back</button>`;
-  const c = CLIENTS[id];
+  const back = `<button class="back" data-go="${c && S.connectEntry !== 'agent' ? '#/connect' : connectBack()}">‹ Back</button>`;
   if (!c) {
     authShell(`${back}
       <h1>Which AI agent do you use?</h1>
-      <div class="choice col">${Object.entries(CLIENTS).map(([cid, x]) =>
+      <div class="choice col">${launchClients().map(([cid, x]) =>
         `<button data-act="connect-client" data-v="${cid}">${agentLogo(cid)}${esc(x.label || x.name)}</button>`).join('')}</div>`);
     return;
   }

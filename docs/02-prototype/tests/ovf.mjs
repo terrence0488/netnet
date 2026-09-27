@@ -62,7 +62,7 @@ await check('intro', ()=>{ S.account.obStep='start'; save(); location.hash='#/we
 await check('basics', ()=>{ S.guide=newGuide(); S.account.obStep='basics'; save(); location.hash='#/basics'; render(); });
 await check('connect list', ()=>{ S.account.verified=true; save(); location.hash='#/connect'; render(); });
 await check('connect claude', ()=>{ location.hash='#/connect/claude'; render(); });
-await check('connect muse', ()=>{ location.hash='#/connect/muse'; render(); });
+await check('connect other', ()=>{ location.hash='#/connect/other'; render(); });
 await check('connect allow', ()=>{ location.hash='#/connect/claude/allow'; render(); });
 await check('empty home', ()=>{ reset('empty'); Object.assign(S.account,{signedIn:true,onboarded:true}); save(); location.hash='#/home'; render(); });
 await check('home', new Function(seeded('#/home')));

@@ -1,10 +1,11 @@
 # Connector setup screenshots
 
 The agent setup guide (PRD J5) shows one screenshot per step, per client, per platform.
-Drop them here with these exact names and they appear in the prototype on reload (Grok's steps
-are a generic draft until its connector support is confirmed; Muse's are written from Meta's
-launch and early testers' reports, and Muse is US-only for now, so its screenshots need a US
-account):
+Drop them here with these exact names and they appear in the prototype on reload. At launch
+only Claude and ChatGPT have guides with screenshots ("Other agent" has none). Grok and Muse are
+parked until after launch; their rows are kept for then (Grok's steps are a generic draft until its
+connector support is confirmed; Muse's are written from Meta's launch and early testers' reports,
+and Muse is US-only for now, so its screenshots need a US account):
 
 | Client | Computer | Phone |
 |---|---|---|

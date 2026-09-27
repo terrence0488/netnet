@@ -38,13 +38,9 @@ for (const scheme of ['dark','light']) {
   t(`[${scheme}] Ask your agent: the prompt is the same card, with Copy`, c && c.copy && c.text.includes('“IBKR”'));
   await p.evaluate(()=>closeSheet()); await p.waitForTimeout(200);
 
-  // Muse: a message to send, as a card, on both platforms; no address box
-  for (const plat of ['phone','computer']) {
-    await p.evaluate(pl=>{ S.connectPlatform=pl; save(); location.hash='#/connect/muse'; render(); }, plat); await p.waitForTimeout(250);
-    c = await card('.guide-steps');
-    t(`[${scheme}] Muse ${plat}: step 1 is a message to send, as a card with Copy`, c && c.copy && c.text.includes('custom connector called NetNet') && c.text.includes('https://netnet.app/mcp'));
-    t(`[${scheme}] Muse ${plat}: no separate address box, three steps`, !(await p.$('.guide-steps .urlbox')) && (await p.$$('.guide-steps > li')).length===3);
-  }
+  // Muse, whose first step was a message card, is parked until after launch: not reachable
+  await p.evaluate(()=>{ location.hash='#/connect/muse'; render(); }); await p.waitForTimeout(250);
+  t(`[${scheme}] Muse is parked: its address shows the agent list, no setup card`, !(await p.$('.guide-steps')) && (await p.textContent('#s-auth h1'))==='Which AI agent do you use?');
   await p.evaluate(()=>{ S.connectPlatform='phone'; save(); location.hash='#/connect/claude'; render(); }); await p.waitForTimeout(250);
   t(`[${scheme}] Claude's guide keeps the address box, no card`, !!(await p.$('.guide-steps .urlbox')) && !(await p.$('.guide-steps .prompt-card')));
   t(`[${scheme}] no page errors`, !errs.length, errs.join(' | '));
