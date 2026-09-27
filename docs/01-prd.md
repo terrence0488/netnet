@@ -8,9 +8,9 @@ and §2.4 made the agent a target user with a falsifiable claim behind it (what 
 agent route, per-country packs and their administration, and what the product shows. Those
 revisions are written into the requirements below and listed in **§9.6**; approved by the Founder
 with the prototype at the Stage 2 gate, 2026-09-26.
-**Amendment proposed 2026-09-27, awaiting the Founder's approval: a gentle comeback reminder, by
-web push or email** (§9.8; J9 and J12 revised, M13, A14, §3.5, §4.1, §8). Re-opened from the Stage 3
-review on the Founder's request; the Founder's decisions are written in.
+**Amended and approved by the Founder 2026-09-27: a gentle comeback reminder, by web push or
+email, and a security email when an agent is connected** (§9.8; J9 and J12 revised, M13, A14, §3.5, §4.1, §8). Re-opened from the Stage 3
+review on the Founder's request.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -737,10 +737,10 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   opened.
 
 **What it says**
-- **Given** any reminder, **when** it is shown, **then** it says plainly that it is time to update
-  their net worth, in one short line, with the agent offered as the way to do it when one is
-  connected. The wording is **one of the three options in §9.8, chosen by the Founder**. Tapping it
-  opens Home. **It never includes an amount, a total, a holding name or a type or tag name**, because
+- **Given** any reminder, **when** it is shown, **then** it reads **"Your net worth is due for an
+  update."**, followed by **"Just ask Claude."** when an agent is connected (with the connected
+  agent's name). The title is "NetNet"; the email uses the same line as its subject, with one button,
+  **Open NetNet** (Founder's choice, §9.8 option C). Tapping it opens Home. **It never includes an amount, a total, a holding name or a type or tag name**, because
   lock screens and inboxes are public (N9). No guilt, no streaks, no urgency.
 
 **Asking for push**
@@ -957,15 +957,15 @@ Founder with the prototype, 2026-09-26.
 ### 9.7 Revisions at the Stage 3 review — 2026-09-27
 
 Founder decisions, taken while reviewing the architecture. Rows 29–30 are approved with the
-architecture at the Stage 3 gate. Row 31 is approved with the §9.8 amendment.
+architecture at the Stage 3 gate. Row 31 was approved with the §9.8 amendment on 2026-09-27.
 
 | # | What changed | Where |
 |---|---|---|
 | 29 | The launch agent list is **Claude and ChatGPT only**. Grok, Muse and the generic "Other agent" guide are parked until after launch. The Connect button's icon turns through the two launch agents. The server stays standard remote MCP with OAuth and no client-specific code, so any MCP agent can still connect technically; only the guides and the list are parked | J5 |
 | 30 | Which plans of each client allow a custom connector is parked. It changes guide content and directory submissions, not the product | §9.5 |
-| 31 | **A gentle comeback reminder joins v1** (Founder, 2026-09-27): after 30 days without checking NetNet (app or agent), then monthly while away; by web push where it is on, by email otherwise. It replaces J9's scheduled stale-holding email. A security email (never push) is sent when an agent is connected. Specified in §9.8, J5 and J12 | §3.2, §3.5, §4.1, §8, J5, J9, J12 |
+| 31 | **A gentle comeback reminder joins v1** (Founder, 2026-09-27): after 30 days without checking NetNet (app or agent), then monthly while away; by web push where it is on, by email otherwise. It replaces J9's scheduled stale-holding email. A security email (never push) is sent when an agent is connected. Wording: "Your net worth is due for an update." Specified in §9.8, J5 and J12. **Approved 2026-09-27** | §3.2, §3.5, §4.1, §8, J5, J9, J12 |
 
-### 9.8 Amendment — a gentle comeback reminder (proposed 2026-09-27, awaiting approval)
+### 9.8 Amendment — a gentle comeback reminder (approved by the Founder 2026-09-27)
 
 **The objective (Founder).** Push exists as a **gentle reminder so people don't forget NetNet**.
 It is not a nag about updating numbers. If someone checks NetNet at least once a month, by opening it
@@ -992,7 +992,7 @@ per channel. If wrong, the reminder stays (it is free and gentle), and return is
 | Where do we ask? | A one-time quiet card on Home after the first picture, plus a switch in Settings → Notifications |
 | iPhone Home Screen guidance? | None. Where a browser can't receive push (such as an iPhone Safari tab), no push option is shown and email is used |
 | Security notice when an agent is connected? | Kept, **by email only**, never push; cannot be turned off (J5) |
-| Reminder wording? | "It's time to update your net worth" in spirit; the Founder picks one of the three options below |
+| Reminder wording? | **Option C:** "Your net worth is due for an update." + "Just ask Claude." when an agent is connected |
 
 **Adopted as defaults (flag if wrong):** reminders arrive between 08:00 and 21:00 in the person's
 time zone. The Home card's **Not now** hides it for 30 days, and a second **Not now** hides it for
@@ -1001,7 +1001,7 @@ The **security email** stays in v1 (Founder): when an agent is connected, an ema
 away, **email only, never push**, and it cannot be turned off (J5). Period recaps stay a post-launch
 candidate.
 
-**Reminder wording: three options for the Founder to choose from.** Each is short enough for a
+**Reminder wording: the three options put to the Founder. C was chosen.** Each is short enough for a
 lock screen (the title is always "NetNet"). The second line appears only when an agent is connected.
 The email uses the same line as its subject, with one button, **Open NetNet**.
 
@@ -1009,10 +1009,10 @@ The email uses the same line as its subject, with one button, **Open NetNet**.
 |---|---|---|---|
 | **A** | It's time to update your net worth. | Ask Claude to do it for you. | Your own phrasing. Direct, clear action |
 | **B** | Time for your monthly net worth check-in. | Claude can do the updating. | Warmer; "check-in" frames it as a habit, not a chore |
-| **C** | Your net worth is due for an update. | Just ask Claude. | Shortest; reads like a friendly statement of fact |
+| **C ✓** | Your net worth is due for an update. | Just ask Claude. | Shortest; reads like a friendly statement of fact. **Chosen** |
 
-*Recommended: **A**.* It is your own phrasing, names the action, and fits on one lock-screen line.
-"Claude" is replaced by the connected agent's name (ChatGPT). None carries an amount or a name.
+**Chosen by the Founder: C** (2026-09-27). "Claude" is replaced by the connected agent's name
+(ChatGPT). None carries an amount or a name.
 
 **Risk, stated plainly.** Someone who has left for good gets one reminder a month indefinitely. The
 one-click unsubscribe, the Reminders switch and a gentle tone keep it respectful. If unsubscribe or
