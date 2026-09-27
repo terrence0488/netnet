@@ -73,7 +73,7 @@ added by URL does not. Consequences:
   becomes G-D2 work that starts as soon as the MCP layer is stable, not after launch.
 - The server is built to the standards below with no client-specific branches, so none of this
   changes the code. It changes the connect guides (content), the directory submissions and the
-  PRD's text. **Decision 2 in §13.**
+  PRD's text. *Parked by the Founder, 2026-09-27 (§13).*
 
 **Protocol.** The current MCP specification is **2026-07-28**. It is stateless (no `initialize`
 handshake, no `Mcp-Session-Id`), makes CIMD the preferred way to register, deprecates DCR and
@@ -733,7 +733,7 @@ instead of billing. Both are N8 failures.
 | # | Risk / trade-off | Mitigation |
 |---|---|---|
 | 1 | **Cost is ~$6/month, not ≈$0**, at 0–100 users | The price of N8 (§9.3). Decision 1 |
-| 2 | **ChatGPT Free cannot connect** until NetNet is listed in ChatGPT's directory; review time is unknown | Claude stays launch-blocking; submit to the directory as soon as the MCP layer is stable; `plans` line in the ChatGPT guide; M3 read per client. Decision 2 |
+| 2 | **ChatGPT Free cannot connect** until NetNet is listed in ChatGPT's directory; review time is unknown | Parked by the Founder (2026-09-27). Content and go-to-market, not architecture |
 | 3 | Claude Free allows **one** custom connector | The Claude guide covers "already using your one connector"; measured through `agent_connection_failed {step}` |
 | 4 | **MCP protocol churn** (2026-07-28 is new; clients are mid-migration) | Negotiate three versions; contract tests with the SDK client for each; the P1 spike connects real Claude and ChatGPT before anything else is built on it |
 | 5 | **Auth library maturity** (OAuth provider + CIMD in Better Auth are recent) | Our resource server is standard JWT checks; a named fallback library; the spike decides |
@@ -751,13 +751,12 @@ instead of billing. Both are N8 failures.
 
 1. **Running cost of about $6/month from day one** (Workers Paid + domain) instead of ≈$0.
    *Recommended: accept.* The free plan cannot hash passwords and fails requests past a daily cap.
-2. **Correct PRD §9.5 on ChatGPT.** Free ChatGPT cannot add a custom connector. Submit NetNet to
-   ChatGPT's directory as P1/P2 work (G-D2), and have the ChatGPT guide say which plans work
-   until it is listed. *Recommended: accept, and re-check OpenAI's help page yourself, since it is
-   blocked from here.*
-3. **Apple sign-in costs $99/year** (Apple Developer Program), needed for iOS anyway.
+2. **Apple sign-in costs $99/year** (Apple Developer Program), needed for iOS anyway.
    *Recommended: accept, and enrol early. Approval can take days.*
-4. **Grok on the agent list.** Third-party sources say Grok's paid tiers accept custom MCP since
+3. **Grok on the agent list.** Third-party sources say Grok's paid tiers accept custom MCP since
    May 2026. *Recommended: list it once the P1 spike connects it for real, per J5's rule.*
-5. **One Durable Object per user**, rather than one shared database with per-row scoping.
+4. **One Durable Object per user**, rather than one shared database with per-row scoping.
    *Recommended: accept*, for isolation and latency (§4, risk 6).
+
+*Parked by the Founder, 2026-09-27:* which plans of each client can add a custom connector (§3,
+risks 2–3). It changes connect-guide content and directory submissions, not the architecture.
