@@ -140,7 +140,7 @@ gate the Founder asked for two more looks over the same product: **B "Poster"** 
 cream stock, black outlines, hard offset shadows, one tomato ink, Unbounded + Space Grotesk) and
 **C "Calm"** (clean and soft: white cards, an indigo hero, Plus Jakarta Sans). All three ran the
 same `app.js` and passed the same tests. The Founder chose B; A and C are kept on their branches
-(`claude/zealous-dijkstra-3yebuo`, `claude/design-c-soft`).
+(`claude/design-a-two-inks`, `claude/design-c-soft`).
 
 The first round was rejected outright, and the reason is worth keeping: it started from a palette
 rather than an idea, and produced four recolourings of the same generic dashboard. `explorations/`

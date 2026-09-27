@@ -9,7 +9,7 @@ Owner: Product designer · Stage 2
 
 **History.** v1 was "Two Inks" (a typeset ledger in two fluorescent inks, no cards). Three looks were
 then built over the same product: A "Two Inks", B "Poster", C "Calm". The Founder chose B. A and C
-are kept, unmerged, on their own branches (`claude/zealous-dijkstra-3yebuo`,
+are kept, unmerged, on their own branches (`claude/design-a-two-inks`,
 `claude/design-c-soft`); their design docs live there. Everything below that is not about the look
 (content rules §2.1, chart rules §5, hit targets §6.1, layout §7) was written for v1 and carried
 over unchanged.

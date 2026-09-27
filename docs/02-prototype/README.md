@@ -2,7 +2,7 @@
 
 The look is **"Poster"** (bold retro), chosen by the Founder on 2026-09-26 from three designs over
 the same product. The other two are kept on their own branches: A "Two Inks"
-(`claude/zealous-dijkstra-3yebuo`) and C "Calm" (`claude/design-c-soft`).
+(`claude/design-a-two-inks`) and C "Calm" (`claude/design-c-soft`).
 
 Open `index.html` in a browser. No build, no server, no dependencies.
 
