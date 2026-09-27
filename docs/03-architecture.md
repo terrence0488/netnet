@@ -674,7 +674,7 @@ created, so a UK user's Ledger can live in Europe later without a migration.
 | Sentry Developer | $0 | $0 |
 | Domain (Cloudflare Registrar, at cost) | ~$1 | ~$1 |
 | **Total** | **≈ $6/month** | **≈ $6–31/month** (ceiling $50 ✓) |
-| *If Apple sign-in ships:* Apple Developer Program | +$8.25 ($99/yr) | +$8.25 |
+| Apple Developer Program (decided by the Founder, 2026-09-27) | +$8.25 ($99/yr) | +$8.25 |
 
 No line is a trial or introductory tier (N6). The Workers Free plan was rejected. Its 10 ms CPU
 per request cannot hash a password, and its 100,000 requests/day cap fails requests outright
@@ -749,14 +749,112 @@ instead of billing. Both are N8 failures.
 
 ### Decisions needed from the Founder
 
-1. **Running cost of about $6/month from day one** (Workers Paid + domain) instead of ≈$0.
-   *Recommended: accept.* The free plan cannot hash passwords and fails requests past a daily cap.
-2. **Apple sign-in costs $99/year** (Apple Developer Program), needed for iOS anyway.
-   *Recommended: accept, and enrol early. Approval can take days.*
-3. **Grok on the agent list.** Third-party sources say Grok's paid tiers accept custom MCP since
+1. **Hosting: option A (Cloudflare, §4–§9, about $5/month from day one) or option B (Vercel
+   Hobby + Neon Free, $0 for the first users, §14).** The design above the host is the same
+   either way. *Recommended: A.* §14.6 gives the reasons. B is fully specified in §14, so picking it
+   is a one-line answer.
+2. **Grok on the agent list.** Third-party sources say Grok's paid tiers accept custom MCP since
    May 2026. *Recommended: list it once the P1 spike connects it for real, per J5's rule.*
-4. **One Durable Object per user**, rather than one shared database with per-row scoping.
-   *Recommended: accept*, for isolation and latency (§4, risk 6).
 
+*Decided by the Founder, 2026-09-27:* Apple sign-in ships, and the Founder enrols in the Apple
+Developer Program ($99/year). The Founder buys the custom domain.
 *Parked by the Founder, 2026-09-27:* which plans of each client can add a custom connector (§3,
 risks 2–3). It changes connect-guide content and directory submissions, not the architecture.
+
+## 14. Option B — Vercel + Neon (explored at the Founder's request, 2026-09-27)
+
+The Founder asked whether the first ~100 users can run for less than option A's $5/month. This
+section specifies the same design on **Vercel Hobby** (functions, static files, cron) and **Neon
+Free** (serverless Postgres). Vercel's and Neon's own sites are blocked from this environment.
+The figures come from their docs as quoted in search results and from 2026 third-party write-ups,
+and are **re-checked in the P1 spike** before anything depends on them.
+
+### 14.1 What stays the same
+
+Everything above the host: `packages/core` (every figure, the context compiler, chart
+geometry), `packages/contracts`, the REST, MCP, OAuth, event and content contracts (§7), Better
+Auth, the React + Vite web app, the landing page, first-party analytics, Resend, Sentry, the
+content publishing model, the native path, and `CONVENTIONS.md` apart from its folder names.
+
+### 14.2 What changes
+
+| Concern | A · Cloudflare | B · Vercel + Neon |
+|---|---|---|
+| Compute | One Worker at the edge | Vercel Functions (Node, Fluid compute), pinned to **one region: `sin1` Singapore**; Hono runs there unchanged |
+| Money data | One Ledger Durable Object per user, own SQLite | **One Neon Postgres** (AWS Singapore) with a `ledger` schema; **row-level security** on every table |
+| Isolation (N4) | `ledgerFor(userId)` picks a database | `withUser(userId, tx => …)` opens a transaction, sets `app.user_id` and takes the user's row lock. The app's database role has no `BYPASSRLS`, so a query that forgets its filter still sees one user's rows. Same isolation suite |
+| Serial writes, atomic audit (J6, J7) | Single-threaded Ledger + `transactionSync` | Each write transaction starts with `SELECT … FROM ledger_state WHERE user_id = $1 FOR UPDATE`, which serialises one user's writes. The audit rows and `data_version` go in the same transaction |
+| Identity, OAuth, content, FX | D1 `core` | Postgres schema `core` |
+| Analytics | D1 `events` | Postgres schema `analytics`, written by its own role, which cannot read `ledger` |
+| Reminders (J9) | A Durable Object alarm per user | A daily Vercel Cron scan of `ledger_state.next_reminder_at` |
+| Other scheduled work | Cron triggers, any frequency | **Hobby cron runs at most once a day.** FX and reminders fit. Connection-attempt timeouts are worked out when the attempt is read, not by a job. The hourly MCP probe and daily backups run in GitHub Actions |
+| Rate limits | Workers rate-limiting binding | A small Postgres counter table (fixed windows) |
+| IP country (§2.3 r2) | `request.cf.country` | `x-vercel-ip-country`, still our own platform |
+| Screenshots, logos | R2 | Static files in `content/`, shipped by a content-only deploy |
+| Backups | D1 Time Travel + Ledger PITR, 30 days | **Neon Free keeps only 6 hours.** A daily GitHub Actions job runs `pg_dump`, encrypts it and stores it (R2 free tier), keeping 30 days |
+| Preview environments | Staging only | **A preview URL per pull request, each on its own Neon branch.** The Founder can open and try every task's change before it merges |
+
+### 14.3 Free-tier limits against ~100 users
+
+| Limit (as published, 2026) | ~100 users, estimated | Headroom |
+|---|---|---|
+| Vercel Hobby: **non-commercial use only** | A free test with no payments or ads | Arguable, not certain (§14.5, risk 1) |
+| Vercel Hobby: 1M function invocations, 4 h active CPU, 360 GB-h memory per month | ~120k invocations, ~40 min CPU | Wide |
+| Vercel Hobby: cron at most daily; one function region | Daily jobs only; `sin1` | Fits, with the changes in §14.2 |
+| Neon Free: **100 CU-hours per month**, compute **suspended until next month** when used up | The database stays awake 5 min after each burst. ~30 users ≈ 6 h/day ≈ 45 CU-h. ~100 users spread over the Singapore day ≈ 12–16 h/day at 0.25 CU ≈ **90–120 CU-h** | **Runs out somewhere around 70–100 active users** |
+| Neon Free: 0.5 GB storage | Well under 50 MB at 100 users | Wide |
+| Neon Free: scale to zero after 5 min, cannot be disabled; cold start 300–800 ms (0.5–1 s to first query) | At launch traffic, the first call of most sessions is cold | See §14.4 |
+| Neon Free: 6-hour restore window | — | Own daily dumps (§14.2) |
+
+Neon's compute is capped at **0.25 CU** under B, so autoscaling never burns the hours faster. No
+uptime probe may touch the database: `/api/health` stays shallow, or the probe alone would keep
+the compute awake and use the month's hours.
+
+### 14.4 Latency (N1: p95 under 1.5 s), estimated
+
+| Path | A · Cloudflare | B · Vercel + Neon |
+|---|---|---|
+| Agent call, warm | ≈ 0.23 s (edge → Ledger, one hop) | ≈ 0.25–0.3 s (edge → `sin1`, then queries in-region) |
+| Agent call after 5 min idle | ≈ 0.25–0.3 s (a Durable Object wakes in tens of ms) | **≈ 1.0–1.7 s** (Neon wake 0.5–1 s + function cold start 0.2–0.5 s + the Pacific) |
+
+Under B, the slow call is usually the first one of a conversation, `get_financial_context`, the
+one that matters most. It is slow, not failed, so the 99.5% success target holds. The p95 target
+is at risk while traffic is thin. The risk shrinks as usage keeps the database awake, and goes
+away on Neon Launch with scale-to-zero turned off (~$25/month at 0.25 CU, always on).
+
+### 14.5 Cost and risks
+
+| Users | A · Cloudflare | B · Vercel + Neon |
+|---|---|---|
+| 0 to ~70 | $5 | **$0** |
+| ~70–100 | $5 | $0, then Neon Launch (~$10–15) once CU-hours run short |
+| ~1,000 | $5–10 | Vercel Pro $20 + Neon Launch ~$20–30 ≈ **$40–50**, near the $50 ceiling |
+
+Plus, in both: the domain (~$1/month) and Apple ($99/year), Resend at $0 until 3,000 emails a
+month.
+
+| # | Risk under B | Guardrail |
+|---|---|---|
+| 1 | Vercel's Hobby terms forbid commercial use. A free product with no payments or ads is arguably outside that, but Vercel decides | Move to Pro ($20) before any monetisation, and at once if Vercel asks |
+| 2 | Neon's CU-hour cap is a hard stop: the database is suspended until next month | A daily job reads Neon's usage and emails the Founder at 60%. Upgrade to Launch at 60%, not 100% |
+| 3 | Cold first calls (§14.4) | `latency_ms` shows it. Upgrade trigger: 7-day p95 over 1.5 s |
+| 4 | 6-hour restore window | Daily encrypted dumps, 30 days kept |
+| 5 | Higher cost past ~100 users | Known in advance (above) |
+
+**Upgrade path under B is a plan change, not a code change:** Vercel Pro and Neon Launch run the
+same code. The same holds for A (Workers Paid is already on).
+
+### 14.6 Recommendation
+
+**A, by a small margin.** B saves $5/month (~$60/year) for the first months. It costs about
+$30–40/month more at 1,000 users, makes the most important agent call slow while traffic is thin,
+brings a hard monthly stop, and rests on a terms-of-use reading Vercel could reject. A has none of
+these, at a price below the Apple fee.
+
+**What B does better, stated fairly:** Postgres with row-level security is the more conventional
+design (the workflow prefers boring). It is easier to move off. Better Auth's best-supported
+database. And **per-pull-request previews with their own database branch** would let the Founder
+try every change before it merges, which suits a product built by AI engineers. If the Founder
+values $0 now and those previews over the risks above, B is a sound choice with the guardrails in
+§14.5. §14.2 then replaces §4–§9's hosting details, and §7.3's Ledger RPC becomes the
+`withUser` repository with the same method names.
