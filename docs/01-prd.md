@@ -8,8 +8,9 @@ and §2.4 made the agent a target user with a falsifiable claim behind it (what 
 agent route, per-country packs and their administration, and what the product shows. Those
 revisions are written into the requirements below and listed in **§9.6**; approved by the Founder
 with the prototype at the Stage 2 gate, 2026-09-26.
-**Amendment proposed 2026-09-27, awaiting the Founder's approval: push notifications** (§9.8; J9
-revised, J12, M13, A14, §3.5, §4.1, §8). Re-opened from the Stage 3 review on the Founder's request.
+**Amendment proposed 2026-09-27, awaiting the Founder's approval: a gentle comeback reminder, by
+web push or email** (§9.8; J9 and J12 revised, M13, A14, §3.5, §4.1, §8). Re-opened from the Stage 3
+review on the Founder's request; the Founder's decisions are written in.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -260,7 +261,7 @@ Window: **8 weeks from public launch** unless stated. "Signup" = verified accoun
 | **M10** | Funnel conversion | Landing-page unique visitors → signup | **≥8%**, on ≥1,200 visits | The pitch, not the product, is the blocker |
 | **M12** | **Context lift** (new) | Blind A/B on a fixed dataset and question set: NetNet-connected agent vs the same data uploaded as a spreadsheet, scored on numeric correctness, appropriate qualification, and absence of fabrication — run on a deliberately weak model | NetNet wins **≥80%** of paired questions, and **never** scores worse on fabrication | **A13 is wrong** — the context layer is not adding what §2.4 claims, and NetNet is a nicer spreadsheet |
 | **M11** | **Standalone value** (new) | % of signups with ≥2 sessions **before** any agent connection; and % still active in week 4 having never connected | **40%** / **15%** | **A12 is wrong** — the app is not worth using on its own, so P-A churns before the real experiment reaches them (§2.2) |
-| **M13** | **Reminder effect, by channel** (new, 2026-09-27) | Of reminders sent, % followed by a value update (web or agent) within 72 h, per channel; and % of week-4-active users with push on for ≥1 device | Push **above** email on the first; **25%** on the second. A learning metric, not a kill criterion | **A14 is wrong**: a reminder on the phone does not keep the picture fresher than one in the inbox. Push stays (it is free) but stops being treated as a freshness lever |
+| **M13** | **Comeback rate** (new, 2026-09-27) | Of comeback reminders sent, % followed by the person checking NetNet (opening it, or their agent using it) within 7 days, per channel; and % of week-4-active users with push on for ≥1 device | Push **above** email on the first; **25%** on the second. A learning metric, not a kill criterion | **A14 is wrong**: a monthly nudge does not bring lapsed people back. It stays (it is free and gentle), and return is sought elsewhere |
 
 **Every metric above is reported per segment** (P-A / P-B / P-C), captured in onboarding by one
 skippable question. Targets in this table are the blended figure; per-segment targets are set in
@@ -312,11 +313,10 @@ no evidence and §3.3 cannot be applied. Minimum event set:
 `agent_connection_completed {client, entry}` · `agent_connection_failed {step, client, entry}` ·
 `agent_tool_called {tool, kind: read|write, outcome, latency_ms, client}` ·
 `value_corrected {original_source, age_at_correction}` · `value_undone` ·
-`session_started {display: browser|standalone}` · `insights_viewed {view: monthly|quarterly|yearly}` ·
-`notification_sent {kind: reminder|security, channel: email|push}` · `notification_opened {kind, channel}` ·
-`push_prompt_shown {entry: home|settings}` ·
-`push_prompt_result {entry, result: granted|denied|dismissed|not_now|needs_home_screen|unsupported}` ·
-`push_enabled {platform}` · `push_disabled {platform, by: user|browser|signout}` · `account_deleted`
+`session_started` · `insights_viewed {view: monthly|quarterly|yearly}` ·
+`reminder_sent {channel: email|push}` · `reminder_opened {channel}` · `push_prompt_shown {entry: home|settings}` ·
+`push_prompt_result {entry, result: granted|denied|not_now}` · `push_enabled {platform}` ·
+`push_disabled {platform, by: user|browser|signout}` · `account_deleted`
 
 Every event above also carries **`{segment}`** (`starting_out` / `accumulating` / `established` /
 `unknown`), set during onboarding and never changed by us. Without it none of §3.2 is readable per
@@ -324,10 +324,9 @@ segment, and §3.3 cannot be applied to the segment it is meant to judge. `signu
 `account_created` fire before the question is asked and carry `unknown`; per-segment readings join
 them to the account.
 
-`notification_sent` and `notification_opened` replace the earlier `reminder_sent` and
-`reminder_clicked`, now that a message can be a reminder or a security notice and go by email or
-push. `display` on `session_started` says whether NetNet was opened from the Home Screen, which is
-the step iPhone push depends on (J12). None of them carries an amount or any message text (N9).
+`channel` on the reminder events says whether the comeback reminder went by push or by email, so
+M13 can compare them. `reminder_opened` replaces `reminder_clicked`. None of them carries an amount
+or any message text (N9).
 
 `method` says which way in people choose — Google, Apple or email. Sign-up is built to be as
 frictionless as possible (J1), and this is how that is checked.
@@ -356,9 +355,8 @@ Assemble and maintain a financial position: any asset or liability, user-defined
 any currency, dated value history, archive · net worth total with trend, breakdown by type,
 assets-vs-liabilities, and a user-chosen comparison baseline · **an Insights view of change by
 calendar period (monthly, quarterly, yearly) with its own filters and exclusions** · staleness
-labels and reminders · **notifications by email and web push: stale-holding reminders and a
-security notice when an agent is connected, with the user choosing channels per device** (J9, J12,
-§9.8) · **a comprehensive MCP layer with full CRUD, plus read tools shaped for advice, reached
+labels · **a gentle comeback reminder after a month away, by web push where the user has turned it
+on and by email otherwise** (J12, §9.8) · **a comprehensive MCP layer with full CRUD, plus read tools shaped for advice, reached
 by OAuth from ChatGPT or Claude** · audit log and undo for every agent write · export and account
 deletion · the §3.5 analytics · the §3.4 distribution assets. Mobile-first responsive web, one API
 that native clients reuse later.
@@ -399,7 +397,7 @@ Reserved for later monetisation — **not** built in v1, so they are not given a
 | Tax, CGT and year-end reporting produced by NetNet | High willingness to pay, jurisdiction-specific |
 | Multi-entity, household or advisor-shared portfolios | Seat-shaped by nature |
 | Document vault / statement history | Storage cost, and v1 deliberately never receives documents |
-| Threshold alerts (notifications triggered by a value crossing a line) | Continuous evaluation per user; high willingness to pay. *Push as a channel for reminders moved into v1 (§9.7); push itself costs nothing* |
+| Threshold alerts (notifications triggered by a value crossing a line) | Continuous evaluation per user; high willingness to pay. *Push as a channel for the comeback reminder moved into v1 (§9.8); push itself costs nothing* |
 
 **Where the line falls, now that Insights ships free (§4.1):** *backward-looking* analysis of data
 the user already has is free and in v1 — totals, trends, period-by-period change, breakdowns.
@@ -426,8 +424,8 @@ and J12 keep it current and trustworthy.
 | **J4** | see whether they are going up, against a baseline they choose | A6, M6 |
 | **J11** | see how each month, quarter and year actually went, and what drove it | A6, M6 |
 | **J7** | see exactly what the agent changed, and undo it | A2, M5 |
-| **J9** | be nudged before the picture goes stale | M8 |
-| **J12** | get NetNet's nudges on the device they actually look at, and control them | M8, M13, A14 |
+| **J9** | see what has gone out of date | M8 |
+| **J12** | get a gentle nudge if they haven't looked in a month, on the device they choose | M6, M8, M13, A14 |
 | **J10** | export everything and delete the account | A7 |
 
 ## 6. Acceptance criteria
@@ -702,76 +700,71 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 ### J9 — Keep the context current (M8)
 - **Given** a holding not updated for longer than its expected cadence, **when** the user views it,
   **then** it is labelled with how long it has been stale, on both list and detail.
-- **Given** stale holdings, **when** the reminder schedule comes due, **then** NetNet sends **one**
-  reminder naming how many holdings are out of date, with a link that opens them, on each channel
-  the user has on: email, and push on each device where it is on (J12). `notification_sent {kind:
-  reminder, channel}` fires per channel.
-- **Given** a connected agent, **when** a reminder is sent, **then** it hands the job to the agent:
-  "2 holdings are out of date. Ask Claude to update them?", and the link opens the out-of-date list
-  with the ready-made prompt (J5). Without an agent: "2 holdings are out of date. Update them in
-  NetNet."
-- **Given** nothing is stale, **when** the schedule comes due, **then** nothing is sent. At most one
-  reminder goes out per cadence period, however many channels are on.
-- **Given** any reminder, **when** it is sent, **then** it arrives between **08:00 and 21:00 in the
-  user's own time zone**, never overnight.
-- **Given** reminder settings, **when** the user changes cadence or turns a channel off, **then** it
-  is honoured: no email after opting out of email, ever, and no push to a device after push is off
-  there, in NetNet or in the browser.
+- **Given** stale holdings, **when** Home is shown, **then** it says how many are out of date and hands
+  the job to a connected agent ("Ask Claude to update it"), or offers to connect one (unchanged from
+  the prototype).
+- Reminders outside the app are J12's comeback reminder. There is no separate scheduled reminder
+  about stale holdings (§9.8).
 
-### J12 — Nudges on the device I actually look at (A14, M13)
-> Added 2026-09-27 (§9.8). Web push only; native push arrives with the native apps.
+### J12 — A gentle nudge after a month away (A14, M13)
+> Added 2026-09-27 (§9.8). The one message NetNet sends to bring someone back. Web push where it is
+> on; email otherwise. Native push arrives with the native apps.
 
-**Asking**
-- **Given** a user with a first picture (at least one holding) on a device that can receive push,
-  where push has not yet been decided, **when** Home is shown, **then** Home offers it **once**, as a
-  quiet card below the Position ledger, never a pop-up: "Get a nudge on this phone when your numbers
-  go out of date", with **Turn on** and **Not now**. It never appears during sign-up or the basics,
-  so J1 stays short. **Not now** hides it for 30 days; a second **Not now** hides it for good (the
-  setting stays). `push_prompt_shown {entry: home}` fires.
-- **Given** the user taps **Turn on** (on Home or in Settings), **when** the browser supports push,
-  **then** the browser's own permission prompt follows that tap. Nothing else ever triggers it.
-  **Granted:** push is on for this device, NetNet confirms it in one line, and `push_enabled` fires.
-  **Denied:** the switch stays off and says, in one line, where to allow notifications in the
-  browser or phone settings. NetNet never asks again on its own. `push_prompt_result` fires either way.
-- **Given** an iPhone or iPad in Safari where NetNet is not on the Home Screen, **when** the card or
-  the setting is shown, **then** it says NetNet needs to be on the Home Screen first and opens a
-  short how-to (Share → Add to Home Screen, with a picture per step). Once NetNet is opened from the
-  Home Screen, the switch is offered there. It never shows a switch that cannot work, and never
-  implies push works in a Safari tab. The how-to is administered content, like the agent guides
-  (§2.3), because Apple's screens change.
-- **Given** a browser that cannot receive push at all, **when** any screen is shown, **then** no push
-  option appears. Email reminders are unaffected.
+**When it is sent**
+- **Given** a person has not **checked NetNet** for **30 days**, **when** that day comes, **then**
+  NetNet sends one gentle reminder. *Checking* means opening NetNet on any device, or their
+  connected agent reading or writing through NetNet. Making an update is not required: a look is
+  enough.
+- **Given** they still have not checked NetNet, **when** another 30 days pass, **then** NetNet sends
+  another, and so on **once a month** for as long as they stay away.
+- **Given** they check NetNet at any time, **when** they do, **then** the clock starts again from that
+  day. Someone who checks at least once a month never receives a reminder.
+- **Given** a reminder is due, **when** it is sent, **then** it arrives in the daytime in the person's
+  own time zone (between 08:00 and 21:00), never overnight.
 
-**Controlling**
-- **Given** Settings → Notifications, **when** it is opened, **then** it lists each kind (Reminders,
-  Security) with a switch per channel: **Email**, and **This device** where push is possible. It
-  also lists other devices with push on ("iPhone · Home Screen", last used), each with **Remove**.
-  Changes apply at once.
-- **Given** push is turned on for a device, **when** email reminders are also on, **then** NetNet
-  offers **once**: "Get reminders here instead of by email?" Both stay on unless the user chooses.
-- **Given** a user signs out on a device, **when** they do, **then** that device gets no further push
-  until push is turned on again after signing in. **Given** account deletion, all push stops at once.
-  `push_disabled {by}` fires in each case, and also when a browser reports a subscription gone.
+**How it reaches them (one rule for everyone)**
+- **Given** push is on for at least one of their devices, **when** a reminder is due, **then** it goes
+  **by push** to those devices, and not by email.
+- **Given** push is on nowhere, or every push fails (a device's subscription is gone), **when** a
+  reminder is due, **then** it goes **by email**, to a verified address only.
+- `reminder_sent {channel}` fires for each reminder, and `reminder_opened {channel}` when it is
+  opened.
 
-**What a notification may say**
-- **Given** any push notification, **when** it is shown, **then** its title is "NetNet" and its body
-  is a count and an action. **Never an amount, a total, a holding name, or a type or tag name**,
-  because lock screens and shared screens are public (N9). Tapping it opens the screen it is about,
-  after sign-in if needed. `notification_opened {kind, channel}` fires.
-- **Given** any 24 hours, **when** notifications are due, **then** at most **one push** is sent per
-  device, except security notices, which are never held back.
+**What it says**
+- **Given** any reminder, **when** it is shown, **then** it is gentle and short: a line that it has
+  been a while and an invitation to look ("It's been a month. Take a look at where you stand."),
+  with "or ask Claude" when an agent is connected. Tapping it opens Home. **It never includes an
+  amount, a total, a holding name or a type or tag name**, because lock screens and inboxes are
+  public (N9). No guilt, no streaks, no urgency. Final copy is set in the prototype.
 
-**Security notice**
-- **Given** an agent connection is approved (J5), **when** it completes, **then** NetNet sends a
-  notice by **email, always** (it cannot be turned off), and by **push** to each device where
-  Security is on: "Claude was connected to your NetNet just now. Not you? Revoke it." Tapping opens
-  the Agent tab, where the connection can be revoked in one tap. `notification_sent {kind:
-  security, channel}` fires.
+**Asking for push**
+- **Given** a person with a first picture (at least one holding), on a browser that can receive push,
+  where push has not yet been decided on this device, **when** Home is shown, **then** Home offers it
+  **once**, as a quiet card below the Position ledger, never a pop-up: "Want a gentle nudge on this
+  device if you haven't looked in a while?", with **Turn on** and **Not now**. It never appears during
+  sign-up or the basics (J1). **Not now** hides it for 30 days; a second **Not now** hides it for
+  good, and the setting stays. `push_prompt_shown {entry: home}` fires.
+- **Given** the person taps **Turn on** (on Home or in Settings), **when** they do, **then** the
+  browser's own permission prompt follows that tap. Nothing else ever triggers it. **Granted:** push
+  is on for this device, NetNet confirms it in one line, and `push_enabled` fires. **Denied:** the
+  switch stays off and says in one line where to allow notifications in the browser or phone settings.
+  NetNet never asks again on its own. `push_prompt_result` fires either way.
+- **Given** a browser that cannot receive push (including an iPhone or iPad in a Safari tab), **when**
+  any screen is shown, **then** no push option appears anywhere, and reminders go by email. NetNet
+  does not explain how to add itself to the Home Screen.
 
-**Home Screen app**
-- **Given** a phone, **when** NetNet is added to its Home Screen, **then** it opens like an app (its
-  own icon and name, full screen, no browser bar) and `session_started {display: standalone}` fires.
-  It stores no financial data on the device for offline use.
+**Settings → Notifications**
+- **Given** Settings → Notifications, **when** it is opened, **then** it shows:
+  - **Reminders**, on or off (on by default). Off means no reminder by any channel, ever, until turned
+    back on.
+  - **Notifications on this device**, on or off, where the browser can receive push.
+  - **Email reminders**, on or off, with one line saying email is used only when no device has
+    notifications on. Off means no reminder email, ever (J9's opt-out rule, kept).
+  - **Other devices** with notifications on ("Android · Chrome", last used), each with **Remove**.
+  Changes apply at once. Every reminder email has a one-click unsubscribe that turns email reminders off.
+- **Given** a person signs out on a device, **when** they do, **then** that device gets no further
+  push until it is turned on again after signing in. **Given** account deletion, every reminder stops
+  at once. `push_disabled {by}` fires in each case, and also when a browser reports a subscription gone.
 
 ### J10 — Own the data (A7)
 - **Given** an account, **when** the user exports, **then** they receive a complete
@@ -847,11 +840,11 @@ literacy-as-selection with opinionated-defaults-plus-agent. NetNet may use plain
 reason for a default, and show what a number does — it may not write a curriculum) · the mockups' Pro tier, legacy trend-graph toggles and
 haptics · Net Worth Goals, notes on a value, and marking a value on a chart (all from the mockups) ·
 **an admin portal for jurisdiction packs and setup guides** (future; v1 must not preclude it, §2.3) ·
-**notifications beyond J9 and J12:** marketing or promotional messages of any kind, an in-app
-notification inbox, SMS or WhatsApp, native push (arrives with the native apps), threshold alerts
-(reserved, §4.2), "your agent changed values" notices (agent writes happen in the user's own
-conversation; revisit only if server-initiated agent updates are ever built), and period recaps
-(post-launch candidate, §9.8).
+**any message beyond J12's comeback reminder:** marketing or promotional messages, scheduled
+reminders about stale holdings, security notices (post-launch candidate), period recaps (post-launch
+candidate), "your agent changed values" notices, threshold alerts (reserved, §4.2), an in-app
+notification inbox, SMS or WhatsApp, guidance on adding NetNet to a phone's Home Screen, and native
+push (arrives with the native apps).
 
 **Named risk in that list:** a balance sheet answers "what am I worth" and "can I afford this from
 what I hold". It does not answer "can I afford this from what I earn", which needs cash flow. v1
@@ -964,60 +957,55 @@ architecture at the Stage 3 gate. Row 31 is approved with the §9.8 amendment.
 |---|---|---|
 | 29 | The launch agent list is **Claude and ChatGPT only**. Grok, Muse and the generic "Other agent" guide are parked until after launch. The Connect button's icon turns through the two launch agents. The server stays standard remote MCP with OAuth and no client-specific code, so any MCP agent can still connect technically; only the guides and the list are parked | J5 |
 | 30 | Which plans of each client allow a custom connector is parked. It changes guide content and directory submissions, not the product | §9.5 |
-| 31 | **Push notifications join v1** (Founder, 2026-09-27): web push for stale-holding reminders and agent-connection security notices, specified in §9.8, J9 and J12. Threshold alerts stay reserved; native push comes with the native apps | §3.2, §3.5, §4.1, §4.2, §8, J9, J12 |
+| 31 | **A gentle comeback reminder joins v1** (Founder, 2026-09-27): after 30 days without checking NetNet (app or agent), then monthly while away; by web push where it is on, by email otherwise. It replaces J9's scheduled stale-holding email. Specified in §9.8 and J12 | §3.2, §3.5, §4.1, §8, J9, J12 |
 
-### 9.8 Amendment — push notifications (proposed 2026-09-27, awaiting approval)
+### 9.8 Amendment — a gentle comeback reminder (proposed 2026-09-27, awaiting approval)
 
-**Why.** The balance sheet is only worth asking about if it is current (M8), and people come back
-when something brings them back (M6). J9's reminder was email-only. P-A and P-B live on their phones
-(N7), and an email reminder about a spreadsheet-like chore is the easiest thing to ignore. A nudge
-on the phone is where the prompt meets the moment. It also hands the chore to the agent ("Ask Claude
-to update them?"), which is the loop v1 is betting on (A2, M4). Push costs nothing to send, so the
-reason §4.2 gave for reserving it ("infrastructure cost per user") did not hold.
+**The objective (Founder).** Push exists as a **gentle reminder so people don't forget NetNet**.
+It is not a nag about updating numbers. If someone checks NetNet at least once a month, by opening it
+or through their agent, NetNet stays quiet, whether or not they changed anything. If they don't, one
+gentle reminder, then one a month while they stay away.
 
-**New assumption A14.** *A reminder that reaches the phone keeps the picture fresher than one that
-reaches the inbox.* Measured by M13 per channel. If wrong, push stays (it is free) but stops being
-treated as the freshness lever, and attention moves to agent-led updates.
+**Why it serves the bet.** The picture is only worth asking about if people keep coming back to it
+(M6, M8), and the premise (A4, M7) is that they return to ask their agent about their position. A
+monthly nudge to someone who has drifted away is the lowest-pressure way to protect that. Counting
+agent use as "checking" keeps it from nagging exactly the people v1 most wants: those who use
+NetNet through Claude or ChatGPT.
 
-**What is in.** Two kinds of message, two channels, the user in control:
+**New assumption A14.** *A gentle monthly nudge brings drifted-away people back.* Measured by M13,
+per channel. If wrong, the reminder stays (it is free and gentle), and return is sought elsewhere.
 
-| Kind | Email | Push (per device) | Why |
-|---|---|---|---|
-| Stale-holding reminder (J9) | On by default | Off until turned on | Freshness (M8), return (M6), agent hand-off (M4) |
-| Security notice: an agent was connected (J12) | Always, cannot be turned off | On when push is on | An agent can write to your finances. Being told at once is what makes that safe to allow (A2, A7) |
+**Decisions taken by the Founder (2026-09-27):**
 
-**The rules it plays by.** Ask at a moment of value, once, never on load (J12). Say counts and
-actions, never money or names (N9 extends to messages). At most one push a day per device, and
-only between 08:00 and 21:00 local time, except security notices. Every kind has a switch per
-channel, and opt-out is permanent. No marketing, ever (§8).
+| Question | Decision |
+|---|---|
+| What is push for? | A gentle comeback reminder, and nothing else in v1 |
+| When is it sent? | After 30 days without checking NetNet, then every 30 days while the person stays away |
+| What counts as checking? | Opening NetNet on any device, or their connected agent reading or writing through it. No update needed |
+| Which channel? | One rule for everyone: push to devices where it is on; email (verified addresses only) when no device has it on or push fails. This replaces J9's scheduled stale-holding email |
+| Where do we ask? | A one-time quiet card on Home after the first picture, plus a switch in Settings → Notifications |
+| iPhone Home Screen guidance? | None. Where a browser can't receive push (such as an iPhone Safari tab), no push option is shown and email is used |
 
-**The iPhone caveat.** On iPhone and iPad, web push works only once NetNet is on the Home Screen
-(iOS 16.4+). Many users will not take that step, so on iPhone push is a bonus for the engaged, not
-the default path, and email stays on by default for everyone. Native push (with the native apps)
-removes the step. M13's per-platform reading will show how much this costs.
+**Adopted as defaults (flag if wrong):** reminders arrive between 08:00 and 21:00 in the person's
+time zone. The Home card's **Not now** hides it for 30 days, and a second **Not now** hides it for
+good. There is a master Reminders switch plus per-channel switches, and email opt-out is permanent.
+The agent-connected **security notice** proposed earlier is **not in v1**, because push is for the
+reminder only. It stays a post-launch candidate, as do period recaps.
 
-**Decisions needed from the Founder** (recommendations first; the requirements above assume them):
-1. **Kinds in v1:** reminders plus the agent-connected security notice. *Recommended.* The
-   alternative is reminders only. Period recaps ("Your September is ready", no figures) are a
-   post-launch candidate for M6, not v1.
-2. **When to ask:** a one-time quiet card on Home after the first picture, plus Settings.
-   *Recommended.* The alternative is Settings only, which is safer but few will find it.
-3. **Email when push is on:** both stay on, with a one-time offer to switch email off.
-   *Recommended.* The alternative is that push replaces email automatically, which risks silent
-   loss if a device drops its subscription.
-4. **Quiet hours:** only between 08:00 and 21:00 local time. *Recommended.* It costs the
-   architecture a few scheduled runs a day instead of one (see below).
-5. **Security email cannot be turned off.** *Recommended*, as is normal for account security.
+**Risk, stated plainly.** Someone who has left for good gets one reminder a month indefinitely. The
+one-click unsubscribe, the Reminders switch and a gentle tone keep it respectful. If unsubscribe or
+spam-report rates rise, revisit a stop after a number of reminders. Reminders only reach people who
+turned push on or verified their email.
 
 **Consequences downstream.**
-- *Stage 2 (prototype):* the Home push card; Settings → Notifications (kinds × channels, the device
-  list); the iPhone "Add to Home Screen" how-to and the Home-Screen-only state; granted and denied
-  states; the one-time "instead of email?" offer; the security notice and where it lands (Agent
-  tab); lock-screen previews of each message; the PROTO drawer showing the new events.
-- *Stage 3 (architecture), to revise after approval:* local-time delivery needs several daily send
-  runs (Vercel Hobby allows many once-a-day jobs, each waking the database for a few minutes);
-  security notices are sent when the connection is approved, not by schedule; the device list and
-  the per-kind, per-channel switches; the renamed events; the how-to as administered content.
+- *Stage 2 (prototype):* the Home card (turn on / not now, granted and denied states); Settings →
+  Notifications (Reminders, this device, email, other devices); what a reminder looks like on a lock
+  screen and in an inbox; the PROTO drawer showing the new events and a way to simulate "30 days
+  away".
+- *Stage 3 (architecture), to revise after approval:* track `last_checked_at` per user (app sessions
+  and agent calls); a daily job finds people at 30, 60, 90… days and sends within their local daytime
+  (a few daily runs across time bands); push first, email fallback; the device list; the renamed
+  events. Drop the scheduled stale-holding email and the security notice from §7.10.
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves
