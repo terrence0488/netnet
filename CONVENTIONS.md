@@ -112,8 +112,12 @@ docs/                     the workflow's documents; docs/02-prototype is the des
   request or response bodies, document content.
 - `track()` accepts only the typed events in `packages/contracts/events`; adding a prop means
   changing the schema. `log()` accepts only its whitelisted fields.
-- Every message to a person (email now, push later) goes through `notify()` and carries counts and
-  links only, never an amount or a holding name. Lock screens and inboxes are public.
+- Every message to a person (email and web push now, native push later) goes through `notify()` and
+  carries counts and links only, never an amount or a holding name. Lock screens and inboxes are
+  public.
+- The service worker handles `push` and `notificationclick` only. It has no `fetch` handler and
+  caches nothing, so no financial data is ever stored offline.
+- Push permission is requested only from the handler of the tap that turns it on, never on load.
 - **All test and seed data is fictional.** Never paste real financial data (including the
   Founder's) into code, fixtures, tests, screenshots or commits. Mockup images are never committed.
 
@@ -151,7 +155,8 @@ A task is not done until its tests pass in CI. A bug fix starts with a failing t
 | MCP protocol | An SDK client connects with each supported protocol version, lists tools, calls one read and one write | Vitest |
 | Ledger | Atomicity (a failing item in `record_values` writes nothing), undo and batch undo, `UNDO_CONFLICT`, same-date replacement, concurrent writes for one user serialised by the lock | Vitest + Postgres |
 | Web | Each PRD job's happy path at **390 px** and **1280 px**; no horizontal scroll at **320 px**; axe accessibility checks on key screens; the analytics events each flow fires | Playwright |
-| Privacy | Event schemas contain no amount-like or free-text props; `log()` rejects unknown fields; the N10 deny-list scan | Vitest |
+| Privacy | Event schemas contain no amount-like or free-text props; `log()` rejects unknown fields; the N10 deny-list scan; every `notify()` message is checked for digits-with-currency and holding names | Vitest |
+| Web push | Payload building and encryption against a fake push endpoint; `404`/`410` revokes; five failures revoke; the service worker has no `fetch` handler; the iOS-not-on-Home-Screen state shows guidance, not a switch | Vitest + Playwright (Chromium with notifications granted) |
 
 Tests are deterministic: fixed `today`, seeded ids, no network. External services (Resend, FX
 sources, Google, Apple) are faked at their interface.

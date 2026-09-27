@@ -309,8 +309,9 @@ no evidence and §3.3 cannot be applied. Minimum event set:
 `agent_connection_completed {client, entry}` · `agent_connection_failed {step, client, entry}` ·
 `agent_tool_called {tool, kind: read|write, outcome, latency_ms, client}` ·
 `value_corrected {original_source, age_at_correction}` · `value_undone` ·
-`session_started` · `insights_viewed {view: monthly|quarterly|yearly}` · `reminder_sent` ·
-`reminder_clicked` · `account_deleted`
+`session_started` · `insights_viewed {view: monthly|quarterly|yearly}` · `reminder_sent {channel: email|push}` ·
+`reminder_clicked {channel}` · `push_enabled {platform}` · `push_disabled {platform, by: user|browser}` ·
+`account_deleted`
 
 Every event above also carries **`{segment}`** (`starting_out` / `accumulating` / `established` /
 `unknown`), set during onboarding and never changed by us. Without it none of §3.2 is readable per
@@ -345,7 +346,7 @@ Assemble and maintain a financial position: any asset or liability, user-defined
 any currency, dated value history, archive · net worth total with trend, breakdown by type,
 assets-vs-liabilities, and a user-chosen comparison baseline · **an Insights view of change by
 calendar period (monthly, quarterly, yearly) with its own filters and exclusions** · staleness
-labels and email reminders · **a comprehensive MCP layer with full CRUD, plus read tools shaped for advice, reached
+labels and reminders by email and **web push** (§9.7) · **a comprehensive MCP layer with full CRUD, plus read tools shaped for advice, reached
 by OAuth from ChatGPT or Claude** · audit log and undo for every agent write · export and account
 deletion · the §3.5 analytics · the §3.4 distribution assets. Mobile-first responsive web, one API
 that native clients reuse later.
@@ -386,7 +387,7 @@ Reserved for later monetisation — **not** built in v1, so they are not given a
 | Tax, CGT and year-end reporting produced by NetNet | High willingness to pay, jurisdiction-specific |
 | Multi-entity, household or advisor-shared portfolios | Seat-shaped by nature |
 | Document vault / statement history | Storage cost, and v1 deliberately never receives documents |
-| Threshold alerts and push notifications | Infrastructure cost per user |
+| Threshold alerts (notifications triggered by a value crossing a line) | Continuous evaluation per user; high willingness to pay. *Push as a channel for reminders moved into v1 (§9.7); push itself costs nothing* |
 
 **Where the line falls, now that Insights ships free (§4.1):** *backward-looking* analysis of data
 the user already has is free and in v1 — totals, trends, period-by-period change, breakdowns.
@@ -688,10 +689,27 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 ### J9 — Keep the context current (M8)
 - **Given** a holding not updated for longer than its expected cadence, **when** the user views it,
   **then** it is labelled with how long it has been stale, on both list and detail.
-- **Given** stale holdings, **when** the reminder schedule comes due, **then** NetNet emails a
-  reminder naming how many holdings are stale, with a link, and `reminder_sent` fires.
-- **Given** reminder settings, **when** the user changes cadence or opts out, **then** it is
-  honoured — no email after opt-out, ever.
+- **Given** stale holdings, **when** the reminder schedule comes due, **then** NetNet sends a
+  reminder naming how many holdings are stale, with a link, on every channel the user has on: by
+  email, and as a **web push notification** on each device where they turned it on. `reminder_sent
+  {channel}` fires per channel.
+- **Given** reminder settings, **when** the user changes cadence or turns a channel off, **then** it
+  is honoured: no email after opting out of email, ever, and no push to a device after push is
+  turned off there, in NetNet or in the browser.
+- **Given** a device whose browser supports web push, **when** the user turns on "Notifications on
+  this device" in Reminders, **then** the browser asks for permission then, and only after that
+  tap, never on page load. If permission is refused, the switch stays off and says how to allow it
+  later. `push_enabled {platform}` fires on success.
+- **Given** an iPhone or iPad in Safari, not yet added to the Home Screen, **when** the user opens
+  Reminders, **then** the push option explains in one line that NetNet must first be added to the
+  Home Screen, and how. It never shows a switch that cannot work there.
+- **Given** any push notification, **when** it is shown, **then** it states how many holdings are out
+  of date and opens the app at them. It never includes an amount or a holding name, because lock
+  screens are public (N9).
+- **Given** a user signing out on a device, or the browser reporting a subscription gone, **when**
+  that happens, **then** that device receives no further push, and `push_disabled {platform, by}`
+  fires.
+- Email stays on by default. Push is off until the user turns it on for a device.
 
 ### J10 — Own the data (A7)
 - **Given** an account, **when** the user exports, **then** they receive a complete
@@ -872,12 +890,14 @@ Founder with the prototype, 2026-09-26.
 
 ### 9.7 Revisions at the Stage 3 review — 2026-09-27
 
-Founder decisions, taken while reviewing the architecture.
+Founder decisions, taken while reviewing the architecture. Rows 29–31 are approved together with
+the architecture at the Stage 3 gate.
 
 | # | What changed | Where |
 |---|---|---|
 | 29 | The launch agent list is **Claude and ChatGPT only**. Grok, Muse and the generic "Other agent" guide are parked until after launch. The Connect button's icon turns through the two launch agents. The server stays standard remote MCP with OAuth and no client-specific code, so any MCP agent can still connect technically; only the guides and the list are parked | J5 |
 | 30 | Which plans of each client allow a custom connector is parked. It changes guide content and directory submissions, not the product | §9.5 |
+| 31 | **Web push joins v1 as a second reminder channel** (Founder, 2026-09-27). Stale-holding reminders go by email and, on devices where the user turns it on, as web push notifications. On iPhone and iPad this needs NetNet on the Home Screen, and the app says so. Messages carry counts and links, never amounts. Native push comes with the Expo apps. Threshold alerts stay reserved. `{channel}` on reminder events, plus `push_enabled` and `push_disabled` | §4.1, §4.2, §3.5, J9 |
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves

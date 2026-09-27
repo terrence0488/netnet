@@ -3,8 +3,8 @@
 Status: **awaiting the Founder's approval** (Stage 3 gate) · Stage owner: Staff software engineer
 Written 2026-09-27. **Revised the same day on the Founder's decisions:** hosting is **Vercel +
 Neon** (the Cloudflare design is kept as Appendix A); the launch agents are **Claude and ChatGPT
-only** (PRD §9.7). Where the web app is hosted is now its own section (§5.2), and notifications
-have one (§7.10): email in v1, with push designed to be added later.
+only** (PRD §9.7). Where the web app is hosted is now its own section (§5.2). **Web push joins v1**
+as a second reminder channel (PRD §9.7 row 31; §7.10).
 Inputs: `docs/01-prd.md` (approved as amended, with §9.6 and §9.7), `docs/02-prototype/prototype-notes.md`
 (approved 2026-09-26), and the Stage 3 asks from the Stage 2 handoff: versioned packs, history
 pagination, the charting library, the packs admin portal (PRD §9.6 item 17), each client's
@@ -42,6 +42,8 @@ write-ups. The P1 spike re-checks them before anything depends on them.
 - **Packs and agent setup guides are versioned content, not code** (N10). They are validated
   documents in the database, published from `content/`, and editable later by an admin portal
   that writes the same rows.
+- **Reminders reach people by email and by web push** on the devices where they turn it on, through
+  one `notify()` function (§7.10). Native push joins it with the Expo apps.
 - **Cost: $0 for the first ~70–100 users** (Vercel Hobby + Neon Free). Upgrades are plan changes,
   not code changes, and are triggered by measured limits (§9.4).
 
@@ -97,8 +99,9 @@ need: any request can land on any instance.
 | Landing page | **Static HTML/CSS** (its own Vite entry) | A marketing page with its own design (PRD G-D1) |
 | Charts | **No charting library.** `d3-scale` / `d3-shape` / `d3-array` maths, our own SVG | Three heavily specified chart kinds. Geometry lives in `core`, and native draws it through `react-native-svg` |
 | Scheduled work | **Vercel Cron** (Hobby: at most daily) + **GitHub Actions** schedules | §9.3 |
-| Email | **Resend**, the v1 channel of `notify()` (§7.10) | Permanent free tier (3,000/month, 100/day) |
-| Push (later) | **Web Push** (VAPID, `web-push` library) for the web app; **Expo push service** for native (→ APNs, FCM) (§7.10) | Standard and free: no per-message fee on any of them; no vendor SDK in the web app |
+| Email | **Resend**, a channel of `notify()` (§7.10) | Permanent free tier (3,000/month, 100/day) |
+| Web push | **v1.** The **Web Push** standard: VAPID keys, the `web-push` library in the function, a minimal service worker in the web app (§7.10) | Free and standard; delivered by the browsers' own push services; no vendor SDK in the web app |
+| Native push | **Later, with the Expo apps:** Expo's push service (→ APNs, FCM), as another `notify()` channel | Free; no change to the server's shape |
 | Errors | **Sentry** Developer plan (free), scrubbed (§10) | Function and browser errors in one place |
 | Analytics | **First-party** events in the `analytics` schema | N9 enforced by the schema. No tracking SDK on pages that show money |
 | FX rates | **ECB via Frankfurter** + a fallback source for currencies the ECB lacks (VND, TWD, AED…), fetched daily into our own table | Free, no key, history to 1999; a write never waits on a third party |
@@ -155,6 +158,7 @@ flowchart LR
   CRON --> CORE & LEDGER
   GH --> neon
   CRON -.-> MAIL[Resend]
+  CRON -.-> PUSH[Browsers' push services<br/>web push]
   GATE --> IDP[Google · Apple]
   CRON --> FX[ECB via Frankfurter<br/>+ fallback]
   WEB -.imports.-> PKG
@@ -216,7 +220,7 @@ flowchart LR
 | How does routing work? | `vercel.json` rewrites send `/api/*`, `/mcp`, `/oauth2/*` and `/.well-known/*` to the function. `/app/*` falls back to the app's `index.html` (client-side routes). Everything else is a file |
 | Caching | Hashed JS and CSS are cached forever (`immutable`). `index.html` is never cached, so a deploy reaches users on their next load. No financial data is ever cached at the edge: API responses carry `Cache-Control: private, no-store` |
 | Previews | Every pull request gets its own full copy (files + function + Neon branch) at a preview URL |
-| Installable | A web app manifest (name, icons, `display: standalone`) ships in v1, so the app can be added to a phone's Home Screen. It costs nothing, and iOS needs it before web push can ever work (§7.10). **No offline caching of financial data**: a service worker, if any, is added only with push |
+| Installable, with push | A web app manifest (name, icons, `display: standalone`) ships in v1, so the app can be added to a phone's Home Screen, which iOS requires before web push works. A **minimal service worker** (`/app/sw.js`) handles only `push` and `notificationclick`. It has **no fetch handler and caches nothing**, so financial data is never stored offline (§7.10) |
 | Native apps (later) | Built with Expo and distributed through the App Store and Google Play. They call the same `/api` on the same domain; nothing about hosting changes |
 
 One Postgres database. IDs are prefixed ULIDs (`usr_`, `hld_`, `val_`, `typ_`, `tag_`, `aud_`,
@@ -259,12 +263,14 @@ $1 FOR UPDATE`. That lock serialises one user's writes, exactly as a single-thre
 | `content_audit` | `id`, `kind`, `key`, `from_version`, `to_version`, `actor`, `at` | Who changed the world, when, old → new (§2.3) |
 | `fx_rate` | (`date`, `currency`) PK, `per_usd` numeric, `source` (`ecb`/`fallback`) | Filled daily; history backfilled once |
 | `rate_limit` | (`key`, `window_start`) PK, `count` | Fixed-window counters (§8) |
+| `notification_endpoint` | `id`, `user_id`, `channel` (`webpush`; `expo` later), `endpoint` (push service URL), `keys` jsonb (`p256dh`, `auth`), `platform` (`ios`/`android`/`desktop`), `device_label`, `created_at`, `last_success_at`, `failure_count`, `revoked_at` | One row per device that turned push on (J9). Revoked on sign-out on that device, on account deletion, and when the push service answers `404`/`410` |
+| `notification_pref` | (`user_id`, `kind`, `channel`) PK, `enabled` | v1 kind: `reminder.stale`; channels `email` (on by default) and `webpush`. Email opt-out lives here |
 
 ### 6.3 `ledger` — every row belongs to one user
 
 | Table | Columns (all have `user_id`) | Notes |
 |---|---|---|
-| `ledger_state` | `user_id` PK, `base_currency`, `data_version`, `reminder_cadence`, `reminder_opt_out`, `next_reminder_at`, `created_at` | `data_version` goes up by one on every write, and is the snapshot's ETag. The row is the per-user write lock |
+| `ledger_state` | `user_id` PK, `base_currency`, `data_version`, `reminder_cadence`, `next_reminder_at`, `created_at` | `data_version` goes up by one on every write, and is the snapshot's ETag. The row is the per-user write lock |
 | `user_type` | `id`, `universal` (§7.8), `pack_type_key` (nullable, e.g. `car_loan`), `custom_name` (nullable), `sort`, `archived` | **No name is stored until the user renames one**, so labels follow the current pack |
 | `tag` | `id`, `name` (unique per user, case-insensitive), `sort` | |
 | `holding` | `id`, `name`, `kind` (`asset`/`liability`), `type_id`, `currency`, `cadence_days`, `archived_at`, `created_at`, `row_version`, **`access`** (`accessible`/`illiquid`/`locked`/`undecided`, null for liabilities), **`access_basis`** jsonb `{via, pack, pack_version, question, answer}`, **`access_reason`**, **`access_until`** | The applied accessibility outcome **and its reason** are kept as applied, with the pack version. A pack edit never moves them (§6.7) |
@@ -376,14 +382,18 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 | `POST /api/tags` · `PATCH /api/tags/:id` · `DELETE /api/tags/:id?mergeInto=` | same for tags | J2 |
 | `GET /api/activity` | `?cursor&limit≤100` → audit entries, newest first, grouped by batch | J7 |
 | `POST /api/activity/:entryId/undo` · `POST /api/activity/batches/:batchId/undo` | → `UNDO_CONFLICT {blockers}` when not possible | J7 |
-| `PATCH /api/prefs` | filters, exclusions, baseline, sort, reminders `{cadence, optOut}` | J4, J9, J11 |
+| `PATCH /api/prefs` | filters, exclusions, baseline, sort, reminder `{cadence}` | J4, J9, J11 |
+| `GET /api/notifications/prefs` · `PATCH /api/notifications/prefs` | `{reminder: {email: bool, webpush: bool}}` | J9 |
+| `GET /api/notifications/vapid-key` | → `{publicKey}` | J9 |
+| `POST /api/notifications/endpoints` | `{endpoint, keys: {p256dh, auth}, platform, deviceLabel}` → `{id}`; idempotent per endpoint | J9 |
+| `DELETE /api/notifications/endpoints/:id` | removes this device (also called on sign-out) | J9 |
 | `GET /api/agent/connections` · `DELETE /api/agent/connections/:id` | list · revoke (logged; later calls rejected) | J5 |
 | `POST /api/agent/attempts` · `GET /api/agent/attempts/:id` | `{client: "claude"\|"chatgpt", entry, platform}` → `{id, state, failedStep?, cause?}` (polled every 2 s) | J5 |
 | `GET /api/content/current` · `GET /api/content/:kind/:key@:version` | live version map · an immutable document | §2.3, J5 |
 | `GET /api/export?format=json\|csv` | everything: holdings, types, tags, accessibility and the answer behind it, all values with currencies, rates and rate dates | J10 |
 | `DELETE /api/account` | needs a sign-in in the last 10 minutes → `{erasedWithinDays: 30}` | J10 |
 | `POST /api/events` | client-side events only (§7.7): `{name, props}`, whitelisted | §3.5 |
-| `POST /api/reminders/unsubscribe` | signed one-click token (also `List-Unsubscribe`) | J9 |
+| `POST /api/reminders/unsubscribe` | signed one-click token (also `List-Unsubscribe`); turns the email channel off | J9 |
 | `GET /api/health` | **Shallow: never touches the database** → `{ok}` | §10 |
 
 **Pagination** (prototype §8): values, activity and the MCP lists page with an opaque cursor. The
@@ -581,7 +591,9 @@ are rejected, and the only strings allowed are enums or the client name. `segmen
 | `agent_connection_failed` | `step`, `client`, `entry` | server. `authorise`: Cancel or an invalid request. `callback`: token exchange failed. `discovery`: no authorize request within 15 min of starting. `first_call`: no successful call within 15 min of the token. The two timeouts are recorded when the attempt is next read, or by the daily sweep |
 | `agent_tool_called` | `tool`, `kind`, `outcome` (`ok`/error code), `latency_ms`, `client` | server (MCP) |
 | `insights_viewed` | `view` | client |
-| `reminder_sent` · `reminder_clicked` | — | server (daily cron) · server (link redirect) |
+| `reminder_sent` · `reminder_clicked` | `channel` (`email`/`push`) | server (daily cron, one per channel) · server (link redirect; the push click opens a tagged link) |
+| `push_enabled` | `platform` | server (endpoint saved) |
+| `push_disabled` | `platform`, `by` (`user`/`browser`) | server (endpoint removed, or reported gone by the push service) |
 | `account_deleted` | — | server |
 
 `ops/metrics/*.sql`, run as `netnet_metrics`, computes M1–M11 per segment from this table alone,
@@ -642,18 +654,16 @@ chart: { scales, linePath, bars, stacked, ticks(n, width), nearestPoint(x) };  /
 
 No `Date.now()`, no randomness and no I/O in `core`. `today` and ids are passed in (N11).
 
-### 7.10 Notifications — email in v1, push designed in
+### 7.10 Notifications — email and web push in v1
 
-**Scope.** v1 sends **email reminders only** (J9). The PRD reserves **push notifications and
-threshold alerts** for later (§4.2), so v1 builds no push. What v1 does build is the seam: every
-notification goes through one function, so adding web push or native push later is a new channel
-and an additive migration, not a rework. *For the PRD's next revision: §4.2 gives "infrastructure
-cost per user" as the reason push is reserved. Push is in fact free on every channel below. Whether
-push reminders belong in v1 is a product call for the Founder.*
+**Scope (PRD J9, §9.7 row 31).** v1 sends one kind of message, the **stale-holding reminder**, on
+two channels: **email** (on by default) and **web push** (off until the user turns it on for a
+device). Native push arrives with the Expo apps as a third channel. Threshold alerts stay reserved
+(PRD §4.2). Every message goes through one function, so channels are added without rework.
 
 ```ts
 type NotificationKind = 'reminder.stale'            // v1: J9
-                      | 'agent.wrote'               // later: "Claude updated 5 values. Review?"
+                      | 'agent.wrote'               // candidate after launch: "Claude updated 5 values. Review?"
                       | 'threshold.crossed';        // reserved (PRD §4.2)
 type Message = { kind: NotificationKind; title: string; body: string; url: string };  // no amounts, ever
 
@@ -664,31 +674,44 @@ interface Channel { id: 'email' | 'webpush' | 'expo'; send(endpoint: Endpoint, m
 | Channel | When | How it reaches the person | Cost |
 |---|---|---|---|
 | **Email** | **v1** | Resend, to the verified account email. One-click unsubscribe (J9) | $0 to 3,000/month |
-| **Web push** | Later | The standard **Web Push** protocol: the browser subscribes with our VAPID public key and gives us an endpoint. The function signs and sends with the `web-push` library, and the browser vendor's own push service delivers (Google's for Chrome and Android, Mozilla's, Apple's for Safari). **iOS/iPadOS 16.4+: only for a web app added to the Home Screen** (iOS 26 opens every Home Screen site as a web app). Safari 18.4+ supports Declarative Web Push, which needs no service worker | $0 |
-| **Native push** | With the Expo apps | `expo-notifications` gets an Expo push token on the device. The function sends through **Expo's push service**, which delivers through **APNs** (iOS; key from the Apple Developer account) and **FCM** (Android; a free Firebase project). Direct APNs/FCM remains possible later with the same interface | $0 (Expo: no fees, 600/s) |
+| **Web push** | **v1** | The **Web Push** standard (below). The browser vendor's own push service delivers: Google's for Chrome and Android, Mozilla's, Microsoft's, Apple's for Safari | $0 |
+| **Native push** | With the Expo apps | `expo-notifications` gets an Expo push token; the function sends through **Expo's push service** → **APNs** (iOS; key from the Apple Developer account) and **FCM** (Android; free Firebase project) | $0 (no fees, 600/s) |
 
-**Data (added with the first push channel, additive):**
-`core.notification_endpoint (id, user_id, channel, endpoint, keys jsonb, device_label, created_at,
-last_success_at, failure_count, revoked_at)` and `core.notification_pref (user_id, kind, channel,
-enabled)`. In v1 the email address and J9's cadence and opt-out are the whole configuration.
+**How web push works here, end to end:**
 
-**Contracts (later):** `GET /api/notifications/vapid-key` · `POST /api/notifications/endpoints
-{channel, endpoint, keys, deviceLabel}` · `DELETE /api/notifications/endpoints/:id` ·
-`GET/PATCH /api/notifications/prefs`. Endpoints are per device, owned by one user, and removed on
-sign-out on that device, on account deletion, and when a push service answers `404`/`410 Gone`.
+1. **Turning it on (per device).** In Reminders, the user taps "Notifications on this device". Only
+   then does the web app register `/app/sw.js`, fetch our VAPID public key, and call
+   `pushManager.subscribe()`. The browser asks for permission and returns a subscription (an
+   endpoint URL plus two keys), which the app `POST`s to `/api/notifications/endpoints`. The
+   `webpush` channel is switched on for `reminder.stale`, and `push_enabled {platform}` fires.
+2. **Where it can't work yet.** Detected in the browser: an iPhone or iPad in Safari that has not
+   added NetNet to the Home Screen (no `PushManager` outside a Home Screen web app, iOS 16.4+) gets
+   a one-line how-to instead of a switch. A browser without Push API support gets no switch. A
+   refused permission leaves the switch off with how to allow it in settings.
+3. **Sending.** The daily reminder job builds one `Message` per user with stale holdings ("2
+   holdings are out of date", link `/app?stale=1&ch=push`) and calls `notify()`. The `webpush`
+   channel encrypts the payload for each of the user's device endpoints (aes128gcm, done by
+   `web-push`), signs with the VAPID private key, and `POST`s to the endpoint with a TTL of 24 h
+   and `urgency: normal`.
+4. **Showing it.** The service worker's `push` handler shows the notification (title, body, NetNet
+   icon). `notificationclick` focuses or opens the app at the URL. Safari 18.4+ can use Declarative
+   Web Push, which works without the worker. The payload follows that format too, so both paths
+   work.
+5. **Lifecycle.** `404`/`410` from a push service revokes that endpoint (`push_disabled {by:
+   browser}`). Other failures increase `failure_count`, and 5 in a row revokes. Signing out on a
+   device calls `unsubscribe()` and deletes its endpoint. Account deletion removes all of them.
 
 **Rules for every channel, binding from v1:**
-- **Counts and links only, never an amount or a holding name.** Lock screens and inboxes are
-  public, so N9's rule for analytics applies to messages too: "2 holdings are out of date", never
-  "DBS: $41,200".
-- **Permission is asked after a user action that explains it**, never on page load. Browsers
-  require it, and an unexplained prompt gets refused for good.
-- **One kind, one switch.** Every kind can be turned off per channel. Opt-out is honoured forever (J9).
-- **Delivery:** reminders go out from the daily cron. Event-driven kinds (`agent.wrote`) are sent by
-  the function after the write commits (`waitUntil`). At this scale no queue is needed. Failures are
-  logged without content, and a dead endpoint is revoked.
+- **Counts and links only, never an amount or a holding name.** Lock screens and inboxes are public
+  (N9 applies to messages).
+- **Permission is asked only after the user taps the switch that explains it**, never on page load.
+- **One kind, one switch per channel.** Opt-out is honoured forever (J9).
+- **The service worker caches nothing** and has no `fetch` handler (§5.2).
+- **Delivery timing:** Hobby's cron runs once a day, so reminders go out at one fixed time,
+  **01:00 UTC (09:00 in Singapore)**. Local-time delivery for other time zones becomes possible on
+  Vercel Pro (hourly cron). Failures are logged without content.
 
-## 8. Auth and security
+## 8. Auth and security## 8. Auth and security
 
 | Concern | Approach |
 |---|---|
@@ -699,7 +722,7 @@ sign-out on that device, on account deletion, and when a push service answers `4
 | Agent access | §7.6 |
 | Rate limits | `core.rate_limit` fixed windows: sign-in 10/min per IP+email, sign-up 5/min per IP, DCR 10/hour per IP, MCP 120/min and 5,000/day per connection, `record_values` 200 items per call |
 | Headers | Strict CSP (self, self-hosted fonts, Sentry ingest), HSTS, `X-Content-Type-Options`, `Referrer-Policy: strict-origin-when-cross-origin`, `frame-ancestors 'none'`, set in `vercel.json` |
-| Secrets (N5) | Vercel environment variables per environment (Production, Preview, Development); `.env.local` gitignored; `.env.example` lists names only; GitHub Actions holds the Vercel and Neon deploy tokens and the backup public key |
+| Secrets (N5) | Vercel environment variables per environment (Production, Preview, Development); `.env.local` gitignored; `.env.example` lists names only; GitHub Actions holds the Vercel and Neon deploy tokens and the backup public key. The **VAPID private key** is a production secret; its public key is served by `/api/notifications/vapid-key`. Rotating it invalidates every push subscription, so it is rotated only on compromise |
 | Data at rest | Neon encrypts storage at rest; TLS to the database. No field-level encryption in v1 (§13) |
 | Privacy in pipelines (N9) | Typed `track()`, whitelisted `log()`, Sentry scrubbing; reminder emails carry a count, never an amount |
 | Prompt injection | Holding and tag names are user text returned to agents, always as JSON string values in `structuredContent`; tool descriptions never interpolate user data |
@@ -737,7 +760,7 @@ Vercel Hobby cron runs at most once a day, so frequent work is done lazily or in
 | Job | Where | When | Wakes the database |
 |---|---|---|---|
 | FX rates | Vercel Cron `/api/cron/fx` | daily | ~5 min |
-| Reminders (J9) + attempt timeout sweep | Vercel Cron `/api/cron/daily` | daily, spread by Resend's 100/day | ~5 min |
+| Reminders (J9), email and web push + attempt timeout sweep | Vercel Cron `/api/cron/daily` | daily at 01:00 UTC (09:00 Singapore); email within Resend's 100/day | ~5 min |
 | Usage and SLO check | Vercel Cron `/api/cron/health` | daily. Reads Neon's consumption API and N1 from events; emails the Founder only on a trigger (§9.4) | ~5 min |
 | Backup | GitHub Actions | daily. `pg_dump` → encrypted to a key only the Founder holds → stored 30 days (Actions artifact; R2 free tier if it outgrows 500 MB) | ~5 min |
 | MCP probe | GitHub Actions | **every 6 hours on Free**, hourly after Neon Launch | ~5 min each |
@@ -775,6 +798,7 @@ paid plans.
 | What | How |
 |---|---|
 | Logs | Vercel runtime logs (short retention on Hobby); JSON through `log(event, fields)`, whitelisted fields only (request id, route, tool, status, latency, user id, connection id, error code). **Never** amounts, names, emails or bodies |
+| Notification delivery | Per channel: sent, failed, endpoints revoked (counts only), from `reminder_sent {channel}` and `push_disabled {by: browser}` |
 | Errors | Sentry (`@sentry/node` in the function, `@sentry/react` in the web app); `sendDefaultPii: false`; `beforeSend` drops bodies, query strings and breadcrumb text; **no session replay** |
 | Product analytics | `analytics.event` + `ops/metrics/*.sql` → `pnpm metrics --env production` prints M1–M11 per segment |
 | N1 SLO | From `agent_tool_called`: success rate and p95 over 7 days; the daily health cron emails on breach |
@@ -813,7 +837,7 @@ paid plans.
 | Native-build rules (`design-system.md` §9) | Three rules | §11 |
 | Muse logo (`agents/README.md`) | Parked with Muse until after launch | §3 |
 | Where the web app is hosted (Founder, 2026-09-27) | Vercel's CDN, same project and domain as the API | §5.2 |
-| Push notifications, web and native (Founder, 2026-09-27) | Email in v1 per the PRD; one `notify()` seam; Web Push and Expo push designed as additive channels at $0 | §7.10 |
+| Push notifications, web and native (Founder, 2026-09-27) | **Web push in v1** for reminders, beside email (PRD §9.7 row 31); native push through Expo with the apps; all through one `notify()`, at $0 | §7.10 |
 
 ## 13. Risks and trade-offs
 
@@ -832,13 +856,17 @@ paid plans.
 | 11 | Undo conflicts can surprise | The conflict names the blocking change |
 | 12 | Pseudonymised events after deletion | Stage 8 legal pass |
 | 13 | No field-level encryption | Encryption at rest, RLS, no amounts outside `ledger`; revisit before any advisor feature |
+| 14 | **Web push on iPhone reaches only people who add NetNet to the Home Screen** | The app explains it where it matters (Reminders); email stays on by default, so nobody depends on push. Native push later removes the step |
+| 15 | One daily send time (09:00 Singapore) suits SG/SEA, not every time zone | Local-time delivery after Vercel Pro (hourly cron) |
+| 16 | Push can't be fully tested headless (it needs a real push service) | Unit tests on payloads and rules; integration tests against a fake push endpoint; a manual check on a real iPhone (Home Screen) and Android phone in Stage 6 |
 
 ### Decisions
 
 **Decided by the Founder, 2026-09-27:** hosting is **Vercel + Neon**, starting on the free plans,
 with the §9.4 upgrade triggers. **Only Claude and ChatGPT at launch**, and Grok, Muse and "Other
 agent" are parked. Apple sign-in ships, and the Founder enrols in the Apple Developer Program. The
-Founder buys the custom domain. *Parked:* which client plans allow custom connectors.
+Founder buys the custom domain. **Web push joins v1** for reminders (PRD §9.7 row 31). *Parked:*
+which client plans allow custom connectors.
 
 **No decisions are open.** What remains is approval of the architecture as a whole.
 
