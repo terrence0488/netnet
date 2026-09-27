@@ -1,115 +1,108 @@
 # 03 — Architecture
 
 Status: **awaiting the Founder's approval** (Stage 3 gate) · Stage owner: Staff software engineer
-Written 2026-09-27. Inputs: `docs/01-prd.md` (approved as amended, with the §9.6 revisions),
-`docs/02-prototype/prototype-notes.md` (approved 2026-09-26), and the Stage 3 asks the Stage 2
-handoff named: versioned packs, history pagination, the charting library, the packs admin portal
-(PRD §9.6 item 17), each client's connector rules, the native-build rules
-(`design-system.md` §9), the Muse logo.
+Written 2026-09-27. **Revised the same day on the Founder's decisions:** hosting is **Vercel +
+Neon** (the Cloudflare design is kept as Appendix A); the launch agents are **Claude and ChatGPT
+only** (PRD §9.7).
+Inputs: `docs/01-prd.md` (approved as amended, with §9.6 and §9.7), `docs/02-prototype/prototype-notes.md`
+(approved 2026-09-26), and the Stage 3 asks from the Stage 2 handoff: versioned packs, history
+pagination, the charting library, the packs admin portal (PRD §9.6 item 17), each client's
+connector rules, the native-build rules (`design-system.md` §9).
 
 > Designs only what the first phases need (WORKFLOW Stage 3). §7 is the contract Stage 4 plans
-> against and Stage 5 builds against; the rest is the reasoning behind it. Where this document
-> and the PRD disagree, the PRD wins and this document is wrong — say so.
+> against and Stage 5 builds against. Where this document and the PRD disagree, the PRD wins and
+> this document is wrong. Say so.
+
+**Sources for Vercel and Neon.** Neon's figures are from Neon's own documentation source
+(`github.com/neondatabase/website`, updated 2026-09-23). Vercel's site is blocked from this
+environment, so Vercel's figures are from its docs as quoted in search results and from 2026
+write-ups. The P1 spike re-checks them before anything depends on them.
 
 ---
 
 ## 1. The shape in one screen
 
-- **One TypeScript codebase, one Cloudflare Worker.** It serves the landing page, the web app, the
-  REST API, sign-in, the OAuth server that agents connect through, and the MCP endpoint.
-- **Each user's balance sheet is its own database.** A *Ledger* Durable Object per user holds that
-  user's holdings, values, types, tags, preferences and audit log in its own SQLite. No query can
-  read two users' money, because no database holds two users' money (N4).
-- **Everything that is not money** (accounts, sessions, agent connections, packs, exchange rates)
-  lives in one D1 database; analytics events live in a second one that holds no amounts (N9).
+- **One TypeScript codebase, one Vercel project.** It serves the landing page and the web app as
+  static files, and one Node function (a Hono app, pinned to **Singapore**, `sin1`) that answers
+  the REST API, sign-in, the OAuth server agents connect through, and the MCP endpoint.
+- **One Neon Postgres database in Singapore**, with three schemas: `ledger` (money), `core`
+  (accounts, connections, packs, exchange rates) and `analytics` (events, never amounts).
+- **Each user's money is walled off inside the database.** Every `ledger` table carries the user
+  id, and **row-level security** makes Postgres itself return only the signed-in user's rows. The
+  one way in is `withUser(userId, …)`, which sets the user for the transaction. A query that
+  forgets its filter still cannot see another user (N4).
 - **One set of pure functions computes every figure** (`packages/core`): net worth, what you could
   use, periods, carry-forward, the agent's context. The web app, the MCP tools and the native
-  apps later all call the same code, so a figure can never differ between screen and agent (N11).
+  apps later all call the same code, so a figure never differs between screen and agent (N11).
 - **The web app and the agent use the same write path.** A REST call and an MCP tool call reach
-  the same Ledger method, with the same validation, audit entry and events. No capability is
-  UI-only (J6) because there is only one implementation.
-- **Packs and agent setup guides are versioned content, not code** (N10): validated documents in
-  D1, published from `content/`, readable by the running system, and editable later by an admin
-  portal that writes the same rows.
-- **Cost:** about **US$6 a month** (US$5 of it Cloudflare) from day one to well past 1,000 users (§9.3). That is not the
-  "≈$0" of `00-discovery.md` §5, and it is a decision for the Founder (§13, decision 1).
+  the same Ledger function, with the same validation, audit entry and events. No capability is
+  UI-only (J6), because there is only one implementation.
+- **Packs and agent setup guides are versioned content, not code** (N10). They are validated
+  documents in the database, published from `content/`, and editable later by an admin portal
+  that writes the same rows.
+- **Cost: $0 for the first ~70–100 users** (Vercel Hobby + Neon Free). Upgrades are plan changes,
+  not code changes, and are triggered by measured limits (§9.4).
 
 ## 2. What drove it
 
 | Requirement | What it forces |
 |---|---|
-| **N1** MCP ≥99.5% success, p95 <1.5s | No cold starts. Compute next to the data, so one tool call is one network hop, not five |
-| **N4** isolation at the data layer, tested | Structural isolation beats a `WHERE user_id = ?` on every query |
-| **N6** ≈$0 → <$50/month, indefinitely, no trial tiers | Permanent free tiers or a flat low price; nothing that bills per idle hour |
-| **N8** reliability never traded for cost | No free tier that sleeps, caps requests per day, or cuts CPU below what password hashing needs |
-| **N3 / J7** every write auditable and reversible, batches undo together | Transactions around each write and its audit entry; per-user serial writes |
+| **N6** as close to $0 as possible for the first 100 users (Founder, 2026-09-27) | Permanent free tiers only; every limit that can stop the service is monitored with an upgrade trigger |
+| **N1** MCP ≥99.5% success, p95 <1.5 s | Function and database in the same region, so a request makes one long hop and many short ones. Cold starts are measured and have an upgrade trigger (§9.4) |
+| **N4** isolation at the data layer, tested | Row-level security enforced by Postgres, a single `withUser` entry point, composite keys that make cross-user references impossible, and an isolation test suite |
+| **N8** reliability never traded for cost | Free-tier stops (Neon's monthly compute cap) are watched and pre-empted, and our own daily backups cover Neon Free's 6-hour restore window |
+| **N3 / J7** every write auditable and reversible; batches undo together | Postgres transactions around each write and its audit rows; a per-user row lock serialises one user's writes |
 | **N10 / §2.3** packs are versioned data an admin will edit | A content store with versions, validation, audit and a published schema |
 | **N11** context is deterministic | Figures come from pure functions with no clock, randomness or inference inside |
-| **N7** native iOS/Android later (React Native + Expo, decided 2026-09-23) | One API; domain logic and chart geometry in plain TypeScript the native app can import |
-| **§2.3 rule 2** IP country looked up on our own server or CDN | The CDN's own country header, never a browser-side third-party call |
+| **N7** native iOS/Android later (React Native + Expo) | One API; domain logic and chart geometry in plain TypeScript the native app imports |
+| **§2.3 rule 2** IP country looked up on our own server or CDN | Vercel's own country header, never a browser-side third-party call |
 
-## 3. Client connector facts, checked 2026-09-27
+## 3. Agent clients at launch
 
-PRD §9 asked Stage 3 to verify each client's current requirements before the architecture locks.
+**Claude and ChatGPT only** (PRD §9.7). Grok, Muse and the generic "Other agent" guide are parked
+until after launch. The server is standard remote MCP with OAuth and no client-specific code, so
+adding one later is content (a guide, a logo), not a release.
 
-| Client | Custom remote MCP connector | Registration (how the client identifies itself) | Source |
-|---|---|---|---|
-| **Claude** | **Free, Pro, Max, Team, Enterprise. Free is limited to one custom connector** | CIMD ("Use Claude's published identity", recommended), DCR ("Register automatically"), or a pre-registered client | Claude Help Center, updated 2026-08-11; claude.com connector docs |
-| **ChatGPT** | **Plus, Pro, Business, Enterprise, Edu — not Free.** Free accounts can use only apps listed in ChatGPT's directory | CIMD preferred, DCR, or predefined client; PKCE | OpenAI's pages are blocked from this environment; consistent across four independent 2026 guides. **Re-check by hand** |
-| **Grok** | Paid tiers, since 2026-05-06 ("Bring Your Own MCP") | Not established | Third-party guides only |
-| **Muse** | Unverified: no settings screen; the user asks Muse to add one in chat | Unknown | PRD J5; nothing reachable from here |
+| Client | How it identifies itself to our OAuth server | Source |
+|---|---|---|
+| **Claude** | CIMD ("Use Claude's published identity", recommended), DCR, or a pre-registered client | claude.com connector docs; Claude Help Center (2026-08-11) |
+| **ChatGPT** | CIMD preferred, DCR, or a predefined client; PKCE | OpenAI's pages are blocked here; consistent across 2026 guides. The P1 spike confirms it |
 
-**This contradicts the PRD.** §9.5's "Update, Stage 2 review" says ChatGPT's free plan allows custom
-MCP connectors. The evidence says it does not. The Founder's own free-plan connections (Notion,
-Google Drive) are most likely **directory-listed apps**, which do work on Free. A custom connector
-added by URL does not. Consequences:
+Which plans of each client allow a custom connector is **parked** by the Founder (PRD §9.7 row 30).
 
-- A **free ChatGPT user cannot connect NetNet until NetNet is listed in ChatGPT's directory**. That
-  listing needs OpenAI's review, and the review time is unknown. Many P-A users are on free
-  ChatGPT (PRD §2), so this puts a hard limit on how many of them can ever connect (M3).
-- Claude Free works, but gives **one** custom connector. The Claude guide has to say what to do
-  when that slot is already taken.
-- Claude stays the launch-blocking client (PRD §9, decision 4). Submitting to ChatGPT's directory
-  becomes G-D2 work that starts as soon as the MCP layer is stable, not after launch.
-- The server is built to the standards below with no client-specific branches, so none of this
-  changes the code. It changes the connect guides (content), the directory submissions and the
-  PRD's text. *Parked by the Founder, 2026-09-27 (§13).*
-
-**Protocol.** The current MCP specification is **2026-07-28**. It is stateless (no `initialize`
-handshake, no `Mcp-Session-Id`), makes CIMD the preferred way to register, deprecates DCR and
-requires RFC 9207 issuer validation. Clients are moving to it at different speeds. So the server
-negotiates **2026-07-28, 2025-11-25 and 2025-06-18**, and the OAuth server supports **CIMD and DCR**
-(§7.6).
+**Protocol.** The current MCP specification is **2026-07-28**: stateless (no `initialize`, no
+`Mcp-Session-Id`), CIMD preferred, DCR deprecated, RFC 9207 issuer checks required. Clients are
+migrating at different speeds, so the server negotiates **2026-07-28, 2025-11-25 and 2025-06-18**,
+and the OAuth server accepts **CIMD and DCR**. Stateless is also exactly what serverless functions
+need: any request can land on any instance.
 
 ## 4. Stack
 
-| Layer | Choice | Why this, and what it beat |
+| Layer | Choice | Why |
 |---|---|---|
-| Language | **TypeScript** everywhere (strict), Node 22 LTS for tooling | One language for web, API, MCP and native (Expo). Validation schemas, domain logic and chart geometry are shared, not re-typed |
-| Compute | **Cloudflare Workers**, one Worker, **Workers Paid** ($5/month) | Isolates, not containers: no cold start to fail an MCP call (N1). Edge in Singapore. A flat price that covers 10M requests. *Beat:* Vercel (Hobby is non-commercial, Pro $20/seat), Render/Koyeb free (sleep, then 30s cold starts), Fly/Railway (no permanent free tier), a VPS (one machine, and the Founder runs it) |
-| Money data | **Durable Objects with SQLite, one per user** ("Ledger") | Isolation by construction (N4). Compute runs beside the data, so a tool call is one hop (N1). One user's writes are serialised, and real transactions make a write and its audit entry atomic (J6, J7). Alarms schedule each user's reminders (J9). Delete is one call, and 30-day point-in-time recovery is built in. *Beat:* one shared D1 with `user_id` on every row (isolation by convention; batch-only transactions; several cross-region hops per call) and Postgres (no permanent free tier that doesn't sleep) |
-| Everything else | **D1** (Cloudflare SQLite): `core` (identity, sessions, OAuth, connections, content, FX) and `events` (analytics) | Relational data that needs lookup across users (by email, by client). 30-day Time Travel. Events kept apart so reading metrics never touches identity or money |
-| Files | **R2** | Guide screenshots, agent logos, weekly backups of `core`. 10 GB free, no egress fees |
-| HTTP | **Hono** | Small, typed, made for Workers; plain `Request`/`Response` |
-| Validation | **zod** (`packages/contracts`) | One schema per contract: it validates REST bodies, defines MCP tool input/output schemas, and types the web client |
-| Ledger SQL | **Drizzle ORM** (durable-sqlite driver) + its migrator | Typed SQL, migrations bundled into the Worker and run inside each Ledger |
-| Accounts | **Better Auth**: email + password, Google, Apple, email verification, password reset | Runs on Workers with D1. Its session model works for the web app today and for Expo later |
-| Agent OAuth | **Better Auth's OAuth 2.1 provider plugin + CIMD package**. We serve the resource-server side ourselves | CIMD, DCR, PKCE and resource-bound tokens without hand-rolled security code. Our own MCP endpoint checks tokens, so no library decides which protocol versions we accept. **Fallback:** `@cloudflare/workers-oauth-provider` (CIMD, DCR, RFC 8707, RFC 9728). The P1 connection spike picks one against live clients |
-| MCP | **Official MCP TypeScript SDK**, Streamable HTTP, stateless | The reference implementation, which follows spec changes first |
-| Web app | **React + Vite SPA**, React Router, TanStack Query, CSS Modules on design tokens | Everything is behind a login, so there is nothing to server-render. Static assets are free. React is the Expo decision's other half |
-| Landing page | **Static HTML/CSS** (its own Vite entry), no framework | A marketing page with its own design (PRD G-D1); nothing to hydrate |
-| Charts | **No charting library.** `d3-scale` / `d3-shape` / `d3-array` for the maths, our own SVG components | Answers the prototype's open question (§12). Three chart kinds, all heavily specified (crosshair readout, frosted placeholder, Poster styling). The geometry lives in `core` and draws through `react-native-svg` on native unchanged |
-| Email | **Resend** behind an `EmailSender` interface | Permanent free tier (3,000/month, 100/day); $20/month if outgrown. Swappable for Amazon SES |
-| Errors | **Sentry** Developer plan (free, permanent), with scrubbing (§10) | Worker and browser errors in one place |
-| Analytics | **First-party**: typed server-side events in the `events` D1 | N9 is enforced by the schema, not by reviewing a vendor's autocapture. No tracking SDK ever touches a page that shows money |
-| FX rates | **ECB reference rates via Frankfurter**, with a fallback source for currencies the ECB does not publish (VND, TWD, AED…), fetched **once a day into our own table** | Free, no key, history back to 1999. Stored by us, so a user's write never waits on a third party (§6.5) |
-| Tests | **Vitest** (unit), **@cloudflare/vitest-pool-workers** (Worker, Ledger and D1 in the real runtime), **Playwright** (E2E) | `CONVENTIONS.md` §9 |
-| CI/CD | **GitHub Actions** + `wrangler` | §9 |
+| Language | **TypeScript** everywhere (strict), Node 22 LTS | One language for web, API, MCP and native (Expo): validation, domain logic and chart geometry are shared, not re-typed |
+| Hosting | **Vercel Hobby** → Pro when a trigger fires (§9.4). One project: static files + one Node function (Fluid compute) in **`sin1` Singapore** | $0 to start; preview deployments per pull request; the function sits beside the database |
+| Database | **Neon Postgres, Free** → Launch when a trigger fires. Region `aws-ap-southeast-1` (Singapore). Compute pinned to **0.25 CU** | $0 to start; Postgres is the conventional choice, and it is easy to move off; branches give each preview its own copy |
+| Isolation | **Row-level security** + `withUser()` + composite keys | Enforced by the database, not by remembering a `WHERE` (§6.1) |
+| DB access | **Drizzle ORM** over `pg` (node-postgres) through Neon's pooled connection; **drizzle-kit** migrations, RLS policies included | Typed SQL; interactive transactions; boring |
+| HTTP | **Hono** | Small, typed, runs as a Vercel Node function unchanged; plain `Request`/`Response` |
+| Validation | **zod** (`packages/contracts`) | One schema per contract: it validates REST bodies, defines MCP tool schemas, and types the web client |
+| Accounts | **Better Auth** (library, tables in `core`): email + password, Google, Apple, email verification, reset | Its best-supported database is Postgres; its session model serves web now and Expo later. Neon's managed Better Auth was set aside: we need the OAuth provider plugin and our own approval page, which the managed service is not known to allow |
+| Agent OAuth | **Better Auth's OAuth 2.1 provider plugin + CIMD package**; our MCP route checks tokens itself | CIMD, DCR, PKCE and audience-bound tokens with no hand-rolled security code; protocol-version support stays ours. **Fallback:** a standalone OAuth 2.1 library chosen in the P1 spike |
+| MCP | **Official MCP TypeScript SDK** (v2), stateless Streamable HTTP, with Vercel's `mcp-handler` adapter if the spike shows it helps | The reference implementation; serves 2026-07-28 and falls back for 2025-era clients |
+| Web app | **React + Vite SPA**, React Router, TanStack Query, CSS Modules on design tokens | All behind a login, so nothing to server-render. React pairs with the Expo decision |
+| Landing page | **Static HTML/CSS** (its own Vite entry) | A marketing page with its own design (PRD G-D1) |
+| Charts | **No charting library.** `d3-scale` / `d3-shape` / `d3-array` maths, our own SVG | Three heavily specified chart kinds. Geometry lives in `core`, and native draws it through `react-native-svg` |
+| Scheduled work | **Vercel Cron** (Hobby: at most daily) + **GitHub Actions** schedules | §9.3 |
+| Email | **Resend** behind an `EmailSender` interface | Permanent free tier (3,000/month, 100/day) |
+| Errors | **Sentry** Developer plan (free), scrubbed (§10) | Function and browser errors in one place |
+| Analytics | **First-party** events in the `analytics` schema | N9 enforced by the schema. No tracking SDK on pages that show money |
+| FX rates | **ECB via Frankfurter** + a fallback source for currencies the ECB lacks (VND, TWD, AED…), fetched daily into our own table | Free, no key, history to 1999; a write never waits on a third party |
+| Tests | **Vitest** against real **Postgres** (a service container in CI; PGlite where Docker is unavailable), **Playwright** E2E | `CONVENTIONS.md` §9 |
+| CI/CD | **GitHub Actions** + Vercel CLI + drizzle-kit | §9.2 |
 
-**Lock-in, stated honestly.** Workers, Durable Objects and D1 are Cloudflare-only. The way out
-is kept open on purpose. The domain logic is plain TypeScript in `core`. The Ledger schema is
-ordinary SQLite. REST, OAuth and MCP are open standards. Moving means rewriting the adapters (the
-Ledger host, the auth store), not the product.
+**Lock-in is low.** It is Node, Postgres and open protocols. Moving off Vercel or Neon means
+changing a deploy target or a connection string, not the product.
 
 ## 5. Components
 
@@ -118,209 +111,227 @@ flowchart LR
   subgraph clients[Clients]
     LP[Landing page<br/>static]
     WEB[Web app<br/>React SPA]
-    AG[MCP clients<br/>Claude · ChatGPT · Grok · other]
+    AG[AI agents<br/>Claude · ChatGPT]
     NAT[Native app<br/>later, Expo]
   end
 
-  subgraph cf[Cloudflare — one Worker]
+  subgraph vercel[Vercel · one project]
     direction TB
-    RT[Router · Hono]
-    AUTH[Accounts<br/>Better Auth]
-    AS[OAuth 2.1 server<br/>CIMD · DCR · PKCE]
-    API[REST API /api]
-    MCP[MCP server /mcp]
-    JOBS[Cron jobs<br/>FX · attempts · backups · health]
-    LED[(Ledger DO<br/>one per user · SQLite<br/>holdings · values · types · tags<br/>prefs · audit)]
-    CORE[(D1 core<br/>users · sessions · OAuth<br/>connections · content · FX)]
-    EV[(D1 events<br/>analytics, no amounts)]
-    R2[(R2<br/>screenshots · logos · backups)]
+    STATIC[Static files<br/>landing + app + content images]
+    subgraph fn[Node function · Hono · sin1 Singapore]
+      GATE[Sign-in check<br/>Better Auth · cookie or OAuth token → user id]
+      API[REST API /api]
+      AS[OAuth 2.1 server /oauth2]
+      MCP[MCP server /mcp]
+      CRON[Cron handlers<br/>daily]
+    end
   end
 
+  subgraph neon[Neon Postgres · Singapore]
+    LEDGER[(ledger schema<br/>row-level security per user<br/>holdings · values · types · tags<br/>prefs · audit)]
+    CORE[(core schema<br/>accounts · sessions · OAuth<br/>connections · content · FX)]
+    EV[(analytics schema<br/>events, no amounts)]
+  end
+
+  GH[GitHub Actions<br/>backups · probe · deploys]
   PKG[[packages/core<br/>pure figures & context]]
 
-  LP --> RT
-  WEB --> RT
-  NAT -.-> RT
-  AG -->|OAuth| AS
-  AG -->|Bearer| MCP
-  RT --> AUTH & AS & API & MCP
-  API --> LED
-  MCP --> LED
-  AUTH --> CORE
+  LP --> STATIC
+  WEB --> STATIC
+  WEB -->|cookie| GATE
+  NAT -.->|bearer, later| GATE
+  AG -->|OAuth sign-in| AS
+  AG -->|Bearer| GATE
+  GATE --> API & MCP
+  API -->|withUser| LEDGER
+  MCP -->|withUser| LEDGER
+  GATE --> CORE
   AS --> CORE
-  API --> CORE
-  LED --> CORE
-  API & MCP & AUTH & JOBS --> EV
-  JOBS --> CORE & R2
-  LED -. alarm .-> MAIL[Resend]
-  AUTH --> MAIL
-  AUTH --> IDP[Google · Apple]
-  JOBS --> FX[ECB via Frankfurter<br/>+ fallback]
+  API & MCP --> EV
+  CRON --> CORE & LEDGER
+  GH --> neon
+  CRON -.-> MAIL[Resend]
+  GATE --> IDP[Google · Apple]
+  CRON --> FX[ECB via Frankfurter<br/>+ fallback]
   WEB -.imports.-> PKG
-  LED -.imports.-> PKG
+  fn -.imports.-> PKG
 ```
 
 ### 5.1 Three paths through it
 
-**A web write** (e.g. add a value): SPA → `POST /api/holdings/:id/values` → session cookie gives
-`userId` → Ledger stub for `userId` → `recordValues(actor, items)` → one transaction writes the
-value rows, the audit entry and the new `data_version` → returns the result, warnings and domain
-events → the Worker records analytics events (`value_recorded {source: web}`) after responding.
+**A web write** (e.g. add a value): SPA → `POST /api/holdings/:id/values` → the session cookie gives
+`userId` → `withUser(userId, write)` opens a transaction, sets `app.user_id` and locks the user's
+`ledger_state` row → `recordValues(tx, actor, items)` writes the value rows, the audit rows and the
+new `data_version` → commit → respond → analytics events (`value_recorded {source: web}`) are
+written after the response (`waitUntil`).
 
-**An agent read** (J8): client → `POST /mcp` with a Bearer token → the Worker checks the JWT
-locally against our own JWKS (issuer, audience = the `/mcp` URL, expiry, scope). No database
-lookup → Ledger stub → `context(opts)`, which reads its own SQLite and runs
-`core.compileContext()` → the tool result → `agent_tool_called {kind: read, latency_ms}`. That is
-**one network hop** after the edge. A client in the US reaching a Ledger in Singapore costs about
-200 ms of the 1.5 s budget.
+**An agent read** (J8): client → `POST /mcp` with a Bearer token → the function checks the JWT
+itself against our JWKS (issuer, audience = the `/mcp` URL, expiry, scope) → `withUser(userId)`
+checks the connection is not revoked and reads the user's data in-region → `core.compileContext()`
+→ the tool result → `agent_tool_called {kind: read, latency_ms}`. **Warm: ≈ 0.25–0.3 s**, mostly
+the trip from the client's servers to Singapore. **After 5 minutes idle: ≈ 0.7–1.5 s**, because
+Neon wakes "within a few hundred milliseconds" (Neon docs; 0.3–0.8 s in third-party measurements)
+and the function may start cold (0.2–0.5 s). Slow, not failed. §9.4 has the trigger that removes it.
 
 **Connecting an agent** (J5):
 
 ```mermaid
 sequenceDiagram
-  participant U as User (NetNet tab)
-  participant W as NetNet web
-  participant C as Agent client
+  participant U as You (NetNet tab)
+  participant C as Agent app (Claude / ChatGPT)
   participant S as NetNet server
-  U->>W: Connect to agent → Claude, phone
-  W->>S: POST /api/agent/attempts {client, entry}
-  Note over W: shows the steps; polls the attempt every 2 s
+  U->>S: POST /api/agent/attempts {client, entry}
+  Note over U: shows the steps; polls the attempt every 2 s
   U->>C: adds connector URL https://‹domain›/mcp
   C->>S: POST /mcp (no token) → 401 + resource_metadata
   C->>S: GET /.well-known/oauth-protected-resource, /oauth-authorization-server
   C->>S: GET /oauth2/authorize (PKCE, resource, client_id = CIMD URL or DCR id)
   S->>U: approval page — the name the client registered with — Allow / Cancel
   U->>S: Allow (email must be verified)
-  S->>S: grant → agent_connections row; the attempt becomes "approved"
-  W-->>U: moves on by itself ("Connected to Claude")
+  S->>S: grant → agent_connection row; the attempt becomes "approved"
+  S-->>U: the NetNet tab moves on by itself
   C->>S: POST /oauth2/token (code + verifier) → access + refresh token
   C->>S: first tool call → the attempt becomes "live"
 ```
 
 ## 6. Data model
 
-IDs are prefixed ULIDs (`usr_`, `hld_`, `val_`, `typ_`, `tag_`, `aud_`, `bat_`, `con_`, `att_`).
-Money is stored as **integers in the currency's minor unit** (ISO 4217 exponent). Value dates are
-calendar dates (`YYYY-MM-DD`). Instants are ISO-8601 UTC.
+One Postgres database. IDs are prefixed ULIDs (`usr_`, `hld_`, `val_`, `typ_`, `tag_`, `aud_`,
+`bat_`, `con_`, `att_`). Money is stored as **integers in the currency's minor unit** (`bigint`,
+ISO 4217 exponent). Value dates are `date`, and instants are `timestamptz`.
 
-### 6.1 D1 `core` — no money in it
+### 6.1 Schemas, roles and row-level security
+
+| Role | Can | Cannot |
+|---|---|---|
+| `netnet_owner` | Own every table; run migrations (CI only) | Be used by the running app |
+| `netnet_app` (the function) | Read/write `core`; read/write `ledger` **only through RLS**; insert into `analytics.event` | Bypass RLS (`NOBYPASSRLS`); read `analytics` |
+| `netnet_metrics` (Founder's metrics queries) | Read `analytics` | Read `ledger` or `core` |
+| `netnet_content_admin` (future portal) | Write `core.content_*` | Read `ledger`, `analytics`, identity |
+
+**Every `ledger` table** has `user_id` in its primary key, `ENABLE` **and `FORCE ROW LEVEL
+SECURITY`**, and one policy:
+`USING (user_id = current_setting('app.user_id', true)) WITH CHECK (user_id = current_setting('app.user_id', true))`.
+With no user set, a query sees nothing. **Foreign keys are composite** (`value (user_id,
+holding_id) → holding (user_id, id)`), so no row can point at another user's row. A test fails
+the build if any `ledger` table lacks RLS, `FORCE`, the policy, or composite keys.
+
+**`withUser(userId, fn, {write})`** is the only way into the `ledger` schema. It opens a
+transaction, calls `set_config('app.user_id', userId, true)` (transaction-local, which is safe with
+Neon's transaction pooling), and for writes takes `SELECT … FROM ledger.ledger_state WHERE user_id =
+$1 FOR UPDATE`. That lock serialises one user's writes, exactly as a single-threaded store would.
+`userId` comes only from the verified session or token.
+
+### 6.2 `core` — no money in it
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `user`, `session`, `account`, `verification` | Better Auth's schema | Email, password hash (scrypt), provider links, `email_verified` |
-| `profile` | `user_id` PK, `country` (ISO 3166-1, nullable), `time_zone` (IANA), `segment` (`starting_out`/`accumulating`/`established`/`unknown`), `onboarding_state`, `ledger_location`, `created_at` | What the Worker needs without waking a Ledger: the pack to resolve, the segment every event carries (§3.5), where to resume onboarding (J1) |
-| `oauth_client`, `oauth_access_token`, `oauth_refresh_token`, `oauth_consent`, `jwks` | The OAuth plugin's schema | CIMD clients are cached by URL; DCR clients unused for 30 days are purged |
-| `agent_connection` | `id` (`con_`, derived from user + client), `user_id`, `client_id`, `client_name`, `registration` (`cimd`/`dcr`/`preregistered`), `created_at`, `first_call_at`, `last_used_at`, `revoked_at` | The Agent tab: client name, time, active (J5). Mirrored into the Ledger (§6.2) so revocation takes effect on the next call |
-| `connection_attempt` | `id`, `user_id`, `client`, `entry` (`onboarding`/`home`/`holding`/`agent`), `platform`, `state` (`started`/`approved`/`live`/`failed`), `failed_step`, `started_at`, `updated_at` | Drives "moves on by itself" and `agent_connection_* {entry}`. A cron job times attempts out into a failure step (§7.7) |
-| `content_doc` | (`kind`, `key`, `version`) PK, `body` JSON, `sha256`, `author`, `source_commit`, `created_at` | Packs, the country list and agent guides. **Immutable once written** |
+| `user`, `session`, `account`, `verification`, `jwks` | Better Auth's schema | Email, password hash (scrypt), provider links, `email_verified` |
+| `profile` | `user_id` PK, `country` (ISO 3166-1, nullable), `time_zone` (IANA), `segment` (`starting_out`/`accumulating`/`established`/`unknown`), `onboarding_state`, `created_at` | What every request needs: the pack to resolve, the segment every event carries (§3.5), where to resume onboarding (J1) |
+| `oauth_client`, `oauth_access_token`, `oauth_refresh_token`, `oauth_consent` | The OAuth plugin's schema | CIMD clients cached by URL; DCR clients unused for 30 days are purged |
+| `agent_connection` | `id` (`con_`), `user_id`, `client_id`, `client_name`, `registration` (`cimd`/`dcr`), `created_at`, `first_call_at`, `last_used_at`, `revoked_at` | The Agent tab (J5). Checked inside `withUser` on every agent call, so revocation applies to the next call |
+| `connection_attempt` | `id`, `user_id`, `client`, `entry` (`onboarding`/`home`/`holding`/`agent`), `platform`, `state` (`started`/`approved`/`live`/`failed`), `failed_step`, `started_at`, `updated_at` | "Moves on by itself" and `agent_connection_* {entry}`. Timeouts are worked out when an attempt is read (no frequent cron on Hobby) |
+| `content_doc` | (`kind`, `key`, `version`) PK, `body` jsonb, `sha256`, `author`, `source_commit`, `created_at` | Packs, the country list, agent guides. **Immutable once written** |
 | `content_current` | (`kind`, `key`) PK, `version`, `updated_at`, `updated_by` | Which version is live. Rolling back = pointing at an older version |
 | `content_audit` | `id`, `kind`, `key`, `from_version`, `to_version`, `actor`, `at` | Who changed the world, when, old → new (§2.3) |
-| `fx_rate` | (`date`, `currency`) PK, `per_usd` (decimal string), `source` (`ecb`/`fallback`) | Filled daily by cron; history backfilled once at deploy |
+| `fx_rate` | (`date`, `currency`) PK, `per_usd` numeric, `source` (`ecb`/`fallback`) | Filled daily; history backfilled once |
+| `rate_limit` | (`key`, `window_start`) PK, `count` | Fixed-window counters (§8) |
 
-### 6.2 Ledger (one SQLite per user)
+### 6.3 `ledger` — every row belongs to one user
 
-| Table | Columns | Notes |
+| Table | Columns (all have `user_id`) | Notes |
 |---|---|---|
-| `meta` | `schema_version`, `user_id`, `base_currency`, `data_version`, `created_at` | `data_version` goes up by one on every write. It is the snapshot's ETag |
-| `user_type` | `id`, `universal` (§7.8), `pack_type_key` (nullable, e.g. `car_loan`), `custom_name` (nullable), `sort`, `archived` | **No name is stored until the user renames one**, so labels follow the current pack (§2.3) |
-| `tag` | `id`, `name` (unique, case-insensitive), `sort` | |
-| `holding` | `id`, `name`, `kind` (`asset`/`liability`), `type_id`, `currency`, `cadence_days`, `archived_at`, `created_at`, `row_version`, **`access`** (`accessible`/`illiquid`/`locked`/`undecided`, null for liabilities), **`access_basis`** JSON `{via: default|question|universal|override|not_sure, pack, pack_version, question, answer}`, **`access_reason`**, **`access_until`** | The applied accessibility outcome **and the reason shown for it** are kept as they were applied, with the pack version. A pack edit never moves them (§6.6) |
+| `ledger_state` | `user_id` PK, `base_currency`, `data_version`, `reminder_cadence`, `reminder_opt_out`, `next_reminder_at`, `created_at` | `data_version` goes up by one on every write, and is the snapshot's ETag. The row is the per-user write lock |
+| `user_type` | `id`, `universal` (§7.8), `pack_type_key` (nullable, e.g. `car_loan`), `custom_name` (nullable), `sort`, `archived` | **No name is stored until the user renames one**, so labels follow the current pack |
+| `tag` | `id`, `name` (unique per user, case-insensitive), `sort` | |
+| `holding` | `id`, `name`, `kind` (`asset`/`liability`), `type_id`, `currency`, `cadence_days`, `archived_at`, `created_at`, `row_version`, **`access`** (`accessible`/`illiquid`/`locked`/`undecided`, null for liabilities), **`access_basis`** jsonb `{via, pack, pack_version, question, answer}`, **`access_reason`**, **`access_until`** | The applied accessibility outcome **and its reason** are kept as applied, with the pack version. A pack edit never moves them (§6.7) |
 | `holding_tag` | `holding_id`, `tag_id` | |
-| `value` | `id`, `holding_id`, `date`, `amount_minor`, `currency`, `base_minor`, `base_currency`, `fx_rate` (decimal string), `fx_rate_date`, `fx_source` (`ecb`/`fallback`/`same`/`user`/`agent`), `source` (`web`/`agent`/`system`), `client_name`, `connection_id`, `batch_id`, `entered_at`, `updated_at`, `row_version` | **Unique (`holding_id`, `date`)**: same date means last write wins, with a warning (J3). `base_minor` is the stored conversion that totals and periods use (J2, J11) |
-| `prefs` | `key` PK, `value` JSON | Home filter, Insights filter and exclusions (these persist, J11), baseline, sort, reminder cadence and opt-out |
-| `connection` | `id`, `client_name`, `revoked_at` | Mirror of `agent_connection`, checked on every agent call |
-| `audit` | `id`, `at`, `actor` (`user`/`agent`/`system`), `client_name`, `connection_id`, `batch_id`, `action` (e.g. `holding.create`, `value.update`, `type.merge`), `entity`, `entity_id`, `before` JSON, `after` JSON, `undoes`, `undone_by` | One row per entity changed. `before` for a deleted holding includes its values |
-| `batch` | `id`, `connection_id`, `opened_at`, `last_write_at`, `closed_at` | One agent turn (§6.7) |
+| `value` | `id`, `holding_id`, `date`, `amount_minor`, `currency`, `base_minor`, `base_currency`, `fx_rate` numeric, `fx_rate_date`, `fx_source` (`ecb`/`fallback`/`same`/`user`/`agent`), `source` (`web`/`agent`/`system`), `client_name`, `connection_id`, `batch_id`, `entered_at`, `updated_at`, `row_version` | **Unique (`user_id`, `holding_id`, `date`)**: last write wins, with a warning (J3). `base_minor` is the stored conversion that totals and periods use (J2, J11) |
+| `prefs` | `key`, `value` jsonb | Home filter, Insights filter and exclusions (persist, J11), baseline, sort |
+| `audit` | `id`, `at`, `actor` (`user`/`agent`/`system`), `client_name`, `connection_id`, `batch_id`, `action`, `entity`, `entity_id`, `before` jsonb, `after` jsonb, `undoes`, `undone_by` | One row per entity changed. `before` for a deleted holding includes its values |
+| `batch` | `id`, `connection_id`, `opened_at`, `last_write_at` | One agent turn (§6.8) |
 
-### 6.3 D1 `events`
+### 6.4 `analytics`
 
-`event(id, name, at, user_id NULL, visitor NULL, segment, props JSON, app_version)`. `props` is
-written only through the typed `track()` (§7.7), so no amount, name or document text can reach
-it. `visitor` is `sha256(daily_salt ‖ ip ‖ user-agent)`, truncated. The salt changes daily and is
-never stored, so the landing page can count unique visitors (M10) without a cookie. When an
-account is deleted, its events are **re-keyed to a random id**: M1–M11 still count them, and they
-no longer point at anyone.
+`event(id, name, at, user_id NULL, visitor NULL, segment, props jsonb, app_version)`. It is written
+only through the typed `track()` (§7.7), so no amount, name or document text can reach it.
+`visitor` is `sha256(daily_salt ‖ ip ‖ user-agent)`, truncated. The salt changes daily and is never
+stored, so the landing page counts unique visitors (M10) without a cookie. When an account is
+deleted, its events are **re-keyed to a random id**: they still count, and they no longer point at
+anyone.
 
-### 6.4 Content (packs, countries, agent guides)
+### 6.5 Content (packs, countries, agent guides)
 
-- **Source:** `content/packs/*.json`, `content/countries.json`, `content/agents/*.json` in the repo.
-  Screenshots and logos go in R2 under `content/…`.
-- **Publishing:** `pnpm content:publish --env <env>`. It validates every document against its
-  schema (§7.8). Any failure rejects the whole publish: a half-applied pack is a wrong pack. It then
-  inserts new `content_doc` versions, moves `content_current` and writes `content_audit`.
-  **No code release is involved**, so adding a market ships no release (N10).
-- **Reading:** the Worker caches `content_current` for 60 s and each version indefinitely
-  (versions are immutable). The web app fetches `GET /api/content/packs/:key@:version`, cached for
-  a year.
-- **The admin portal (not v1)** will write the same three tables through the same validator. It
-  gets a separate `content_admin` role with **no route to any Ledger or to `profile`**. Configuring
-  the world grants no access to anyone's balance sheet (§2.3). Nothing in v1 has to change for it.
+- **Source:** `content/packs/*.json`, `content/countries.json`, `content/agents/*.json` (launch:
+  `claude.json`, `chatgpt.json`); screenshots and logos in `content/images/`.
+- **Publishing:** `pnpm content:publish --env <env>` validates every document against its schema
+  (§7.8). Any failure rejects the whole publish, because a half-applied pack is a wrong pack. It then
+  inserts new `content_doc` versions, moves `content_current` and writes `content_audit`. **No code
+  release.** Images ship as static files through a content-only deploy.
+- **Reading:** the function caches `content_current` for 60 s and each version indefinitely. The
+  web app fetches `GET /api/content/:kind/:key@:version`, cached for a year.
+- **The admin portal (not v1)** writes the same tables through the same validator, as
+  `netnet_content_admin`, which has **no access to `ledger`, `analytics` or identity**. Nothing in
+  v1 has to change for it.
 
-### 6.5 Money and exchange rates
+### 6.6 Money and exchange rates
 
 - **Minor units everywhere below the edges.** Tools and forms take and return decimal amounts in
   major units. The boundary converts using the ISO 4217 exponent and rejects extra precision and
   anything over 10¹⁵ minor units with a specific error (J6).
-- **Rate:** the published rate for the value's date (latest on or before it), **looked up once
-  when the value is written, stored on the value, and never refreshed** (PRD §9.6 assumption;
-  §4.2 reserves automated refresh). Cross rates go through USD. Before the fallback source's history
-  begins, the nearest later rate is used and its date recorded. The web and the agent may supply
-  their own rate (`fx_source: user|agent`), e.g. the one printed on a statement.
-- **Conversion** is decimal arithmetic on integers (no floats), rounded half away from zero. The
-  rate and its date are stored, exported and readable by the agent, and not displayed (J2).
-- **Changing the default currency** re-derives every value's `base_minor` from the stored rate
-  tables at each value's own `fx_rate_date`. That is one logged, undoable `system` migration, so
-  periods stay undistorted by later FX (J11).
-- If the day's fetch fails, the previous rate stays in use, marked with its date, and an alert
-  fires (§10). A write never fails because a rate source is down.
+- **Rate:** the published rate for the value's date (latest on or before it), **looked up once when
+  the value is written, stored on the value, never refreshed** (PRD §9.6; §4.2 reserves refresh).
+  Cross rates go through USD. Before the fallback source's history begins, the nearest later rate is
+  used and its date recorded. The web and the agent may supply a rate (`fx_source: user|agent`),
+  e.g. the one on a statement.
+- **Conversion** is exact decimal arithmetic, rounded half away from zero. Rate and rate date are
+  stored, exported and readable by the agent, and not displayed (J2).
+- **Changing the default currency** re-derives every value's `base_minor` from the stored rates at
+  each value's own `fx_rate_date`. That is one logged, undoable `system` change (J11 stays
+  undistorted).
+- If the day's fetch fails, the previous rate stays in use with its date, and an alert fires.
 
-### 6.6 Accessibility and pack versions (PRD §2.3, §9.6 item 17)
+### 6.7 Accessibility and pack versions (PRD §2.3, §9.6 item 17)
 
 `core.resolveAccess(packChain, universal, answer?)` returns `{access, reason, until, basis}`.
-**Current pack, then generic, key by key**, exactly as the prototype does. At create or change
-time the whole outcome is written onto the holding with the pack's key and version.
-Afterwards:
+**Current pack, then generic, key by key**, as in the prototype. At create or change time the whole
+outcome is written onto the holding with the pack key and version. Afterwards **labels follow the
+current pack; outcomes and their reasons do not.** A later re-application is an explicit, logged
+`system` migration, with an audit entry per holding (none in v1). **Undecided** counts toward net
+worth, never toward what could be used, and is reported to the agent as incompleteness (J2).
+**Moving country** adds the new pack's default types and removes none (J2).
 
-- **Labels follow the current pack** (types store no name).
-- **Outcomes and their reasons do not.** A pack edit changes nothing already applied. A later
-  re-application is an explicit, logged `system` migration run per Ledger, with an audit entry
-  per holding. No such migration exists in v1.
-- **Undecided** (`not_sure`) counts toward net worth and never toward what could be used, and it is
-  reported to the agent as incompleteness (J2).
-- **Moving country** adds the new pack's default types and removes none (J2). Stored outcomes stay
-  as they are.
+### 6.8 Audit, batches and undo (N3, J7)
 
-### 6.7 Audit, batches and undo (N3, J7)
-
-- **Every write** runs in one Ledger transaction: the change, one audit row per entity touched,
-  `data_version + 1`. Nothing is ever partially written (J6).
-- **Batches (one agent turn).** MCP has no turn id, and the 2026-07-28 spec removed sessions. The
-  Ledger groups a connection's writes into one batch while each write follows the previous one by
-  **≤ 120 s**. A single `record_values` call is always one batch. The Ledger is single-threaded,
-  so the grouping is exact. It is a heuristic about turns, and it is tuned by M5 evidence, not guessed.
+- **Every write** is one transaction: the change, one audit row per entity touched, `data_version +
+  1`. Nothing is ever partially written (J6).
+- **Batches (one agent turn).** MCP has no turn id, and the 2026-07-28 spec removed sessions. A
+  connection's writes join one batch while each follows the previous by **≤ 120 s**. A single
+  `record_values` call is always one batch. The per-user lock makes the grouping exact. It is a
+  heuristic, tuned by M5 evidence.
 - **Undo of an entry** restores `before` exactly, and only if the entity is still at the entry's
-  `after` (compared by `row_version`). Otherwise the result is `UNDO_CONFLICT`, naming the later
-  change that must be undone first. The undo is itself an audit entry (`undoes`), so it can be undone.
-- **Undo of a batch** reverts every not-yet-undone entry in the batch, newest first, in one
-  transaction. It is all or nothing.
-- The user correcting or undoing an agent-written value fires `value_corrected {original_source:
+  `after` (by `row_version`). Otherwise the result is `UNDO_CONFLICT`, naming the later change to
+  undo first. The undo is itself an audit entry, so it can be undone too.
+- **Undo of a batch** reverts every not-yet-undone entry, newest first, in one transaction. It is
+  all or nothing.
+- A user correcting or undoing an agent-written value fires `value_corrected {original_source:
   agent, age_at_correction}` or `value_undone` (M5).
 
 ## 7. Interface contracts
 
 ### 7.1 URL map (one origin: `https://‹domain›`)
 
-| Path | What |
-|---|---|
-| `/` | Landing page (static) |
-| `/app/*` | Web app (SPA). The OAuth approval page is `/app/connect/approve` |
-| `/api/*` | REST API, JSON, cookie session (web); bearer session for native later |
-| `/api/auth/*` | Better Auth: sign-up, sign-in (email, Google, Apple), verify email, reset password, sign-out |
-| `/oauth2/authorize` · `/oauth2/token` · `/oauth2/register` (DCR) · `/oauth2/revoke` · `/oauth2/jwks` | OAuth 2.1 authorization server |
-| `/.well-known/oauth-authorization-server` | RFC 8414 metadata, with `client_id_metadata_document_supported: true` |
-| `/.well-known/oauth-protected-resource` (and `/…/mcp`) | RFC 9728 metadata for the MCP resource |
-| `/mcp` | **The connector URL users paste.** MCP Streamable HTTP, `POST` only (stateless) |
-| `/content/*` | Screenshots and logos from R2 |
+| Path | What | Served by |
+|---|---|---|
+| `/` | Landing page | static |
+| `/app/*` | Web app (SPA fallback). Approval page: `/app/connect/approve` | static |
+| `/content/*` | Screenshots and logos | static |
+| `/api/*` | REST API, JSON; cookie session (web), bearer session (native later) | function |
+| `/api/auth/*` | Better Auth: sign-up, sign-in (email, Google, Apple), verify email, reset, sign-out | function |
+| `/api/cron/*` | Cron handlers; require `Authorization: Bearer $CRON_SECRET` | function |
+| `/oauth2/authorize` · `/oauth2/token` · `/oauth2/register` (DCR) · `/oauth2/revoke` · `/oauth2/jwks` | OAuth 2.1 authorization server | function |
+| `/.well-known/oauth-authorization-server` · `/.well-known/oauth-protected-resource` (and `/…/mcp`) | RFC 8414 and RFC 9728 metadata; `client_id_metadata_document_supported: true` | function |
+| `/mcp` | **The connector URL users paste.** MCP Streamable HTTP, `POST`, stateless | function |
 
 ### 7.2 REST API (web now, native later)
 
@@ -329,9 +340,9 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 
 | Method & path | Body / query → response | Jobs |
 |---|---|---|
-| `GET /api/geo` | → `{country: "SG" \| null}` from the CDN's IP country | §2.3 r2 |
+| `GET /api/geo` | → `{country: "SG" \| null}` from `x-vercel-ip-country` | §2.3 r2 |
 | `GET /api/me` · `PATCH /api/me` | profile: `email, emailVerified, country, baseCurrency, segment, timeZone, onboardingState` | J1 |
-| `GET /api/snapshot` | `If-None-Match: <dataVersion>` → 304, or `{dataVersion, baseCurrency, packRef, prefs, types, tags, holdings, values}`. Values are compact per holding: `[date, amountMinor, currency, baseMinor, source, clientName, id]` | J4, J11 |
+| `GET /api/snapshot` | `If-None-Match: <dataVersion>` → 304, or `{dataVersion, baseCurrency, packRef, prefs, types, tags, holdings, values}`. Values compact per holding: `[date, amountMinor, currency, baseMinor, source, clientName, id]` | J4, J11 |
 | `POST /api/holdings` | `{name, kind, typeId, currency, tagIds?, access?: AccessInput, opening?: {amount, date, fxRate?}, via: "guided"\|"form", allowDuplicate?}` → `Holding`, or `409 LIKELY_DUPLICATE {candidates}` | J1, J2, J6 |
 | `PATCH /api/holdings/:id` | `{name?, typeId?, tagIds?, access?, cadenceDays?, archived?}` | J2 |
 | `DELETE /api/holdings/:id` | — | J2 |
@@ -344,29 +355,32 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 | `POST /api/activity/:entryId/undo` · `POST /api/activity/batches/:batchId/undo` | → `UNDO_CONFLICT {blockers}` when not possible | J7 |
 | `PATCH /api/prefs` | filters, exclusions, baseline, sort, reminders `{cadence, optOut}` | J4, J9, J11 |
 | `GET /api/agent/connections` · `DELETE /api/agent/connections/:id` | list · revoke (logged; later calls rejected) | J5 |
-| `POST /api/agent/attempts` · `GET /api/agent/attempts/:id` | `{client, entry, platform}` → `{id, state, failedStep?, cause?}` (polled every 2 s while the flow is open) | J5 |
+| `POST /api/agent/attempts` · `GET /api/agent/attempts/:id` | `{client: "claude"\|"chatgpt", entry, platform}` → `{id, state, failedStep?, cause?}` (polled every 2 s) | J5 |
 | `GET /api/content/current` · `GET /api/content/:kind/:key@:version` | live version map · an immutable document | §2.3, J5 |
 | `GET /api/export?format=json\|csv` | everything: holdings, types, tags, accessibility and the answer behind it, all values with currencies, rates and rate dates | J10 |
 | `DELETE /api/account` | needs a sign-in in the last 10 minutes → `{erasedWithinDays: 30}` | J10 |
 | `POST /api/events` | client-side events only (§7.7): `{name, props}`, whitelisted | §3.5 |
 | `POST /api/reminders/unsubscribe` | signed one-click token (also `List-Unsubscribe`) | J9 |
-| `GET /api/health` | D1 and a Ledger ping → `{ok}` | §10 |
+| `GET /api/health` | **Shallow: never touches the database** → `{ok}` | §10 |
 
-**Pagination decision** (prototype §8): anything that can grow without limit pages with an
-opaque cursor: values, activity, and the MCP list tools. The web app's `snapshot` is **not paged
-in v1**. A heavy P-C (30 holdings × monthly values × 5 years) is about 1,800 values, roughly 30 KB
-gzipped, and loading it once makes filters, baselines and Insights instant, with the same `core`
-code on the client. **Revisit trigger:** a snapshot over 1 MB gzipped or 20,000 values. The
-Worker logs the size of each snapshot it sends.
+**Pagination** (prototype §8): values, activity and the MCP lists page with an opaque cursor. The
+web app's `snapshot` is **not paged in v1**. A heavy P-C (30 holdings × monthly × 5 years ≈ 1,800
+values) is about 30 KB gzipped, and loading it once makes filters, baselines and Insights instant
+with the same `core` code. **Revisit trigger:** 1 MB gzipped or 20,000 values, logged per request.
 
-### 7.3 Ledger (internal RPC between the Worker and each user's Durable Object)
+### 7.3 The Ledger module (the only code that touches the `ledger` schema)
 
 ```ts
 type Actor = { kind: 'user' | 'agent' | 'system'; connectionId?: string; clientName?: string };
 type Write<T> = { result: T; dataVersion: number; warnings: Warning[]; events: DomainEvent[] };
 
+// The only entry point. Opens a transaction, sets app.user_id, checks the agent connection when
+// the actor is an agent, and for writes locks ledger_state for this user.
+function withUser<T>(userId: string, actor: Actor, fn: (l: Ledger) => Promise<T>,
+                     opts?: { write?: boolean }): Promise<T>;
+
 interface Ledger {
-  init(i: { userId: string; baseCurrency: string; pack: PackRef }): Promise<void>;
+  init(i: { baseCurrency: string; pack: PackRef }): Promise<void>;
   snapshot(): Promise<Snapshot>;
   context(o: { baseline?: Baseline; today: string; packs: Pack[] }): Promise<FinancialContext>; // §7.5
   listHoldings(q: HoldingQuery): Promise<Page<HoldingView>>;
@@ -375,59 +389,52 @@ interface Ledger {
   periods(q: PeriodQuery): Promise<PeriodTable>;
   activity(p: PageReq & { batchId?: string }): Promise<Page<AuditEntry>>;
 
-  createHolding(a: Actor, i: CreateHolding): Promise<Write<Holding>>;
-  updateHolding(a: Actor, id: string, p: HoldingPatch): Promise<Write<Holding>>;
-  deleteHolding(a: Actor, id: string): Promise<Write<void>>;
-  recordValues(a: Actor, items: NewValue[]): Promise<Write<ValueResult[]>>;   // 1..200, atomic
-  updateValue(a: Actor, id: string, p: ValuePatch): Promise<Write<Value>>;
-  deleteValue(a: Actor, id: string): Promise<Write<void>>;
-  upsertType(a: Actor, i: TypeInput): Promise<Write<UserType>>;
-  deleteType(a: Actor, id: string, moveTo?: string): Promise<Write<void>>;
-  upsertTag(a: Actor, i: TagInput): Promise<Write<Tag>>;
-  deleteTag(a: Actor, id: string, mergeInto?: string): Promise<Write<void>>;
-  undo(a: Actor, t: { entryId: string } | { batchId: string }): Promise<Write<UndoResult>>;
-  setPrefs(a: Actor, p: PrefsPatch): Promise<Write<Prefs>>;
-  changeBaseCurrency(a: Actor, ccy: string): Promise<Write<void>>;
-  applyPackTypes(a: Actor, pack: PackRef): Promise<Write<UserType[]>>;
-  mirrorConnection(c: { id: string; clientName: string; revokedAt?: string }): Promise<void>;
+  createHolding(i: CreateHolding): Promise<Write<Holding>>;
+  updateHolding(id: string, p: HoldingPatch): Promise<Write<Holding>>;
+  deleteHolding(id: string): Promise<Write<void>>;
+  recordValues(items: NewValue[]): Promise<Write<ValueResult[]>>;   // 1..200, atomic
+  updateValue(id: string, p: ValuePatch): Promise<Write<Value>>;
+  deleteValue(id: string): Promise<Write<void>>;
+  upsertType(i: TypeInput): Promise<Write<UserType>>;
+  deleteType(id: string, moveTo?: string): Promise<Write<void>>;
+  upsertTag(i: TagInput): Promise<Write<Tag>>;
+  deleteTag(id: string, mergeInto?: string): Promise<Write<void>>;
+  undo(t: { entryId: string } | { batchId: string }): Promise<Write<UndoResult>>;
+  setPrefs(p: PrefsPatch): Promise<Write<Prefs>>;
+  changeBaseCurrency(ccy: string): Promise<Write<void>>;
+  applyPackTypes(pack: PackRef): Promise<Write<UserType[]>>;
   exportAll(): Promise<ExportBundle>;
-  destroy(): Promise<void>;                     // deleteAll(); the alarm is cleared
-  alarm(): Promise<void>;                        // J9 reminders
+  destroy(): Promise<void>;                       // deletes every ledger row for this user
 }
 ```
 
-Only `apps/worker/src/ledger/**` may touch Ledger SQL (lint-enforced, `CONVENTIONS.md` §3). The
-Worker picks the Ledger with `idFromName(userId)`. `userId` comes from the verified session or
-token and never from the request body. That one function is the whole isolation boundary, and the
-isolation suite (§8) attacks it.
+Lint forbids importing the `ledger` schema outside `apps/api/src/ledger/**` (`CONVENTIONS.md` §3).
+The isolation suite (§8) attacks `withUser` and the RLS policies directly.
 
 ### 7.4 MCP server
 
-**Transport and protocol.** Streamable HTTP at `/mcp`, stateless: every request is authenticated
-and served on its own. Protocol versions **2026-07-28, 2025-11-25, 2025-06-18**. Tools declare
-`inputSchema`, `outputSchema` and annotations (`readOnlyHint`, `destructiveHint`,
-`idempotentHint`, `openWorldHint: false`), and return `structuredContent` plus a short text
-rendering. Tool names and parameters are `snake_case`. Amounts are decimal numbers in major units,
-always with their currency. Every list is paged. **Server instructions** (a few lines): call
+**Transport and protocol.** Streamable HTTP at `/mcp`, stateless. Every request is authenticated
+and served on its own, on any function instance. Protocol versions **2026-07-28, 2025-11-25,
+2025-06-18**. Tools declare `inputSchema`, `outputSchema` and annotations (`readOnlyHint`,
+`destructiveHint`, `idempotentHint`, `openWorldHint: false`), and return `structuredContent` plus
+a short text rendering. Names and parameters are `snake_case`. Amounts are decimals in major units
+with their currency. Every list is paged. **Server instructions** (a few lines): call
 `get_financial_context` first for any question about the user's position; NetNet states facts and
 uncertainty, and advice is yours; look for an existing holding before creating one; for a setup
 conversation, ask what `get_setup_guide` asks.
 
-**Scopes.** `ledger.read`, `ledger.write`. v1's approval page grants both: PRD §4.2 makes read and
-write free and unrestricted. Keeping them separate costs nothing now and allows a read-only
-connection later.
-
-**Tools** (`kind` feeds `agent_tool_called`):
+**Scopes.** `ledger.read`, `ledger.write`. v1's approval page grants both (PRD §4.2). Keeping them
+separate allows a read-only connection later.
 
 | Tool | Kind | Input (main fields) | Returns | Jobs |
 |---|---|---|---|---|
 | `get_financial_context` | read | `baseline?` (`last_update`/`last_month`/`last_quarter`/`year_start`/`last_year`/`initial`) | §7.5, one call enough to answer | **J8** |
 | `list_holdings` | read | `query?, type_ids?, tag_ids?, archived? (exclude\|include\|only), stale_only?, cursor?, limit≤100` | holdings with latest value, as-of, staleness, access | J6, J8 |
-| `get_holding` | read | `holding_id, values_cursor?, values_limit≤500` | holding + paged values (provenance on each) | J6, J8 |
-| `get_net_worth_history` | read | `from?, to?, interval (month\|quarter\|year\|day), group_by? (none\|type\|access\|currency), type_ids?, tag_ids?` | series; each point marks carried vs observed | J8, J11 |
+| `get_holding` | read | `holding_id, values_cursor?, values_limit≤500` | holding + paged values with provenance | J6, J8 |
+| `get_net_worth_history` | read | `from?, to?, interval (month\|quarter\|year\|day), group_by? (none\|type\|access\|currency), type_ids?, tag_ids?` | series; each point carried or observed | J8, J11 |
 | `get_period_changes` | read | `view (monthly\|quarterly\|yearly), periods?≤24, drivers?` | period-end value, change, %, top contributors | J11 |
 | `get_taxonomy` | read | — | types (label, universal meaning) and tags | J6 |
-| `get_setup_guide` | read | `country?` | this country's basics (checklist, follow-ups) and the fact questions per type | J6 |
+| `get_setup_guide` | read | `country?` | this country's basics and the fact questions per type | J6 |
 | `list_activity` | read | `cursor?, limit≤100, batch_id?` | audit entries | J7 |
 | `create_holding` | write | `name, kind, type_id \| universal_type, currency, tag_ids?, access_answer? (answer id \| "not_sure"), opening_value? {amount, date?, fx_rate?}, allow_duplicate?` | holding, or `LIKELY_DUPLICATE {candidates}` | J6 |
 | `update_holding` | write | `holding_id, name?, type_id?, tag_ids?, access_answer?, cadence_days?, archived?` | holding | J6 |
@@ -441,38 +448,36 @@ connection later.
 | `delete_tag` | write · destructive | `tag_id, merge_into?` | — | J6 |
 | `undo` | write | `entry_id \| batch_id` | what was restored, or `UNDO_CONFLICT` | J7 |
 
-**Deliberately not agent tools:** account deletion, export (a file for the person), revoking
-connections, and changing email or password. None are in J6's list, and each is one an agent
-should never be able to do on a person's behalf.
+**Deliberately not agent tools:** account deletion, export, revoking connections, changing email
+or password.
 
-**Duplicates** (J6). `create_holding` compares the new holding with existing ones (normalised
-name similarity, same kind, same currency, compatible type). It returns `LIKELY_DUPLICATE` with
-up to three candidates unless `allow_duplicate: true`. The check is deterministic string
-arithmetic, no inference (N11).
+**Duplicates** (J6): `create_holding` compares against existing holdings (normalised name
+similarity, same kind, same currency, compatible type). Unless `allow_duplicate: true`, it
+returns `LIKELY_DUPLICATE` with up to three candidates. Deterministic, no inference (N11).
 
-### 7.5 `get_financial_context` — the §2.4 layers, and the error codes
+### 7.5 `get_financial_context`, and the error codes
 
-Deterministic output of `core.compileContext(ledgerData, packChain, today, options)`. It is
-**at most 8 KB of JSON** for any user. Sections come in order of importance, and holdings come
-largest first, capped at 25. The rest is summarised by type and pointed to `list_holdings`.
+Deterministic output of `core.compileContext(ledgerData, packChain, today, options)`. **At most
+8 KB** of JSON for any user. Sections are ordered by importance, and holdings largest first,
+capped at 25. The rest is summarised by type, with a pointer to `list_holdings`.
 
 ```jsonc
 {
   "as_of": "2026-09-27", "currency": "SGD",
-  "answer_guide": [                       // answer shape: which figure fits which question
+  "answer_guide": [
     { "for": "affordability — can I pay for X from what I have", "use": "totals.could_use",
       "never": "totals.net_worth", "note": "undecided and locked money is excluded" },
     { "for": "progress — am I on track, how did I do", "use": "totals.net_worth, change" },
     { "for": "exposure and risk", "use": "exposure" },
     { "for": "debt burden", "use": "totals.owed, owed_to_could_use" }
   ],
-  "totals": {                             // arithmetic already done
+  "totals": {
     "net_worth": 1840250.00, "assets": 2310250.00, "owed": 470000.00,
     "could_use": 1040000.00, "sell_first": 120000.00, "locked": 1150250.00, "undecided": 0,
     "owed_to_could_use": 0.45,
     "change": { "baseline": "last_month", "since": "2026-08-31", "amount": 12400.00, "pct": 0.68 }
   },
-  "picture": {                            // provenance and completeness
+  "picture": {
     "holdings": 12, "stale": 1, "undecided": 0, "without_value": 0,
     "oldest_value_days": 410, "freshness": "some_stale",
     "notes": ["Car value is 410 days old", "NetNet only knows what has been added"]
@@ -481,7 +486,7 @@ largest first, capped at 25. The rest is summarised by type and pointed to `list
     "by_currency": [{ "currency": "SGD", "share": 0.77 }, { "currency": "USD", "share": 0.23 }],
     "concentration": [{ "holding_id": "hld_…", "name": "HDB flat", "share": 0.41 }]
   },
-  "holdings": [                           // meaning, not just names
+  "holdings": [
     { "id": "hld_…", "name": "CPF Ordinary Account", "type": "CPF",
       "meaning": "Mandatory retirement account. Counts toward net worth, never toward what can be spent this month.",
       "access": "locked", "access_reason": "CPF is locked until you’re eligible to withdraw",
@@ -497,15 +502,12 @@ largest first, capped at 25. The rest is summarised by type and pointed to `list
 It states facts and uncertainty and never what to do (§8, N2). A golden-file test pins the output
 byte for byte for fixed inputs (N11).
 
-**Error codes** (REST HTTP status · MCP `isError` result with `structuredContent.error`). Every
-message says what to change, for a person or a model to act on:
-
 | Code | HTTP | Meaning |
 |---|---|---|
 | `VALIDATION_FAILED` | 400 | `fields` names each bad field and the allowed form |
-| `OUT_OF_RANGE` | 400 | e.g. an amount with more decimals than the currency allows, or a date far in the future |
+| `OUT_OF_RANGE` | 400 | e.g. more decimals than the currency allows, a date far in the future |
 | `CURRENCY_UNSUPPORTED` | 400 | not an ISO 4217 code we have rates for; lists the nearest matches |
-| `NOT_FOUND` | 404 | also returned for another user's ids. Never "forbidden", which would confirm the id exists |
+| `NOT_FOUND` | 404 | also for another user's ids. Never "forbidden", which would confirm the id exists |
 | `LIKELY_DUPLICATE` | 409 | `candidates: [{id, name, latest}]`; retry with `allow_duplicate` |
 | `UNDO_CONFLICT` | 409 | `blockers: [{entry_id, action, at}]` |
 | `EMAIL_NOT_VERIFIED` | 403 | connecting an agent before verifying (J1, J5) |
@@ -514,31 +516,32 @@ message says what to change, for a person or a model to act on:
 | `RATE_LIMITED` | 429 | with `retry_after_s` |
 | `INTERNAL` | 500 | with a request id; details go to Sentry, never to the caller |
 
-### 7.6 OAuth for agents (the MCP authorization profile)
+### 7.6 OAuth for agents
 
 - The **resource** is `https://‹domain›/mcp`. An unauthenticated call gets `401` with
   `WWW-Authenticate: Bearer resource_metadata="…/.well-known/oauth-protected-resource"`.
-- **Client registration:** CIMD (the `client_id` is an HTTPS URL; we fetch the metadata over
-  public HTTPS only, at most 5 KB, cached per its headers for up to 24 h) **and** DCR (RFC 7591),
-  rate-limited per IP. Pre-registered clients are possible and unused in v1.
+- **Client registration:** CIMD (the `client_id` is an HTTPS URL; metadata fetched over public
+  HTTPS only, at most 5 KB, cached for up to 24 h) **and** DCR (RFC 7591), rate-limited per IP.
+  Kept on so the server stays open to any standard agent, even though only Claude and ChatGPT have
+  guides at launch.
 - **Authorization code + PKCE S256 only.** Exact redirect URI match. RFC 8707 `resource` required.
   RFC 9207 `iss` in the response.
 - **Approval page** `/app/connect/approve`: needs a signed-in, **email-verified** user. Shows the
-  name the client registered with. For a DCR client it adds that NetNet cannot verify the name.
-  **Allow** / **Cancel**. `frame-ancestors 'none'`.
-- **Tokens:** access tokens are JWTs (signed with our JWKS keys, 1 h, `aud` = the resource, `sub`
-  = user, `client_id`, `scope`). Refresh tokens rotate, last 90 days sliding, and are revoked with
-  the connection.
-- **Revocation** (J5): `DELETE /api/agent/connections/:id` revokes the refresh tokens in D1 and
-  mirrors `revoked_at` into the Ledger. The Ledger rejects that connection's next call, whatever
-  the remaining life of its access token. An audit entry records the revocation.
+  name the client registered with (for a DCR client, that NetNet cannot verify it). **Allow** /
+  **Cancel**. `frame-ancestors 'none'`.
+- **Tokens:** access tokens are JWTs (our JWKS, 1 h, `aud` = the resource, `sub`, `client_id`,
+  `scope`), checked in the function with no database lookup. Refresh tokens rotate and last 90 days
+  sliding.
+- **Revocation** (J5): `DELETE /api/agent/connections/:id` sets `revoked_at` and revokes the
+  refresh tokens. `withUser` checks `revoked_at` on every agent call, so the next call is rejected
+  whatever the remaining life of its access token. An audit entry records it.
 
 ### 7.7 Analytics events (§3.5)
 
-One typed function, `track(name, props, ctx)`. Every name has a strict zod schema: unknown props
+One typed function, `track(name, props, ctx)`, with a strict zod schema per name. Unknown props
 are rejected, and the only strings allowed are enums or the client name. `segment`, `user_id` and
 `app_version` are attached by `track()` itself. **Client-side** events come through
-`POST /api/events`, and only the names marked *client* are accepted there.
+`POST /api/events`, and only the names marked *client* are accepted.
 
 | Event | Props | Emitted by |
 |---|---|---|
@@ -546,20 +549,20 @@ are rejected, and the only strings allowed are enums or the client name. `segmen
 | `signup_started` | `method` | client |
 | `account_created` | `method` | server (auth hook) |
 | `session_started` | — | client (new session after 30 min idle) |
-| `holding_created` | `source`, `via?` (`guided`/`form`, web only) | server (Ledger events) |
+| `holding_created` | `source`, `via?` (`guided`/`form`, web only) | server |
 | `value_recorded` | `source` | server |
 | `value_corrected` | `original_source`, `age_at_correction` (days) | server |
 | `value_undone` | — | server |
 | `agent_connection_started` | `client`, `entry` | client (connect flow) |
 | `agent_connection_completed` | `client`, `entry` | server (approval) |
-| `agent_connection_failed` | `step`, `client`, `entry` | server. `authorise`: Cancel or an invalid request. `callback`: the token exchange failed. `discovery`: no authorize request within 15 min of starting. `first_call`: no successful call within 15 min of the token |
+| `agent_connection_failed` | `step`, `client`, `entry` | server. `authorise`: Cancel or an invalid request. `callback`: token exchange failed. `discovery`: no authorize request within 15 min of starting. `first_call`: no successful call within 15 min of the token. The two timeouts are recorded when the attempt is next read, or by the daily sweep |
 | `agent_tool_called` | `tool`, `kind`, `outcome` (`ok`/error code), `latency_ms`, `client` | server (MCP) |
 | `insights_viewed` | `view` | client |
-| `reminder_sent` · `reminder_clicked` | — | server (Ledger alarm) · server (link redirect) |
+| `reminder_sent` · `reminder_clicked` | — | server (daily cron) · server (link redirect) |
 | `account_deleted` | — | server |
 
-`ops/metrics/*.sql` computes M1–M11 per segment from this table alone. None of them needs to read
-a Ledger, so no metric can read a balance. M12 is a separate benchmark harness (§13, risk 11).
+`ops/metrics/*.sql`, run as `netnet_metrics`, computes M1–M11 per segment from this table alone,
+so no metric can read a balance. M12 is a separate benchmark harness (§13, risk 9).
 
 ### 7.8 Content schemas
 
@@ -573,8 +576,8 @@ type Pack = {                                    // kind 'pack', key 'generic' |
   id: string; locale: string | null; currency: string | null;
   labels: Partial<Record<Universal, string>>;    // generic: all required
   examples: Partial<Record<Universal, string>>;
-  meaning: Partial<Record<Universal, string>>;   // what the agent is told a type is (§2.4 semantics)
-  cadenceDays: Partial<Record<Universal, number>>; // expected update cadence, for staleness (J9)
+  meaning: Partial<Record<Universal, string>>;   // what the agent is told a type is (§2.4)
+  cadenceDays: Partial<Record<Universal, number>>; // expected update cadence (J9)
   defaults: Partial<Record<Universal, Outcome>>;
   questions: Partial<Record<Universal, { ask: string; answers: ({ id: string; label: string } & Outcome)[] }>>;
   types: { key: string; u: Universal; label: string; example?: string }[];
@@ -582,20 +585,19 @@ type Pack = {                                    // kind 'pack', key 'generic' |
                answer?: string; onlyIf?: string; hint?: string }[];
 };
 type Countries = Record<string /* ISO 3166-1 alpha-2, plus XK */, { currency: string; pack?: string }>;
-type AgentGuide = {                              // kind 'agent', key 'claude' | 'chatgpt' | …
+type AgentGuide = {                              // kind 'agent', key 'claude' | 'chatgpt' at launch
   id: string; name: string; logo?: string; listed: boolean; order: number;
-  plans?: string;                                // e.g. "Needs ChatGPT Plus or above" (shown)
+  plans?: string;
   prefillUrl?: string;                           // e.g. https://claude.ai/new?q={prompt}
   platforms: Partial<Record<'phone'|'computer'|'any', { steps: { text: string; image?: string; prompt?: string }[] }>>;
 };
 ```
 
-Validation rules (all enforced by `content:publish`): generic defines every `labels`, `meaning`,
+Validation (enforced by `content:publish`): generic defines every `labels`, `meaning`,
 `cadenceDays` and the `other` question. Every `onlyIf` names an earlier checklist item. Every
 `type` names a pack type. Answer ids are unique within a question. Every country's currency is
-ISO 4217. No two packs share an id. The prototype's `packs.js` is the starting content: generic,
-SG, MY, GB. The other seven launch packs are content work, each reviewed by someone who knows the
-market (PRD §2.3).
+ISO 4217. Pack ids are unique. Starting content is the prototype's `packs.js` (generic, SG, MY,
+GB). The other seven launch packs are content work, each reviewed by someone who knows the market.
 
 ### 7.9 `packages/core` (pure; the functions everything else calls)
 
@@ -621,240 +623,163 @@ No `Date.now()`, no randomness and no I/O in `core`. `today` and ids are passed 
 
 | Concern | Approach |
 |---|---|
-| **Isolation (N4, J10)** | A Ledger per user (§4). `userId` only ever comes from a verified session or token. **Isolation suite:** users A and B; every REST route and every MCP tool is called as B with A's ids and must answer `NOT_FOUND` with none of A's marker strings in the body. A registry test fails the build when a new route or tool has no isolation case |
-| Web sessions | HttpOnly, Secure, `SameSite=Lax` cookie. Origin check on every state-changing request. Sessions last 30 days, sliding |
-| Passwords | scrypt (Better Auth). At least 8 characters, no composition rules (decided 2026-09-25). Rate-limited sign-in and reset. Reset never reveals whether an account exists |
-| Providers | Google and Apple through Better Auth, using each provider's **official sign-in buttons** (prototype note 29). Apple needs a paid Apple Developer account (§13, decision 3) |
-| Agent access | §7.6. Short-lived audience-bound JWTs, PKCE, CIMD fetches over public HTTPS only, approval page not frameable |
-| Rate limits | Workers rate-limiting binding: sign-in 10/min per IP+email, sign-up 5/min per IP, DCR 10/hour per IP, MCP 120/min and 5,000/day per connection, `record_values` 200 items per call |
-| Headers | Strict CSP (self, self-hosted fonts, the Sentry ingest host), HSTS, `X-Content-Type-Options`, `Referrer-Policy: strict-origin-when-cross-origin`, `frame-ancestors 'none'` |
-| Secrets (N5) | `wrangler secret` per environment; `.dev.vars` locally (gitignored; `.dev.vars.example` lists names only); CI holds only the Cloudflare deploy token. `CONVENTIONS.md` §7 |
-| Data at rest | Cloudflare encrypts D1, Durable Object and R2 storage. No field-level encryption in v1 (§13, risk 9) |
-| Privacy in pipelines (N9) | Typed `track()` (§7.7), a whitelisted `log()` (§10), Sentry scrubbing, and reminder emails that carry a count, never an amount. `CONVENTIONS.md` §6 |
-| Prompt injection | Holding and tag names are user text returned to agents. They are always JSON string values in `structuredContent`, never instruction text; tool descriptions never interpolate user data |
-| Deletion (J10) | `DELETE /api/account` destroys the Ledger, then deletes identity, sessions and OAuth grants (revoking every connection) and re-keys events. **Stated window: 30 days**, the life of the point-in-time backups. Shown to the user before they confirm |
-| Content admin (future) | Its own role and routes, with no Ledger binding reachable from them (§6.4) |
-| Dependencies | Lockfile, Renovate weekly, `pnpm audit` in CI. No analytics or tracking SDKs, ever |
+| **Isolation (N4, J10)** | RLS with `FORCE` on every `ledger` table, composite keys, the app role without `BYPASSRLS`, and `withUser` as the only entry (§6.1). **Isolation suite:** users A and B. Every REST route and MCP tool is called as B with A's ids and must answer `NOT_FOUND` with none of A's marker strings. Raw queries as `netnet_app` with B set return none of A's rows even with no `WHERE`. A registry test fails when a new route, tool or `ledger` table has no isolation case |
+| Web sessions | HttpOnly, Secure, `SameSite=Lax` cookie; Origin check on state-changing requests; 30 days sliding |
+| Passwords | scrypt (Better Auth; native Node crypto). At least 8 characters, no composition rules. Rate-limited sign-in and reset. Reset never reveals whether an account exists |
+| Providers | Google and Apple (the Founder is enrolling in the Apple Developer Program), each with the **official sign-in button** |
+| Agent access | §7.6 |
+| Rate limits | `core.rate_limit` fixed windows: sign-in 10/min per IP+email, sign-up 5/min per IP, DCR 10/hour per IP, MCP 120/min and 5,000/day per connection, `record_values` 200 items per call |
+| Headers | Strict CSP (self, self-hosted fonts, Sentry ingest), HSTS, `X-Content-Type-Options`, `Referrer-Policy: strict-origin-when-cross-origin`, `frame-ancestors 'none'`, set in `vercel.json` |
+| Secrets (N5) | Vercel environment variables per environment (Production, Preview, Development); `.env.local` gitignored; `.env.example` lists names only; GitHub Actions holds the Vercel and Neon deploy tokens and the backup public key |
+| Data at rest | Neon encrypts storage at rest; TLS to the database. No field-level encryption in v1 (§13) |
+| Privacy in pipelines (N9) | Typed `track()`, whitelisted `log()`, Sentry scrubbing; reminder emails carry a count, never an amount |
+| Prompt injection | Holding and tag names are user text returned to agents, always as JSON string values in `structuredContent`; tool descriptions never interpolate user data |
+| Deletion (J10) | `DELETE /api/account` deletes the user's `ledger` rows, identity, sessions and OAuth grants (revoking every connection), and re-keys events. **Stated window: 30 days**, the life of our daily backups (Neon's own history is 6 hours). Shown before the user confirms |
+| Content admin (future) | `netnet_content_admin` role, no access to `ledger`, `analytics` or identity |
+| Dependencies | Lockfile, Renovate weekly, `pnpm audit` in CI; no analytics or tracking SDKs |
 
 ## 9. Deployment and environments
 
 ### 9.1 Environments
 
-| Env | Where | Data | Deployed |
+| Env | Where | Database | Deployed |
 |---|---|---|---|
-| **local** | `wrangler dev` (Miniflare simulates Workers, DOs, D1, R2) | Throwaway, fictional seed | Developer machine or Claude Code session |
-| **staging** | `staging.‹domain›`, Worker `netnet-staging` | Its own D1s, R2 bucket and DO namespace; fictional data only | Every push to `main`, and on demand from any branch |
-| **production** | `‹domain›`, Worker `netnet` | Real users | Manually (GitHub Actions `workflow_dispatch`, Founder) from a green `main` commit |
+| **local** | Vite dev server + the Hono app on Node | Local Postgres (Docker) or PGlite; fictional seed | Developer machine or Claude Code session |
+| **preview** | A Vercel preview URL **per pull request** | A branch of the **separate `netnet-preview` Neon project** (its own compute bucket; ≤10 branches, deleted when the PR closes); fictional seed | Every push to a PR |
+| **production** | `‹domain›` (the Founder's custom domain) | The `netnet-prod` Neon project, `aws-ap-southeast-1`, 0.25 CU | **Only** from a manual GitHub Actions run (the Founder), from a green `main` commit |
 
-D1 and Durable Objects get location hint **`apac`**, set from `profile.country` when the Ledger is
-created, so a UK user's Ledger can live in Europe later without a migration.
+Previews live in their own Neon project so they never spend production's monthly compute. Every
+preview gives the Founder a link to try a task's work before it merges.
 
 ### 9.2 Pipeline
 
-1. **Every push / PR:** install → lint → typecheck → unit → Worker integration (workerd, incl.
-   isolation suite and MCP contract tests per protocol version) → build → Playwright E2E against
-   `wrangler dev` → content validation.
-2. **Deploy:** apply D1 migrations (expand-only, backward compatible) → `wrangler deploy` →
-   smoke tests (health, OAuth metadata, an MCP `tools/list` with the probe account) → on failure,
-   `wrangler rollback` to the previous version.
-3. **Ledger migrations** are bundled and run in each Ledger the first time it wakes after a
-   deploy, additive only. Each migration is tested by upgrading fixture databases from every
-   earlier schema version (`CONVENTIONS.md` §10).
-4. **Content** publishes separately (`pnpm content:publish`), with no code deploy.
-5. **Backups:** D1 Time Travel and Ledger point-in-time recovery (30 days each), plus a weekly
-   logical export of `core` to R2.
+1. **Every push / PR:** install → lint → typecheck → unit → integration against Postgres (incl.
+   RLS and isolation suites, MCP contract tests per protocol version) → build → Playwright E2E →
+   content validation → Vercel preview + Neon branch.
+2. **Production deploy:** apply migrations with drizzle-kit as `netnet_owner` (expand-only,
+   backward compatible) → `vercel deploy --prod` → smoke tests (OAuth metadata, `tools/list` and
+   `get_financial_context` with the probe account) → on failure, `vercel rollback`.
+3. **Content** publishes separately (`pnpm content:publish`), with no code change.
 
-### 9.3 Running cost
+### 9.3 Scheduled work
 
-| Item | 0–100 users | ~1,000 users |
+Vercel Hobby cron runs at most once a day, so frequent work is done lazily or in GitHub Actions.
+
+| Job | Where | When | Wakes the database |
+|---|---|---|---|
+| FX rates | Vercel Cron `/api/cron/fx` | daily | ~5 min |
+| Reminders (J9) + attempt timeout sweep | Vercel Cron `/api/cron/daily` | daily, spread by Resend's 100/day | ~5 min |
+| Usage and SLO check | Vercel Cron `/api/cron/health` | daily. Reads Neon's consumption API and N1 from events; emails the Founder only on a trigger (§9.4) | ~5 min |
+| Backup | GitHub Actions | daily. `pg_dump` → encrypted to a key only the Founder holds → stored 30 days (Actions artifact; R2 free tier if it outgrows 500 MB) | ~5 min |
+| MCP probe | GitHub Actions | **every 6 hours on Free**, hourly after Neon Launch | ~5 min each |
+
+Together that is about 6 CU-hours a month of the 100.
+
+### 9.4 Running cost and upgrade triggers
+
+| Users | Hosting per month | Notes |
 |---|---|---|
-| Cloudflare Workers Paid (Workers, DOs, D1, logs, rate limits; includes 10M requests, 1M DO requests, 25B D1 row reads) | $5.00 | $5–10 |
-| R2 (screenshots, backups) | $0 (10 GB free) | $0 |
-| Resend | $0 (3,000/month) | $0–20 |
-| Sentry Developer | $0 | $0 |
-| Domain (Cloudflare Registrar, at cost) | ~$1 | ~$1 |
-| **Total** | **≈ $6/month** | **≈ $6–31/month** (ceiling $50 ✓) |
-| Apple Developer Program (decided by the Founder, 2026-09-27) | +$8.25 ($99/yr) | +$8.25 |
+| 0 to ~70 | **$0** | Vercel Hobby + Neon Free |
+| ~70–100 | $0, then **~$10–13** | Neon Launch at $0.106/CU-hour once free compute runs short |
+| If cold starts must go | **~$19** | Neon Launch with scale-to-zero off (0.25 CU always on) |
+| ~1,000 | **~$35–45** | Vercel Pro $20 (Hobby's 1M invocations/month runs out around ~800 users) + Neon Launch ~$15–25 |
 
-No line is a trial or introductory tier (N6). The Workers Free plan was rejected. Its 10 ms CPU
-per request cannot hash a password, and its 100,000 requests/day cap fails requests outright
-instead of billing. Both are N8 failures.
+Plus the domain (the Founder's, ~$1/month) and the Apple Developer Program ($99/year). Resend and
+Sentry stay $0 at this scale.
+
+**Upgrade triggers** (checked daily, emailed to the Founder):
+
+| Trigger | Action |
+|---|---|
+| Neon compute ≥ **60%** of the month's 100 CU-hours | Move `netnet-prod` to Neon Launch (a plan change) |
+| Neon storage ≥ 0.35 GB of 0.5 GB | Neon Launch |
+| Agent p95 over 1.5 s for 7 days (from `latency_ms`) | Neon Launch with scale-to-zero off |
+| Any Vercel Hobby limit ≥ 70%, any monetisation, or Vercel asks | Vercel Pro |
+
+Neon Free's cap is a hard stop: when the month's compute is used up, the database is suspended
+until the next month. The 60% trigger exists so that never happens. The same code runs on the
+paid plans.
 
 ## 10. Observability
 
-| What | How | Retention |
-|---|---|---|
-| Logs | Workers Logs; JSON through `log(event, fields)`, which accepts only whitelisted fields: request id, route, tool, status, latency, user id, connection id, error code. **Never** amounts, names, emails or bodies | 7 days |
-| Errors | Sentry (`@sentry/cloudflare` in the Worker and Ledger, `@sentry/react` in the web app). `sendDefaultPii: false`; `beforeSend` drops bodies, query strings and breadcrumb text. **No session replay** | 30 days (free plan) |
-| Product analytics | `events` D1 + `ops/metrics/*.sql` → `pnpm metrics --env production` prints M1–M11 per segment | 13 months raw, then aggregates |
-| N1 SLO | From `agent_tool_called`: success rate and p95 latency over rolling 7 days. A daily cron emails the Founder only on breach | — |
-| Uptime | An external free monitor on `/api/health` and the OAuth metadata. An hourly CI job runs a real MCP `tools/list` + `get_financial_context` with a probe account holding fictional data | — |
-| FX fetch | A failed daily fetch alerts the same way; values keep using the last rate, with its date | — |
-| Snapshot size | Logged per request, for the §7.2 revisit trigger | 7 days |
+| What | How |
+|---|---|
+| Logs | Vercel runtime logs (short retention on Hobby); JSON through `log(event, fields)`, whitelisted fields only (request id, route, tool, status, latency, user id, connection id, error code). **Never** amounts, names, emails or bodies |
+| Errors | Sentry (`@sentry/node` in the function, `@sentry/react` in the web app); `sendDefaultPii: false`; `beforeSend` drops bodies, query strings and breadcrumb text; **no session replay** |
+| Product analytics | `analytics.event` + `ops/metrics/*.sql` → `pnpm metrics --env production` prints M1–M11 per segment |
+| N1 SLO | From `agent_tool_called`: success rate and p95 over 7 days; the daily health cron emails on breach |
+| Free-tier limits | The daily health cron reads Neon usage (compute, storage) and emails at the §9.4 triggers |
+| Uptime | An external free monitor on `/api/health` (shallow, never wakes the database) and the OAuth metadata; the 6-hourly MCP probe covers the full path |
+| FX fetch | A failed fetch alerts; values keep the last rate with its date |
 
 ## 11. Native path, and the three native-build rules
 
-- Expo reuses: `packages/contracts` (types, validation), `packages/core` (every figure and the
-  chart geometry), the REST API with **bearer sessions** (Better Auth's Expo support), and
-  `packages/tokens` (the design tokens the web's CSS variables are generated from).
-- The brand/native boundary stands (decided 2026-09-23): **we own everything that displays data,
-  and all colour and type; the platform owns everything that takes input by gesture.**
-- `design-system.md` §9 item 2 asked for three rules. They are:
+- Expo reuses `packages/contracts`, `packages/core` (every figure and the chart geometry), the
+  REST API with **bearer sessions** (Better Auth's Expo support), and `packages/tokens`.
+- The brand/native boundary stands (2026-09-23): **we own everything that displays data, and all
+  colour and type; the platform owns everything that takes input by gesture.**
+- `design-system.md` §9 item 2:
   1. **Platform sheets, switches, pickers and date fields take the palette, not the outline
-     treatment.** Tint and text tokens go through each control's own tint API. No 2px outlines or
-     hard offset shadows are drawn on a platform control. Our own surfaces (rows, cards, the
-     ledger) keep the full Poster treatment.
-  2. **Unbounded follows the reader's text size up to 1.5× for display figures, then gives way.**
-     Above that, display figures switch to Space Grotesk Bold at the same size, because
-     Unbounded's width wraps a large total. Body text scales without a cap (N7).
-  3. **Frosted placeholders use a real blur where the platform draws one** (iOS; Android 12 /
-     API 31+) **and the solid veil token otherwise.** It is decided by capability at runtime, never
-     by a list of devices.
-- **Muse's logo** (`agents/README.md`) is still missing. It needs Meta's press file, added by hand.
-  In production it is content (`content/agents/muse.json` + R2), so adding it later needs no
-  release.
+     treatment.** They get tint and text tokens through their own tint APIs, with no 2px outlines or
+     hard offset shadows.
+  2. **Unbounded follows the reader's text size up to 1.5× for display figures, then gives way**
+     to Space Grotesk Bold at the same size. Body text scales without a cap (N7).
+  3. **Frosted placeholders blur where the platform draws one** (iOS; Android 12 / API 31+), **and
+     use the solid veil token otherwise.** Decided by capability at runtime.
 
 ## 12. The Stage 3 asks, answered
 
 | Ask (from) | Answer | Where |
 |---|---|---|
-| Version packs; keep the applied reason with the outcome (prototype §8) | Immutable `content_doc` versions + `content_current`; outcome, reason and pack version stored on the holding | §6.4, §6.6 |
-| Page the value history? (prototype §8) | Yes for values, activity and MCP lists (cursor). The web snapshot is unpaged, with a revisit trigger | §7.2 |
+| Version packs; keep the applied reason with the outcome (prototype §8) | Immutable `content_doc` versions + `content_current`; outcome, reason and pack version stored on the holding | §6.5, §6.7 |
+| Page the value history? (prototype §8) | Yes for values, activity and MCP lists; the web snapshot is unpaged with a revisit trigger | §7.2 |
 | Charting library (prototype §8) | None: d3 maths + own SVG, geometry in `core`, shared with native | §4, §7.9 |
-| Packs admin portal must stay possible (PRD §9.6 #17, N10) | Same tables, same validator, separate role with no route to user data | §6.4 |
-| Verify client connector rules; do free plans allow custom MCP? (PRD §9, §9.5) | Claude Free yes (one connector); **ChatGPT Free no**; Grok paid. Raised as a PRD correction | §3, §13 |
-| FX source (PRD §9.6 assumption) | ECB via Frankfurter + a fallback, stored daily; rate at the value's date, fixed at write | §6.5 |
-| IP → country on our own server/CDN (PRD §2.3 r2) | `request.cf.country` → `GET /api/geo` | §7.2 |
+| Packs admin portal must stay possible (PRD §9.6 #17, N10) | Same tables and validator, a role with no access to user data | §6.5 |
+| Client connector rules (PRD §9) | Claude and ChatGPT only at launch; CIMD + DCR; plan rules parked | §3 |
+| FX source (PRD §9.6 assumption) | ECB via Frankfurter + fallback, stored daily; rate at the value's date, fixed at write | §6.6 |
+| IP → country on our own server/CDN (PRD §2.3 r2) | `x-vercel-ip-country` → `GET /api/geo` | §7.2 |
 | Native-build rules (`design-system.md` §9) | Three rules | §11 |
-| Muse logo (`agents/README.md`) | Still open. Content, not code | §11 |
+| Muse logo (`agents/README.md`) | Parked with Muse until after launch | §3 |
 
 ## 13. Risks and trade-offs
 
 | # | Risk / trade-off | Mitigation |
 |---|---|---|
-| 1 | **Cost is ~$6/month, not ≈$0**, at 0–100 users | The price of N8 (§9.3). Decision 1 |
-| 2 | **ChatGPT Free cannot connect** until NetNet is listed in ChatGPT's directory; review time is unknown | Parked by the Founder (2026-09-27). Content and go-to-market, not architecture |
-| 3 | Claude Free allows **one** custom connector | The Claude guide covers "already using your one connector"; measured through `agent_connection_failed {step}` |
-| 4 | **MCP protocol churn** (2026-07-28 is new; clients are mid-migration) | Negotiate three versions; contract tests with the SDK client for each; the P1 spike connects real Claude and ChatGPT before anything else is built on it |
-| 5 | **Auth library maturity** (OAuth provider + CIMD in Better Auth are recent) | Our resource server is standard JWT checks; a named fallback library; the spike decides |
-| 6 | **Durable Objects are less boring than one database**; migrations run per Ledger | Additive migrations only, fixture-upgrade tests from every version, a Sentry alert on any Ledger migration error. Accepted for isolation and latency (§4) |
-| 7 | Cloudflare lock-in | Pure `core`, SQLite schema, open protocols (§4) |
-| 8 | Agent → Ledger distance (US clients, APAC Ledgers ≈ 200 ms) | One hop per call; measured by `latency_ms`; well inside 1.5 s |
-| 9 | No field-level encryption | Provider encryption at rest, structural isolation, no amounts outside Ledgers. Revisit before any B2B or advisor feature |
-| 10 | FX fallback source is community-run | Rates stored by us; users and agents can supply a rate; alert on fetch failure |
-| 11 | **M12 (context lift) needs a harness and paid model calls** | Built in a later phase: a fixed fictional dataset, the same data exported as a spreadsheet, a weak model through the API, blind scoring. The API spend is outside N6's running cost; the Founder approves each run |
-| 12 | The agent-turn heuristic (≤120 s gap) may split or merge turns | One `record_values` call is always one batch; tune with M5 and support evidence |
-| 13 | Undo conflicts can surprise | The conflict names the blocking change, and it can be undone first |
-| 14 | Pseudonymised events after deletion | Checked in Stage 8's legal pass (privacy policy wording) |
+| 1 | **Slow first calls while traffic is thin.** Neon sleeps after 5 min; the next agent call takes ≈ 0.7–1.5 s instead of ≈ 0.25–0.3 s | Measured by `latency_ms`; trigger to Neon Launch with scale-to-zero off (~$19/month) |
+| 2 | **Neon Free's monthly compute cap is a hard stop.** Estimated to run short around 70–100 active users | Daily usage check; upgrade at 60%. Previews in their own Neon project; no probe or health check wakes production needlessly |
+| 3 | **Vercel Hobby is for non-commercial use.** A free product with no payments or ads is arguably outside that, but Vercel decides | Move to Pro before any monetisation, and at once if Vercel asks |
+| 4 | Neon Free keeps 6 hours of restore history | Our own daily encrypted backups, 30 days |
+| 5 | **MCP protocol churn** (2026-07-28 is new) | Negotiate three versions; contract tests per version; the P1 spike connects real Claude and ChatGPT first |
+| 6 | **Auth library maturity** (OAuth provider + CIMD in Better Auth are recent) | Our resource server is standard JWT checks; a fallback library; the spike decides |
+| 7 | An RLS mistake would be a leak | `FORCE` RLS, composite keys, one entry point, a schema test for every `ledger` table, and the isolation suite in CI |
+| 8 | Cost rises faster than Cloudflare's past ~100 users (~$35–45 at 1,000 vs ~$5–10) | Known and accepted (Founder, 2026-09-27); still under the $50 ceiling |
+| 9 | **M12 (context lift) needs a harness and paid model calls** | Built in a later phase; the Founder approves each run's API spend |
+| 10 | The agent-turn heuristic (≤120 s gap) may split or merge turns | One `record_values` call is always one batch; tuned with M5 |
+| 11 | Undo conflicts can surprise | The conflict names the blocking change |
+| 12 | Pseudonymised events after deletion | Stage 8 legal pass |
+| 13 | No field-level encryption | Encryption at rest, RLS, no amounts outside `ledger`; revisit before any advisor feature |
 
-### Decisions needed from the Founder
+### Decisions
 
-1. **Hosting: option A (Cloudflare, §4–§9, about $5/month from day one) or option B (Vercel
-   Hobby + Neon Free, $0 for the first users, §14).** The design above the host is the same
-   either way. *Recommended: A.* §14.6 gives the reasons. B is fully specified in §14, so picking it
-   is a one-line answer.
-2. **Grok on the agent list.** Third-party sources say Grok's paid tiers accept custom MCP since
-   May 2026. *Recommended: list it once the P1 spike connects it for real, per J5's rule.*
+**Decided by the Founder, 2026-09-27:** hosting is **Vercel + Neon**, starting on the free plans,
+with the §9.4 upgrade triggers. **Only Claude and ChatGPT at launch**, and Grok, Muse and "Other
+agent" are parked. Apple sign-in ships, and the Founder enrols in the Apple Developer Program. The
+Founder buys the custom domain. *Parked:* which client plans allow custom connectors.
 
-*Decided by the Founder, 2026-09-27:* Apple sign-in ships, and the Founder enrols in the Apple
-Developer Program ($99/year). The Founder buys the custom domain.
-*Parked by the Founder, 2026-09-27:* which plans of each client can add a custom connector (§3,
-risks 2–3). It changes connect-guide content and directory submissions, not the architecture.
+**No decisions are open.** What remains is approval of the architecture as a whole.
 
-## 14. Option B — Vercel + Neon (explored at the Founder's request, 2026-09-27)
+---
 
-The Founder asked whether the first ~100 users can run for less than option A's $5/month. This
-section specifies the same design on **Vercel Hobby** (functions, static files, cron) and **Neon
-Free** (serverless Postgres). Vercel's and Neon's own sites are blocked from this environment.
-The figures come from their docs as quoted in search results and from 2026 third-party write-ups,
-and are **re-checked in the P1 spike** before anything depends on them.
+## Appendix A — Option A, Cloudflare (considered, set aside 2026-09-27)
 
-### 14.1 What stays the same
+Kept so it can be revived if Vercel + Neon stops fitting. One Cloudflare Worker (Workers Paid,
+$5/month) serving everything. **One Durable Object with its own SQLite per user** ("Ledger") for
+money data: isolation by separate databases, serial writes by a single thread, reminders by
+per-object alarms, 30-day point-in-time recovery. D1 held identity, content and FX, and a second
+D1 held analytics. R2 held files and backups.
 
-Everything above the host: `packages/core` (every figure, the context compiler, chart
-geometry), `packages/contracts`, the REST, MCP, OAuth, event and content contracts (§7), Better
-Auth, the React + Vite web app, the landing page, first-party analytics, Resend, Sentry, the
-content publishing model, the native path, and `CONVENTIONS.md` apart from its folder names.
-
-### 14.2 What changes
-
-| Concern | A · Cloudflare | B · Vercel + Neon |
-|---|---|---|
-| Compute | One Worker at the edge | Vercel Functions (Node, Fluid compute), pinned to **one region: `sin1` Singapore**; Hono runs there unchanged |
-| Money data | One Ledger Durable Object per user, own SQLite | **One Neon Postgres** (AWS Singapore) with a `ledger` schema; **row-level security** on every table |
-| Isolation (N4) | `ledgerFor(userId)` picks a database | `withUser(userId, tx => …)` opens a transaction, sets `app.user_id` and takes the user's row lock. The app's database role has no `BYPASSRLS`, so a query that forgets its filter still sees one user's rows. Same isolation suite |
-| Serial writes, atomic audit (J6, J7) | Single-threaded Ledger + `transactionSync` | Each write transaction starts with `SELECT … FROM ledger_state WHERE user_id = $1 FOR UPDATE`, which serialises one user's writes. The audit rows and `data_version` go in the same transaction |
-| Identity, OAuth, content, FX | D1 `core` | Postgres schema `core` |
-| Analytics | D1 `events` | Postgres schema `analytics`, written by its own role, which cannot read `ledger` |
-| Reminders (J9) | A Durable Object alarm per user | A daily Vercel Cron scan of `ledger_state.next_reminder_at` |
-| Other scheduled work | Cron triggers, any frequency | **Hobby cron runs at most once a day.** FX and reminders fit. Connection-attempt timeouts are worked out when the attempt is read, not by a job. The hourly MCP probe and daily backups run in GitHub Actions |
-| Rate limits | Workers rate-limiting binding | A small Postgres counter table (fixed windows) |
-| IP country (§2.3 r2) | `request.cf.country` | `x-vercel-ip-country`, still our own platform |
-| Screenshots, logos | R2 | Static files in `content/`, shipped by a content-only deploy |
-| Backups | D1 Time Travel + Ledger PITR, 30 days | **Neon Free keeps only 6 hours.** A daily GitHub Actions job runs `pg_dump`, encrypts it and stores it (R2 free tier), keeping 30 days |
-| Preview environments | Staging only | **A preview URL per pull request, each on its own Neon branch.** The Founder can open and try every task's change before it merges |
-
-### 14.3 Free-tier limits against ~100 users
-
-| Limit (as published, 2026) | ~100 users, estimated | Headroom |
-|---|---|---|
-| Vercel Hobby: **non-commercial use only** | A free test with no payments or ads | Arguable, not certain (§14.5, risk 1) |
-| Vercel Hobby: 1M function invocations, 4 h active CPU, 360 GB-h memory per month | ~120k invocations, ~40 min CPU | Wide |
-| Vercel Hobby: cron at most daily; one function region | Daily jobs only; `sin1` | Fits, with the changes in §14.2 |
-| Neon Free: **100 CU-hours per month**, compute **suspended until next month** when used up | The database stays awake 5 min after each burst. ~30 users ≈ 6 h/day ≈ 45 CU-h. ~100 users spread over the Singapore day ≈ 12–16 h/day at 0.25 CU ≈ **90–120 CU-h** | **Runs out somewhere around 70–100 active users** |
-| Neon Free: 0.5 GB storage | Well under 50 MB at 100 users | Wide |
-| Neon Free: scale to zero after 5 min, cannot be disabled; cold start 300–800 ms (0.5–1 s to first query) | At launch traffic, the first call of most sessions is cold | See §14.4 |
-| Neon Free: 6-hour restore window | — | Own daily dumps (§14.2) |
-
-Neon's compute is capped at **0.25 CU** under B, so autoscaling never burns the hours faster. No
-uptime probe may touch the database: `/api/health` stays shallow, or the probe alone would keep
-the compute awake and use the month's hours.
-
-### 14.4 Latency (N1: p95 under 1.5 s), estimated
-
-| Path | A · Cloudflare | B · Vercel + Neon |
-|---|---|---|
-| Agent call, warm | ≈ 0.23 s (edge → Ledger, one hop) | ≈ 0.25–0.3 s (edge → `sin1`, then queries in-region) |
-| Agent call after 5 min idle | ≈ 0.25–0.3 s (a Durable Object wakes in tens of ms) | **≈ 1.0–1.7 s** (Neon wake 0.5–1 s + function cold start 0.2–0.5 s + the Pacific) |
-
-Under B, the slow call is usually the first one of a conversation, `get_financial_context`, the
-one that matters most. It is slow, not failed, so the 99.5% success target holds. The p95 target
-is at risk while traffic is thin. The risk shrinks as usage keeps the database awake, and goes
-away on Neon Launch with scale-to-zero turned off (~$25/month at 0.25 CU, always on).
-
-### 14.5 Cost and risks
-
-| Users | A · Cloudflare | B · Vercel + Neon |
-|---|---|---|
-| 0 to ~70 | $5 | **$0** |
-| ~70–100 | $5 | $0, then Neon Launch (~$10–15) once CU-hours run short |
-| ~1,000 | $5–10 | Vercel Pro $20 + Neon Launch ~$20–30 ≈ **$40–50**, near the $50 ceiling |
-
-Plus, in both: the domain (~$1/month) and Apple ($99/year), Resend at $0 until 3,000 emails a
-month.
-
-| # | Risk under B | Guardrail |
-|---|---|---|
-| 1 | Vercel's Hobby terms forbid commercial use. A free product with no payments or ads is arguably outside that, but Vercel decides | Move to Pro ($20) before any monetisation, and at once if Vercel asks |
-| 2 | Neon's CU-hour cap is a hard stop: the database is suspended until next month | A daily job reads Neon's usage and emails the Founder at 60%. Upgrade to Launch at 60%, not 100% |
-| 3 | Cold first calls (§14.4) | `latency_ms` shows it. Upgrade trigger: 7-day p95 over 1.5 s |
-| 4 | 6-hour restore window | Daily encrypted dumps, 30 days kept |
-| 5 | Higher cost past ~100 users | Known in advance (above) |
-
-**Upgrade path under B is a plan change, not a code change:** Vercel Pro and Neon Launch run the
-same code. The same holds for A (Workers Paid is already on).
-
-### 14.6 Recommendation
-
-**A, by a small margin.** B saves $5/month (~$60/year) for the first months. It costs about
-$30–40/month more at 1,000 users, makes the most important agent call slow while traffic is thin,
-brings a hard monthly stop, and rests on a terms-of-use reading Vercel could reject. A has none of
-these, at a price below the Apple fee.
-
-**What B does better, stated fairly:** Postgres with row-level security is the more conventional
-design (the workflow prefers boring). It is easier to move off. Better Auth's best-supported
-database. And **per-pull-request previews with their own database branch** would let the Founder
-try every change before it merges, which suits a product built by AI engineers. If the Founder
-values $0 now and those previews over the risks above, B is a sound choice with the guardrails in
-§14.5. §14.2 then replaces §4–§9's hosting details, and §7.3's Ledger RPC becomes the
-`withUser` repository with the same method names.
+Why it was the first proposal: no cold starts (an idle agent call ≈ 0.25–0.3 s), a flat $5–10 up
+to ~1,000 users, and structural isolation. Why it was set aside: it costs $5/month from day one
+where the Founder wants $0 for the first users; Durable Objects are less conventional than
+Postgres; schema changes run per user; and Vercel gives per-PR previews with a database branch
+each. Everything above the hosting (§3, §6.5–§6.8, §7, §11) was designed to run on either.

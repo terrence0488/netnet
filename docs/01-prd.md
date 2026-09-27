@@ -577,15 +577,16 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   steps for their client **and their platform** (phone or computer, detected and
   switchable), each step with a screenshot, and the connector URL, with no token to generate,
   paste or store. The steps and screenshots are administered content (§2.3), because the clients'
-  own screens change without notice. So is the client list itself: Claude and ChatGPT at launch,
-  and any other agent (Grok, Muse) once it is confirmed to accept a custom remote MCP connector.
+  own screens change without notice. So is the client list itself: **Claude and ChatGPT at
+  launch, and only those two** (Founder, 2026-09-27). Grok, Muse and the generic "Other agent"
+  guide below are **parked until after launch** (§9.7); what follows about them is kept for then.
   Muse (Meta, launched September 2026) takes connectors differently: there is no settings screen,
   so the user asks Muse in the chat to add one from NetNet's address. Its guide therefore starts
   with a message to send, not a menu path. Meta's connector directory accepts MCP servers with
   OAuth, and a NetNet listing there would turn this into Muse's own one-tap add. Muse is US-only
   at launch but is offered everywhere: it is expected to reach other countries soon, and the
   agent list stays one list rather than one per country.
-- **Given** an agent that is not on the list, **when** the user chooses **Other agent**, **then**
+- *(Parked until after launch, §9.7.)* **Given** an agent that is not on the list, **when** the user chooses **Other agent**, **then**
   they get a generic guide: add a custom connector (MCP server) in the agent's settings with this
   address, then Allow on NetNet's page. No platform split and no screenshots, because we cannot know
   its screens. Any agent that supports remote MCP with OAuth works; the named list is a
@@ -868,6 +869,15 @@ Founder with the prototype, 2026-09-26.
 | 26 | Muse is Meta's agent; its setup starts with a message sent in the chat, and a listing in Meta's connector directory is the better path | J5 |
 | 27 | Trend charts can be read point by point (hover, tap, drag, keyboard); phone text is larger, with an 11px floor | J4, N7 |
 | 28 | Home's filter gains "Don't Show" (types and tags), like Insights'; a type or tag is shown only or hidden, never both | J4, J11 |
+
+### 9.7 Revisions at the Stage 3 review — 2026-09-27
+
+Founder decisions, taken while reviewing the architecture.
+
+| # | What changed | Where |
+|---|---|---|
+| 29 | The launch agent list is **Claude and ChatGPT only**. Grok, Muse and the generic "Other agent" guide are parked until after launch. The Connect button's icon turns through the two launch agents. The server stays standard remote MCP with OAuth and no client-specific code, so any MCP agent can still connect technically; only the guides and the list are parked | J5 |
+| 30 | Which plans of each client allow a custom connector is parked. It changes guide content and directory submissions, not the product | §9.5 |
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves

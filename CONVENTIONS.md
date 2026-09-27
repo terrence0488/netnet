@@ -10,34 +10,36 @@ disagree, stop and raise it. Do not pick one.
   `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`. ESM only.
 - **ESLint** (typescript-eslint) + **Prettier**, with the repo's config and no per-file overrides.
   CI fails on warnings.
-- **Vitest** (unit and Worker integration via `@cloudflare/vitest-pool-workers`), **Playwright**
-  (E2E). In a Claude Code cloud session, Playwright uses the preinstalled Chromium; never run
-  `playwright install`.
-- **wrangler** for local runs, migrations and deploys. Commands live in the root `package.json`
-  scripts and are copied into `CLAUDE.md` → Commands once they exist (Stage 5, P1).
+- **Vitest** for unit and integration tests. Integration tests run against real **Postgres**
+  (the same major version as Neon): a service container in CI, and Docker or **PGlite** locally
+  and in Claude Code sessions. **Playwright** for E2E. In a Claude Code cloud session, Playwright
+  uses the preinstalled Chromium; never run `playwright install`.
+- **Vercel CLI** for local runs and deploys; **drizzle-kit** for migrations. Commands live in the
+  root `package.json` scripts and are copied into `CLAUDE.md` → Commands once they exist (Stage 5,
+  P1).
 
 ## 2. Folder structure
 
 ```
+api/
+  index.ts                Vercel function entry: re-exports the Hono app from apps/api
 apps/
-  worker/                 the one Cloudflare Worker
+  api/                    the Hono app (runs as one Vercel Node function in sin1)
     src/
-      index.ts            Hono app; exports fetch, scheduled, and the Ledger class
+      app.ts              routes: /api, /api/auth, /oauth2, /.well-known, /mcp, /api/cron
       http/               REST route handlers (thin: parse → call → map)
       mcp/                MCP server, one file per tool
       auth/               Better Auth config, OAuth server, approval-page API
-      ledger/             Ledger Durable Object: the ONLY code that touches user money
-        schema.ts         Drizzle schema
-        migrations/       bundled Ledger migrations
-      db/                 the ONLY code that touches D1 core
+      ledger/             the ONLY code that touches the `ledger` schema
+        schema.ts         Drizzle schema, incl. RLS policies
+        with-user.ts      withUser(): the only entry point
+      db/                 the `core` and `analytics` schemas and their access code
       content/            pack, country and guide read side; FX
       events/             track() and the event schemas' wiring
-      jobs/               cron: FX fetch, attempt timeouts, backups, health
+      jobs/               cron handlers: FX, daily sweep, health
       lib/                log(), errors, ids, rate limits
-    migrations/core/      D1 core migrations
-    migrations/events/    D1 events migrations
-    test/                 integration tests, incl. test/isolation/
-    wrangler.jsonc
+    migrations/           drizzle-kit migrations for every schema (RLS included)
+    test/                 integration tests, incl. test/isolation/ and test/rls/
   web/                    React SPA (Vite)
     src/
       routes/             one folder per screen
@@ -50,23 +52,27 @@ packages/
   contracts/              zod schemas: REST, MCP tool IO, events, content
   tokens/                 design tokens → CSS variables (web) and a TS object (native)
 content/
-  packs/ countries.json agents/    administered content, published to D1 (§8)
+  packs/ countries.json agents/ images/   administered content (§8)
 ops/
-  metrics/                SQL for M1–M11, per segment
+  metrics/                SQL for M1–M11, per segment (run as netnet_metrics)
+.github/workflows/        CI, production deploy, daily backup, MCP probe
 e2e/                      Playwright specs
+vercel.json               rewrites, headers, cron, function region (sin1)
 docs/                     the workflow's documents; docs/02-prototype is the design reference
 ```
 
-## 3. Dependency rules (lint-enforced)
+## 3. Dependency and data-access rules (lint-enforced)
 
 - `packages/core` imports nothing but `packages/contracts` types and `d3-*` maths. No `fetch`,
   storage, `Date.now()`, `Math.random()` or environment access (N11). `today` and ids are passed in.
 - `packages/contracts` imports only `zod`.
-- `apps/web` imports `core`, `contracts` and `tokens`, and never anything from `apps/worker`.
-- **Only `apps/worker/src/ledger/**` may import the Ledger schema or run Ledger SQL. Only
-  `apps/worker/src/db/**` may touch the `core` D1 binding.** Everything else goes through them.
-- The Ledger is chosen **only** by `ledgerFor(userId)` in `apps/worker/src/ledger/stub.ts`.
-  `userId` comes from the verified session or token, never from a request body, path or query.
+- `apps/web` imports `core`, `contracts` and `tokens`, and never anything from `apps/api`.
+- **Only `apps/api/src/ledger/**` may import the `ledger` schema or query `ledger.*`, and only
+  through `withUser()`.** Only `apps/api/src/db/**` may touch `core` and `analytics`.
+- `userId` passed to `withUser()` comes from the verified session or token, **never** from a request
+  body, path or query.
+- The running app connects as `netnet_app` (`NOBYPASSRLS`, not a table owner). Only the CI migration
+  step uses `netnet_owner`. Never give the app a connection string with owner rights.
 - **No local knowledge in code (N10).** No institution names, local scheme names, rules or
   defaults outside `content/`. A test scans source outside `content/` and `docs/` for a deny-list
   (CPF, EPF, SRS, ISA, HDB, PRS, KWSP, MPF, Superannuation, 401(k)…) and fails on a match.
@@ -112,16 +118,19 @@ docs/                     the workflow's documents; docs/02-prototype is the des
 
 ## 7. Secrets and configuration (N5)
 
-- Secrets live in `wrangler secret` per environment, `.dev.vars` locally (gitignored), and GitHub
-  Actions secrets for the deploy token only. `.dev.vars.example` lists names, never values.
-- Non-secret configuration goes in `wrangler.jsonc` `vars`, per environment.
+- Secrets live in Vercel environment variables per environment (Production, Preview,
+  Development), `.env.local` locally (gitignored), and GitHub Actions secrets for the Vercel and Neon
+  deploy tokens and the backup public key. `.env.example` lists names, never values.
+- Non-secret configuration goes in `vercel.json` or plain environment variables per environment.
+- Cron routes check `Authorization: Bearer $CRON_SECRET`.
 - A secret in a commit is an incident: rotate it first, then clean history.
 
 ## 8. Content (packs, countries, agent guides)
 
 - Content lives in `content/` as JSON and is validated by the schemas in `packages/contracts`.
   `pnpm content:check` runs in CI. `pnpm content:publish --env <env>` publishes a new immutable
-  version. Screenshots and logos go to R2 through the same command.
+  version. Screenshots and logos live in `content/images/` and ship as static files through a
+  content-only deploy.
 - A pack lists only what differs from `generic`. Reasons name the local instrument.
   Copy follows the PRD: ask facts, not categories; show the consequence; "locked until you're
   eligible to withdraw", not "until 55".
@@ -136,9 +145,10 @@ A task is not done until its tests pass in CI. A bug fix starts with a failing t
 |---|---|---|
 | `packages/core` | Every exported function; ≥90% line coverage; **golden-file tests** for `compileContext` (byte-identical output for fixed input) | Vitest |
 | Contracts and content | Every schema accepts a valid example and rejects each invalid case listed in the architecture (§7.8); all of `content/` validates | Vitest |
-| REST and MCP | Every route and every tool: happy path, validation error, not-found, and **an isolation case** (user B with user A's ids → `NOT_FOUND`, no A data in the body). A registry test fails when a route or tool has no isolation case | vitest-pool-workers |
-| MCP protocol | An SDK client connects with each supported protocol version, lists tools, calls one read and one write | vitest-pool-workers |
-| Ledger | Atomicity (a failing item in `record_values` writes nothing), undo and batch undo, `UNDO_CONFLICT`, same-date replacement, and **migration upgrade from every earlier schema version** | vitest-pool-workers |
+| REST and MCP | Every route and every tool: happy path, validation error, not-found, and **an isolation case** (user B with user A's ids → `NOT_FOUND`, no A data in the body). A registry test fails when a route or tool has no isolation case | Vitest + Postgres |
+| Row-level security | As `netnet_app` with user B set, a raw `SELECT` on every `ledger` table returns none of A's rows; with no user set it returns nothing; writes with another user's id are rejected | Vitest + Postgres |
+| MCP protocol | An SDK client connects with each supported protocol version, lists tools, calls one read and one write | Vitest |
+| Ledger | Atomicity (a failing item in `record_values` writes nothing), undo and batch undo, `UNDO_CONFLICT`, same-date replacement, concurrent writes for one user serialised by the lock | Vitest + Postgres |
 | Web | Each PRD job's happy path at **390 px** and **1280 px**; no horizontal scroll at **320 px**; axe accessibility checks on key screens; the analytics events each flow fires | Playwright |
 | Privacy | Event schemas contain no amount-like or free-text props; `log()` rejects unknown fields; the N10 deny-list scan | Vitest |
 
@@ -147,14 +157,16 @@ sources, Google, Apple) are faked at their interface.
 
 ## 10. Data and migrations
 
-- **D1 migrations** are numbered files in `apps/worker/migrations/<db>/`. They are expand-only
-  within a release: add columns and tables, backfill, and remove only in a later release once no
-  deployed code reads them.
-- **Ledger migrations** are numbered, bundled, and run inside each Ledger on first wake after a
-  deploy, in one transaction. Additive only. Each ships with fixtures from every earlier schema
-  version and a test that upgrades them.
-- Every Ledger write happens inside one transaction that also writes its audit rows and bumps
-  `data_version`. No write path skips the audit.
+- **Migrations** are drizzle-kit files in `apps/api/migrations/`, applied by CI as `netnet_owner`
+  before the new code deploys. They are expand-only within a release: add columns and tables,
+  backfill, and remove only in a later release once no deployed code reads them.
+- **Every `ledger` table** has `user_id` in its primary key, composite foreign keys, `ENABLE` and
+  `FORCE ROW LEVEL SECURITY`, and the one `app.user_id` policy (architecture §6.1). A schema test
+  fails the build if any is missing.
+- Every Ledger write happens inside one `withUser(…, {write: true})` transaction that also writes its
+  audit rows and bumps `data_version`. No write path skips the audit.
+- Migrations are tested by applying them to an empty database and to a copy of the previous
+  release's schema with fixture data.
 
 ## 11. Error handling
 
