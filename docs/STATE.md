@@ -7,6 +7,8 @@ Status: not-started — PRD amendment approved 2026-09-27
 Next action: `continue` in a **new session** → `stage: prototype`: add the screens in PRD §9.8
 "Consequences downstream" to `docs/02-prototype/`. Inputs: `docs/01-prd.md` (J5 security email,
 J9, J12, §9.8). Then revise the architecture (§7.10, §9.3) and bring it to the Stage 3 gate.
+**Branch:** work from `claude/eager-heisenberg-ytll3f` (not `main`); it holds Stage 3 and the PRD
+amendment. It merges into `main` once the architecture is approved.
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
