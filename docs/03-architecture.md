@@ -1,6 +1,7 @@
 # 03 — Architecture
 
-Status: **awaiting the Founder's approval** (Stage 3 gate) · Stage owner: Staff software engineer
+Status: **on hold** — the Founder re-opened the PRD for push notifications (PRD §9.8). §7.10 and
+§9.3 will be revised to follow it before this gate · Stage owner: Staff software engineer
 Written 2026-09-27. **Revised the same day on the Founder's decisions:** hosting is **Vercel +
 Neon** (the Cloudflare design is kept as Appendix A); the launch agents are **Claude and ChatGPT
 only** (PRD §9.7). Where the web app is hosted is now its own section (§5.2). **Web push joins v1**
