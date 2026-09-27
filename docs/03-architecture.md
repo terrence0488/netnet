@@ -3,7 +3,8 @@
 Status: **awaiting the Founder's approval** (Stage 3 gate) · Stage owner: Staff software engineer
 Written 2026-09-27. **Revised the same day on the Founder's decisions:** hosting is **Vercel +
 Neon** (the Cloudflare design is kept as Appendix A); the launch agents are **Claude and ChatGPT
-only** (PRD §9.7).
+only** (PRD §9.7). Where the web app is hosted is now its own section (§5.2), and notifications
+have one (§7.10): email in v1, with push designed to be added later.
 Inputs: `docs/01-prd.md` (approved as amended, with §9.6 and §9.7), `docs/02-prototype/prototype-notes.md`
 (approved 2026-09-26), and the Stage 3 asks from the Stage 2 handoff: versioned packs, history
 pagination, the charting library, the packs admin portal (PRD §9.6 item 17), each client's
@@ -22,9 +23,10 @@ write-ups. The P1 spike re-checks them before anything depends on them.
 
 ## 1. The shape in one screen
 
-- **One TypeScript codebase, one Vercel project.** It serves the landing page and the web app as
-  static files, and one Node function (a Hono app, pinned to **Singapore**, `sin1`) that answers
-  the REST API, sign-in, the OAuth server agents connect through, and the MCP endpoint.
+- **One TypeScript codebase, one Vercel project.** The **web app** (React) and the **landing page**
+  are built into static files and served from **Vercel's global CDN** on the Founder's domain (§5.2).
+  One Node function (a Hono app, pinned to **Singapore**, `sin1`) answers the REST API, sign-in,
+  the OAuth server agents connect through, and the MCP endpoint, on the same domain.
 - **One Neon Postgres database in Singapore**, with three schemas: `ledger` (money), `core`
   (accounts, connections, packs, exchange rates) and `analytics` (events, never amounts).
 - **Each user's money is walled off inside the database.** Every `ledger` table carries the user
@@ -90,11 +92,13 @@ need: any request can land on any instance.
 | Accounts | **Better Auth** (library, tables in `core`): email + password, Google, Apple, email verification, reset | Its best-supported database is Postgres; its session model serves web now and Expo later. Neon's managed Better Auth was set aside: we need the OAuth provider plugin and our own approval page, which the managed service is not known to allow |
 | Agent OAuth | **Better Auth's OAuth 2.1 provider plugin + CIMD package**; our MCP route checks tokens itself | CIMD, DCR, PKCE and audience-bound tokens with no hand-rolled security code; protocol-version support stays ours. **Fallback:** a standalone OAuth 2.1 library chosen in the P1 spike |
 | MCP | **Official MCP TypeScript SDK** (v2), stateless Streamable HTTP, with Vercel's `mcp-handler` adapter if the spike shows it helps | The reference implementation; serves 2026-07-28 and falls back for 2025-era clients |
-| Web app | **React + Vite SPA**, React Router, TanStack Query, CSS Modules on design tokens | All behind a login, so nothing to server-render. React pairs with the Expo decision |
+| Web app | **React + Vite SPA**, React Router, TanStack Query, CSS Modules on design tokens; installable (web app manifest) | All behind a login, so nothing to server-render. React pairs with the Expo decision |
+| Web app hosting | **Vercel's CDN**, same project and domain as the API (§5.2) | Static files cost nothing to serve and load from an edge near the user; one domain means no CORS and a first-party cookie |
 | Landing page | **Static HTML/CSS** (its own Vite entry) | A marketing page with its own design (PRD G-D1) |
 | Charts | **No charting library.** `d3-scale` / `d3-shape` / `d3-array` maths, our own SVG | Three heavily specified chart kinds. Geometry lives in `core`, and native draws it through `react-native-svg` |
 | Scheduled work | **Vercel Cron** (Hobby: at most daily) + **GitHub Actions** schedules | §9.3 |
-| Email | **Resend** behind an `EmailSender` interface | Permanent free tier (3,000/month, 100/day) |
+| Email | **Resend**, the v1 channel of `notify()` (§7.10) | Permanent free tier (3,000/month, 100/day) |
+| Push (later) | **Web Push** (VAPID, `web-push` library) for the web app; **Expo push service** for native (→ APNs, FCM) (§7.10) | Standard and free: no per-message fee on any of them; no vendor SDK in the web app |
 | Errors | **Sentry** Developer plan (free), scrubbed (§10) | Function and browser errors in one place |
 | Analytics | **First-party** events in the `analytics` schema | N9 enforced by the schema. No tracking SDK on pages that show money |
 | FX rates | **ECB via Frankfurter** + a fallback source for currencies the ECB lacks (VND, TWD, AED…), fetched daily into our own table | Free, no key, history to 1999; a write never waits on a third party |
@@ -117,7 +121,7 @@ flowchart LR
 
   subgraph vercel[Vercel · one project]
     direction TB
-    STATIC[Static files<br/>landing + app + content images]
+    STATIC[Vercel CDN · static files<br/>landing + web app + images]
     subgraph fn[Node function · Hono · sin1 Singapore]
       GATE[Sign-in check<br/>Better Auth · cookie or OAuth token → user id]
       API[REST API /api]
@@ -194,7 +198,26 @@ sequenceDiagram
   C->>S: first tool call → the attempt becomes "live"
 ```
 
-## 6. Data model
+### 5.2 Where the web app lives
+
+```mermaid
+flowchart LR
+  SRC[apps/web · React<br/>apps/landing · HTML] -->|vite build in CI| DIST[static files<br/>index.html · hashed JS/CSS · fonts · images]
+  DIST -->|vercel deploy| CDN[Vercel CDN<br/>edges worldwide, incl. Singapore]
+  B[Browser or<br/>Home Screen web app] -->|"GET / and /app/* · files"| CDN
+  B -->|"/api, /mcp, /oauth2 · data, same domain"| FN[Function · sin1]
+  FN --> DB[(Neon · Singapore)]
+```
+
+| Question | Answer |
+|---|---|
+| Where are the files? | Built by Vite in CI (`apps/web` → `/app/*`, `apps/landing` → `/`) and deployed to **Vercel's CDN** in the same project as the function. Hobby includes 100 GB of transfer a month; the app is a few hundred KB, so that is tens of thousands of visits |
+| What domain? | The Founder's domain for everything: `‹domain›/` (landing), `‹domain›/app` (web app), `‹domain›/api` and `‹domain›/mcp` (function). **One origin**: no CORS, the session cookie stays first-party, one TLS certificate (issued by Vercel) |
+| How does routing work? | `vercel.json` rewrites send `/api/*`, `/mcp`, `/oauth2/*` and `/.well-known/*` to the function. `/app/*` falls back to the app's `index.html` (client-side routes). Everything else is a file |
+| Caching | Hashed JS and CSS are cached forever (`immutable`). `index.html` is never cached, so a deploy reaches users on their next load. No financial data is ever cached at the edge: API responses carry `Cache-Control: private, no-store` |
+| Previews | Every pull request gets its own full copy (files + function + Neon branch) at a preview URL |
+| Installable | A web app manifest (name, icons, `display: standalone`) ships in v1, so the app can be added to a phone's Home Screen. It costs nothing, and iOS needs it before web push can ever work (§7.10). **No offline caching of financial data**: a service worker, if any, is added only with push |
+| Native apps (later) | Built with Expo and distributed through the App Store and Google Play. They call the same `/api` on the same domain; nothing about hosting changes |
 
 One Postgres database. IDs are prefixed ULIDs (`usr_`, `hld_`, `val_`, `typ_`, `tag_`, `aud_`,
 `bat_`, `con_`, `att_`). Money is stored as **integers in the currency's minor unit** (`bigint`,
@@ -619,6 +642,52 @@ chart: { scales, linePath, bars, stacked, ticks(n, width), nearestPoint(x) };  /
 
 No `Date.now()`, no randomness and no I/O in `core`. `today` and ids are passed in (N11).
 
+### 7.10 Notifications — email in v1, push designed in
+
+**Scope.** v1 sends **email reminders only** (J9). The PRD reserves **push notifications and
+threshold alerts** for later (§4.2), so v1 builds no push. What v1 does build is the seam: every
+notification goes through one function, so adding web push or native push later is a new channel
+and an additive migration, not a rework. *For the PRD's next revision: §4.2 gives "infrastructure
+cost per user" as the reason push is reserved. Push is in fact free on every channel below. Whether
+push reminders belong in v1 is a product call for the Founder.*
+
+```ts
+type NotificationKind = 'reminder.stale'            // v1: J9
+                      | 'agent.wrote'               // later: "Claude updated 5 values. Review?"
+                      | 'threshold.crossed';        // reserved (PRD §4.2)
+type Message = { kind: NotificationKind; title: string; body: string; url: string };  // no amounts, ever
+
+function notify(userId: string, msg: Message): Promise<DeliveryResult[]>;   // the only way to reach a user
+interface Channel { id: 'email' | 'webpush' | 'expo'; send(endpoint: Endpoint, msg: Message): Promise<Result> }
+```
+
+| Channel | When | How it reaches the person | Cost |
+|---|---|---|---|
+| **Email** | **v1** | Resend, to the verified account email. One-click unsubscribe (J9) | $0 to 3,000/month |
+| **Web push** | Later | The standard **Web Push** protocol: the browser subscribes with our VAPID public key and gives us an endpoint. The function signs and sends with the `web-push` library, and the browser vendor's own push service delivers (Google's for Chrome and Android, Mozilla's, Apple's for Safari). **iOS/iPadOS 16.4+: only for a web app added to the Home Screen** (iOS 26 opens every Home Screen site as a web app). Safari 18.4+ supports Declarative Web Push, which needs no service worker | $0 |
+| **Native push** | With the Expo apps | `expo-notifications` gets an Expo push token on the device. The function sends through **Expo's push service**, which delivers through **APNs** (iOS; key from the Apple Developer account) and **FCM** (Android; a free Firebase project). Direct APNs/FCM remains possible later with the same interface | $0 (Expo: no fees, 600/s) |
+
+**Data (added with the first push channel, additive):**
+`core.notification_endpoint (id, user_id, channel, endpoint, keys jsonb, device_label, created_at,
+last_success_at, failure_count, revoked_at)` and `core.notification_pref (user_id, kind, channel,
+enabled)`. In v1 the email address and J9's cadence and opt-out are the whole configuration.
+
+**Contracts (later):** `GET /api/notifications/vapid-key` · `POST /api/notifications/endpoints
+{channel, endpoint, keys, deviceLabel}` · `DELETE /api/notifications/endpoints/:id` ·
+`GET/PATCH /api/notifications/prefs`. Endpoints are per device, owned by one user, and removed on
+sign-out on that device, on account deletion, and when a push service answers `404`/`410 Gone`.
+
+**Rules for every channel, binding from v1:**
+- **Counts and links only, never an amount or a holding name.** Lock screens and inboxes are
+  public, so N9's rule for analytics applies to messages too: "2 holdings are out of date", never
+  "DBS: $41,200".
+- **Permission is asked after a user action that explains it**, never on page load. Browsers
+  require it, and an unexplained prompt gets refused for good.
+- **One kind, one switch.** Every kind can be turned off per channel. Opt-out is honoured forever (J9).
+- **Delivery:** reminders go out from the daily cron. Event-driven kinds (`agent.wrote`) are sent by
+  the function after the write commits (`waitUntil`). At this scale no queue is needed. Failures are
+  logged without content, and a dead endpoint is revoked.
+
 ## 8. Auth and security
 
 | Concern | Approach |
@@ -634,7 +703,7 @@ No `Date.now()`, no randomness and no I/O in `core`. `today` and ids are passed 
 | Data at rest | Neon encrypts storage at rest; TLS to the database. No field-level encryption in v1 (§13) |
 | Privacy in pipelines (N9) | Typed `track()`, whitelisted `log()`, Sentry scrubbing; reminder emails carry a count, never an amount |
 | Prompt injection | Holding and tag names are user text returned to agents, always as JSON string values in `structuredContent`; tool descriptions never interpolate user data |
-| Deletion (J10) | `DELETE /api/account` deletes the user's `ledger` rows, identity, sessions and OAuth grants (revoking every connection), and re-keys events. **Stated window: 30 days**, the life of our daily backups (Neon's own history is 6 hours). Shown before the user confirms |
+| Deletion (J10) | `DELETE /api/account` deletes the user's `ledger` rows, identity, sessions, OAuth grants (revoking every connection) and any notification endpoints, and re-keys events. **Stated window: 30 days**, the life of our daily backups (Neon's own history is 6 hours). Shown before the user confirms |
 | Content admin (future) | `netnet_content_admin` role, no access to `ledger`, `analytics` or identity |
 | Dependencies | Lockfile, Renovate weekly, `pnpm audit` in CI; no analytics or tracking SDKs |
 
@@ -685,7 +754,8 @@ Together that is about 6 CU-hours a month of the 100.
 | ~1,000 | **~$35–45** | Vercel Pro $20 (Hobby's 1M invocations/month runs out around ~800 users) + Neon Launch ~$15–25 |
 
 Plus the domain (the Founder's, ~$1/month) and the Apple Developer Program ($99/year). Resend and
-Sentry stay $0 at this scale.
+Sentry stay $0 at this scale. Serving the web app from Vercel's CDN is included in Hobby, and push
+(when added) is $0 on every channel (§7.10).
 
 **Upgrade triggers** (checked daily, emailed to the Founder):
 
@@ -716,6 +786,8 @@ paid plans.
 
 - Expo reuses `packages/contracts`, `packages/core` (every figure and the chart geometry), the
   REST API with **bearer sessions** (Better Auth's Expo support), and `packages/tokens`.
+- Native push goes through the same `notify()` as email, as a new `expo` channel (§7.10). Its only
+  new server parts are the endpoint table and the Expo sender.
 - The brand/native boundary stands (2026-09-23): **we own everything that displays data, and all
   colour and type; the platform owns everything that takes input by gesture.**
 - `design-system.md` §9 item 2:
@@ -740,6 +812,8 @@ paid plans.
 | IP → country on our own server/CDN (PRD §2.3 r2) | `x-vercel-ip-country` → `GET /api/geo` | §7.2 |
 | Native-build rules (`design-system.md` §9) | Three rules | §11 |
 | Muse logo (`agents/README.md`) | Parked with Muse until after launch | §3 |
+| Where the web app is hosted (Founder, 2026-09-27) | Vercel's CDN, same project and domain as the API | §5.2 |
+| Push notifications, web and native (Founder, 2026-09-27) | Email in v1 per the PRD; one `notify()` seam; Web Push and Expo push designed as additive channels at $0 | §7.10 |
 
 ## 13. Risks and trade-offs
 

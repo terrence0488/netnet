@@ -26,6 +26,7 @@ Stage 4 with `continue` (`stage: plan`).
 Apple sign-in ships ($99/year); the Founder buys the domain. Design: one Vercel project (static
 files + one Hono function in `sin1`), one Neon Postgres in Singapore (`ledger` with row-level
 security, `core`, `analytics`), `withUser()` as the only way into money data. Cloudflare is kept
-as Appendix A. Stage 4 inputs: `01-prd.md` (§6), `03-architecture.md`, `CONVENTIONS.md`. P1 must
+as Appendix A. Added on the Founder's questions: web app hosting on Vercel's CDN (§5.2) and
+notifications (§7.10: email in v1, Web Push and Expo push designed in as $0 channels). Stage 4 inputs: `01-prd.md` (§6), `03-architecture.md`, `CONVENTIONS.md`. P1 must
 open with the connection spike (real Claude + ChatGPT; re-check Vercel's limits, which were
 sourced second-hand because vercel.com is blocked from the build environment).

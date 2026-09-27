@@ -112,7 +112,8 @@ docs/                     the workflow's documents; docs/02-prototype is the des
   request or response bodies, document content.
 - `track()` accepts only the typed events in `packages/contracts/events`; adding a prop means
   changing the schema. `log()` accepts only its whitelisted fields.
-- Reminder emails carry a count and a link, never an amount or a holding name.
+- Every message to a person (email now, push later) goes through `notify()` and carries counts and
+  links only, never an amount or a holding name. Lock screens and inboxes are public.
 - **All test and seed data is fictional.** Never paste real financial data (including the
   Founder's) into code, fixtures, tests, screenshots or commits. Mockup images are never committed.
 
