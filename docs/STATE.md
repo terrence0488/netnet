@@ -4,7 +4,7 @@
 Stage: PRD amendment (Stage 1, re-opened) — gentle comeback reminder (web push + email)
 Phase: n/a
 Status: awaiting-approval — rewritten 2026-09-27 with the Founder's decisions (`01-prd.md` §9.8, J9, J12, M13)
-Next action: Founder replies `approve prd`. Then `stage: prototype` (the push screens listed in
+Next action: Founder picks the reminder wording (A, B or C in PRD §9.8) and replies `approve prd`. Then `stage: prototype` (the push screens listed in
 §9.8), then revise and approve the architecture (`03-architecture.md` §7.10 and §9.3 follow the
 amendment). The architecture gate is on hold until then.
 
@@ -27,7 +27,7 @@ amendment). The architecture gate is on hold until then.
 without checking NetNet (opening it, or the agent using it), then monthly while away; push to devices
 where it is on, else email (verified only); daytime local; never amounts or names. Asked once by a
 Home card after the first picture, plus Settings → Notifications (master switch, this device, email,
-other devices). No iPhone Home Screen guidance; no security notice in v1; J9's scheduled stale email
-is gone (J9 keeps in-app labels). Events: `reminder_sent/opened {channel}`, push prompt events.
+other devices). No iPhone Home Screen guidance; security email on agent connection kept, email only (J5); J9's
+scheduled stale email is gone. Wording: Founder to pick A/B/C (§9.8). Events: `reminder_sent/opened {channel}`, push prompt events.
 Next: `approve prd` → prototype push screens (card, settings, lock-screen/inbox previews, PROTO
 "30 days away") → architecture §7.10/§9.3 revision → Stage 3 gate. Vercel + Neon otherwise settled.

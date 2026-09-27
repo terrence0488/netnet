@@ -314,7 +314,8 @@ no evidence and §3.3 cannot be applied. Minimum event set:
 `agent_tool_called {tool, kind: read|write, outcome, latency_ms, client}` ·
 `value_corrected {original_source, age_at_correction}` · `value_undone` ·
 `session_started` · `insights_viewed {view: monthly|quarterly|yearly}` ·
-`reminder_sent {channel: email|push}` · `reminder_opened {channel}` · `push_prompt_shown {entry: home|settings}` ·
+`reminder_sent {channel: email|push}` · `reminder_opened {channel}` · `security_email_sent {client}` ·
+`push_prompt_shown {entry: home|settings}` ·
 `push_prompt_result {entry, result: granted|denied|not_now}` · `push_enabled {platform}` ·
 `push_disabled {platform, by: user|browser|signout}` · `account_deleted`
 
@@ -631,6 +632,11 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   MCP layer. Without a connected agent, the same places offer to connect one.
 - **Given** an active connection, **when** the user revokes it in NetNet, **then** later calls from
   that client are rejected and the revocation is in the audit log.
+- **Given** an agent connection is approved, **when** it completes, **then** NetNet sends a **security
+  email** to the account's address straight away: which agent was connected and when, and "Not
+  you? Revoke it" linking to the Agent tab. **Email only, never push.** It cannot be turned off
+  (Reminders settings do not affect it), and it carries no financial data. `security_email_sent
+  {client}` fires (§9.8).
 - **Given** the whole flow, **when** measured, **then** p50 signup → first agent interaction is
   under 15 minutes (M9), with each funnel step separately readable.
 
@@ -731,11 +737,11 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   opened.
 
 **What it says**
-- **Given** any reminder, **when** it is shown, **then** it is gentle and short: a line that it has
-  been a while and an invitation to look ("It's been a month. Take a look at where you stand."),
-  with "or ask Claude" when an agent is connected. Tapping it opens Home. **It never includes an
-  amount, a total, a holding name or a type or tag name**, because lock screens and inboxes are
-  public (N9). No guilt, no streaks, no urgency. Final copy is set in the prototype.
+- **Given** any reminder, **when** it is shown, **then** it says plainly that it is time to update
+  their net worth, in one short line, with the agent offered as the way to do it when one is
+  connected. The wording is **one of the three options in §9.8, chosen by the Founder**. Tapping it
+  opens Home. **It never includes an amount, a total, a holding name or a type or tag name**, because
+  lock screens and inboxes are public (N9). No guilt, no streaks, no urgency.
 
 **Asking for push**
 - **Given** a person with a first picture (at least one holding), on a browser that can receive push,
@@ -841,7 +847,7 @@ reason for a default, and show what a number does — it may not write a curricu
 haptics · Net Worth Goals, notes on a value, and marking a value on a chart (all from the mockups) ·
 **an admin portal for jurisdiction packs and setup guides** (future; v1 must not preclude it, §2.3) ·
 **any message beyond J12's comeback reminder:** marketing or promotional messages, scheduled
-reminders about stale holdings, security notices (post-launch candidate), period recaps (post-launch
+reminders about stale holdings, security notices by push (the J5 security email stays), period recaps (post-launch
 candidate), "your agent changed values" notices, threshold alerts (reserved, §4.2), an in-app
 notification inbox, SMS or WhatsApp, guidance on adding NetNet to a phone's Home Screen, and native
 push (arrives with the native apps).
@@ -957,7 +963,7 @@ architecture at the Stage 3 gate. Row 31 is approved with the §9.8 amendment.
 |---|---|---|
 | 29 | The launch agent list is **Claude and ChatGPT only**. Grok, Muse and the generic "Other agent" guide are parked until after launch. The Connect button's icon turns through the two launch agents. The server stays standard remote MCP with OAuth and no client-specific code, so any MCP agent can still connect technically; only the guides and the list are parked | J5 |
 | 30 | Which plans of each client allow a custom connector is parked. It changes guide content and directory submissions, not the product | §9.5 |
-| 31 | **A gentle comeback reminder joins v1** (Founder, 2026-09-27): after 30 days without checking NetNet (app or agent), then monthly while away; by web push where it is on, by email otherwise. It replaces J9's scheduled stale-holding email. Specified in §9.8 and J12 | §3.2, §3.5, §4.1, §8, J9, J12 |
+| 31 | **A gentle comeback reminder joins v1** (Founder, 2026-09-27): after 30 days without checking NetNet (app or agent), then monthly while away; by web push where it is on, by email otherwise. It replaces J9's scheduled stale-holding email. A security email (never push) is sent when an agent is connected. Specified in §9.8, J5 and J12 | §3.2, §3.5, §4.1, §8, J5, J9, J12 |
 
 ### 9.8 Amendment — a gentle comeback reminder (proposed 2026-09-27, awaiting approval)
 
@@ -985,12 +991,28 @@ per channel. If wrong, the reminder stays (it is free and gentle), and return is
 | Which channel? | One rule for everyone: push to devices where it is on; email (verified addresses only) when no device has it on or push fails. This replaces J9's scheduled stale-holding email |
 | Where do we ask? | A one-time quiet card on Home after the first picture, plus a switch in Settings → Notifications |
 | iPhone Home Screen guidance? | None. Where a browser can't receive push (such as an iPhone Safari tab), no push option is shown and email is used |
+| Security notice when an agent is connected? | Kept, **by email only**, never push; cannot be turned off (J5) |
+| Reminder wording? | "It's time to update your net worth" in spirit; the Founder picks one of the three options below |
 
 **Adopted as defaults (flag if wrong):** reminders arrive between 08:00 and 21:00 in the person's
 time zone. The Home card's **Not now** hides it for 30 days, and a second **Not now** hides it for
 good. There is a master Reminders switch plus per-channel switches, and email opt-out is permanent.
-The agent-connected **security notice** proposed earlier is **not in v1**, because push is for the
-reminder only. It stays a post-launch candidate, as do period recaps.
+The **security email** stays in v1 (Founder): when an agent is connected, an email goes out straight
+away, **email only, never push**, and it cannot be turned off (J5). Period recaps stay a post-launch
+candidate.
+
+**Reminder wording: three options for the Founder to choose from.** Each is short enough for a
+lock screen (the title is always "NetNet"). The second line appears only when an agent is connected.
+The email uses the same line as its subject, with one button, **Open NetNet**.
+
+| | Push body / email subject | With an agent connected, adds | Character |
+|---|---|---|---|
+| **A** | It's time to update your net worth. | Ask Claude to do it for you. | Your own phrasing. Direct, clear action |
+| **B** | Time for your monthly net worth check-in. | Claude can do the updating. | Warmer; "check-in" frames it as a habit, not a chore |
+| **C** | Your net worth is due for an update. | Just ask Claude. | Shortest; reads like a friendly statement of fact |
+
+*Recommended: **A**.* It is your own phrasing, names the action, and fits on one lock-screen line.
+"Claude" is replaced by the connected agent's name (ChatGPT). None carries an amount or a name.
 
 **Risk, stated plainly.** Someone who has left for good gets one reminder a month indefinitely. The
 one-click unsubscribe, the Reminders switch and a gentle tone keep it respectful. If unsubscribe or
@@ -1000,12 +1022,13 @@ turned push on or verified their email.
 **Consequences downstream.**
 - *Stage 2 (prototype):* the Home card (turn on / not now, granted and denied states); Settings →
   Notifications (Reminders, this device, email, other devices); what a reminder looks like on a lock
-  screen and in an inbox; the PROTO drawer showing the new events and a way to simulate "30 days
+  screen and in an inbox, in the chosen wording; the security email; the PROTO drawer showing the new events and a way to simulate "30 days
   away".
 - *Stage 3 (architecture), to revise after approval:* track `last_checked_at` per user (app sessions
   and agent calls); a daily job finds people at 30, 60, 90… days and sends within their local daytime
   (a few daily runs across time bands); push first, email fallback; the device list; the renamed
-  events. Drop the scheduled stale-holding email and the security notice from §7.10.
+  events. Drop the scheduled stale-holding email. The security email is sent at once when a
+  connection is approved (not by schedule), by email only.
 
 **Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
 entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves
