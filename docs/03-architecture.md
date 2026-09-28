@@ -690,7 +690,8 @@ No `Date.now()`, no randomness and no I/O in `core`. `today` and ids are passed 
 ### 7.10 Notifications — the comeback reminder and the security email
 
 **Scope (PRD J5, J9, J12, §9.8).** v1 sends exactly two messages. The **comeback reminder** goes to
-someone who has not checked NetNet for 30 days, then once a month while they stay away: by web push
+someone who has not checked NetNet for 30 days, then once a month while they stay away, **at most
+three times** (days 30, 60, 90; PRD J12, amended 2026-09-28): by web push
 to the devices where push is on, by email otherwise. The **security email** goes out when an agent
 is connected, by email only. **There is no scheduled stale-holding email**: staleness is shown in
 the app and handed to the agent (J9). Native push joins with the Expo apps as a second push channel.
@@ -736,13 +737,14 @@ It is one statement: `UPDATE core.reminder_state SET last_checked_on = ‹today�
 (§7.2 `/api/reminders/*`) carry no session and do not count.
 
 **A reminder run** (`/api/cron/reminders`, three times a day, §9.3):
-1. **Find who is due and awake.** `reminder_state` rows that are `enabled`, with `next_due_on` on
-   or before their local today, local time now in **08:00–21:00**, and somewhere to send (an active
+1. **Find who is due and awake.** `reminder_state` rows that are `enabled`, with `sent_since_check`
+   below **3**, `next_due_on` on or before their local today, local time now in **08:00–21:00**, and somewhere to send (an active
    device, or email on and verified). Local time is `now() AT TIME ZONE profile.time_zone`, in the
    query.
-2. **Claim them** in one `UPDATE … WHERE next_due_on <= ‹today› RETURNING`: `next_due_on` = today
-   + 30, `sent_since_check` + 1, `last_sent_at` = now. Two overlapping runs cannot both send to one
-   person, and nobody gets two in a month.
+2. **Claim them** in one `UPDATE … WHERE next_due_on <= ‹today› AND sent_since_check < 3
+   RETURNING`: `next_due_on` = today + 30, `sent_since_check` + 1, `last_sent_at` = now. Two
+   overlapping runs cannot both send to one person, nobody gets two in a month, and nobody gets a
+   fourth. A check resets `sent_since_check` to 0.
 3. **Send** through `notify()`. Push goes to all active devices in parallel; if none accepts it,
    email. `reminder_sent {channel}` and `last_channel` record what went. If nothing could be
    delivered (Resend down, say), the claim is released and the next run tries again.
@@ -812,7 +814,8 @@ The agent's name is HTML-escaped and at most 40 characters. A DCR client's name 
   or the basics (J1).
 - **Reminders off means nothing by any channel; email off means no reminder email**, until the
   person turns them back on. The security email ignores both, and Settings lists it as "Always".
-- **At most one comeback reminder a month** (the claim), and only in the person's daytime.
+- **At most one comeback reminder a month and three per absence** (the claim), and only in the
+  person's daytime.
 - **The service worker caches nothing** and has no `fetch` handler (§5.2).
 - Failures are logged without content.
 
@@ -954,7 +957,7 @@ paid plans.
 | Muse logo (`agents/README.md`) | Parked with Muse until after launch | §3 |
 | Where the web app is hosted (Founder, 2026-09-27) | Vercel's CDN, same project and domain as the API | §5.2 |
 | Push notifications, web and native (Founder, 2026-09-27) | **Web push in v1** as the comeback reminder's first channel, email the fallback (PRD §9.7 row 31); native push through Expo with the apps; all through one `notify()`, at $0 | §7.10 |
-| The comeback reminder and the security email (PRD §9.8 "Consequences downstream", J5, J12) | `last_checked_on` per person, set by app sessions and agent tool calls; three daily runs in daytime bands; push first, email fallback; the device list; the renamed events; the stale-holding email dropped; the security email sent at once on approval, email only | §6.2, §7.2, §7.7, §7.10, §9.3 |
+| The comeback reminder and the security email (PRD §9.8 "Consequences downstream", J5, J12) | `last_checked_on` per person, set by app sessions and agent tool calls; three daily runs in daytime bands; at most three reminders per absence; push first, email fallback; the device list; the renamed events; the stale-holding email dropped; the security email sent at once on approval, email only | §6.2, §7.2, §7.7, §7.10, §9.3 |
 
 ## 13. Risks and trade-offs
 
@@ -974,9 +977,9 @@ paid plans.
 | 12 | Pseudonymised events after deletion | Stage 8 legal pass |
 | 13 | No field-level encryption | Encryption at rest, RLS, no amounts outside `ledger`; revisit before any advisor feature |
 | 14 | **Web push on iPhone reaches only people who add NetNet to the Home Screen**, and NetNet does not tell them how (Founder, PRD §9.8) | Email carries the reminder for everyone else, so nobody depends on push. Native push later removes the step. M13's push-on share shows the cost |
-| 15 | **Reminder timing rests on Hobby's cron** (count of jobs, start anywhere within the hour, no retry) | Each run checks local time itself, so a late run is never a night-time send; a missed run delays by a day at most; GitHub Actions schedules are the fallback (§9.3) |
+| 15 | **Reminder timing rests on Hobby's cron** (count of jobs, start anywhere within the hour, no retry) | Each run checks local time itself, so a late run is never a night-time send; a missed run delays by a day at most. Accepted by the Founder (2026-09-28): dealt with if a limit is hit; GitHub Actions schedules are the ready fallback (§9.3) |
 | 16 | Push can't be fully tested headless (it needs a real push service) | Unit tests on payloads and rules; integration tests against a fake push endpoint; a manual check on a real iPhone (Home Screen) and Android phone in Stage 6 |
-| 17 | **Someone who has left for good gets a reminder every month, indefinitely** (PRD §9.8) | One-click unsubscribe, the Reminders switch, a gentle tone. `sent_since_check` is stored, so a stop after N reminders is a one-line change if unsubscribe or spam rates rise |
+| 17 | Someone who has left for good would get a reminder every month, indefinitely (PRD §9.8) | **Resolved (Founder, 2026-09-28): at most three per absence**, enforced by `sent_since_check` in the claim; one-click unsubscribe and the Reminders switch as well |
 | 18 | **Resend's 100 emails a day are shared** by reminders, security emails, verification and resets | Reminders capped at 60 a day; security emails retried; the §9.4 trigger moves to the paid plan well before the cap |
 | 19 | "Checking" is inferred: a tab left open without requests does not count, and an agent that only lists tools does not count | Matches the PRD's intent (a look, or the agent reading or writing); the first is rare and costs one gentle reminder |
 
@@ -989,8 +992,8 @@ Developer Program. The Founder buys the custom domain. **Web push joins v1** as 
 reminder's first channel, with email the fallback, and the security email is sent on every agent
 connection (PRD §9.7 row 31, §9.8). *Parked:* which client plans allow custom connectors.
 
-**Engineering choices made in the 2026-09-28 revision** (each is the recommendation at the gate;
-the Founder may change any):
+**Engineering choices made in the 2026-09-28 revision, all five accepted by the Founder the same
+day.** Also decided then: the comeback reminder **stops after three** per absence (PRD J12 amended).
 1. **Only tool calls count as the agent checking**, not an agent listing tools (§7.10).
 2. **"Opened" means tapped or clicked.** No email-open pixel: it would be a tracker, and Apple Mail
    pre-fetches images, which makes it meaningless (§7.7).

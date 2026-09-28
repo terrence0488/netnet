@@ -453,6 +453,8 @@ was connected. To see the email path, remove the Android phone in Settings first
   `push_disabled {by: browser}` and falls back to email). Email only to a verified address. Nothing
   at all when Reminders is off, or when there is no push and no usable email; PROTO says which.
 - **Monthly while away:** each skip of 30 days without checking sends the next one (day 30, 60, 90…).
+  *Superseded 2026-09-28:* the PRD now stops after the third (J12). The prototype was not changed and
+  keeps sending on further skips; the PRD and architecture win.
 - **Daytime only:** a reminder due at night goes at 08:00 their time; in the daytime it goes then.
 - **The agent named** is the connected one used most recently; with none, the line stands alone.
 - **Sign-out** turns this device's push off (`push_disabled {by: signout}`). Signed in again, the

@@ -160,7 +160,7 @@ A task is not done until its tests pass in CI. A bug fix starts with a failing t
 | Web | Each PRD job's happy path at **390 px** and **1280 px**; no horizontal scroll at **320 px**; axe accessibility checks on key screens; the analytics events each flow fires | Playwright |
 | Privacy | Event schemas contain no amount-like or free-text props; `log()` rejects unknown fields; the N10 deny-list scan; every `notify()` message is checked for digits-with-currency and holding names | Vitest |
 | Web push | Payload building and encryption against a fake push endpoint; `404`/`410` revokes; five failures revoke; the service worker has no `fetch` handler; a browser that cannot receive push shows no push option anywhere (and no Home Screen how-to); permission is requested only from the tap | Vitest + Playwright (Chromium with notifications granted) |
-| Comeback reminder and security email | Due at day 30, 60, 90 with no check; an app session or an MCP `tools/call` resets the clock, `tools/list` does not; sent only 08:00–21:00 local across time zones (fixed clocks); push to every active device, email only when none or all fail, verified addresses only; Reminders off and email off honoured; never two in a month even with overlapping runs; the daily email cap; the security email always sent, email only, retried on failure; the right `reminder_*`, `push_*` and `security_email_sent` events | Vitest + Postgres |
+| Comeback reminder and security email | Due at day 30, 60, 90 with no check, never a fourth until a check; an app session or an MCP `tools/call` resets the clock, `tools/list` does not; sent only 08:00–21:00 local across time zones (fixed clocks); push to every active device, email only when none or all fail, verified addresses only; Reminders off and email off honoured; never two in a month even with overlapping runs; the daily email cap; the security email always sent, email only, retried on failure; the right `reminder_*`, `push_*` and `security_email_sent` events | Vitest + Postgres |
 
 Tests are deterministic: fixed `today`, seeded ids, no network. External services (Resend, FX
 sources, Google, Apple) are faked at their interface.
@@ -222,10 +222,10 @@ sources, Google, Apple) are faked at their interface.
 ## 15. Commits, branches and PRs
 
 - **Commit messages** follow the repo's existing style: `Area: Imperative summary` in sentence
-  case, ≤72 characters. Area is the package or topic (`Core`, `Worker`, `Web`, `Ledger`, `MCP`,
+  case, ≤72 characters. Area is the package or topic (`Core`, `API`, `Web`, `Ledger`, `MCP`,
   `Auth`, `Content`, `CI`, `Docs`, `Tests`). The body says *why*. Add a `Task: Pn-Tm` trailer when
   the commit belongs to a task.
-- One logical change per commit. Never commit secrets, `.dev.vars`, real financial data or
+- One logical change per commit. Never commit secrets, `.env.local`, real financial data or
   mockup images.
 - One branch per task, from `main`. A PR names its task brief, passes CI, and meets the brief's
   done criteria before the engineering manager marks the task done.

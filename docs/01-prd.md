@@ -11,7 +11,9 @@ with the prototype at the Stage 2 gate, 2026-09-26.
 **Amended and approved by the Founder 2026-09-27: a gentle comeback reminder, by web push or
 email, and a security email when an agent is connected** (§9.8; J9 and J12 revised, M13, A14, §3.5, §4.1, §8). Re-opened from the Stage 3
 review on the Founder's request. **At the prototype gate (2026-09-27)** the Founder kept "Other
-agent" at launch (J5, §9.7 row 29) and settled `push_disabled` on account deletion (J12).
+agent" at launch (J5, §9.7 row 29) and settled `push_disabled` on account deletion (J12). **At the
+architecture review (2026-09-28)** the Founder capped the comeback reminder at **three per absence**
+(J12, §9.8).
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 
@@ -724,9 +726,11 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   connected agent reading or writing through NetNet. Making an update is not required: a look is
   enough.
 - **Given** they still have not checked NetNet, **when** another 30 days pass, **then** NetNet sends
-  another, and so on **once a month** for as long as they stay away.
+  another, **once a month, at most three times** (days 30, 60 and 90). After the third, NetNet stays
+  silent until they check it again (Founder, 2026-09-28).
 - **Given** they check NetNet at any time, **when** they do, **then** the clock starts again from that
-  day. Someone who checks at least once a month never receives a reminder.
+  day, with three reminders available again. Someone who checks at least once a month never
+  receives a reminder.
 - **Given** a reminder is due, **when** it is sent, **then** it arrives in the daytime in the person's
   own time zone (between 08:00 and 21:00), never overnight.
 
@@ -968,7 +972,7 @@ was amended by the Founder at the prototype gate, 2026-09-27: "Other agent" stay
 |---|---|---|
 | 29 | The launch agent list is **Claude and ChatGPT, plus the generic "Other agent" guide** (amended at the prototype gate, 2026-09-27). Grok and Muse are parked until after launch. The Connect button's icon turns through the two named launch agents. The server stays standard remote MCP with OAuth and no client-specific code, so any MCP agent can still connect technically; only the guides and the list are parked | J5 |
 | 30 | Which plans of each client allow a custom connector is parked. It changes guide content and directory submissions, not the product | §9.5 |
-| 31 | **A gentle comeback reminder joins v1** (Founder, 2026-09-27): after 30 days without checking NetNet (app or agent), then monthly while away; by web push where it is on, by email otherwise. It replaces J9's scheduled stale-holding email. A security email (never push) is sent when an agent is connected. Wording: "Your net worth is due for an update." Specified in §9.8, J5 and J12. **Approved 2026-09-27** | §3.2, §3.5, §4.1, §8, J5, J9, J12 |
+| 31 | **A gentle comeback reminder joins v1** (Founder, 2026-09-27): after 30 days without checking NetNet (app or agent), then monthly while away, at most three times (Founder, 2026-09-28); by web push where it is on, by email otherwise. It replaces J9's scheduled stale-holding email. A security email (never push) is sent when an agent is connected. Wording: "Your net worth is due for an update." Specified in §9.8, J5 and J12. **Approved 2026-09-27** | §3.2, §3.5, §4.1, §8, J5, J9, J12 |
 
 ### 9.8 Amendment — a gentle comeback reminder (approved by the Founder 2026-09-27)
 
@@ -991,7 +995,7 @@ per channel. If wrong, the reminder stays (it is free and gentle), and return is
 | Question | Decision |
 |---|---|
 | What is push for? | A gentle comeback reminder, and nothing else in v1 |
-| When is it sent? | After 30 days without checking NetNet, then every 30 days while the person stays away |
+| When is it sent? | After 30 days without checking NetNet, then every 30 days while the person stays away, **at most three times** (amended by the Founder 2026-09-28) |
 | What counts as checking? | Opening NetNet on any device, or their connected agent reading or writing through it. No update needed |
 | Which channel? | One rule for everyone: push to devices where it is on; email (verified addresses only) when no device has it on or push fails. This replaces J9's scheduled stale-holding email |
 | Where do we ask? | A one-time quiet card on Home after the first picture, plus a switch in Settings → Notifications |
@@ -1019,9 +1023,10 @@ The email uses the same line as its subject, with one button, **Open NetNet**.
 **Chosen by the Founder: C** (2026-09-27). "Claude" is replaced by the connected agent's name
 (ChatGPT). None carries an amount or a name.
 
-**Risk, stated plainly.** Someone who has left for good gets one reminder a month indefinitely. The
-one-click unsubscribe, the Reminders switch and a gentle tone keep it respectful. If unsubscribe or
-spam-report rates rise, revisit a stop after a number of reminders. Reminders only reach people who
+**Risk, stated plainly.** Someone who has left for good would get one reminder a month
+indefinitely. **Resolved by the Founder (2026-09-28): at most three per absence** (days 30, 60 and
+90), then silence until they check NetNet again. The one-click unsubscribe, the Reminders switch
+and a gentle tone keep even those three respectful. Reminders only reach people who
 turned push on or verified their email.
 
 **Consequences downstream.**
@@ -1030,7 +1035,7 @@ turned push on or verified their email.
   screen and in an inbox, in the chosen wording; the security email; the PROTO drawer showing the new events and a way to simulate "30 days
   away".
 - *Stage 3 (architecture), to revise after approval:* track `last_checked_at` per user (app sessions
-  and agent calls); a daily job finds people at 30, 60, 90… days and sends within their local daytime
+  and agent calls); a daily job finds people at 30, 60 and 90 days and sends within their local daytime
   (a few daily runs across time bands); push first, email fallback; the device list; the renamed
   events. Drop the scheduled stale-holding email. The security email is sent at once when a
   connection is approved (not by schedule), by email only.
