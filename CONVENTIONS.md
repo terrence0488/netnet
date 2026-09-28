@@ -36,7 +36,8 @@ apps/
       db/                 the `core` and `analytics` schemas and their access code
       content/            pack, country and guide read side; FX
       events/             track() and the event schemas' wiring
-      jobs/               cron handlers: FX, daily sweep, health
+      notify/             notify(), channels (email, web push) and message templates
+      jobs/               cron handlers: comeback reminders, FX, daily sweep, health
       lib/                log(), errors, ids, rate limits
     migrations/           drizzle-kit migrations for every schema (RLS included)
     test/                 integration tests, incl. test/isolation/ and test/rls/
@@ -54,7 +55,7 @@ packages/
 content/
   packs/ countries.json agents/ images/   administered content (§8)
 ops/
-  metrics/                SQL for M1–M11, per segment (run as netnet_metrics)
+  metrics/                SQL for M1–M11 and M13, per segment (run as netnet_metrics)
 .github/workflows/        CI, production deploy, daily backup, MCP probe
 e2e/                      Playwright specs
 vercel.json               rewrites, headers, cron, function region (sin1)
@@ -112,9 +113,11 @@ docs/                     the workflow's documents; docs/02-prototype is the des
   request or response bodies, document content.
 - `track()` accepts only the typed events in `packages/contracts/events`; adding a prop means
   changing the schema. `log()` accepts only its whitelisted fields.
-- Every message to a person (email and web push now, native push later) goes through `notify()` and
-  carries counts and links only, never an amount or a holding name. Lock screens and inboxes are
-  public.
+- Every message to a person (email and web push now, native push later) goes through `notify()`,
+  built from a typed `Message` and a template, never from free text. It never carries an amount, a
+  total, or a holding, type or tag name. Lock screens and inboxes are public.
+- An agent's registered name is untrusted third-party text: never in an event, escaped in email,
+  and on a lock screen only when short and plain (architecture §7.10).
 - The service worker handles `push` and `notificationclick` only. It has no `fetch` handler and
   caches nothing, so no financial data is ever stored offline.
 - Push permission is requested only from the handler of the tap that turns it on, never on load.
@@ -156,7 +159,8 @@ A task is not done until its tests pass in CI. A bug fix starts with a failing t
 | Ledger | Atomicity (a failing item in `record_values` writes nothing), undo and batch undo, `UNDO_CONFLICT`, same-date replacement, concurrent writes for one user serialised by the lock | Vitest + Postgres |
 | Web | Each PRD job's happy path at **390 px** and **1280 px**; no horizontal scroll at **320 px**; axe accessibility checks on key screens; the analytics events each flow fires | Playwright |
 | Privacy | Event schemas contain no amount-like or free-text props; `log()` rejects unknown fields; the N10 deny-list scan; every `notify()` message is checked for digits-with-currency and holding names | Vitest |
-| Web push | Payload building and encryption against a fake push endpoint; `404`/`410` revokes; five failures revoke; the service worker has no `fetch` handler; the iOS-not-on-Home-Screen state shows guidance, not a switch | Vitest + Playwright (Chromium with notifications granted) |
+| Web push | Payload building and encryption against a fake push endpoint; `404`/`410` revokes; five failures revoke; the service worker has no `fetch` handler; a browser that cannot receive push shows no push option anywhere (and no Home Screen how-to); permission is requested only from the tap | Vitest + Playwright (Chromium with notifications granted) |
+| Comeback reminder and security email | Due at day 30, 60, 90 with no check; an app session or an MCP `tools/call` resets the clock, `tools/list` does not; sent only 08:00–21:00 local across time zones (fixed clocks); push to every active device, email only when none or all fail, verified addresses only; Reminders off and email off honoured; never two in a month even with overlapping runs; the daily email cap; the security email always sent, email only, retried on failure; the right `reminder_*`, `push_*` and `security_email_sent` events | Vitest + Postgres |
 
 Tests are deterministic: fixed `today`, seeded ids, no network. External services (Resend, FX
 sources, Google, Apple) are faked at their interface.
