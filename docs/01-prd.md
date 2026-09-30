@@ -13,7 +13,7 @@ email, and a security email when an agent is connected** (§9.8; J9 and J12 revi
 review on the Founder's request. **At the prototype gate (2026-09-27)** the Founder kept "Other
 agent" at launch (J5, §9.7 row 29) and settled `push_disabled` on account deletion (J12). **At the
 architecture review (2026-09-28)** the Founder capped the comeback reminder at **three per absence**
-(J12, §9.8).
+(J12, §9.8), approved with the architecture on 2026-09-29.
 Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
 the same date), `docs/reference/mockups/README.md`
 

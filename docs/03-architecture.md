@@ -1,6 +1,6 @@
 # 03 — Architecture
 
-Status: **awaiting approval** · Stage owner: Staff software engineer
+Status: **approved by the Founder 2026-09-29** · Stage owner: Staff software engineer
 Written 2026-09-27. **Revised the same day on the Founder's decisions:** hosting is **Vercel +
 Neon** (the Cloudflare design is kept as Appendix A). Where the web app is hosted is now its own
 section (§5.2). **Revised 2026-09-28 for the approved PRD amendment (§9.8) and prototype:** the one

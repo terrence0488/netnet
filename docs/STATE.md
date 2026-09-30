@@ -1,13 +1,14 @@
 # Project State
 
 ## Current
-Stage: Architecture (Stage 3) — revision after the reminder amendment
+Stage: Planning (Stage 4)
 Phase: n/a
-Status: awaiting-approval — revision written 2026-09-28
-Next action: the Founder replies `approve architecture` (the five choices and the stop-after-3 rule
-are already accepted, 2026-09-28). After that, in a **new session**: `stage: plan`.
-**Branch:** work from `claude/eager-heisenberg-ytll3f` (not `main`); it holds Stage 3 and the PRD
-amendment. It merges into `main` once the architecture is approved.
+Status: not-started — architecture approved 2026-09-29
+Next action: `continue` in a **new session** → `stage: plan`. Inputs: `docs/01-prd.md` (acceptance
+criteria), `docs/03-architecture.md`, `CONVENTIONS.md`. Include a **Founder setup checklist** (see
+handoff) with each item placed before the task that needs it.
+**Branch:** `claude/eager-heisenberg-ytll3f` holds the approved Stage 3 and the PRD amendments. It
+is ready to merge into `main` (the Founder merges, or asks for a PR); until then, work from it.
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -18,16 +19,16 @@ amendment. It merges into `main` once the architecture is approved.
 | Prototype | **approved** | 2026-09-26 | Design B "Poster" (branch `claude/design-b-retro`), with PRD §9.6 revisions 12–28 and the carousel's desktop layout. A and C kept on their branches, unmerged |
 | PRD (amendment: comeback reminder) | **approved** | 2026-09-27 | §9.8 + J5 security email, J9, J12, M13, A14; wording option C |
 | Prototype (reminder screens) | **approved** | 2026-09-27 | Home card, Account → Notifications, lock screen / email / security email previews, PROTO "Skip 30 days" (`prototype-notes.md` §10). At the gate: "Other agent" stays at launch (PRD J5, §9.7 row 29 amended; Grok, Muse parked); Security row kept; deletion fires no `push_disabled` |
-| Architecture | awaiting-approval | | `docs/03-architecture.md` (Vercel + Neon), `CONVENTIONS.md`; revised 2026-09-28 for J12, the J5 security email and the launch agent list |
+| Architecture | **approved** | 2026-09-29 | `docs/03-architecture.md` (Vercel + Neon), `CONVENTIONS.md`; revised 2026-09-28 for J12, the J5 security email and the launch agent list; five engineering choices accepted; with PRD J12 amended (reminder stops after three) |
 | Plan | not-started | | |
 | P1 | not-started | | |
 
 ## Handoff note (last session)
-**Architecture revised** (2026-09-28) for PRD §9.8: `core.reminder_state`; checking = a session
-`/api/*` request or an MCP `tools/call`; `/api/cron/reminders` at 01:00/09:00/17:00 UTC, sending only
-in local 08:00–21:00; push first, email fallback; security email at once on Allow, with retry;
-launch list Claude, ChatGPT, "Other agent". At the gate the Founder accepted all five engineering
-choices and the unverified Hobby cron limits, and decided the reminder **stops after three per
-absence** (PRD J12, §9.7 row 31, §9.8 amended; architecture §7.10). `CONVENTIONS.md` §15 cleaned of
-Cloudflare leftovers. The approved prototype still sends past three (noted, not rebuilt). Awaiting
-`approve architecture`; the branch merges to `main` once approved.
+**Architecture approved** by the Founder, 2026-09-29, with the 2026-09-28 revision (comeback reminder,
+security email, launch agents Claude/ChatGPT/"Other agent"), the five engineering choices, the
+stop-after-three rule (PRD J12 amended) and the Hobby cron risk accepted. **Founder setup, for the
+plan to schedule:** start now: Apple Developer Program, buy the domain. Before the P1 spike: Vercel
+(Hobby, GitHub-linked), Neon (`netnet-prod` + `netnet-preview`, aws-ap-southeast-1), Claude and
+ChatGPT plans that allow custom connectors, and the cloud environment's network access to Vercel and
+Neon. During P1: Resend (domain DNS), Google OAuth client, Sentry, a backup key pair (public half to
+GitHub). Secrets go straight into Vercel/GitHub settings, never into chat.
