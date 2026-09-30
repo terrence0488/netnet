@@ -361,10 +361,10 @@ agent is connected (§2.2). None of this is educational content, and none of it 
 basics or a connected agent (J1, J5); **jurisdiction packs** for ten launch countries plus the
 generic pack (§2.3).
 
-**Note for Stage 4:** Insights is the one item here that does not serve §3.1, so it should be
-sequenced *after* the MCP layer and the §3.5 analytics within P1. Not a hedge on shipping it — it
-ships at launch — but if anything in P1 slips, the slip must be visible against the launch date
-rather than quietly eating the work the experiment depends on.
+**Sequencing:** Insights is the one item here that does not serve §3.1, so it is built last, after
+the MCP layer and the §3.5 analytics (`04-plan.md`). Not a hedge on shipping it — it ships at
+launch — but if anything slips, the slip must be visible against the launch date rather than
+quietly eating the work the experiment depends on.
 
 ### 4.2 Permanently free, and what is deliberately reserved (A10)
 

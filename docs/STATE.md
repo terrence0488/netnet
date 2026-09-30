@@ -3,11 +3,11 @@
 ## Current
 Stage: Planning (Stage 4)
 Phase: n/a
-Status: not-started
-Next action: `continue` in a **new session** → `stage: plan`. Inputs: `docs/01-prd.md` (acceptance
-criteria), `docs/03-architecture.md`, `CONVENTIONS.md`. Include a **Founder setup checklist** (see
-handoff) with each item placed before the task that needs it.
-**Branch:** work on a new branch from `main`.
+Status: awaiting-approval
+Next action: Founder reviews `docs/04-plan.md` and the P1 briefs (`docs/phases/P1/tasks/`) and
+replies `approve plan`. Then, in a **new session**, `stage: build P1`, once the Founder items F4–F8
+(plan §5) are done.
+**Branch:** `docs/stage-4-plan`, merged to `main` on approval.
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -16,14 +16,18 @@ handoff) with each item placed before the task that needs it.
 | PRD | **approved** | 2026-09-29 | `docs/01-prd.md` |
 | Prototype | **approved** | 2026-09-27 | `docs/02-prototype/`, design system "Poster" |
 | Architecture | **approved** | 2026-09-29 | `docs/03-architecture.md`, `CONVENTIONS.md` |
-| Plan | not-started | | |
+| Plan | awaiting approval | | `docs/04-plan.md`, `docs/phases/P1/tasks/` |
 | P1 | not-started | | |
+| P2 | not-started | | |
+| P3 | not-started | | |
+| P4 | not-started | | |
+| P5 | not-started | | |
 
 ## Handoff note (last session)
-Docs condensed to current decisions only (no amendment history); `decisions.md` is now a register
-of decisions in force. **Founder setup, for the plan to schedule:** start now: Apple Developer
-Program, buy the domain. Before the P1 spike: Vercel (Hobby, GitHub-linked), Neon (`netnet-prod` +
-`netnet-preview`, aws-ap-southeast-1), Claude and ChatGPT plans that allow custom connectors, and
-the cloud environment's network access to Vercel and Neon. During P1: Resend (domain DNS), Google
-OAuth client, Sentry, a backup key pair (public half to GitHub). Secrets go straight into
-Vercel/GitHub settings, never into chat.
+Plan written: five phases (P1 the core loop; P2 standalone value; P3 trust, ownership and the
+comeback; P4 launch readiness; P5 Insights), 18 P1 briefs in seven waves, and the Founder setup
+checklist F1–F23 (plan §5), each item placed before the task that needs it. PRD §4.1's sequencing
+note and the Insights decision now say "built last (P5)"; approving the plan approves that wording.
+P1-T2 (the spike) needs about 45 minutes of the Founder's hands-on time and gates P1-T11 and P1-T13.
+The architecture's own fallbacks may be taken inside it; anything else comes back to the Founder.
+Start now: F1 Apple Developer, F2 domain, F3 pack reviewers. Before the build: F4–F8.

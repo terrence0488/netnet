@@ -28,7 +28,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Free with no billing during the test market. Whatever ships free stays free; money comes only from capabilities added later (PRD §4.2) | A price would confound the demand signal; every scope choice is therefore a revenue choice |
 | Unlimited MCP read and write is permanently free | The differentiator is what drives adoption, and adoption is what this phase must produce |
 | Backward-looking analysis is free and in v1; forward-looking projection built by NetNet is reserved. The user's agent may project freely | "Historical vs projective" is a line that holds; "better charts are paid" would not |
-| Insights ships at launch, sequenced after the MCP layer and analytics within P1 | Founder judged it core; the sequencing keeps any slip visible against the launch date |
+| Insights ships at launch and is built last (P5), after the MCP layer and analytics (P1) | Founder judged it core; it is the one v1 item that does not serve the experiment, so a slip shows against the launch date instead of eating the experiment's work |
 | Liabilities are in v1 | Net worth is meaningless without debt, and the same value model covers it |
 | Income and expense tracking is neither in scope nor reserved | The balance sheet is the part nobody has; it is the first thing to reconsider if affordability questions dominate M7 |
 | No in-app AI chat and no financial-education content | Follows from no inference; opinionated defaults and the user's agent carry the education cost |
@@ -99,10 +99,22 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Charts use the validated categorical palette in fixed order; brand and chart hues never share a role; a chart with too little data is a frosted placeholder | Colour-blind safety; a chart that vanishes makes a new account look emptier than it is |
 | We own everything that displays data and all colour and type; the platform owns input by gesture | Brand chrome, native controls, decided once rather than case by case |
 
+## Delivery
+
+| Decision | Why |
+|---|---|
+| v1 is built in five phases: P1 the core loop (sign up, add, connect, ask, the agent writes), P2 standalone value, P3 trust, ownership and the comeback reminder, P4 launch readiness, P5 Insights (`04-plan.md`) | Thin vertical slices with the riskiest assumptions (A1, A2, A4) first; everything the experiment depends on comes before Insights |
+| Every phase ends on production, deployed only by the Founder's manual workflow; production stays unannounced until launch | Each checkpoint is tested where users will be, and nothing reaches production without the Founder |
+| A capability lands in the Ledger, REST and MCP in the same phase; its screen may follow later | One implementation, so the agent is never behind the UI (J6) |
+| A throwaway spike connects real Claude and ChatGPT before the auth and MCP work starts | The newest parts (the OAuth provider with CIMD, MCP 2026-07-28) are proven with the real clients before anything depends on them |
+| The build adds endpoints, fields, parameters and message kinds that the architecture implies, and reports them; any other interface change is stop-and-raise | Keeps architecture §7 current without a Founder gate for every implied detail |
+
 ## Architecture
 
 | Decision | Why |
 |---|---|
+| Verification and password-reset emails go through `notify()`, as two email-only message kinds | Every message to a person takes one path, so the no-amount template test covers all of them |
+| Neon and CI run Postgres 17 | One major version from tests to production (CONVENTIONS §1) |
 | Vercel (Hobby) + Neon Postgres (Free) in Singapore; one TypeScript codebase, one Hono function; upgrades on measured triggers (architecture §9.4) | $0 for the first ~70–100 users, conventional Postgres, per-PR previews with their own database branch |
 | Per-user isolation by Postgres row-level security with `FORCE`, composite keys and one `withUser()` entry | Enforced by the database, not by remembering a filter (N4) |
 | Better Auth for accounts and the agents' OAuth 2.1 server (CIMD and DCR); our own MCP token check | No hand-rolled security code; protocol support stays in our hands |
