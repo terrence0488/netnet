@@ -177,6 +177,15 @@ await p.evaluate(()=>{ S.chatStep=0; S.notif.away=45; save(); });
 await go('#/agent/chat'); for (let i=0;i<3;i++){ await p.click('[data-act="chat-next"]'); await p.waitForTimeout(120); }
 t('…as does the agent writing through NetNet (the demo turn)', await p.evaluate(()=>S.notif.away)===0);
 
+// ================= at most three per absence
+await seeded(); await p.evaluate(()=>{ S.notif.devices=[]; save(); });
+for (let i=0;i<4;i++) await proto('sim-away');
+const days=await p.evaluate(()=>S.notif.outbox.filter(m=>m.kind==='reminder').map(m=>m.day));
+t('at most three per absence: days 30, 60 and 90, then nothing on day 120', JSON.stringify(days)==='[90,60,30]' && await count('reminder_sent:email')===3, JSON.stringify(days));
+t('…and PROTO says why', (await sheetText()).includes('Three reminders have gone since NetNet was last checked'));
+await proto('sim-agent'); await proto('sim-away');
+t('…checking NetNet makes three available again (a day-30 reminder)', await p.evaluate(()=>S.notif.outbox[0].day)===30 && await count('reminder_sent:email')===4);
+
 // ================= the agent named, or none
 await seeded(); await p.evaluate(()=>{ S.notif.devices=[]; S.account.connections.forEach(c=>c.active=false); save(); });
 await proto('sim-away');

@@ -457,7 +457,7 @@ function rangeMonths(v) { return v === -1 ? ytdMonths() : v; }
 
 /* ================= chart palette =================
    The validated default categorical set, documented order, verified against both
-   NetNet grounds. Per design-system.md §4.4: the two brand inks never appear inside
+   NetNet grounds. Per design-system.md §4.2: the brand and agent inks never appear inside
    a categorical chart, and these hues never appear as UI chrome. Fixed order — a
    ninth category folds into "Other" rather than getting a generated hue. */
 const CAT_LIGHT = ['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#4a3aa7','#e34948'];
@@ -765,8 +765,8 @@ function renderHome() {
   const archived = S.holdings.filter(h => h.archived).length;
 
   /* The trend and the allocation share one place under the total: on a phone a carousel you
-     swipe between, on a computer two cards side by side. Then position, then holdings (Founder,
-     2026-09-26: the allocation was a long scroll away at the bottom). See styles.css. */
+     swipe between, on a computer two cards side by side. Then position, then holdings.
+     See styles.css. */
   const slides = [];
   if (hasHistory) slides.push(`<div class="slide o-trend card">
         <div class="chart-h"><h3>Trend</h3></div>
@@ -1665,7 +1665,8 @@ function renderSub(name) {
 /* ================= COMEBACK REMINDER (J12) =================
    The one message NetNet sends to bring someone back: after 30 days without checking
    NetNet (opening it, or the agent reading or writing through it), then every 30 days
-   while they stay away. By push to every device where it is on; by email, to a verified
+   while they stay away, at most three times (days 30, 60, 90); after the third, nothing
+   until they check again. By push to every device where it is on; by email, to a verified
    address, only when no device has it on or every push fails. Never an amount, a total or
    a name (N9). The prototype has no server and no service worker, so the browser's own
    permission prompt and everything that arrives outside NetNet (a lock screen, an inbox)
@@ -1701,7 +1702,7 @@ const reminderAgent = () => {
   return c ? c.client : null;
 };
 /* Opening NetNet, or the agent using it, is "checking": the clock starts again. */
-function checkedNow() { if (S.notif) S.notif.away = 0; }
+function checkedNow() { if (S.notif) { S.notif.away = 0; S.notif.sent = 0; } }
 
 /* Where to allow notifications once the browser has blocked them: one line, for this device. */
 function whereToAllow() {
@@ -1781,7 +1782,8 @@ function notificationSettings() {
       <span class="muted">Always</span></div></div>`;
 }
 
-/* ---- sending: what the daily job would do on day 30, 60, 90… (simulated from PROTO) ---- */
+/* ---- sending: what the daily job would do on days 30, 60 and 90 (simulated from PROTO) ---- */
+const MAX_REMINDERS = 3;   // per absence; checking NetNet makes three available again
 /* Inside 08:00–21:00 in the person's own time: now if it is daytime, else the next 08:00. */
 function deliveryAt() {
   const now = new Date(), d = new Date(simToday() + 'T00:00:00'), h = now.getHours();
@@ -1793,6 +1795,7 @@ function deliveryAt() {
 function sendReminder() {
   const n = S.notif;
   if (!n.reminders) return 'Reminders are off, so nothing was sent.';
+  if ((n.sent || 0) >= MAX_REMINDERS) return 'Three reminders have gone since NetNet was last checked, so nothing more is sent until it is checked again.';
   let to = pushTargets();
   /* a push service answering "gone": the device is dropped, and email takes over if none is left */
   if (to.length && n.failNext) {
@@ -1807,12 +1810,14 @@ function sendReminder() {
   else return n.email ? 'No device has notifications on and the email address isn’t verified, so nothing was sent.'
                       : 'No device has notifications on and reminder emails are off, so nothing was sent.';
   n.outbox.unshift(m);
+  n.sent = (n.sent || 0) + 1;
   fire('reminder_sent', { channel:m.channel });
   return m;
 }
 function reminderRoute() {
   const n = S.notif, d = pushTargets().length;
   if (!n.reminders) return 'reminders are off';
+  if ((n.sent || 0) >= MAX_REMINDERS) return 'three reminders already sent, so none until NetNet is checked again';
   if (d) return `a reminder would go by push to ${d} device${d > 1 ? 's' : ''}`;
   if (n.email && S.account.verified && S.account.email) return 'a reminder would go by email';
   return 'a reminder would reach no one';

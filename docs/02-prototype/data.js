@@ -32,7 +32,7 @@ const SEED_TAGS = ['Emergency','Cash Equivalent','Growth','Dividend','High Risk'
                    'Low Risk','Long Term','Short Term','Tax-Advantaged'];
 
 /* --- FX. J2: the rate and rate-date used are recorded ON the entry and never
-       re-derived later. §9 assumption: daily reference rate at entry time only.
+       re-derived later: a daily reference rate at entry time only (architecture §6.6).
        Invented rates, quoted per USD; SGD wobbles so history is not flat. --- */
 const CCYS = ['SGD','USD','MYR','IDR','PHP','THB','VND','HKD','INR','AUD','GBP','EUR','JPY'];
 const PER_USD = { USD:1, MYR:4.42, IDR:15850, PHP:56.2, THB:35.6, VND:24900, HKD:7.8,
@@ -170,7 +170,7 @@ function seededState() {
    (days after TODAY) and `away` the days since the person last checked NetNet. */
 function newNotif(devices, outbox) {
   return { reminders:true, email:true, perm:'default', thisOn:false, card:{ notNow:0, until:null },
-           devices:devices || [], outbox:outbox || [], day:0, away:0, failNext:false };
+           devices:devices || [], outbox:outbox || [], day:0, away:0, sent:0, failNext:false };
 }
 
 function emptyState() {
