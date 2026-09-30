@@ -9,7 +9,7 @@ This file defines the stages, the session protocol, and the templates.
 2. **One session = one stage (or one task).** Load only the inputs that stage lists. Do not read the whole repo.
 3. **Gates are human-only.** AI never marks its own work approved. Only the Founder approves, and approval is recorded in `docs/STATE.md`.
 4. **Stop at gates.** When a stage's outputs are written, present the gate summary and stop. Do not start the next stage in the same session.
-5. **Keep documents short and living.** Prefer bullet points, tables, and explicit non-goals. Update documents when facts change; never let them go stale.
+5. **Keep documents short and living.** Prefer bullet points, tables, and explicit non-goals. Documents state the current decision only: when a fact or decision changes, rewrite the affected text in place so it reads as if it had always been so. No amendment sections, revision tables, "superseded" or "changed on" notes, dated attributions, or records of rejected alternatives. Git history is the record of how the project got here.
 6. **Thin vertical slices.** Every phase delivers something a user can do end to end, deployed and testable.
 
 ## 1. Session Protocol
@@ -25,7 +25,7 @@ This file defines the stages, the session protocol, and the templates.
 
 ### On session end (always)
 1. Write all stage outputs to their listed paths.
-2. Update `docs/STATE.md`: current stage, status, a handoff note (≤10 lines), and next action.
+2. Update `docs/STATE.md`: current stage, status, a handoff note (≤10 lines, replacing the previous one), and next action.
 3. If the stage has a gate, present the **Gate Summary** (Section 5) and stop.
 
 ### Context budget
@@ -40,7 +40,7 @@ CONVENTIONS.md                # stack, code style, testing rules (created in Sta
 docs/
   WORKFLOW.md                 # this file
   STATE.md                    # single source of truth for progress and approvals
-  decisions.md                # append-only decision log (date, decision, reason, stage)
+  decisions.md                # register of the decisions in force (area, decision, reason)
   00-discovery.md             # problem validation
   01-prd.md                   # product requirements + acceptance criteria
   02-prototype/               # prototype files + prototype-notes.md
@@ -134,11 +134,11 @@ Each stage lists: **Role · Requires · Inputs · Outputs · Gate**.
   | Type | Example | Route to |
   |---|---|---|
   | Bug | Button errors on submit | New task in Pn → Stage 5 |
-  | Requirement gap | "This isn't what I meant" | Update `01-prd.md` → Founder re-approves → re-plan |
-  | Design issue | Structural or scaling concern | Update `03-architecture.md` → Founder re-approves → re-plan |
+  | Requirement gap | "This isn't what I meant" | Rewrite `01-prd.md` in place → Founder re-approves → re-plan |
+  | Design issue | Structural or scaling concern | Rewrite `03-architecture.md` in place → Founder re-approves → re-plan |
   | Scope change | New feature idea | Add to a later phase in `04-plan.md` |
 
-  Write new task briefs for items routed to Stage 5. Log significant choices in `decisions.md`.
+  Write new task briefs for items routed to Stage 5. Record significant choices in `decisions.md`.
 - **Outputs:** Updated `feedback.md` (each item with type and route), new task briefs, updated upstream docs if needed.
 - **Gate:** Founder confirms the triage. The loop Stage 5 → 6 → 7 repeats until the Founder records **Phase Pn: approved** in `STATE.md`. Then planning for the next phase begins (Stage 4, next phase only).
 
@@ -162,7 +162,8 @@ Each stage lists: **Role · Requires · Inputs · Outputs · Gate**.
 
 - Never mark a gate approved; only the Founder does, and it is recorded in `STATE.md`.
 - If an upstream document is wrong or missing something, raise it. Do not silently work around it.
-- Append every significant decision to `docs/decisions.md`.
+- Record every significant decision in `docs/decisions.md`. A new decision is a new entry; a changed decision rewrites its entry (and every document it affects) in place.
+- Approvals and their dates live only in `STATE.md`. A stage document carries one status line, never an approval history.
 - Never commit secrets. Use environment variables.
 - Prefer boring, well-known technology unless the architecture says otherwise.
 - Ask the Founder when something is ambiguous and blocking; otherwise make a reasonable choice and note it.
@@ -181,7 +182,7 @@ At every gate, present this and stop (keep it under one screen):
 **Next session:** start with `continue`
 ```
 
-When the Founder replies `approve <stage>`, record the approval with the date in `STATE.md`, set the next action, and end the session.
+When the Founder replies `approve <stage>`, record the approval with the date in `STATE.md` (re-approval of a revised stage updates its row), set the next action, and end the session.
 
 ## 6. Task Brief Template (`docs/phases/Pn/tasks/Pn-Tm.md`)
 

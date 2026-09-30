@@ -1,4 +1,4 @@
-/* Home's trend and allocation share one place under the total (Founder, 2026-09-26):
+/* Home's trend and allocation share one place under the total:
    a carousel on a phone, side by side on a computer. */
 import { chromium, devices } from './pw.mjs';
 const URL = new globalThis.URL('../index.html', import.meta.url).href;

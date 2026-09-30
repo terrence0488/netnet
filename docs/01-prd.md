@@ -1,21 +1,7 @@
 # 01 — Product Requirements (PRD)
 
-Status: **approved by the Founder 2026-09-24** (amended) · Stage owner: Product manager
-First approved 2026-09-23. Amended and re-approved 2026-09-24: §2 widened from one persona to
-three, §2.3 added jurisdiction packs so the product is not permanently shaped by its first market,
-and §2.4 made the agent a target user with a falsifiable claim behind it (what changed and why:
-**§9.5**). **Revised again during the Stage 2 review, 2026-09-24/25:** sign-up and onboarding, the
-agent route, per-country packs and their administration, and what the product shows. Those
-revisions are written into the requirements below and listed in **§9.6**; approved by the Founder
-with the prototype at the Stage 2 gate, 2026-09-26.
-**Amended and approved by the Founder 2026-09-27: a gentle comeback reminder, by web push or
-email, and a security email when an agent is connected** (§9.8; J9 and J12 revised, M13, A14, §3.5, §4.1, §8). Re-opened from the Stage 3
-review on the Founder's request. **At the prototype gate (2026-09-27)** the Founder kept "Other
-agent" at launch (J5, §9.7 row 29) and settled `push_disabled` on account deletion (J12). **At the
-architecture review (2026-09-28)** the Founder capped the comeback reminder at **three per absence**
-(J12, §9.8), approved with the architecture on 2026-09-29.
-Inputs: `docs/00-discovery.md` (approved 2026-09-23, §1/§3/§4 revised on the Founder's reframe of
-the same date), `docs/reference/mockups/README.md`
+Status: **approved** · Stage owner: Product manager
+Inputs: `docs/00-discovery.md`, `docs/reference/mockups/README.md`
 
 > Longer than the workflow's "~2 pages" because the acceptance criteria (§6) are the contract
 > Stage 4 plans against and Stage 6 tests against, one set per job. §§1–5 and 7–9 are the lean
@@ -46,20 +32,17 @@ financial position, keeps it current by doing the data entry, and reads it back 
 comprehensive MCP layer so every question they ask is answered against their real balance sheet
 instead of a blank slate. Tracking is the means. Better advice is the end.
 
-The wedge is unchanged by that framing: entry is still what makes the context exist, and
-delegating it to an agent is still what makes coverage unlimited. What changes is the hierarchy —
-the tracker exists to feed the advice, not the other way round. Detail: `00-discovery.md` §1.
+Entry is what makes the context exist, and delegating it to an agent is what makes coverage
+unlimited. The hierarchy matters: the tracker exists to feed the advice, not the other way round.
+Detail: `00-discovery.md` §1.
 
 ## 2. Target user
-
-> **Rewritten 2026-09-24:** the beachhead was widened from one persona to three. §9.5 records what
-> that overturned and what it costs.
 
 **Vision: broad.** Anyone whose AI could advise them better if it knew where they stood — which is
 most people (§1).
 
-**v1 targets three personas, SG/SEA first.** §1 has always described someone who does not know what
-they are worth. Until now §2 excluded exactly that person. This section makes §2 agree with §1.
+**v1 targets three personas, SG/SEA first**, including the person §1 describes: someone who does
+not know what they are worth.
 
 | | **P-A · Starting out** | **P-B · Accumulating** | **P-C · Established** |
 |---|---|---|---|
@@ -73,16 +56,16 @@ they are worth. Until now §2 excluded exactly that person. This section makes �
 
 ### 2.1 The organising principle
 
-The old beachhead was selected on financial literacy **so that the product would never have to
-teach**. Widening the audience removes that rationale. The replacement is not to start teaching:
+An audience that includes people who have never computed a net worth could pull the product
+toward teaching. It does not teach:
 
 > **NetNet does not teach. It is opinionated, and it routes what it cannot decide to the user's own
 > agent.** Defaults are chosen for the user and state their reason in plain language. Questions ask
 > for facts the user already knows ("do you live here?"), never for categories they must learn first
 > ("illiquid or locked?"). Where judgement is genuinely needed, the agent supplies it, not us.
 
-This keeps §8's education non-goal intact rather than deleting it, and it is the same division of
-labour as §1: NetNet supplies context, the agent supplies intelligence.
+This is why education content stays a non-goal (§8), and it is the same division of labour as §1:
+NetNet supplies context, the agent supplies intelligence.
 
 ### 2.2 The second principle — standalone value before the agent
 
@@ -94,8 +77,8 @@ and good defaults can do this — no inference, no backend cost, no breach of N2
 
 This is not a nicety. If P-A cannot get value before connecting, they churn before ever reaching the
 thing v1 exists to test, and M3, M6 and M7 come back looking like evidence that **A1 and A4 are
-wrong** — when in truth the experiment never ran on them. That is the same class of misreading §9.4
-already names as the most expensive available here.
+wrong** — when in truth the experiment never ran on them. That is the most expensive kind of
+misreading available here (§3.5).
 
 ### 2.3 Region — Singapore first, but never Singapore-shaped
 
@@ -214,7 +197,7 @@ No inference, so N2 holds and N6's cost ceiling is untouched (N11).
 
 ### 2.5 Consequence for the pitch (G-D1, G-D3)
 
-One line no longer fits all three. P-C's problem is that real numbers are *stale and unreadable by
+One line does not fit all three. P-C's problem is that real numbers are *stale and unreadable by
 their AI*; P-A's is *never having had the numbers at all*. The landing page leads with the widest
 statement that is true for all three — **you cannot get useful advice from an AI that does not know
 where you stand** — and carries both proofs beneath it. It never opens with "you don't know your net
@@ -262,14 +245,14 @@ Window: **8 weeks from public launch** unless stated. "Signup" = verified accoun
 | **M8** | Freshness | Median days since last value update, across users active in the last 30 days | **<45 days** | The context is too stale to answer from |
 | **M9** | Time to value | p50 minutes from signup to first agent interaction (read or write) | **<15 min** | Setup is the cliff A1 predicts (M9 is the funnel, not the outcome) |
 | **M10** | Funnel conversion | Landing-page unique visitors → signup | **≥8%**, on ≥1,200 visits | The pitch, not the product, is the blocker |
-| **M12** | **Context lift** (new) | Blind A/B on a fixed dataset and question set: NetNet-connected agent vs the same data uploaded as a spreadsheet, scored on numeric correctness, appropriate qualification, and absence of fabrication — run on a deliberately weak model | NetNet wins **≥80%** of paired questions, and **never** scores worse on fabrication | **A13 is wrong** — the context layer is not adding what §2.4 claims, and NetNet is a nicer spreadsheet |
-| **M11** | **Standalone value** (new) | % of signups with ≥2 sessions **before** any agent connection; and % still active in week 4 having never connected | **40%** / **15%** | **A12 is wrong** — the app is not worth using on its own, so P-A churns before the real experiment reaches them (§2.2) |
-| **M13** | **Comeback rate** (new, 2026-09-27) | Of comeback reminders sent, % followed by the person checking NetNet (opening it, or their agent using it) within 7 days, per channel; and % of week-4-active users with push on for ≥1 device | Push **above** email on the first; **25%** on the second. A learning metric, not a kill criterion | **A14 is wrong**: a monthly nudge does not bring lapsed people back. It stays (it is free and gentle), and return is sought elsewhere |
+| **M11** | **Standalone value** | % of signups with ≥2 sessions **before** any agent connection; and % still active in week 4 having never connected | **40%** / **15%** | **A12 is wrong** — the app is not worth using on its own, so P-A churns before the real experiment reaches them (§2.2) |
+| **M12** | **Context lift** | Blind A/B on a fixed dataset and question set: NetNet-connected agent vs the same data uploaded as a spreadsheet, scored on numeric correctness, appropriate qualification, and absence of fabrication — run on a deliberately weak model | NetNet wins **≥80%** of paired questions, and **never** scores worse on fabrication | **A13 is wrong** — the context layer is not adding what §2.4 claims, and NetNet is a nicer spreadsheet |
+| **M13** | **Comeback rate** | Of comeback reminders sent, % followed by the person checking NetNet (opening it, or their agent using it) within 7 days, per channel; and % of week-4-active users with push on for ≥1 device | Push **above** email on the first; **25%** on the second. A learning metric, not a kill criterion | **A14 is wrong**: a monthly nudge does not bring lapsed people back. It stays (it is free and gentle), and return is sought elsewhere |
 
 **Every metric above is reported per segment** (P-A / P-B / P-C), captured in onboarding by one
 skippable question. Targets in this table are the blended figure; per-segment targets are set in
 §3.3. Blending three populations this different makes a miss unreadable — a strong P-C result would
-hide P-A never connecting at all, which is precisely the misreading §9.4 warns about.
+hide P-A never connecting at all (§3.5).
 
 ### 3.3 Kill criteria
 
@@ -281,7 +264,7 @@ experiment is not evidence.
 **Kill criteria are read on P-B and P-C, not on the blend.** Those two are the commercial bet; P-A
 is the habit bet and is allowed to underperform on M3 and M7 without killing the product. What P-A
 *is* held to is **M11** — if the app is not worth using standalone, P-A should be dropped from v1
-rather than carried (§2.4). A blended reading is never used to kill anything.
+rather than carried (§2.2). A blended reading is never used to kill anything.
 
 ### 3.4 Distribution goal (A9)
 
@@ -298,10 +281,9 @@ Signups are the kill metric and there is no channel yet, so distribution ships a
   directories, public MCP registries and lists).
 - **G-D3** A launch note the Founder can post, without rewriting it, to 3+ communities that
   **between them reach all three personas** (§2). It leads with §2.5's statement and varies only the
-  proof to suit the audience. Literacy is no longer the filter — §2.1 moved the education cost onto
-  opinionated defaults and the user's agent — but **P-B and P-C carry the kill criteria** (§3.3), so
-  the channel mix must put enough of them in front of the product to make those segments readable.
-  A launch that recruits mostly P-A produces a large, cheerful, unreadable result.
+  proof to suit the audience. **P-B and P-C carry the kill criteria** (§3.3), so the channel mix
+  must put enough of them in front of the product to make those segments readable. A launch that
+  recruits mostly P-A produces a large, cheerful, unreadable result.
 - **G-D4** Landing and signup-funnel analytics live before launch, so M10 is readable.
 
 Channel selection and posting are Founder work; producing G-D1–G-D4 is in v1 scope.
@@ -329,8 +311,7 @@ segment, and §3.3 cannot be applied to the segment it is meant to judge. `signu
 them to the account.
 
 `channel` on the reminder events says whether the comeback reminder went by push or by email, so
-M13 can compare them. `reminder_opened` replaces `reminder_clicked`. None of them carries an amount
-or any message text (N9).
+M13 can compare them. None of them carries an amount or any message text (N9).
 
 `method` says which way in people choose — Google, Apple or email. Sign-up is built to be as
 frictionless as possible (J1), and this is how that is checked.
@@ -345,7 +326,7 @@ route, rather than the Agent tab, is what drives M3.
 
 `kind: read|write` is what makes M7 separable from M4 — without it the premise is unmeasurable.
 `client` is what makes M3 separable by MCP client — without it, one client's broken connector flow
-reads identically to A1 being wrong, which is the most expensive misreading available here (§9.4).
+reads identically to A1 being wrong, which is the most expensive misreading available here.
 
 **Privacy constraint (binding):** events carry names, counts, timings and a user id only. Never
 amounts, holding names, or any document content. A metrics pipeline that leaks the balance sheet
@@ -360,7 +341,7 @@ any currency, dated value history, archive · net worth total with trend, breakd
 assets-vs-liabilities, and a user-chosen comparison baseline · **an Insights view of change by
 calendar period (monthly, quarterly, yearly) with its own filters and exclusions** · staleness
 labels · **a gentle comeback reminder after a month away, by web push where the user has turned it
-on and by email otherwise** (J12, §9.8) · **a comprehensive MCP layer with full CRUD, plus read tools shaped for advice, reached
+on and by email otherwise** (J12) · **a comprehensive MCP layer with full CRUD, plus read tools shaped for advice, reached
 by OAuth from ChatGPT or Claude** · audit log and undo for every agent write · export and account
 deletion · the §3.5 analytics · the §3.4 distribution assets. Mobile-first responsive web, one API
 that native clients reuse later.
@@ -401,9 +382,9 @@ Reserved for later monetisation — **not** built in v1, so they are not given a
 | Tax, CGT and year-end reporting produced by NetNet | High willingness to pay, jurisdiction-specific |
 | Multi-entity, household or advisor-shared portfolios | Seat-shaped by nature |
 | Document vault / statement history | Storage cost, and v1 deliberately never receives documents |
-| Threshold alerts (notifications triggered by a value crossing a line) | Continuous evaluation per user; high willingness to pay. *Push as a channel for the comeback reminder moved into v1 (§9.8); push itself costs nothing* |
+| Threshold alerts (notifications triggered by a value crossing a line) | Continuous evaluation per user; high willingness to pay. *Push itself costs nothing and is not what is reserved: the comeback reminder uses it in v1 (J12)* |
 
-**Where the line falls, now that Insights ships free (§4.1):** *backward-looking* analysis of data
+**Where the line falls:** *backward-looking* analysis of data
 the user already has is free and in v1 — totals, trends, period-by-period change, breakdowns.
 *Forward-looking* projection built by NetNet is reserved. That is the boundary; it is not "charts
 are free, better charts are paid", which would be unholdable.
@@ -447,9 +428,10 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   which opens **the basics** (below). Below a rule, the agent is offered as the other way to start:
   "Let your AI agent do this", with a secondary **Connect to agent** button (J5). It must be visible
   enough to be a real choice, because the agent is what v1 is betting on (A1, M3), and never a
-  second filled button, because two equal choices stall a new user. In the basics, every answer is saved the moment it is given, and "Done for now" is one tap
-  away on every screen, so onboarding never has to be cleared to reach Home. Once the basics have
-  started, the agent is not offered again inside them: one route at a time.
+  second filled button, because two equal choices stall a new user. In the basics, every answer is
+  saved the moment it is given, and "Done for now" is one tap away on every screen, so onboarding
+  never has to be cleared to reach Home. Once the basics have started, the agent is not offered
+  again inside them: one route at a time.
 - **Given** any question in the basics, **when** the user would rather not say or does not know —
   whether they have it, or roughly how much — **then** **Skip** moves on with nothing added and
   nothing asked because of it. A skipped question is neither a yes nor a no: Back can return to it.
@@ -593,16 +575,10 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   steps for their client **and their platform** (phone or computer, detected and
   switchable), each step with a screenshot, and the connector URL, with no token to generate,
   paste or store. The steps and screenshots are administered content (§2.3), because the clients'
-  own screens change without notice. So is the client list itself: **Claude and ChatGPT at
-  launch, plus the generic "Other agent" guide below** (Founder, 2026-09-27; "Other agent"
-  confirmed at the prototype gate the same day). Grok and Muse are **parked until after launch**
-  (§9.7); what follows about them is kept for then.
-  Muse (Meta, launched September 2026) takes connectors differently: there is no settings screen,
-  so the user asks Muse in the chat to add one from NetNet's address. Its guide therefore starts
-  with a message to send, not a menu path. Meta's connector directory accepts MCP servers with
-  OAuth, and a NetNet listing there would turn this into Muse's own one-tap add. Muse is US-only
-  at launch but is offered everywhere: it is expected to reach other countries soon, and the
-  agent list stays one list rather than one per country.
+  own screens change without notice. So is the client list itself: **Claude and ChatGPT, plus
+  the generic "Other agent" guide below.** Grok and Muse are parked until after launch; their
+  draft guides are kept in the prototype's `connectors.js`. The agent list is one list, the same
+  in every country.
 - **Given** an agent that is not on the list, **when** the user chooses **Other agent**, **then**
   they get a generic guide: add a custom connector (MCP server) in the agent's settings with this
   address, then Allow on NetNet's page. No platform split and no screenshots, because we cannot know
@@ -640,7 +616,7 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   email** to the account's address straight away: which agent was connected and when, and "Not
   you? Revoke it" linking to the Agent tab. **Email only, never push.** It cannot be turned off
   (Reminders settings do not affect it), and it carries no financial data. `security_email_sent
-  {client}` fires (§9.8).
+  {client}` fires.
 - **Given** the whole flow, **when** measured, **then** p50 signup → first agent interaction is
   under 15 minutes (M9), with each funnel step separately readable.
 
@@ -711,14 +687,21 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** a holding not updated for longer than its expected cadence, **when** the user views it,
   **then** it is labelled with how long it has been stale, on both list and detail.
 - **Given** stale holdings, **when** Home is shown, **then** it says how many are out of date and hands
-  the job to a connected agent ("Ask Claude to update it"), or offers to connect one (unchanged from
-  the prototype).
-- Reminders outside the app are J12's comeback reminder. There is no separate scheduled reminder
-  about stale holdings (§9.8).
+  the job to a connected agent ("Ask Claude to update it"), or offers to connect one.
+- The only reminder outside the app is J12's comeback reminder. There is no scheduled reminder
+  about stale holdings.
 
 ### J12 — A gentle nudge after a month away (A14, M13)
-> Added 2026-09-27 (§9.8). The one message NetNet sends to bring someone back. Web push where it is
-> on; email otherwise. Native push arrives with the native apps.
+> The one message NetNet sends to bring someone back: a **gentle reminder so people don't forget
+> NetNet**, not a nag about updating numbers. Web push where it is on; email otherwise. Native push
+> arrives with the native apps.
+>
+> **Why it serves the bet.** The picture is only worth asking about if people keep coming back to it
+> (M6, M8), and the premise (A4, M7) is that they return to ask their agent about their position.
+> Counting agent use as "checking" keeps the reminder from nagging exactly the people v1 most wants:
+> those who use NetNet through Claude or ChatGPT. **Assumption A14:** a gentle monthly nudge brings
+> drifted-away people back (M13, per channel). If it is wrong, the reminder stays, because it is
+> free and gentle, and return is sought elsewhere.
 
 **When it is sent**
 - **Given** a person has not **checked NetNet** for **30 days**, **when** that day comes, **then**
@@ -727,7 +710,7 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   enough.
 - **Given** they still have not checked NetNet, **when** another 30 days pass, **then** NetNet sends
   another, **once a month, at most three times** (days 30, 60 and 90). After the third, NetNet stays
-  silent until they check it again (Founder, 2026-09-28).
+  silent until they check it again, so someone who has left for good is not reminded forever.
 - **Given** they check NetNet at any time, **when** they do, **then** the clock starts again from that
   day, with three reminders available again. Someone who checks at least once a month never
   receives a reminder.
@@ -746,8 +729,9 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** any reminder, **when** it is shown, **then** it reads **"Your net worth is due for an
   update."**, followed by **"Just ask Claude."** when an agent is connected (with the connected
   agent's name). The title is "NetNet"; the email uses the same line as its subject, with one button,
-  **Open NetNet** (Founder's choice, §9.8 option C). Tapping it opens Home. **It never includes an amount, a total, a holding name or a type or tag name**, because
-  lock screens and inboxes are public (N9). No guilt, no streaks, no urgency.
+  **Open NetNet**. Tapping it opens Home. **It never includes an amount, a total, a holding name
+  or a type or tag name**, because lock screens and inboxes are public (N9). No guilt, no streaks,
+  no urgency.
 
 **Asking for push**
 - **Given** a person with a first picture (at least one holding), on a browser that can receive push,
@@ -771,7 +755,7 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
     back on.
   - **Notifications on this device**, on or off, where the browser can receive push.
   - **Email reminders**, on or off, with one line saying email is used only when no device has
-    notifications on. Off means no reminder email, ever (J9's opt-out rule, kept).
+    notifications on. Off means no reminder email, ever.
   - **Other devices** with notifications on ("Android · Chrome", last used), each with **Remove**.
   Changes apply at once. Every reminder email has a one-click unsubscribe that turns email reminders off.
 - **Given** a person signs out on a device, **when** they do, **then** that device gets no further
@@ -790,9 +774,6 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   data — verified by test, not by inspection.
 
 ### J11 — Insights: how each period actually went
-> Specified from `reference/mockups/README.md` alone; the Insights frames are not in the repo.
-> Stage 2 must review the real frames with the Founder before building — the behaviour below is
-> the contract, the visual and interaction detail is not yet settled.
 
 - **Given** holdings with value history, **when** the user opens Insights, **then** they can switch
   between **Monthly, Quarterly and Yearly** views, each listing net-worth change per calendar
@@ -838,8 +819,8 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 | **N7** | Mobile-first responsive; one API serving web now and native later. On a phone, text is sized for reading at arm's length: nothing below 11px, and the native apps follow the reader's own text-size setting | Native iOS/Android is planned, not hypothetical. The people this is for check their numbers on a phone, often in passing |
 | **N8** | Reliability and security never trade against cost | Cheap-but-flaky is a failed outcome for financial data |
 | **N9** | Analytics carries no financial values (§3.5) | The metrics pipeline must not become the leak |
-| **N11** | Context compilation is **deterministic** — arithmetic, schema and stored provenance only, no inference of any kind | Keeps §2.4's lift free: N2 stays intact and N6's cost ceiling is untouched. The moment context needs a model to produce it, the economics of the whole product change |
 | **N10** | Jurisdiction packs are **data, not code**: adding a market ships no release, and no local institution name, rule or default is hard-coded into a flow. Packs are validated, versioned data the running system reads, so a human admin can later change them through a UI; that admin portal is not v1, but nothing in v1 may preclude it (§2.3) | Being opinionated is inherently local (§2.3). Fusing local facts into the engine makes v1 a Singapore app that cannot leave, and that is the expensive thing to retrofit |
+| **N11** | Context compilation is **deterministic** — arithmetic, schema and stored provenance only, no inference of any kind | Keeps §2.4's lift free: N2 stays intact and N6's cost ceiling is untouched. The moment context needs a model to produce it, the economics of the whole product change |
 
 ## 8. Non-goals for v1
 
@@ -849,14 +830,14 @@ household or advisor access · native iOS/Android apps · **an in-app AI chat or
 advice generated by NetNet itself** — the agent is the user's own, running on their subscription
 (N2) · automatic price or FX refresh (§4.2) · document upload or storage · NetNet-built forecasting
 · billing, plans or entitlements · **financial-literacy education as content — explainers, courses,
-coaching, "what is net worth" articles** (still a non-goal after the §2 widening; §2.1 replaces
-literacy-as-selection with opinionated-defaults-plus-agent. NetNet may use plain language, state the
-reason for a default, and show what a number does — it may not write a curriculum) · the mockups' Pro tier, legacy trend-graph toggles and
-haptics · Net Worth Goals, notes on a value, and marking a value on a chart (all from the mockups) ·
+coaching, "what is net worth" articles** (§2.1: NetNet may use plain language, state the reason for
+a default, and show what a number does; it may not write a curriculum) · the mockups' Pro tier,
+legacy trend-graph toggles and haptics · Net Worth Goals, notes on a value, and marking a value on
+a chart ·
 **an admin portal for jurisdiction packs and setup guides** (future; v1 must not preclude it, §2.3) ·
 **any message beyond J12's comeback reminder:** marketing or promotional messages, scheduled
-reminders about stale holdings, security notices by push (the J5 security email stays), period recaps (post-launch
-candidate), "your agent changed values" notices, threshold alerts (reserved, §4.2), an in-app
+reminders about stale holdings, security notices by push (the J5 security email is by email),
+period recaps (a post-launch candidate), "your agent changed values" notices, threshold alerts (reserved, §4.2), an in-app
 notification inbox, SMS or WhatsApp, guidance on adding NetNet to a phone's Home Screen, and native
 push (arrives with the native apps).
 
@@ -866,183 +847,11 @@ draws the line at the balance sheet deliberately — it is the part nobody has �
 strong with users asking affordability questions, income and expenses is the first candidate to
 reconsider, and it is currently neither in scope nor reserved.
 
-## 9. Decisions taken at the gate
+## 9. Open questions
 
-Approved by the Founder 2026-09-23. All four open questions were taken as recommended; earlier in
-the same session the Founder resolved audience breadth (§2) and overrode the recommendation to
-defer Insights (§4.1, J11).
-
-1. **Metric targets and kill thresholds stand as written** (§3.2, §3.3), with advice pull (M7 ≥50%,
-   kill <20%) as a headline metric alongside signups, connection rate and week-4 return.
-2. **Reserved capability list confirmed** (§4.2): unlimited MCP read and write is permanently free,
-   NetNet never generates advice itself, and the free/reserved line is backward-looking analysis
-   free, forward-looking projection reserved.
-3. **Accessibility is a first-class holding attribute** (readily accessible / illiquid / locked),
-   defaulting by type — so J8 never answers "can I afford this" off CPF, home equity or unvested
-   equity.
-4. **Claude is the launch-blocking MCP client**, ChatGPT a dated fast-follow, both counting toward
-   M3; the server is built to the standard remote-MCP + OAuth spec with no client-specific
-   branching. The instrumentation amendment this depends on is **applied**: `{client}` now rides on
-   `agent_connection_started`, `agent_connection_completed`, `agent_connection_failed` and
-   `agent_tool_called` (§3.5). Stage 3 must verify each client's current connector requirements
-   (paid tier, developer mode) before the architecture locks, since those cap M3's realistic
-   ceiling and change faster than any of us will remember.
-
-### 9.5 Decisions taken 2026-09-24 — the §2 widening
-
-Founder decision, overturning the single-beachhead choice made at the 2026-09-23 gate.
-**Approved by the Founder 2026-09-24.**
-
-5. **v1 targets three personas** (§2), not one. The expansion ladder is retired: its step 4 — the
-   broad market who do not know what they are worth — is now P-A and in scope. §1 always described
-   this person; §2 now agrees with §1.
-6. **Literacy-as-selection is replaced by opinionated-defaults-plus-agent** (§2.1). NetNet still
-   does not teach. It decides, states its reason, asks for facts rather than categories, and routes
-   real judgement to the user's own agent. §8's education non-goal survives, qualified.
-7. **New assumption A12 and new metric M11: the app must be worth using before an agent is
-   connected** (§2.2, §3.2). Chosen over the alternative — treat the agent as the goal and convert
-   beginners to a paid AI plan — primarily because it keeps the launch experiment readable. Under
-   that alternative, P-A's low M3/M6/M7 would look like evidence against A1 and A4 when the
-   experiment had simply never reached them.
-8. **All metrics are reported per segment, and kill criteria are read on P-B and P-C, not on the
-   blend** (§3.2, §3.3). P-A is held to M11 instead. `{segment}` rides on every event.
-9. **Singapore is the launch region, not the design constraint** (§2.3, N10). Opinions about the
-   interaction are universal; opinions about the world live in jurisdiction packs, which are data.
-   Types are universal and only labels are local — NetNet ships a mandatory-retirement type, not
-   "CPF". v1 carries the machinery, the SG pack and a first-class generic pack; further markets are
-   data files. Raised by the Founder, who declined to have the app shaped permanently by its first
-   market.
-10. **Accessibility is never asked as a classification** (J2). This was the trigger for the whole
-   revision: "illiquid or locked?" for a property is unanswerable without knowing whether the user
-   lives in it, and a layman asked to classify either stalls or guesses wrong — both silent failures.
-
-11. **The agent is a target user, and NetNet + agent must beat either half** (§2.4, A13, M12).
-    Founder's framing, and the benchmark is the one P-C already runs monthly: identical data in a
-    spreadsheet and in NetNet, the same question to two agents, and the NetNet answer must be better
-    **even on a weak model**. That makes the claim falsifiable instead of aspirational. Two
-    constraints were added rather than assumed: context is dense and ordered, never comprehensive,
-    because bloat degrades weak models and breaches N1; and NetNet supplies facts and uncertainty,
-    never judgement, which keeps §8 and N2 intact. N11 keeps the whole layer deterministic, so the
-    differentiator costs nothing to run. Recorded honestly: the **compute is replicable** — the
-    durable moat is the capture (§2.1) and the jurisdiction semantics (§2.3) that get accessibility,
-    meaning and provenance recorded correctly, plus accumulated history.
-
-**Correction to a §9.4 premise.** The claim that custom MCP connectors are paid-tier only is
-**unverified and probably wrong** — the Founder connects Notion, Google Drive and other MCP servers
-on a free ChatGPT account. One sub-question stays open: listed directory connectors may be gated
-differently from a custom connector added by URL. Stage 3's existing obligation to verify each
-client's requirements now carries more weight, because if free tiers can add custom connectors, P-A
-reaches the core product on day one and the §2.2 risk shrinks considerably. A12 and M11 stand
-regardless — standalone value was chosen for measurement reasons, not only for access reasons.
-*Update, Stage 2 review:* Claude's and ChatGPT's free plans now allow custom MCP connectors, so the
-connect flow carries no plan warning. Stage 3 confirms this when building.
-
-### 9.6 Revisions during the Stage 2 review — 2026-09-24/25
-
-Written into the requirements above; listed here so the gate can see what moved. Approved by the
-Founder with the prototype, 2026-09-26.
-
-| # | What changed | Where |
-|---|---|---|
-| 12 | An **undecided** accessibility state: counts toward net worth, never toward what can be used, reported to the agent as incompleteness | J2 |
-| 13 | G-D1 and G-D3 re-worded to §2.5; the launch must reach P-B and P-C in enough volume | §3.4 |
-| 14 | `via` on `holding_created` (`guided` / `form`) | §3.5 |
-| 15 | Net Worth Goals, value notes and chart marks out of v1 | §8 |
-| 16 | Agent provenance is quiet: a mark, the client named on the opened value, full attribution in the log. The exchange rate is stored, exported and readable, not displayed | J2, J6 |
-| 17 | Packs are administered content, with an admin portal later; four constraints binding now | §2.3, N10, §8 |
-| 18 | Sign-up asks only for a way in (Google, Apple, email and password); email verification does not block; log-in resumes unfinished onboarding; the landing page is a marketing page with its own design; `{method}` on sign-up events | J1, §3.4, §3.5 |
-| 19 | Where-you-live defaults to the country from IP, confirmed; every country listed alphabetically; the chosen country's currency becomes the default | §2.3, J2 |
-| 20 | The basics are part of onboarding, one question per screen; an empty Home offers one primary action and one secondary alternative (the agent, below a rule); the starting tiles and `via: starter` are gone | J1, §3.5 |
-| 21 | Packs carry their own default types and basics, with follow-ups after a yes; ten launch countries | §2.3, J2 |
-| 22 | Onboarding offers the agent as its alternative route; one connect flow everywhere, per client and platform, with screenshots; connected ends onboarding on a blank Home with the starting prompt; agent prompts for empty and stale Home; `{entry}` on connection events | J1, J5, J6, §3.5 |
-| 23 | Back on every question of the basics (correct an answer, change yes to no, or return to where the basics began); no agent offer inside the basics; the Connect button turns through the agents it works with; Grok and Muse listed once their connector support is confirmed | J1, J5 |
-| 24 | Skip on every question of the basics; "Other agent" with a generic guide, so any MCP agent can connect; the connect flow drops its questions link (Back does it) | J1, J5 |
-| 25 | A chart with too little data keeps its place as a labelled placeholder (a neutral sample under frosted glass, "Need more data", saying what makes it appear), on Home, a holding and Insights | J4, J11 |
-| 26 | Muse is Meta's agent; its setup starts with a message sent in the chat, and a listing in Meta's connector directory is the better path | J5 |
-| 27 | Trend charts can be read point by point (hover, tap, drag, keyboard); phone text is larger, with an 11px floor | J4, N7 |
-| 28 | Home's filter gains "Don't Show" (types and tags), like Insights'; a type or tag is shown only or hidden, never both | J4, J11 |
-
-### 9.7 Revisions at the Stage 3 review — 2026-09-27
-
-Founder decisions, taken while reviewing the architecture. Rows 29–30 are approved with the
-architecture at the Stage 3 gate. Row 31 was approved with the §9.8 amendment on 2026-09-27. Row 29
-was amended by the Founder at the prototype gate, 2026-09-27: "Other agent" stays at launch.
-
-| # | What changed | Where |
-|---|---|---|
-| 29 | The launch agent list is **Claude and ChatGPT, plus the generic "Other agent" guide** (amended at the prototype gate, 2026-09-27). Grok and Muse are parked until after launch. The Connect button's icon turns through the two named launch agents. The server stays standard remote MCP with OAuth and no client-specific code, so any MCP agent can still connect technically; only the guides and the list are parked | J5 |
-| 30 | Which plans of each client allow a custom connector is parked. It changes guide content and directory submissions, not the product | §9.5 |
-| 31 | **A gentle comeback reminder joins v1** (Founder, 2026-09-27): after 30 days without checking NetNet (app or agent), then monthly while away, at most three times (Founder, 2026-09-28); by web push where it is on, by email otherwise. It replaces J9's scheduled stale-holding email. A security email (never push) is sent when an agent is connected. Wording: "Your net worth is due for an update." Specified in §9.8, J5 and J12. **Approved 2026-09-27** | §3.2, §3.5, §4.1, §8, J5, J9, J12 |
-
-### 9.8 Amendment — a gentle comeback reminder (approved by the Founder 2026-09-27)
-
-**The objective (Founder).** Push exists as a **gentle reminder so people don't forget NetNet**.
-It is not a nag about updating numbers. If someone checks NetNet at least once a month, by opening it
-or through their agent, NetNet stays quiet, whether or not they changed anything. If they don't, one
-gentle reminder, then one a month while they stay away.
-
-**Why it serves the bet.** The picture is only worth asking about if people keep coming back to it
-(M6, M8), and the premise (A4, M7) is that they return to ask their agent about their position. A
-monthly nudge to someone who has drifted away is the lowest-pressure way to protect that. Counting
-agent use as "checking" keeps it from nagging exactly the people v1 most wants: those who use
-NetNet through Claude or ChatGPT.
-
-**New assumption A14.** *A gentle monthly nudge brings drifted-away people back.* Measured by M13,
-per channel. If wrong, the reminder stays (it is free and gentle), and return is sought elsewhere.
-
-**Decisions taken by the Founder (2026-09-27):**
-
-| Question | Decision |
-|---|---|
-| What is push for? | A gentle comeback reminder, and nothing else in v1 |
-| When is it sent? | After 30 days without checking NetNet, then every 30 days while the person stays away, **at most three times** (amended by the Founder 2026-09-28) |
-| What counts as checking? | Opening NetNet on any device, or their connected agent reading or writing through it. No update needed |
-| Which channel? | One rule for everyone: push to devices where it is on; email (verified addresses only) when no device has it on or push fails. This replaces J9's scheduled stale-holding email |
-| Where do we ask? | A one-time quiet card on Home after the first picture, plus a switch in Settings → Notifications |
-| iPhone Home Screen guidance? | None. Where a browser can't receive push (such as an iPhone Safari tab), no push option is shown and email is used |
-| Security notice when an agent is connected? | Kept, **by email only**, never push; cannot be turned off (J5) |
-| Reminder wording? | **Option C:** "Your net worth is due for an update." + "Just ask Claude." when an agent is connected |
-
-**Adopted as defaults (flag if wrong):** reminders arrive between 08:00 and 21:00 in the person's
-time zone. The Home card's **Not now** hides it for 30 days, and a second **Not now** hides it for
-good. There is a master Reminders switch plus per-channel switches, and email opt-out is permanent.
-The **security email** stays in v1 (Founder): when an agent is connected, an email goes out straight
-away, **email only, never push**, and it cannot be turned off (J5). Period recaps stay a post-launch
-candidate.
-
-**Reminder wording: the three options put to the Founder. C was chosen.** Each is short enough for a
-lock screen (the title is always "NetNet"). The second line appears only when an agent is connected.
-The email uses the same line as its subject, with one button, **Open NetNet**.
-
-| | Push body / email subject | With an agent connected, adds | Character |
-|---|---|---|---|
-| **A** | It's time to update your net worth. | Ask Claude to do it for you. | Your own phrasing. Direct, clear action |
-| **B** | Time for your monthly net worth check-in. | Claude can do the updating. | Warmer; "check-in" frames it as a habit, not a chore |
-| **C ✓** | Your net worth is due for an update. | Just ask Claude. | Shortest; reads like a friendly statement of fact. **Chosen** |
-
-**Chosen by the Founder: C** (2026-09-27). "Claude" is replaced by the connected agent's name
-(ChatGPT). None carries an amount or a name.
-
-**Risk, stated plainly.** Someone who has left for good would get one reminder a month
-indefinitely. **Resolved by the Founder (2026-09-28): at most three per absence** (days 30, 60 and
-90), then silence until they check NetNet again. The one-click unsubscribe, the Reminders switch
-and a gentle tone keep even those three respectful. Reminders only reach people who
-turned push on or verified their email.
-
-**Consequences downstream.**
-- *Stage 2 (prototype):* the Home card (turn on / not now, granted and denied states); Settings →
-  Notifications (Reminders, this device, email, other devices); what a reminder looks like on a lock
-  screen and in an inbox, in the chosen wording; the security email; the PROTO drawer showing the new events and a way to simulate "30 days
-  away".
-- *Stage 3 (architecture), to revise after approval:* track `last_checked_at` per user (app sessions
-  and agent calls); a daily job finds people at 30, 60 and 90 days and sends within their local daytime
-  (a few daily runs across time bands); push first, email fallback; the device list; the renamed
-  events. Drop the scheduled stale-holding email. The security email is sent at once when a
-  connection is approved (not by schedule), by email only.
-
-**Assumption taken, flag if wrong:** FX for web-entered values uses a free daily reference rate at
-entry time only, recorded on the entry, never a background refresh of past entries (§4.2 reserves
-automated refresh). Exact source is a Stage 3 choice.
-
-**Carried into Stage 2:** J11's behaviour is specified from the mockups README alone — the Insights
-frames have never been seen. Review them with the Founder before building.
+1. **Which plans of each client allow a custom connector** is parked. It changes guide content and
+   connector-directory submissions, not the product. Last checked at Stage 3: Claude's free plan
+   allows one custom connector; ChatGPT's free plan does not (Plus and above), though free accounts
+   can use directory-listed apps. Standalone value (§2.2, A12) matters either way.
+2. **Income and expenses** is the first candidate to reconsider if M7 is dominated by affordability
+   questions (the named risk in §8).

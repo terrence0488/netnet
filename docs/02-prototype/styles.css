@@ -1,8 +1,7 @@
-/* NetNet — design B "Poster": implementation of docs/02-prototype/design-system.md.
+/* NetNet — "Poster": implementation of docs/02-prototype/design-system.md.
    Stage 2 design code: no framework, no build, no stack opinion.
    A bold printed poster: cream stock, black outlines, hard offset shadows, one tomato ink.
-   Structure is objects: every section is a card you could cut out and pin up.
-   Behaviour, content and hit targets are design A's, unchanged (same app.js). */
+   Structure is objects: every section is a card you could cut out and pin up. */
 
 @font-face{font-family:Unbounded;src:url(fonts/unbounded.woff2)format("woff2");font-weight:200 900;font-display:swap}
 @font-face{font-family:"Space Grotesk";src:url(fonts/space-grotesk.woff2)format("woff2");font-weight:300 700;font-display:swap}
@@ -398,7 +397,7 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:max
 
 /* ==========================================================================
    HIT TARGETS — design-system.md §6.1. What you see is a design choice; what you
-   can TAP is a contract. 44px by default, 32px only where a mouse is detected.
+   can TAP is a contract. 44px by default, 36px only where a mouse is detected.
    ========================================================================== */
 :root{--hit:44px}
 @media (hover:hover) and (pointer:fine){:root{--hit:36px}}
@@ -648,18 +647,18 @@ a.btn{text-decoration:none}
 @media (max-width:359px){ .section-h{gap:6px} .section-h .link{letter-spacing:0} .section-h h2{font-size:max(var(--fs-min),calc(12px * var(--fs)))} }
 .sheet .sh-grp.sh-split{border-top:1.5px solid var(--rule);margin-top:24px;padding-top:22px}
 
-/* ---------- fixes from the Founder's iPhone review (2026-09-26) ---------- */
+/* ---------- iPhone fixes ---------- */
 /* Switch rows inside a card get the card's inner padding, like every other row. */
 .card .switch{padding:14px 16px}
 /* The OR/AND toggle is sized by its 44px buttons, not by the fixed width app.js gives it
-   (88px fits only the 32–36px mouse targets). */
+   (88px fits only the 36px mouse targets). */
 .sh-grp .seg{width:auto!important;flex:none}
 /* iOS gives date inputs an intrinsic width and centres the date: make them fill the column like any field. */
 .field input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;text-align:left}
 .field input[type=date]::-webkit-date-and-time-value{text-align:left}
 .two>*{min-width:0}
 
-/* ---------- Home: trend and allocation share one place (Founder, 2026-09-26) ----------
+/* ---------- Home: trend and allocation share one place ----------
    Phone: a carousel of two cards, swiped sideways, with dots. Computer: side by side on the
    grid's 7/5 columns. The scroller keeps room for the cards' hard shadows. */
 .o-charts{margin-top:18px}

@@ -1,9 +1,8 @@
 # Prototype tests
 
 Browser tests for the clickable prototype, run with Playwright against `../index.html` on a phone
-(iPhone 13) and at desktop sizes. They are the behaviour the design must keep: a new visual
-design (or a design variant) should pass all of them unchanged, apart from tests that check the
-look itself.
+(iPhone 13) and at desktop sizes. They are the behaviour the design must keep: any change to the
+look should pass all of them unchanged, apart from tests that check the look itself.
 
 ```
 node docs/02-prototype/tests/run.mjs            # everything, one line per suite
@@ -34,6 +33,6 @@ there is put back afterwards.
 | `car` | Home's trend/allocation carousel on a phone; side by side on a computer |
 | `notif` | The comeback reminder (PRD J12): Home's one-time card, the browser's prompt, Settings → Notifications, push first and email otherwise, the wording, the daytime window, events; the security email on connecting an agent (J5) |
 | `smoke` | Every screen renders without errors (screenshots) |
-| `touch` | Every control's tap target is at least 44px on a phone |
+| `touch` | Every control's tap target is at least 44px on a phone (`DESKTOP=1 MIN=36` for a computer with a mouse) |
 | `wide` | Layout at 1600–2560px |
 | `ovf` | Every screen at a given size: no sideways scroll, no colliding or wrapping labels |

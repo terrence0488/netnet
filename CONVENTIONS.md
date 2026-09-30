@@ -207,9 +207,9 @@ sources, Google, Apple) are faked at their interface.
 - `docs/02-prototype/design-system.md` is the spec, and the prototype is the behavioural
   reference. Use tokens only, never raw colours, sizes or font names in components.
 - The design-system rules are binding in production: one figure, one place (§2.1); 44 px touch
-  targets (32 px only with a fine pointer); `aria-disabled`, never `disabled`; nothing below
+  targets (36 px only with a fine pointer); `aria-disabled`, never `disabled`; nothing below
   11 px on a phone; reduced motion honoured; only a route change scrolls to the top.
-- No design or scope commentary in the UI (prototype note 17).
+- No design or scope commentary in the UI (design-system §2.1).
 - Charts are our SVG components over `core.chart` geometry. No charting library.
 
 ## 14. Dependencies

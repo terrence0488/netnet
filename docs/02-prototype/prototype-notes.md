@@ -1,12 +1,8 @@
 # 02 — Prototype notes
 
-Status: **approved by the Founder 2026-09-26** (Stage 2 gate) · Stage owner: Product designer
-**Re-opened 2026-09-27** for the comeback reminder and the security email (PRD §9.8, J5, J12), and
-**approved by the Founder 2026-09-27**. What was added is in §10.
-Reworked 2026-09-24 against the amended PRD: J1 (guided assembly, first picture, segment), J2
-(accessibility as facts, never a classification) and §2.3 (jurisdiction packs, as data).
-Inputs: `docs/01-prd.md` (approved as amended 2026-09-24), the Founder's iOS mockups (shared
-in-session, deliberately not committed — see `docs/reference/mockups/README.md`)
+Status: **approved** · Stage owner: Product designer
+Inputs: `docs/01-prd.md`, the Founder's iOS mockups (shared in-session, deliberately not committed —
+see `docs/reference/mockups/README.md`)
 
 ---
 
@@ -16,19 +12,20 @@ Open `docs/02-prototype/index.html` in a browser. No build, no server, no instal
 HTML, CSS and JavaScript on purpose. Works offline.
 
 - Try it at **phone width and desktop width**; the layout is genuinely different, not scaled.
-- It follows your OS light/dark setting. The mockups are dark, so dark is the reference.
-- The **PROTO** button (bottom right) resets to the sample account, switches to an empty
-  first-run account, shows the analytics events as they fire, and can **pretend the browser is in
-  Singapore, Malaysia, the UK, or nowhere**, so the region question can be tested from anywhere.
-  It also runs the **comeback reminder**: skip 30 days, let the agent check NetNet, make push fail,
-  pretend this browser can or cannot receive push, and open what NetNet sent outside itself (§10).
+- It follows your OS light/dark setting. Light (cream) is the reference theme.
+- The **PROTO** button (bottom left) resets to the sample account, switches to an empty first-run
+  account, shows the analytics events as they fire, and can **pretend the browser is in
+  Singapore, Malaysia, the UK, Germany, or nowhere**, so the region question can be tested from
+  anywhere. It also runs the **comeback reminder**: skip 30 days, let the agent check NetNet, make
+  push fail, pretend this browser can or cannot receive push, and open what NetNet sent outside
+  itself (§7).
 - State is kept in `localStorage`, so your changes survive a reload until you reset.
 
 **Two ways in, one per kind of user.**
 
 | Start from | Shaped like | What it shows |
 |---|---|---|
-| The sample account (default) | **P-C, Established** — ~S$1.84M, 12 holdings, SGD and USD, CPF, an HDB flat, unvested RSUs, a deliberately stale car | Everything at scale: Insights, history, agent writes, undo |
+| The sample account (default) | **P-C, Established** — ~S$1.84M, 12 holdings, SGD and USD, CPF, an HDB flat, unvested RSUs, a deliberately stale car | Everything at scale: Insights, history, agent writes, undo, reminders |
 | PROTO → empty account → sign up | **P-A or P-B** — whoever you say you are | Sign-up, onboarding (region, segment, the basics), the first picture, fact-based accessibility |
 
 **All data in it is fictional.** It is not anyone's real balance sheet and must never be replaced
@@ -38,35 +35,35 @@ with one.
 
 | Job | Where it is | Notes |
 |---|---|---|
-| **J1** first picture fast | Sign up → onboarding → empty Home | Sign-up is a provider (Google, Apple) or email then password; nothing else. Onboarding: where you live (inferred, one tap to confirm) and an optional segment, one per screen. Log out / log in from Account; logging in resumes onboarding where it was left. Then **the basics**, one question per screen, each yes saved at once, "Done for now" always available, **Skip** on every question (and on its amount) for "rather not say" or "don't know", and **‹ Back** on every question: back to the previous answer (correct it, or change yes to no, which removes what it added and its follow-ups), and from the first question back to the intro screen, where the agent route is. Home shows the picture; an empty Home offers "Add what you have" and, below a rule, "Let your AI agent do this" with an outlined **Connect to agent** button — the same block as the intro screen (Founder, 2026-09-25). The basics ask only "do you have this?" and "roughly how much?" |
-| **J1** the first picture | Home, as soon as there is one holding | The **Position** ledger says what you could use this month, what needs selling first, what is locked, and what you owe. None of it was typed in |
+| **J1** first picture fast | Sign up → onboarding → Home | Sign-up is a provider (Google, Apple) or email then password; nothing else. Onboarding: where you live (inferred, one tap to confirm) and an optional segment, one per screen. Then the intro screen: **Start** opens **the basics**; below a rule, "Let your AI agent do this" with an outlined **Connect to agent**. The basics: one question per screen, each yes saved at once, "Done for now" always available, **Skip** on every question and its amount, **‹ Back** on every question (correct an answer, or change yes to no, which removes what it added and its follow-ups; from the first question, back to the intro). An empty Home offers "Add what you have" and the same agent block. Log out / log in from Account; logging in resumes onboarding where it was left |
+| **J1** the first picture | Home, as soon as there is one holding | The **Position** ledger says what you could use this month, what you'd have to sell first, what is locked away, what is not decided, and what you owe. None of it was typed in |
 | **J2** track anything | Add Tracking → New Asset / New Liability; Manage Types; Manage Tags | User-defined taxonomy on top of universal types; rename/delete cascades to holdings |
-| **J2** accessibility | Add form, holding page, Home | A fact question only where the type is ambiguous; otherwise the default and its reason in one line, with **Change**. The consequence is shown, never the category. "Not sure" is always allowed and never blocks saving |
-| **§2.3** jurisdiction packs | `packs.js`; Account → General → Where you live | SG pack and generic pack. Switching region relabels every type you have not renamed and re-words every reason, live |
+| **J2** accessibility | Add form, holding page, Home | A fact question only where the type is ambiguous; otherwise the default and its reason in one line, with **Change**. The consequence is shown, never the category. "Not sure" is always allowed and never blocks saving (§4) |
+| **§2.3** jurisdiction packs | `packs.js`; Account → General → Where you live | Generic, SG, MY and UK packs. Switching region relabels every type you have not renamed and re-words every reason, live (§3) |
 | **J3** record and correct | Holding detail → Update / Add Value / Edit Value / Delete | Back-dating, same-date warning |
-| **J4** see the picture | Home: trend, allocation, Position ledger (includes assets-vs-liabilities), baseline, sort, filters | Every % on screen is relative to the chosen baseline. Change figures appear once there is history; until then the trend (and a holding's charts) hold their place as a frosted placeholder, "Need more data", saying what makes them appear |
-| **J5** connect the agent | Onboarding (the intro screen's "Let your AI agent do this" → **Connect to agent**, whose icon turns through ChatGPT and Claude every two seconds), the empty Home, a holding's "Ask your agent", the Agent tab | One flow everywhere: choose the agent → verify the email if needed → steps for this platform (phone or computer, switchable), each with a screenshot slot → NetNet's approval page (**Allow** / Cancel) → done. Two outside events are stood in for by dashed "Prototype:" buttons: opening the verification link, and the agent opening the approval page. On the agent route, Allow ends onboarding on a blank Home whose hint is the starting prompt and **Let Claude do it** (opens claude.ai with the prompt typed in). Screenshots: drop them into `connect/`; agent logos into `agents/` (see each README). **At launch the list is ChatGPT, Claude and Other agent** (Founder, 2026-09-27); Grok and Muse are parked in `connectors.js` (`parked`), kept for after launch and reachable by no list or address. **Other agent** gives a generic guide (the address, and "add a custom connector"), with no platform switch or screenshots, so any MCP agent can connect. The connect flow has no questions link: Back returns to the intro. Logos for ChatGPT and Claude are in `agents/`. Revoke on the Agent tab |
+| **J4** see the picture | Home: trend and allocation carousel, Position ledger (includes assets vs liabilities), holdings, baseline, sort, filters (Show Only and Don't Show) | Every % on screen is relative to the chosen baseline. Change figures appear once there is history; until then the trend (and a holding's chart) hold their place as a frosted "Need more data" placeholder saying what makes them appear. Line charts read point by point |
+| **J5** connect the agent | The intro screen, the empty Home, a holding's "Ask your agent", the Agent tab | One flow everywhere: choose the agent (ChatGPT, Claude, Other agent) → verify the email if needed → steps for this platform (phone or computer, switchable), each with a screenshot slot → NetNet's approval page (**Allow** / Cancel) → done, with no "I've done it" button. **Other agent** gets a generic guide (the address, "add a custom connector"), no platform switch or screenshots. Back returns step by step to where you began. On the agent route, Allow ends onboarding on a blank Home whose hint is the starting prompt and **Let Claude do it** (opens claude.ai with the prompt typed in). The **Connect to agent** icon turns through ChatGPT and Claude every two seconds. Grok and Muse are `parked` in `connectors.js`, reachable by no list or address. Revoke on the Agent tab. Two outside events are stood in for by dashed "Prototype:" buttons: opening the verification link, and the agent opening the approval page |
+| **J5** security email | Sent on every **Allow**; PROTO → Sent outside NetNet | "Claude was connected to your NetNet", when, and "Not you? Revoke it" to the Agent tab. Email only, cannot be turned off; listed under Account → Notifications → Security as "Always" |
 | **J6** agent assembles | Agent → Try it | Scripted turn: finds the existing holding rather than duplicating, then writes |
 | **J7** verify and undo | Activity | Single undo and whole-turn batch undo; web and agent changes in one list |
 | **J8** grounded advice | Agent → Try it (second half) | The affordability question answered off money you could use, with staleness caveats. **A scripted replay — see §8** |
-| **J9** stay current | Stale chips on Home and detail; the out-of-date note on Home | In the app only. The note hands the job to a connected agent ("Ask Claude to update it", a prompt with no data in it), or offers to connect one. The scheduled stale-holding email and its cadence setting are gone (PRD §9.8): the reminder outside the app is J12's |
-| **J12** comeback reminder | Home's one-time card below the Position ledger; Account → Notifications; PROTO → Comeback reminder | Asked once on Home after the first picture (Turn on / Not now), the browser's own prompt after the tap (stood in for), one-line granted and blocked states. Settings: Reminders, this device, email reminders, other devices. PROTO skips 30 days and shows the reminder as it arrives: a lock screen for push, an inbox for email. See §10 |
-| **J5** security email | Sent on every **Allow**; PROTO → Sent outside NetNet | "Claude was connected to your NetNet", when, and "Not you? Revoke it" to the Agent tab. Email only, cannot be turned off; listed under Settings → Notifications → Security. The sample account holds the one sent when Claude was connected |
+| **J9** stay current | Stale chips on Home and detail; the out-of-date note on Home | In the app only. The note hands the job to a connected agent ("Ask Claude to update it", a prompt with no data in it), or offers to connect one |
 | **J10** own the data | Account → Export / Delete account | Export downloads JSON and CSV, including accessibility and the answer behind it |
 | **J11** insights | Insights tab | Monthly/Quarterly/Yearly; Growth, Assets vs Liabilities, Distribution Over Time; Insights Filters with "Don't Show"; period drill-down. With too little history, each chart is a frosted placeholder and the summary line says what a comparison needs |
-| **§3.5** segment on every event | PROTO → events | `{segment}` rides on every event: `unknown` until onboarding, then whatever was chosen, or `unknown` if skipped. `signup_started` and `account_created` carry `{method}` |
+| **J12** comeback reminder | Home's one-time card below the Position ledger; Account → Notifications; PROTO → Comeback reminder | See §7 |
+| **§3.5** events | PROTO → events | `{segment}` rides on every event: `unknown` until onboarding, then whatever was chosen, or `unknown` if skipped. `signup_started` and `account_created` carry `{method}` |
 
 Deliberately **not** built, because they are not design questions: real auth, real OAuth, a real
-MCP server, email sending, a service worker and real web push, and anything on the reserved list
-in PRD §4.2.
+MCP server, email sending, a service worker and real web push, the landing page (a separate
+marketing design, PRD G-D1, whose call to action routes to `#/signup`), and anything on the
+reserved list in PRD §4.2.
 
 ## 3. Jurisdiction packs (PRD §2.3, N10)
 
 **Where they live.** `packs.js` — a data file with no functions in it. `app.js` names no local
 institution, rule or default; it reads the world only through the pack. Adding a market is a new
-entry in `PACKS` plus a `COUNTRY_PACK` line pointing a country at it. No change to the flow. In the product, a
-human admin will edit packs through a future admin portal (PRD §9.6 item 17); `packs.js` is the
-shape that admin would be editing.
+entry in `PACKS` plus a `COUNTRY_PACK` line pointing a country at it. No change to the flow.
+`packs.js` is the shape a human admin would edit in the future admin portal (PRD §2.3).
 
 **What a pack supplies**, mapped to the PRD's list:
 
@@ -80,10 +77,9 @@ shape that admin would be editing.
 | Currency and date conventions | `locale`, `currency` | Generic uses the browser's own conventions; currency comes from the region |
 
 **Resolution.** Current pack first, then generic, key by key. The generic pack is complete on its
-own; SG overrides only what is genuinely local. The one behavioural difference is deliberate and
-shows the machinery working: **generic asks** "could you take money out today without a penalty?"
-for a tax-advantaged account, because ISAs and IRAs answer differently; **SG does not ask**, because
-there that type is SRS and the answer is not in doubt.
+own; a country pack overrides only what is genuinely local. **Generic asks** "could you take money
+out today without a penalty?" for a tax-advantaged account, because ISAs and IRAs answer
+differently; **SG does not ask**, because there that type is SRS and the answer is not in doubt.
 
 The prototype carries three country packs, **Singapore, Malaysia and the UK**, chosen to show the
 machinery's range; the other launch countries (PRD §2.3) are content for production. Any other
@@ -98,14 +94,14 @@ country, Germany for example, runs on the generic pack.
 | Conventions | Browser locale; currency from region | `en-SG`, SGD | `en-MY`, MYR | `en-GB`, GBP |
 
 **Where the region comes from.** In the product, the **country detected from the visitor's IP**,
-looked up by NetNet's own server or CDN (Founder, 2026-09-25). It is pre-selected and then
-**confirmed by one tap in onboarding**, never applied silently (§2.3 rule 2); IP is wrong behind a
-VPN or while travelling. The prototype has no server, so PROTO → "Country detected from IP"
-simulates the lookup (Singapore, Malaysia, UK, Germany, or not detected), and otherwise the
-browser's time zone stands in for it. "Somewhere else" lists **every country** (ISO 3166-1, plus
-Kosovo), alphabetically, with none pinned to the top. Each country brings its currency as the
-default for totals. Changeable afterwards in Account → General. Any country without a pack gets
-generic, and the country is still recorded — that is the demand signal for which pack to write next.
+looked up by NetNet's own server or CDN. It is pre-selected and then **confirmed by one tap in
+onboarding**, never applied silently (§2.3 rule 2); IP is wrong behind a VPN or while travelling.
+The prototype has no server, so PROTO → "Country detected from IP" simulates the lookup, and
+otherwise the browser's time zone stands in for it. "Somewhere else" lists **every country** (ISO
+3166-1, plus Kosovo), alphabetically, with none pinned to the top. Each country brings its currency
+as the default for totals. Changeable afterwards in Account → General. Any country without a pack
+gets generic, and the country is still recorded — that is the demand signal for which pack to write
+next.
 
 **A known edge, handled rather than hidden.** When a pack turns an ambiguous type into a default
 (SG's SRS), a foreign instance of the same universal type inherits the local default — a UK ISA
@@ -115,8 +111,8 @@ This is why reasons must always name the local instrument.
 
 ## 4. Accessibility, as the user meets it (PRD J2)
 
-The data model is still accessible / illiquid / locked, plus **undecided** (see decision 1 in §7).
-The user never sees those words. They meet one of three things:
+The data model is accessible / illiquid / locked, plus **undecided**. The user never sees those
+words. They meet one of three things:
 
 | When | What they see | Types |
 |---|---|---|
@@ -138,202 +134,187 @@ The templates are universal and live in `app.js`; every reason after the dash co
 
 ## 5. Design system
 
-`design-system.md` is the spec; this is the short version of how it came about.
+`design-system.md` is the spec: **"Poster"**, cream stock, black outlines, hard offset shadows, one
+tomato ink, Unbounded + Space Grotesk. Decisions it locks in beyond appearance:
 
-The prototype is built on **NetNet v2 — "Poster"**, chosen by the Founder on 2026-09-26. It
-started as v1, **"Two Inks"** (2026-09-23, after three rounds): *a ledger, typeset and printed in
-two inks, one for you and one for your agent*, with hairline rules and no cards. Before the Stage 2
-gate the Founder asked for two more looks over the same product: **B "Poster"** (bold retro:
-cream stock, black outlines, hard offset shadows, one tomato ink, Unbounded + Space Grotesk) and
-**C "Calm"** (clean and soft: white cards, an indigo hero, Plus Jakarta Sans). All three ran the
-same `app.js` and passed the same tests. The Founder chose B; A and C are kept on their branches
-(`claude/design-a-two-inks`, `claude/design-c-soft`).
-
-The first round was rejected outright, and the reason is worth keeping: it started from a palette
-rather than an idea, and produced four recolourings of the same generic dashboard. `explorations/`
-holds the whole record, including that failure.
-
-**Decisions this locked in, beyond appearance**
-
-- The agent's ink is a *structural* device, not a badge — a blue bar on a row's inner edge (a
-  cyan rule in v1), used identically on Home, value history and the audit log.
-- The allocation donut was replaced by a ranked list; its direct labels satisfy the light-mode
-  relief rule the chart validator flagged.
+- The agent's ink is a *structural* device, not a badge — a blue bar on a row's inner edge, used
+  identically on Home, value history and the audit log.
+- The allocation is a ranked list, not a donut; its direct labels satisfy the light-mode relief rule.
 - The trend line is the brand ink, never gain/loss.
 - Every token is measured, not chosen by eye.
 
-The rework added four components, all inside the system rather than beside it — the **Position
-ledger**, the **choice row**, the **consequence line** and the **amount entry** (`design-system.md` §6).
-
-**Still open** (`design-system.md` §9): the wordmark (a sparkle stands in); three native-build
-rules for Stage 3; dark mode checked on a real phone.
+Components made for this product: the **Position ledger**, **choice row**, **consequence line**,
+**amount entry**, **prompt card**, **floating action** and **nudge card** (`design-system.md` §6).
+Still open (`design-system.md` §9): the wordmark, and dark mode checked on a real phone.
 
 ## 6. Design decisions
 
 **Following the mockups**
 
-1. **The holding page stacks its two charts**, trend then period bars. The mockups' carousel with
-   page dots became a stack in the design-system rebuild, so both are visible without swiping. On
-   Home the trend line and a ranked allocation list (which replaced the donuts, §5) are the
-   mockups' carousel again: swiped sideways on a phone, side by side on a computer, right under
-   the total (Founder, 2026-09-26: the allocation was a long scroll away at the bottom). The
-   Position ledger carries the assets-vs-liabilities split.
+1. **Home's trend and allocation share one place under the total**: a carousel swiped sideways on
+   a phone, side by side on a computer. The allocation is a ranked list. The Position ledger
+   carries the assets-vs-liabilities split. **The holding page stacks its two charts**, trend then
+   period bars, so both are visible without swiping.
 2. **Holding rows carry one change figure**, not the mockups' percentage-and-amount pair
    (design-system §2.1).
 3. **Sort By, Comparison Options, Filters and Add Tracking** are the mockups' menus, with the same
    options — including Filters' `Show Only` / `Types` / `Tags` (OR-AND) / `Filter Archived` and
    the Reset / Cancel / Apply footer.
 4. **The detail page** keeps the monthly/quarterly/yearly bar chart and expandable value rows. Its
-   **Update** button floats bottom-right instead of sitting at the end of the page, so a long
-   history never pushes it out of reach; at the very bottom it sinks behind the tab bar, off the
-   last value, and it resurfaces on scrolling up (Founder, 2026-09-25). The PROTO button moved to
-   the bottom-left to make room. It drops the stat-pill row (Type, Last update, Started on, ATH, YTD):
-   each pill repeated something already on the page, or was a statistic nobody asked for. An opened
-   value shows only the original-currency amount and "Added 3 days ago by Claude", not the
-   mockups' five labelled lines that restated the row (Founder review, 2026-09-25).
-5. **Insights is the mockups' card stack**, not a list: `<Period> growth` bars with the change
-   labelled above each bar, `Assets vs. liabilities` trend, and `Distribution` stacked bars with
-   liabilities below the zero line. The stat cards became one sentence, the average change: the
-   other two cards repeated Home's total and the first row of the period list.
+   **Update** floats bottom-right, so a long history never pushes it out of reach, and sinks behind
+   the tab bar at the very bottom so it never covers the last value. There is no stat-pill row
+   (Type, Last update, Started on, ATH, YTD): each pill repeated the page or was a statistic no job
+   asks for. An opened value shows only the original-currency amount and "Added 3 days ago by
+   Claude".
+5. **Insights is the mockups' card stack**: `<Period> growth` bars with the change labelled above
+   each bar, `Assets vs. liabilities` trend, and `Distribution` stacked bars with liabilities below
+   the zero line. The stat cards are one sentence, the average change.
 
 **Departing from the mockups, on purpose**
 
-6. **Four tabs, not three.** The mockups predate the MCP layer entirely. Agent is a tab, not a
-   settings page, because PRD §5 makes J5/J8 the point of the product — burying the connection
-   would contradict the thing v1 exists to prove (M3, M9).
-7. **Responsive, not a phone in a box.** Below 900px it is the mockups' single column with a bottom
-   tab bar. At 900px and up it becomes a sidebar plus a 12-column grid, so Home shows the charts,
-   the holdings list and the position summary at once. v1 is a web app (N7).
-8. **Accessibility is a first-class field, captured as facts** (§4 above). Not in the mockups at
-   all. The first version asked "How accessible is it?" as a three-way choice; the amended J2
-   forbids that, and it is gone.
-9. **Agent provenance is visible everywhere.** Values written by an agent are badged with the client
-   name on the list, the history row and the audit log (J6, J7).
-10. **The audit log groups an agent's turn**, so one turn's writes can be undone together rather
-    than row by row (J7).
-11. **A period drill-down** was added — tap any period in Insights to see which holdings drove it,
-    ranked by contribution. J11 requires it; the mockups have no such screen.
+6. **Four tabs, not three.** The mockups predate the MCP layer. Agent is a tab, not a settings page,
+   because PRD §5 makes J5/J8 the point of the product (M3, M9).
+7. **Responsive, not a phone in a box.** Below 900px it is a single column with a bottom tab bar.
+   At 900px and up it is a sidebar plus a 12-column grid, so Home shows the charts, the holdings
+   list and the position summary at once (N7).
+8. **Accessibility is a first-class field, captured as facts** (§4). Not in the mockups at all.
+9. **Agent provenance is quiet.** An agent-written value carries the blue mark on its row; the
+   client is named only when the value is opened ("Added 3 days ago by Claude"); the Activity log
+   keeps full attribution (J6, J7).
+10. **The audit log groups an agent's turn**, so one turn's writes can be undone together (J7).
+11. **A period drill-down**: tap any period in Insights to see which holdings drove it, ranked by
+    contribution. J11 requires it; the mockups have no such screen.
 12. **Carried-forward is marked**, and the Insights copy states that periods derive from value dates,
-    not entry dates. Both are J11 requirements that a visual mockup cannot express.
-13. **"Don't Show" is explained, not just offered.** Home's filter and Insights' each have it (Home's
-    added 2026-09-25 at the Founder's request), and each sheet says it hides from that screen only,
-    because which screen a filter touches is invisible otherwise. Picking a type or tag under one
-    half takes it off the other.
+    not entry dates (J11).
+13. **"Don't Show" is explained, not just offered.** Home's filter and Insights' each have it, and
+    each sheet says it hides from that screen only. Picking a type or tag under one half takes it
+    off the other.
 14. **Staleness is surfaced**, not just labelled: Home shows a count of stale holdings with a route
     to the agent.
 
 **Dropped from the mockups**
 
-15. Pro tier and membership (monetisation deferred), haptic feedback (native-only), "Show Legacy
-    Trend Graph" and "Use Old Logic in New Trend Graph" (compat cruft), and "Show currency update
-    toast" — that last one belongs to background FX refresh, which PRD §4.2 reserves.
+15. Pro tier and membership, haptic feedback (native-only), "Show Legacy Trend Graph", "Use Old
+    Logic in New Trend Graph", and "Show currency update toast" (background FX refresh is reserved,
+    PRD §4.2). Net Worth Goals, notes on a value and marking a value on a chart are out of v1 and
+    absent from the prototype and its data, so nothing implies they exist.
 16. The old product name and branding throughout.
-
-**What is deliberately NOT in the prototype**
-
-17. **No design or scope commentary in the UI.** Notes explaining why something was or was not
-    built belong in this document, not in the product. Four such notes were written into screens
-    and then removed — on New Goal, on the mockup toggles that were dropped, on accessibility being
-    an addition, and on Stage 3 re-checking the ChatGPT connector. A prototype is shown to users;
-    anything addressed to the Founder is noise to them and makes the product look unfinished.
-    The only text in the UI that speaks about the prototype is tester orientation (the agent replay
-    banner, and the PROTO drawer), which a tester genuinely needs to read the screen correctly.
 
 **Prototype-only scaffolding**
 
-18. The PROTO drawer shows the §3.5 analytics events as they fire, with their properties. It is
-    there so the event contract is reviewable at design time rather than at build time, and it
-    demonstrates the N9 constraint: names, counts, timings and segment only, never amounts or holding
-    names. It can also pretend the browser is somewhere else, so the region confirmation can be
-    tested from anywhere.
+17. The PROTO sheet shows the §3.5 analytics events as they fire, with their properties, so the
+    event contract is reviewable at design time. It demonstrates N9: names, counts, timings and
+    segment only, never amounts or holding names. All scaffolding stays in PROTO or in dashed
+    "Prototype:" stand-ins (design-system §2.1 rules 9 and 11).
 
-**Added in the rework (amended J1, J2, §2.3)**
+**Onboarding and the first picture (J1, J2, §2.3)**
 
-19. **The basics are the last part of onboarding, one question per screen** (Founder, 2026-09-25;
-    this reverses the first version, which put them on Home beside the agent and a tile grid). Each
-    "yes" creates the holding immediately and shows what it counts toward; **Done for now** on
-    every screen loses nothing, so nothing here has to be finished. Home is left to show the
-    picture. An empty Home has one action, "Add what you have", which reopens the basics.
-20. **Facts are folded into the checklist question.** J1 allows only "do you have this?" and
-    "roughly how much?"; J2 needs "do you live here?" for property. "Do you own **the home you live
-    in**?" satisfies both — the fact is the question.
-21. **The checklist skips what you already have** — add CPF with + first, and the CPF question is
+18. **The basics are the last part of onboarding, one question per screen.** Each "yes" creates the
+    holding immediately and shows what it counts toward; **Done for now** on every screen loses
+    nothing. An empty Home has one action, "Add what you have", which reopens the basics.
+19. **Facts are folded into the checklist question.** "Do you own **the home you live in**?"
+    satisfies J1's "do you have this?" and J2's "do you live here?" at once.
+20. **The checklist skips what you already have** — add CPF with + first, and the CPF question is
     not asked. A follow-up is asked after a yes, or when the thing it follows is already there.
-22. **The first picture is a sentence and a ledger.** Under the total: *You could use $4,000 of it
-    this month.* Below: the Position ledger — could use / sell first / locked away with **until when**
-    / not decided / assets / you owe, where "you owe" is also stated against what you could use
-    ("3.0× what you could use this month"). This is PRD §2.2 made concrete: arithmetic and defaults
-    only, no inference, and it is also the §2.4 "arithmetic already done" layer rendered for a person.
-23. **No change figures and no baseline control until there is history.** For a new user those are
-    "+$0 0.00%" — noise exactly where the first picture has to land. The trend is not removed: its
-    place holds a placeholder (item 30).
-24. **Sign-up is only a way in; region and segment come after it** (Founder, 2026-09-25). Sign-up
-    is a provider or an email then a password. Then onboarding asks two questions, one per screen.
-    Region is inferred and pre-selected, but the user must press Continue on it: the region decides
-    the checklist on the next screen, so it cannot become a silent guess. Segment is J1's "one
-    skippable question". Currency follows the region, and a **Change** link sits beside it rather
-    than a third question.
-25. **The segment answer changes nothing on screen.** Everyone sees the same flow. If the UI adapted
-    by segment, per-segment differences in M2–M11 would be partly our own doing, and §3.3's
-    per-segment kill reading would stop being clean.
-26. **After adding a holding, you land on Home**, where it is listed under the total (J1), instead of
-    on the holding's own page.
-27. **Money and dates follow the pack's conventions** (the browser's own, for generic). A UK user
-    sees £, a Malaysian sees RM — the generic pack does not degrade to dollar signs.
-28. **The landing page is not in the prototype** (Founder, 2026-09-25). It is a marketing page and
-    gets its own dedicated design; its call to action routes to `#/signup`. Its brief stands (PRD
-    G-D1): lead with §2.5's line, *you can't get useful advice from an AI that doesn't know where
-    you stand*, carry both proofs beneath it, and name no local institution, because nobody has
-    said where they live yet.
-29. **What the prototype fakes at sign-up.** It holds one account per browser. The providers' own
-    consent screens are not simulated: Google or Apple signs in to that account, or creates it.
-    Log-in accepts any password for the account's email. No password is ever stored, not even in
-    this prototype's `localStorage`. The production build must use the providers' official
-    sign-in buttons.
-30. **A chart with too little data is a placeholder, not a gap** (Founder, 2026-09-25). Home's
-    trend, a holding's chart and all three Insights charts used to disappear, or be replaced by a
-    sentence, until there was history. Now each keeps its place: a fixed sample of its shape in
-    neutral ink under frosted glass, labelled "Need more data". Home and the holding page add one
-    line saying what makes it appear, a later update or an earlier value, because the "As of" date
-    means history can be backfilled today. The holding page shows one placeholder, not a carousel of
-    two. Insights says the reason once, in the summary line, and each chart shows only the label.
-    Range bar, pager and legend are not shown on a placeholder: they would act on nothing. If the
-    Insights filters leave nothing, the label is "Nothing to show" and the summary says the filters
-    are why, since more data would not help. If history exists but the chosen range holds too
-    little of it, the label is "Pick a longer range" and the range bar stays, because that is the fix.
-31. **A prompt is a card** (Founder, 2026-09-25). On the blank Home the starting prompt sat in a
-    ruled row and blended into the page, though it is the one thing there the user must act on.
-    It is now a slip raised off the page with a shadow: the one card in the system. The same
-    card carries "Ask your agent" and Muse's first setup step. Copy sits inside it unless the
-    screen's primary is already "Copy the prompt".
-32. **Line charts can be read point by point** (Founder, 2026-09-25): hover, tap, press-and-drag,
-    or the arrow keys, on Home's trend, a holding's trend and Insights' assets vs. liabilities
-    (design-system §5). Bar charts already carry their values, so they get no readout.
-33. **Text is 15% larger on a phone, with an 11px floor** (Founder, 2026-09-25; design-system §3).
-    Every phone screen was checked at 390px and 320px wide for sideways scrolling, colliding
-    siblings and labels that wrap. The chart axes show three dates on a phone instead of four.
+21. **The first picture is the Position ledger**: you could use this month / you'd have to sell
+    first / locked away / not decided yet / you owe, each with what is in it beneath. This is PRD
+    §2.2 made concrete (arithmetic and defaults only) and the §2.4 "arithmetic already done" layer
+    rendered for a person.
+22. **No change figures and no baseline control until there is history.** For a new user those are
+    "+$0 0.00%" — noise exactly where the first picture has to land. The trend keeps its place as a
+    placeholder (item 29).
+23. **Sign-up is only a way in; region and segment come after it**, one question per screen.
+    Region is pre-selected but the user must press Continue: it decides the checklist on the next
+    screen. Currency follows the region, with a **Change** link rather than a third question.
+24. **The segment answer changes nothing on screen.** If the UI adapted by segment, per-segment
+    differences in M2–M11 would be partly our own doing, and §3.3's per-segment kill reading would
+    stop being clean.
+25. **After adding a holding, you land on Home**, where it is listed under the total (J1).
+26. **Money and dates follow the pack's conventions** (the browser's own, for generic). A UK user
+    sees £, a Malaysian sees RM.
+27. **What the prototype fakes at sign-up.** It holds one account per browser. The providers' consent
+    screens are not simulated: Google or Apple signs in to that account, or creates it. Log-in
+    accepts any password for the account's email. No password is ever stored, not even in
+    `localStorage`. The production build uses the providers' official sign-in buttons.
 
-## 7. Decisions — status after the Founder's review (2026-09-24)
+**Charts, prompts and type**
 
-1. **Undecided accessibility state — decided: named in J2** (PRD §9.6 item 12). Undecided counts
-   toward net worth, never toward what could be used this month, is marked "not decided" wherever
-   it is listed, and is reported to the agent as incompleteness. The prototype already behaved this
-   way; the PRD now says so.
-2. **G-D1 and G-D3 — decided: re-worded to §2.5** (§9.6 item 13). The Founder delegated the wording,
-   so it is AI-drafted and flagged for reading at this gate. G-D3 now also requires the launch to
-   reach P-B and P-C in enough volume, since they carry the kill criteria.
-3. **`via` on `holding_created` — decided and built** (§3.5, §9.6 item 14): `guided` or `form`,
-   shown in the PROTO drawer. (`starter` went with the starting tiles, §9.6 item 20.)
-4. **The desktop layout — decided: approved as built** (Founder, 2026-09-25, after the full UI/UX
-   review).
-5. **Net Worth Goals — out of v1**, nothing to build or test. **Tags AND/OR — kept.** **Value Note
-   and Mark on graph — out of scope** (Founder, 2026-09-24): removed from the prototype along with
-   the data they wrote, their seeded examples and the export column, so nothing implies they exist.
-6. **The look — decided: B "Poster"** (Founder, 2026-09-26), over A "Two Inks" and C "Calm".
-   `design-system.md` is now B's system; A and C are kept on their branches.
-7. **Home's trend and allocation share a carousel under the total** (Founder, 2026-09-26). On a
-   computer the two sit side by side above holdings and position, which changes the desktop layout
-   approved on 2026-09-25; accepted with the prototype's approval (2026-09-26).
+28. **Line charts can be read point by point**: hover, tap, press-and-drag, or the arrow keys, on
+    Home's trend, a holding's trend and Insights' assets vs. liabilities (design-system §5). Bar
+    charts already carry their values, so they get no readout.
+29. **A chart with too little data is a placeholder, not a gap.** Each chart keeps its place: a fixed
+    sample of its shape in neutral ink under frosted glass, labelled "Need more data". Home and the
+    holding page add one line saying what makes it appear, a later update or an earlier value. The
+    holding page shows one placeholder, not two. Insights says the reason once, in the summary line.
+    Range bar, pager and legend are not shown on a placeholder. "Nothing to show" when Insights
+    filters leave nothing; "Pick a longer range" when history exists but the range holds too little.
+30. **A prompt is a prompt card**: a card with a mustard tab and Copy inside, so the one thing the
+    user must take to their agent reads as an object to pick up, not part of the page. Used for the
+    blank Home's starting prompt and "Ask your agent".
+31. **Text is 15% larger on a phone, with an 11px floor** (design-system §3). Every phone screen is
+    checked at 390px and 320px wide for sideways scrolling, colliding siblings and wrapping labels.
+    Chart axes show three dates on a phone instead of four.
+
+**The comeback reminder and the security email (J5, J12)**
+
+32. **The Home card is a note, not a card with a shadow.** Outlined, no hard shadow, one outlined
+    button and a link: the quietest object that still asks. It sits below the Position ledger, so
+    the first picture is read before anything is asked.
+33. **The confirmation lives where the tap was.** Granted and blocked are one line in the card (or
+    under the switch) until the person leaves the screen; no toast, no second screen.
+34. **Blocked is final on Home, explained in Settings.** Once the browser says no, NetNet cannot ask
+    again, so the switch is dimmed and says where to allow it.
+35. **"Your browser will ask you first."** under the undecided switch: the browser's prompt is the
+    one thing NetNet does not control, so the person is told it is coming.
+36. **Reminders off hides the channels.** The page shows "no reminder by any channel" itself rather
+    than leaving switches that no longer do anything.
+37. **The security email is listed in Settings as "Always"**, with no switch. Someone who turns
+    Reminders off and then gets an email when they connect ChatGPT would otherwise doubt the switch.
+38. **The email explains itself in its footer**: "after a month away … never more than once a
+    month". No count of days, no "you haven't …".
+39. **The previews are scaffolding in a sheet**, opened from PROTO, with a dashed caption saying who
+    was reached, when and why. The lock screen and the inbox row keep the OS's and the mail app's own
+    look; the email itself is NetNet's.
+
+## 7. The comeback reminder and the security email
+
+**Try it.** Sample account → Home: the card is below the Position ledger. Account → Notifications
+for the settings. PROTO → **Skip 30 days without checking NetNet** to see a reminder arrive; PROTO
+→ **Sent outside NetNet** lists everything sent so far, including the security email from when
+Claude was connected. To see the email path, remove the Android phone in Settings first, or pick
+PROTO → "No, like Safari in an iPhone tab".
+
+| Where | What |
+|---|---|
+| **Home** | A quiet card below the Position ledger (and the out-of-date note): a bell, "Want a gentle nudge on this device if you haven't looked in a while?", an outlined **Turn on** and a **Not now** link. It appears only with a first picture, on a browser that can receive push, where this device has not decided and Reminders is on. Never on an empty Home, never during sign-up or the basics |
+| **Turn on** | The browser's own prompt follows the tap, stood in for by a dashed "Prototype: the browser's own prompt" box with **Block** and **Allow**. Allow: the card becomes one line, "Notifications are on for this device." Block: one line, "Notifications are blocked in this browser. To allow them, tap the icon beside the address, then Permissions." (a computer says "click … and turn on Notifications"; an installed app says "in your phone's settings"). Either way the card is gone on the next visit, and NetNet never asks again |
+| **Not now** | Hides the card for 30 days; a second Not now hides it for good. The switch stays in Settings |
+| **Account → Notifications** | **Reminders** (the master switch). Under "How they reach you": **Notifications on this device** (only where the browser can receive push; blocked shows the where-to-allow line in `attention` and the switch dimmed) and **Email reminders** ("Only when no device has notifications on. Sent to …"). **Other devices** with Remove. "Reminders never include an amount or a holding name." Then **Security**: "Email when an agent is connected · Always", with no switch. Reminders off hides the channels and devices |
+| **The push** (PROTO) | A phone's lock screen: "Chrome · netnet.app · now", title **NetNet**, "Your net worth is due for an update. Just ask Claude." A computer that was reached gets a notification banner too. Tapping it opens Home as a new visit |
+| **The email** (PROTO) | The inbox row (subject is the same line), then the email opened: wordmark, the line in the display face, "Just ask Claude.", one button **Open NetNet**, and a footer: "We send this after a month away from NetNet, and never more than once a month. Turn off reminder emails" (one click) |
+| **The security email** (PROTO) | "Claude was connected to your NetNet"; "On 5 Aug 2026 at 5:32 am, you allowed Claude to see your holdings and their history, and to add or update them."; "Not you? **Revoke it**" to the Agent tab; "We send this every time an agent is connected. It can't be turned off." Sent on every Allow, whatever the Reminders settings |
+
+**The rules the prototype runs** (watch them in PROTO):
+
+- **Checking** is opening NetNet (a new session) or the connected agent reading or writing through
+  it. PROTO's "Claude reads NetNet" and the agent demo's tool calls both restart the clock.
+- **Who gets what:** push to every device where it is on (this one and the others); email only when
+  none is on, or when every push fails (PROTO → "every push fails" drops the devices with
+  `push_disabled {by: browser}` and falls back to email). Email only to a verified address. Nothing
+  at all when Reminders is off, or when there is no push and no usable email; PROTO says which.
+- **Monthly while away, at most three times:** each 30 days without checking sends the next one
+  (days 30, 60 and 90). After the third, NetNet stays silent until the person checks it again, which
+  makes three available again. PROTO says when a skip sends nothing for this reason.
+- **Daytime only:** a reminder due at night goes at 08:00 their time; in the daytime it goes then.
+- **The agent named** is the connected one used most recently; with none, the line stands alone.
+- **Sign-out** turns this device's push off (`push_disabled {by: signout}`). Signed in again, the
+  card does not come back (the browser already decided) and the switch turns it on without a prompt.
+- Dates on the Agent tab and in the security email are in the person's own time zone.
+
+**Events:** `push_prompt_shown {entry: home|settings}` (settings: Notifications opened with this
+device undecided), `push_prompt_result {entry, result: granted|denied|not_now}`, `push_enabled
+{platform}`, `push_disabled {platform, by}`, `reminder_sent {channel}`, `reminder_opened {channel}`,
+`security_email_sent {client}`. None carries an amount or any message text (tested).
 
 ## 8. Risks and open questions
 
@@ -347,28 +328,23 @@ rules for Stage 3; dark mode checked on a real phone.
   three accounts is right for a first picture; whether people split it later — or ask the agent to —
   is a test question, not a design one.
 - **The sample user is liquid, so the demo answer is "yes".** With ~S$1.04M usable, the honest
-  answer to "can I afford a S$120k car" is yes. The empty-account path is now where the sharper
-  story lives: a P-A with $4,000 usable and $12,000 owed sees it without an agent at all.
+  answer to "can I afford a S$120k car" is yes. The empty-account path is where the sharper story
+  lives: a P-A with $4,000 usable and $12,000 owed sees it without an agent at all.
 - **Region is a guess by design.** In the product it comes from the visitor's IP, which is wrong
   behind a VPN or abroad; either way the user confirms it.
-- **A pack edit must not reclassify existing holdings** (PRD §9.6 item 17). The prototype saves
-  each holding's accessibility when it is created, but reads the reason shown beside it live from
-  the pack. That is harmless while packs change only by release. Once an admin can edit a default,
-  the two can contradict each other: a holding still counted as locked, now explained as "can be
-  sold within days". Stage 3 should version packs and keep the applied reason with the outcome.
-- **No pagination on value history.** Stage 3 should decide whether the API pages it.
-- **Charts are hand-rolled SVG.** Deliberate — a charting library is a Stage 3 choice.
-- **Nothing here is a stack opinion.** No framework, no database, no hosting. Stage 3 owns all of it.
 
 ## 9. User test script
+
+Not yet run; it carries forward to the build. Learnings that change requirements go into
+`01-prd.md`.
 
 **Who.** Five or six people across all three personas in PRD §2, SG/SEA: **two P-A** (first job,
 has never added it up), **two P-B** (tracks it, misses months), **one or two P-C** (a spreadsheet,
 a lot of holdings, uses ChatGPT or Claude on it already). At least one person who does *not* live
 in Singapore, to test the generic pack. 20–25 minutes each, screen-share, think-aloud.
 
-**Before each session:** PROTO → empty account. For the non-Singapore tester, PROTO → Browser
-location → their country, or No hint at all.
+**Before each session:** PROTO → empty account. For the non-Singapore tester, PROTO → Country
+detected from IP → their country, or not detected.
 
 **Say first:** "This is a clickable prototype, not a real product — nothing you type is saved
 anywhere and none of the money in it is real. Please think out loud, and tell me when something is
@@ -382,10 +358,11 @@ tap? Is the segment question neutral, or does anyone bristle at it? Does anyone 
 (J1, §2.3 rule 2)
 
 **Task 2 — First picture (5 min).** "Get your actual situation into this, roughly." *Watch: which
-route — the basics to the end, "Done for now", or the agent? P-A: do they get to the end, or stop — and does what
-was counted feel right? P-C: how fast do they leave the basics?* Then point at Home: **"What is this
-telling you that you didn't already know?"** *This is the J1 first-picture criterion and A12/M11. If
-the answer is "nothing", the first picture has failed, whatever else went well.* (J1, M2, M11)
+route — the basics to the end, "Done for now", or the agent? P-A: do they get to the end, or stop —
+and does what was counted feel right? P-C: how fast do they leave the basics?* Then point at Home:
+**"What is this telling you that you didn't already know?"** *This is the J1 first-picture
+criterion and A12/M11. If the answer is "nothing", the first picture has failed, whatever else went
+well.* (J1, M2, M11)
 
 **Task 3 — Something ambiguous (3 min).** "Add a property — say, a flat." Then: "Now add something
 NetNet wouldn't know about — say, a loan you made to a relative." *Watch: is "Do you live in it?"
@@ -407,6 +384,12 @@ unprompted? At the point the agent writes to their data — what is the reaction
 **Task 7 — Trust (2 min).** "The agent got a number wrong. Fix it." Then: "You've decided to stop
 using this. What now?" *Watch: Activity and undo; does export/delete reassure or alarm?* (J7, J10)
 
+**Task 8 — Coming back (2 min).** Sample account, Home. "What is this card asking you?" *Watch: do
+they read it as a nudge or a nag? Do they expect Turn on to show something from the browser?* Then
+PROTO → skip 30 days, show the lock screen, then the email. "You got this after a month away. What
+do you do? Is there anything on it you wouldn't want someone else to see?" *Watch: tone (A14);
+whether "Just ask Claude." is understood; that nothing on it feels private (N9).* (J12, M13)
+
 **Close (2 min).**
 - Would you actually connect your agent to this? What would stop you?
 - Would you come back to this before connecting an agent? Why? *(A12, M11)*
@@ -417,95 +400,3 @@ using this. What now?" *Watch: Activity and undo; does export/delete reassure or
 picture (A12 is wrong, and P-A should be dropped per §3.3); nobody reaching for the agent unprompted
 (A1); people refusing agent writes in principle (A2); or everyone asking "can I afford this from my
 *income*", which is the cash-flow risk PRD §8 already names.
-
-Per the workflow, any learnings from these sessions go back into `01-prd.md` **before** this stage
-is approved.
-
-## 10. The comeback reminder and the security email (re-opened 2026-09-27)
-
-Built from PRD §9.8 "Consequences downstream", J5 (security email), J9 and J12, in design B
-"Poster". Nothing else in the prototype changed, apart from two small fixes noted at the end.
-
-**Try it.** Sample account → Home: the card is below the Position ledger. Account → Notifications for
-the settings. PROTO → **Skip 30 days without checking NetNet** to see a reminder arrive; PROTO →
-**Sent outside NetNet** lists everything sent so far, including the security email from when Claude
-was connected. To see the email path, remove the Android phone in Settings first, or pick PROTO →
-"No, like Safari in an iPhone tab".
-
-### What is on screen
-
-| Where | What |
-|---|---|
-| **Home** | A quiet card below the Position ledger (and the out-of-date note): a bell, "Want a gentle nudge on this device if you haven't looked in a while?", an outlined **Turn on** and a **Not now** link. It appears only with a first picture, on a browser that can receive push, where this device has not decided and Reminders is on. Never on an empty Home, never during sign-up or the basics |
-| **Turn on** | The browser's own prompt follows the tap, stood in for by a dashed "Prototype: the browser's own prompt" box with **Block** and **Allow** (design-system §2.1 rule 9). Allow: the card becomes one line, "Notifications are on for this device." Block: one line, "Notifications are blocked in this browser. To allow them, tap the icon beside the address, then Permissions." (a computer says "click … and turn on Notifications"; an installed app says "in your phone's settings"). Either way the card is gone on the next visit, and NetNet never asks again |
-| **Not now** | Hides the card for 30 days; a second Not now hides it for good. The switch stays in Settings |
-| **Account → Notifications** (replaces Account → Reminders) | **Reminders** (the master switch). Under "How they reach you": **Notifications on this device** (only where the browser can receive push; blocked shows the where-to-allow line in `attention` and the switch dimmed) and **Email reminders** ("Only when no device has notifications on. Sent to …"). **Other devices** with Remove. "Reminders never include an amount or a holding name." Then **Security**: "Email when an agent is connected · Always", which cannot be switched. Reminders off hides the channels and devices: nothing is sent by any channel |
-| **The push** (PROTO) | A phone's lock screen: "Chrome · netnet.app · now", title **NetNet**, "Your net worth is due for an update. Just ask Claude." A computer that was reached gets a notification banner too. Tapping it opens Home as a new visit |
-| **The email** (PROTO) | The inbox row (subject is the same line), then the email opened: wordmark, the line in the display face, "Just ask Claude.", one button **Open NetNet**, and a footer: "We send this after a month away from NetNet, and never more than once a month. Turn off reminder emails" (one click) |
-| **The security email** (PROTO) | "Claude was connected to your NetNet"; "On 5 Aug 2026 at 5:32 am, you allowed Claude to see your holdings and their history, and to add or update them."; "Not you? **Revoke it**" to the Agent tab; "We send this every time an agent is connected. It can't be turned off." Sent on every Allow, whatever the Reminders settings |
-
-### The rules the prototype runs (so they can be watched in PROTO)
-
-- **Checking** is opening NetNet (a new session) or the connected agent reading or writing through
-  it. PROTO's "Claude reads NetNet" and the agent demo's tool calls both restart the clock.
-- **Who gets what:** push to every device where it is on (this one and the others); email only when
-  none is on, or when every push fails (PROTO → "every push fails" drops the devices with
-  `push_disabled {by: browser}` and falls back to email). Email only to a verified address. Nothing
-  at all when Reminders is off, or when there is no push and no usable email; PROTO says which.
-- **Monthly while away:** each skip of 30 days without checking sends the next one (day 30, 60, 90…).
-  *Superseded 2026-09-28:* the PRD now stops after the third (J12). The prototype was not changed and
-  keeps sending on further skips; the PRD and architecture win.
-- **Daytime only:** a reminder due at night goes at 08:00 their time; in the daytime it goes then.
-- **The agent named** is the connected one used most recently; with none, the line stands alone.
-- **Sign-out** turns this device's push off (`push_disabled {by: signout}`). Signed in again, the
-  card does not come back (the browser already decided) and the switch turns it on without a prompt.
-
-**Events** (PROTO shows them): `push_prompt_shown {entry: home|settings}`, `push_prompt_result
-{entry, result: granted|denied|not_now}`, `push_enabled {platform}`, `push_disabled {platform, by}`,
-`reminder_sent {channel}`, `reminder_opened {channel}`, `security_email_sent {client}`. None carries an
-amount or any message text (tested).
-
-### Design decisions (numbering continues §6)
-
-34. **The card is a note, not a card with a shadow.** Outlined, no hard shadow, one outlined button
-    and a link: it is the quietest object that still reads as something to act on. It sits below the
-    Position ledger (the PRD's placement), so the first picture is read before anything is asked.
-35. **The confirmation lives where the tap was.** Granted and blocked are one line in the card (or
-    under the switch) until the person leaves the screen; there is no toast and no second screen.
-36. **Blocked is final on Home, explained in Settings.** Once the browser says no, NetNet cannot ask
-    again (the browser would refuse silently), so the switch is dimmed and says where to allow it.
-37. **"Your browser will ask you first."** under the undecided switch. The browser's prompt is the
-    one thing NetNet does not control, so the person is told it is coming.
-38. **Reminders off hides the channels.** "No reminder by any channel" is shown by the page itself
-    rather than by three switches that no longer do anything.
-39. **The security email is listed in Settings, as "Always".** Someone who turns Reminders off and
-    then gets an email when they connect ChatGPT would otherwise doubt the switch (§2.1 rule 7). Its
-    row has no switch, so it cannot look like a setting that failed.
-40. **The email explains itself in its footer**, and the explanation is also the reassurance: "after
-    a month away … never more than once a month". No count of days, no "you haven't …".
-41. **The previews are scaffolding in a sheet**, opened from PROTO, with a dashed caption saying who
-    was reached, when and why. The lock screen and the inbox row keep the OS's and the mail app's own
-    look; the email itself is NetNet's. `push_prompt_shown {entry: settings}` fires when Settings →
-    Notifications opens with this device undecided (the offer is on screen), the settings-side
-    equivalent of the Home card being seen.
-
-**Two small fixes made along the way.** The Agent tab gave a connection's date in UTC, so the
-sample Claude connection read "4 Aug" while the security email, in Singapore time, said "5 Aug";
-both now use the person's own time zone. The seeded settings lost the old cadence fields.
-
-### Answered by the Founder at the gate (2026-09-27)
-
-1. **The launch agent list is ChatGPT, Claude and "Other agent".** Grok and Muse are parked. The
-   prototype now offers only those three (the button's icon turns through ChatGPT and Claude), and
-   PRD J5 and §9.7 row 29 were amended to keep "Other agent", which they had parked.
-2. **The Security row stays** in Settings → Notifications (decision 39).
-3. **Account deletion fires no `push_disabled`;** `account_deleted` records it. Written into J12.
-
-### User test (add to §9, after Task 7, 2 minutes)
-
-**Task 8 — Coming back.** Sample account, Home. "What is this card asking you?" *Watch: do they read
-it as a nudge or a nag? Do they expect Turn on to show something from the browser?* Then PROTO →
-skip 30 days, show the lock screen, then the email. "You got this after a month away. What do you
-do? Is there anything on it you wouldn't want someone else to see?" *Watch: tone (A14); whether
-"Just ask Claude." is understood; that nothing on it feels private (N9).* (J12, M13)
-

@@ -26,7 +26,7 @@ await p.fill('#f-name','Form item'); await p.fill('#f-amount','800');
 await p.click('[data-act="save-holding"]'); await p.waitForTimeout(300);
 ev=await lastCreated(); t('Add form → via: form', ev&&ev.via==='form', JSON.stringify(ev));
 
-// 4. "Not sure" → undecided, per amended J2
+// 4. "Not sure" → undecided (PRD J2)
 const before=await p.evaluate(()=>{const x=totals(homeHoldings());return {nw:x.now,acc:x.accessible};});
 await p.goto(URL+'#/add/asset',{waitUntil:'load'}); await p.waitForTimeout(250);
 await p.selectOption('#f-type','t-property'); await p.waitForTimeout(250);

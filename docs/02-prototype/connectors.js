@@ -1,7 +1,7 @@
-/* NetNet prototype — agent clients and their setup guides (PRD J5, §9.6 item 22).
+/* NetNet prototype — agent clients and their setup guides (PRD J5).
 
    DATA, NOT CODE, like packs.js. In the product this is content a human admin edits
-   in the admin portal (§9.6 item 17), because the clients' own screens change without
+   in the admin portal (PRD §2.3), because the clients' own screens change without
    notice. Until that portal exists, the screenshots are files in `connect/`, named
    <client>-<platform>-<step>.png; a missing one shows a placeholder with its name.
 
@@ -25,7 +25,7 @@ const MUSE_ASK = `Add a custom connector called NetNet. Its MCP server is ${MCP_
 
 /* The agents the "Connect to agent" button cycles through, in this order, one every two
    seconds. Each one's logo is agents/<id>.svg (see agents/README.md). At launch: ChatGPT and
-   Claude, plus "Other agent" in the list (PRD J5, §9.7 row 29). */
+   Claude, plus "Other agent" in the list (PRD J5). */
 const ROLL = ['chatgpt', 'claude'];
 
 const CLIENTS = {
@@ -64,7 +64,7 @@ const CLIENTS = {
     }
   },
 
-  /* PARKED until after launch (PRD §9.7 row 29; Founder, 2026-09-27): kept as content, never
+  /* PARKED until after launch (PRD J5): kept as content, never
      offered. `parked` keeps a client out of every list and every route; delete the flag to offer it.
      DRAFT, unverified: before offering it, confirm Grok accepts a custom remote MCP connector,
      then replace these generic steps with its own. */

@@ -2,23 +2,25 @@
 
 ## Project
 
-**NetNet** is an AI-native net worth tracker. It gives people with multi-asset, multi-currency
-wealth — brokerages, bank cash, CPF, property, vehicles, unvested equity, crypto — one accurate,
-current picture of what they are worth, on any device. Everything a person can do in the UI, an
-AI agent can also do: NetNet exposes a comprehensive MCP layer so a user connects ChatGPT or
-Claude to their own data and delegates the tedious part. Drop a brokerage statement into your
-agent and it updates your holdings; ask whether you can afford a car and the answer is grounded
-in your actual balance sheet. The bet is that data entry, not tracking, is the real problem, and
-that an agent solves it without narrowing what can be tracked the way bank-feed aggregation does.
-First users are multi-asset professionals in Singapore and SEA, a market US-centric aggregators
-serve badly. Web first, native iOS/Android later. Free during validation, with monetisation
-deferred until demand is proven.
+**NetNet** is an AI-native net worth tracker, and the context layer for a person's own AI agent.
+Frontier models can already give good personal-finance advice. What they lack is where the person
+actually stands. NetNet holds that picture: brokerages, bank cash, retirement schemes, property,
+vehicles, unvested equity, crypto and what is owed, in any currency, on any device. It exposes the
+picture through a comprehensive MCP layer, so a user connects Claude or ChatGPT to their own data.
+The agent does the data entry (drop a statement in and it updates the holdings) and answers
+questions against the real balance sheet ("can I afford a car?"). Everything a person can do in the
+UI, an agent can do too. Data entry is the obstacle; grounded advice is the point.
 
-**Design reference:** `docs/reference/mockups/README.md` — a written description of the
-Founder's iOS mockups. **The images themselves are deliberately not in this repo** (they contain
-real personal financial data); ask the Founder for them when you need the visual reference, and
-do not commit them. They are design and functionality only: they predate the MCP layer and use
-an obsolete product name.
+v1 serves three personas (starting out, accumulating, established). It launches in Singapore and
+SEA, but it is never Singapore-shaped: local knowledge lives in jurisdiction packs, which are data.
+Web first, native iOS/Android later. Free during validation. Whatever ships free stays free;
+monetisation comes only from capabilities added later.
+
+**Design:** `docs/02-prototype/design-system.md` ("Poster") is the visual design, and the prototype
+in `docs/02-prototype/` is the behavioural reference. `docs/reference/mockups/README.md` describes
+the Founder's original iOS mockups, which are a functional brief only. **The mockup images are
+deliberately not in this repo** (they contain real personal financial data). Ask the Founder for
+them if you need them, and never commit them.
 
 ## How this project is built
 
@@ -42,7 +44,11 @@ If `docs/WORKFLOW.md` or `docs/STATE.md` does not exist, tell the Founder and st
 - Stop at gates. One session runs one stage (or one task), then ends.
 - Never commit secrets. Use environment variables.
 - Follow `CONVENTIONS.md` for all code.
-- Append significant decisions to `docs/decisions.md`.
+- **Documents state the current decision only.** When a decision changes, rewrite the affected
+  text in place. Never add amendment sections, revision tables, "superseded" notes, "changed on"
+  markers or rejected alternatives. Git history is the record of how it got here.
+- Record significant decisions in `docs/decisions.md`, a register of the decisions in force. A
+  changed decision replaces its entry; it is not appended as a correction.
 
 ## Commands
 <not yet scaffolded — filled in during Stage 5, Phase 1>

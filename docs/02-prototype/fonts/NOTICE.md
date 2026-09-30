@@ -1,4 +1,4 @@
-# Fonts (design B "Poster")
+# Fonts
 
 Both are licensed under the SIL Open Font License 1.1, which permits bundling and
 redistribution. Latin subsets only, variable weight, from Google Fonts via Fontsource.
@@ -8,5 +8,5 @@ redistribution. Latin subsets only, variable weight, from Google Fonts via Fonts
 - **Space Grotesk** — Florian Karsten. Everything else.
   https://fonts.google.com/specimen/Space+Grotesk
 
-Design A's Fraunces and Inter live on A's branch. Stage 3 decides how fonts are served.
-They are committed here so the prototype opens offline.
+They are committed here so the prototype opens offline. The web app self-hosts them
+(`docs/03-architecture.md`).

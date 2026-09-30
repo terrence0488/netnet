@@ -1,17 +1,7 @@
 # 03 — Architecture
 
-Status: **approved by the Founder 2026-09-29** · Stage owner: Staff software engineer
-Written 2026-09-27. **Revised the same day on the Founder's decisions:** hosting is **Vercel +
-Neon** (the Cloudflare design is kept as Appendix A). Where the web app is hosted is now its own
-section (§5.2). **Revised 2026-09-28 for the approved PRD amendment (§9.8) and prototype:** the one
-reminder is the **comeback reminder** (J12): after 30 days without checking NetNet, by web push
-where it is on and by email otherwise, in each person's daytime (§7.10, §9.3). The scheduled
-stale-holding email is gone. A **security email** goes out at once when an agent is connected
-(J5). The launch agents are **Claude, ChatGPT and "Other agent"** (PRD J5, §9.7 row 29).
-Inputs: `docs/01-prd.md` (approved as amended, with §9.6 and §9.7), `docs/02-prototype/prototype-notes.md`
-(approved 2026-09-26), and the Stage 3 asks from the Stage 2 handoff: versioned packs, history
-pagination, the charting library, the packs admin portal (PRD §9.6 item 17), each client's
-connector rules, the native-build rules (`design-system.md` §9).
+Status: **approved** · Stage owner: Staff software engineer
+Inputs: `docs/01-prd.md`, `docs/02-prototype/prototype-notes.md`, `docs/02-prototype/design-system.md`
 
 > Designs only what the first phases need (WORKFLOW Stage 3). §7 is the contract Stage 4 plans
 > against and Stage 5 builds against. Where this document and the PRD disagree, the PRD wins and
@@ -56,7 +46,7 @@ write-ups. The P1 spike re-checks them before anything depends on them.
 
 | Requirement | What it forces |
 |---|---|
-| **N6** as close to $0 as possible for the first 100 users (Founder, 2026-09-27) | Permanent free tiers only; every limit that can stop the service is monitored with an upgrade trigger |
+| **N6** as close to $0 as possible for the first 100 users | Permanent free tiers only; every limit that can stop the service is monitored with an upgrade trigger |
 | **N1** MCP ≥99.5% success, p95 <1.5 s | Function and database in the same region, so a request makes one long hop and many short ones. Cold starts are measured and have an upgrade trigger (§9.4) |
 | **N4** isolation at the data layer, tested | Row-level security enforced by Postgres, a single `withUser` entry point, composite keys that make cross-user references impossible, and an isolation test suite |
 | **N8** reliability never traded for cost | Free-tier stops (Neon's monthly compute cap) are watched and pre-empted, and our own daily backups cover Neon Free's 6-hour restore window |
@@ -69,8 +59,8 @@ write-ups. The P1 spike re-checks them before anything depends on them.
 
 ## 3. Agent clients at launch
 
-**Claude and ChatGPT, plus the generic "Other agent" guide** (PRD J5, §9.7 row 29, as amended at the
-prototype gate 2026-09-27). Grok and Muse are parked until after launch. The server is standard
+**Claude and ChatGPT, plus the generic "Other agent" guide** (PRD J5). Grok and Muse are parked
+until after launch. The server is standard
 remote MCP with OAuth and no client-specific code, so adding a named client later is content (a
 guide, a logo), not a release.
 
@@ -86,7 +76,7 @@ but an agent's registered name is free text chosen by the agent. So at approval 
 or for DCR its redirect URI's host) against the `matchHosts` in the named guides (§7.8). Anything
 unmatched is `other`. Events carry only that value, never the registered name (§7.7).
 
-Which plans of each client allow a custom connector is **parked** by the Founder (PRD §9.7 row 30).
+Which plans of each client allow a custom connector is **parked** (PRD §9).
 
 **Protocol.** The current MCP specification is **2026-07-28**: stateless (no `initialize`, no
 `Mcp-Session-Id`), CIMD preferred, DCR deprecated, RFC 9207 issuer checks required. Clients are
@@ -329,7 +319,7 @@ anyone.
   major units. The boundary converts using the ISO 4217 exponent and rejects extra precision and
   anything over 10¹⁵ minor units with a specific error (J6).
 - **Rate:** the published rate for the value's date (latest on or before it), **looked up once when
-  the value is written, stored on the value, never refreshed** (PRD §9.6; §4.2 reserves refresh).
+  the value is written, stored on the value, never refreshed** (PRD J2, J11; §4.2 reserves refresh).
   Cross rates go through USD. Before the fallback source's history begins, the nearest later rate is
   used and its date recorded. The web and the agent may supply a rate (`fx_source: user|agent`),
   e.g. the one on a statement.
@@ -340,7 +330,7 @@ anyone.
   undistorted).
 - If the day's fetch fails, the previous rate stays in use with its date, and an alert fires.
 
-### 6.7 Accessibility and pack versions (PRD §2.3, §9.6 item 17)
+### 6.7 Accessibility and pack versions (PRD §2.3)
 
 `core.resolveAccess(packChain, universal, answer?)` returns `{access, reason, until, basis}`.
 **Current pack, then generic, key by key**, as in the prototype. At create or change time the whole
@@ -419,7 +409,7 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 | `POST /api/reminders/unsubscribe` | signed token; turns email reminders off. The target of `List-Unsubscribe-Post` (RFC 8058), and of the email footer's link through a page that posts once it loads, so a mail scanner fetching the link changes nothing | J12 |
 | `GET /api/health` | **Shallow: never touches the database** → `{ok}` | §10 |
 
-**Pagination** (prototype §8): values, activity and the MCP lists page with an opaque cursor. The
+**Pagination:** values, activity and the MCP lists page with an opaque cursor. The
 web app's `snapshot` is **not paged in v1**. A heavy P-C (30 holdings × monthly × 5 years ≈ 1,800
 values) is about 30 KB gzipped, and loading it once makes filters, baselines and Insights instant
 with the same `core` code. **Revisit trigger:** 1 MB gzipped or 20,000 values, logged per request.
@@ -617,7 +607,7 @@ marked *client* are accepted.
 | `agent_tool_called` | `tool`, `kind`, `outcome` (`ok`/error code), `latency_ms`, `client` | server (MCP) |
 | `insights_viewed` | `view` | client |
 | `reminder_sent` | `channel` (`push`/`email`) | server (reminder run). **One per reminder**, however many devices it reached; `email` when it fell back |
-| `reminder_opened` | `channel` | server (`POST /api/reminders/opened`), the first open of each reminder only. **Opened means tapped or clicked**: no email-open pixel |
+| `reminder_opened` | `channel` | server (`POST /api/reminders/opened`), the first open of each reminder only. **Opened means tapped or clicked**: no email-open pixel, which would be a tracker and is meaningless under Apple Mail's image prefetching |
 | `security_email_sent` | `client` | server, when Resend accepts the security email (J5) |
 | `push_prompt_shown` | `entry` (`home`/`settings`) | client: the Home card seen, or Settings → Notifications opened with this device undecided |
 | `push_prompt_result` | `entry`, `result` (`granted`/`denied`/`not_now`) | client |
@@ -628,7 +618,7 @@ marked *client* are accepted.
 `ops/metrics/*.sql`, run as `netnet_metrics`, computes M1–M11 and M13 per segment from this table
 alone, so no metric can read a balance. M13's "checked NetNet within 7 days" is a `session_started`
 or an `agent_tool_called` by the same user after `reminder_sent`. M12 is a separate benchmark
-harness (§13, risk 9).
+harness (§12, risk 9).
 
 ### 7.8 Content schemas
 
@@ -689,10 +679,10 @@ No `Date.now()`, no randomness and no I/O in `core`. `today` and ids are passed 
 
 ### 7.10 Notifications — the comeback reminder and the security email
 
-**Scope (PRD J5, J9, J12, §9.8).** v1 sends exactly two messages. The **comeback reminder** goes to
+**Scope (PRD J5, J9, J12).** v1 sends exactly two messages. The **comeback reminder** goes to
 someone who has not checked NetNet for 30 days, then once a month while they stay away, **at most
-three times** (days 30, 60, 90; PRD J12, amended 2026-09-28): by web push
-to the devices where push is on, by email otherwise. The **security email** goes out when an agent
+three times** (days 30, 60, 90; PRD J12): by web push to the devices where push is on, by email
+otherwise. The **security email** goes out when an agent
 is connected, by email only. **There is no scheduled stale-holding email**: staleness is shown in
 the app and handed to the agent (J9). Native push joins with the Expo apps as a second push channel.
 Threshold alerts stay reserved (PRD §4.2).
@@ -715,7 +705,7 @@ message is typed parameters, there is no field an amount could be put in.
 
 | Kind | Channels, in order | Reminders switches apply? | What it says |
 |---|---|---|---|
-| `reminder.comeback` | **Push** to every active device. **Email** only when there is none, or every push failed; only to a verified address with email reminders on | **Yes.** Reminders off: nothing by any channel. Email off: no reminder email | Title "NetNet". "Your net worth is due for an update." + "Just ask {agent}." when an agent is connected. The email: that line as its subject, one button **Open NetNet**, the footer and one-click unsubscribe (prototype §10) |
+| `reminder.comeback` | **Push** to every active device. **Email** only when there is none, or every push failed; only to a verified address with email reminders on | **Yes.** Reminders off: nothing by any channel. Email off: no reminder email | Title "NetNet". "Your net worth is due for an update." + "Just ask {agent}." when an agent is connected. The email: that line as its subject, one button **Open NetNet**, the footer and one-click unsubscribe (as in the prototype) |
 | `security.agent_connected` | **Email only, never push** | **No.** Always sent (J5) | "{agent} was connected to your NetNet", when (in their time zone), what it may do, "Not you? **Revoke it**" → `/app/agent`, "We send this every time an agent is connected. It can't be turned off." |
 
 | Channel | When | How it reaches the person | Cost |
@@ -826,12 +816,12 @@ The agent's name is HTML-escaped and at most 40 characters. A DCR client's name 
 | **Isolation (N4, J10)** | RLS with `FORCE` on every `ledger` table, composite keys, the app role without `BYPASSRLS`, and `withUser` as the only entry (§6.1). **Isolation suite:** users A and B. Every REST route and MCP tool is called as B with A's ids and must answer `NOT_FOUND` with none of A's marker strings. Raw queries as `netnet_app` with B set return none of A's rows even with no `WHERE`. A registry test fails when a new route, tool or `ledger` table has no isolation case |
 | Web sessions | HttpOnly, Secure, `SameSite=Lax` cookie; Origin check on state-changing requests; 30 days sliding |
 | Passwords | scrypt (Better Auth; native Node crypto). At least 8 characters, no composition rules. Rate-limited sign-in and reset. Reset never reveals whether an account exists |
-| Providers | Google and Apple (the Founder is enrolling in the Apple Developer Program), each with the **official sign-in button** |
+| Providers | Google and Apple (Apple needs the Founder's Apple Developer Program membership), each with the **official sign-in button** |
 | Agent access | §7.6. Every connection is confirmed by the **security email** (J5), which the person cannot turn off (§7.10) |
 | Rate limits | `core.rate_limit` fixed windows: sign-in 10/min per IP+email, sign-up 5/min per IP, DCR 10/hour per IP, MCP 120/min and 5,000/day per connection, `record_values` 200 items per call |
 | Headers | Strict CSP (self, self-hosted fonts, Sentry ingest), HSTS, `X-Content-Type-Options`, `Referrer-Policy: strict-origin-when-cross-origin`, `frame-ancestors 'none'`, set in `vercel.json` |
 | Secrets (N5) | Vercel environment variables per environment (Production, Preview, Development); `.env.local` gitignored; `.env.example` lists names only; GitHub Actions holds the Vercel and Neon deploy tokens and the backup public key. The **VAPID private key** is a production secret; its public key is served by `/api/notifications/vapid-key`. Rotating it invalidates every push subscription, so it is rotated only on compromise. **`LINK_SIGNING_SECRET`** signs the reminder's open and unsubscribe links (HMAC); rotating it only expires links already sent |
-| Data at rest | Neon encrypts storage at rest; TLS to the database. No field-level encryption in v1 (§13) |
+| Data at rest | Neon encrypts storage at rest; TLS to the database. No field-level encryption in v1 (§12) |
 | Privacy in pipelines (N9) | Typed `track()`, whitelisted `log()`, Sentry scrubbing; messages are built from typed parameters and carry no amount, total, or holding, type or tag name (§7.10) |
 | Untrusted agent names | An agent's registered name is third-party text. Events never carry it (§7.7); the reminder uses it only when short and plain; the security email escapes it and says when NetNet cannot verify it (§7.10) |
 | Prompt injection | Holding and tag names are user text returned to agents, always as JSON string values in `structuredContent`; tool descriptions never interpolate user data |
@@ -877,7 +867,7 @@ separate once-a-day jobs on one handler. Jobs at the same hour share one databas
 | Backup | GitHub Actions | daily. `pg_dump` → encrypted to a key only the Founder holds → stored 30 days (Actions artifact; R2 free tier if it outgrows 500 MB) | ~5 min |
 | MCP probe | GitHub Actions | **every 6 hours on Free**, hourly after Neon Launch | ~5 min each |
 
-That is eight wakes a day, as before: about 6 CU-hours a month of the 100. Six Vercel cron entries
+That is eight wakes a day: about 6 CU-hours a month of the 100. Six Vercel cron entries
 in all. The P1 spike confirms Hobby's cron count and timing; if either falls short, the reminder
 runs move to GitHub Actions schedules calling the same handler with `CRON_SECRET`, which works
 because each run checks the time itself.
@@ -931,9 +921,9 @@ paid plans.
   device with push on is one more push device for the comeback reminder. Its only new server parts
   are `expo` rows in the endpoint table and the Expo sender. Opening the native app counts as
   checking NetNet, through the same session gate.
-- The brand/native boundary stands (2026-09-23): **we own everything that displays data, and all
-  colour and type; the platform owns everything that takes input by gesture.**
-- `design-system.md` §9 item 2:
+- The brand/native boundary (`design-system.md` §6): **we own everything that displays data, and
+  all colour and type; the platform owns everything that takes input by gesture.**
+- Three native-build rules, which complete `design-system.md` for native:
   1. **Platform sheets, switches, pickers and date fields take the palette, not the outline
      treatment.** They get tint and text tokens through their own tint APIs, with no 2px outlines or
      hard offset shadows.
@@ -942,24 +932,7 @@ paid plans.
   3. **Frosted placeholders blur where the platform draws one** (iOS; Android 12 / API 31+), **and
      use the solid veil token otherwise.** Decided by capability at runtime.
 
-## 12. The Stage 3 asks, answered
-
-| Ask (from) | Answer | Where |
-|---|---|---|
-| Version packs; keep the applied reason with the outcome (prototype §8) | Immutable `content_doc` versions + `content_current`; outcome, reason and pack version stored on the holding | §6.5, §6.7 |
-| Page the value history? (prototype §8) | Yes for values, activity and MCP lists; the web snapshot is unpaged with a revisit trigger | §7.2 |
-| Charting library (prototype §8) | None: d3 maths + own SVG, geometry in `core`, shared with native | §4, §7.9 |
-| Packs admin portal must stay possible (PRD §9.6 #17, N10) | Same tables and validator, a role with no access to user data | §6.5 |
-| Client connector rules (PRD §9) | Claude, ChatGPT and "Other agent" at launch; CIMD + DCR; connections classified by host; plan rules parked | §3 |
-| FX source (PRD §9.6 assumption) | ECB via Frankfurter + fallback, stored daily; rate at the value's date, fixed at write | §6.6 |
-| IP → country on our own server/CDN (PRD §2.3 r2) | `x-vercel-ip-country` → `GET /api/geo` | §7.2 |
-| Native-build rules (`design-system.md` §9) | Three rules | §11 |
-| Muse logo (`agents/README.md`) | Parked with Muse until after launch | §3 |
-| Where the web app is hosted (Founder, 2026-09-27) | Vercel's CDN, same project and domain as the API | §5.2 |
-| Push notifications, web and native (Founder, 2026-09-27) | **Web push in v1** as the comeback reminder's first channel, email the fallback (PRD §9.7 row 31); native push through Expo with the apps; all through one `notify()`, at $0 | §7.10 |
-| The comeback reminder and the security email (PRD §9.8 "Consequences downstream", J5, J12) | `last_checked_on` per person, set by app sessions and agent tool calls; three daily runs in daytime bands; at most three reminders per absence; push first, email fallback; the device list; the renamed events; the stale-holding email dropped; the security email sent at once on approval, email only | §6.2, §7.2, §7.7, §7.10, §9.3 |
-
-## 13. Risks and trade-offs
+## 12. Risks and trade-offs
 
 | # | Risk / trade-off | Mitigation |
 |---|---|---|
@@ -970,52 +943,14 @@ paid plans.
 | 5 | **MCP protocol churn** (2026-07-28 is new) | Negotiate three versions; contract tests per version; the P1 spike connects real Claude and ChatGPT first |
 | 6 | **Auth library maturity** (OAuth provider + CIMD in Better Auth are recent) | Our resource server is standard JWT checks; a fallback library; the spike decides |
 | 7 | An RLS mistake would be a leak | `FORCE` RLS, composite keys, one entry point, a schema test for every `ledger` table, and the isolation suite in CI |
-| 8 | Cost rises faster than Cloudflare's past ~100 users (~$35–45 at 1,000 vs ~$5–10) | Known and accepted (Founder, 2026-09-27); still under the $50 ceiling |
+| 8 | Cost rises past ~100 users (~$35–45/month at 1,000) | Accepted; still under the $50 ceiling (§9.4) |
 | 9 | **M12 (context lift) needs a harness and paid model calls** | Built in a later phase; the Founder approves each run's API spend |
 | 10 | The agent-turn heuristic (≤120 s gap) may split or merge turns | One `record_values` call is always one batch; tuned with M5 |
 | 11 | Undo conflicts can surprise | The conflict names the blocking change |
 | 12 | Pseudonymised events after deletion | Stage 8 legal pass |
 | 13 | No field-level encryption | Encryption at rest, RLS, no amounts outside `ledger`; revisit before any advisor feature |
-| 14 | **Web push on iPhone reaches only people who add NetNet to the Home Screen**, and NetNet does not tell them how (Founder, PRD §9.8) | Email carries the reminder for everyone else, so nobody depends on push. Native push later removes the step. M13's push-on share shows the cost |
-| 15 | **Reminder timing rests on Hobby's cron** (count of jobs, start anywhere within the hour, no retry) | Each run checks local time itself, so a late run is never a night-time send; a missed run delays by a day at most. Accepted by the Founder (2026-09-28): dealt with if a limit is hit; GitHub Actions schedules are the ready fallback (§9.3) |
+| 14 | **Web push on iPhone reaches only people who add NetNet to the Home Screen**, and NetNet does not tell them how (PRD J12) | Email carries the reminder for everyone else, so nobody depends on push. Native push later removes the step. M13's push-on share shows the cost |
+| 15 | **Reminder timing rests on Hobby's cron** (count of jobs, start anywhere within the hour, no retry) | Each run checks local time itself, so a late run is never a night-time send; a missed run delays by a day at most. Accepted risk: dealt with if a limit is hit; GitHub Actions schedules are the ready fallback (§9.3) |
 | 16 | Push can't be fully tested headless (it needs a real push service) | Unit tests on payloads and rules; integration tests against a fake push endpoint; a manual check on a real iPhone (Home Screen) and Android phone in Stage 6 |
-| 17 | Someone who has left for good would get a reminder every month, indefinitely (PRD §9.8) | **Resolved (Founder, 2026-09-28): at most three per absence**, enforced by `sent_since_check` in the claim; one-click unsubscribe and the Reminders switch as well |
-| 18 | **Resend's 100 emails a day are shared** by reminders, security emails, verification and resets | Reminders capped at 60 a day; security emails retried; the §9.4 trigger moves to the paid plan well before the cap |
-| 19 | "Checking" is inferred: a tab left open without requests does not count, and an agent that only lists tools does not count | Matches the PRD's intent (a look, or the agent reading or writing); the first is rare and costs one gentle reminder |
-
-### Decisions
-
-**Decided by the Founder, 2026-09-27:** hosting is **Vercel + Neon**, starting on the free plans,
-with the §9.4 upgrade triggers. **Claude, ChatGPT and "Other agent" at launch** (amended at the
-prototype gate); Grok and Muse are parked. Apple sign-in ships, and the Founder enrols in the Apple
-Developer Program. The Founder buys the custom domain. **Web push joins v1** as the comeback
-reminder's first channel, with email the fallback, and the security email is sent on every agent
-connection (PRD §9.7 row 31, §9.8). *Parked:* which client plans allow custom connectors.
-
-**Engineering choices made in the 2026-09-28 revision, all five accepted by the Founder the same
-day.** Also decided then: the comeback reminder **stops after three** per absence (PRD J12 amended).
-1. **Only tool calls count as the agent checking**, not an agent listing tools (§7.10).
-2. **"Opened" means tapped or clicked.** No email-open pixel: it would be a tracker, and Apple Mail
-   pre-fetches images, which makes it meaningless (§7.7).
-3. **Three daily reminder runs at 01:00, 09:00 and 17:00 UTC** rather than two, so a missed run
-   rarely costs a day (§9.3).
-4. **Reminder emails capped at 60 a day** while on Resend Free, so a busy day cannot block a
-   security email or a sign-up (§7.10).
-5. **A push expires at 21:00 local** rather than after 24 hours, so a phone that was off never
-   lights up at night; the price is that a reminder to a phone off all day is lost for that month.
-
----
-
-## Appendix A — Option A, Cloudflare (considered, set aside 2026-09-27)
-
-Kept so it can be revived if Vercel + Neon stops fitting. One Cloudflare Worker (Workers Paid,
-$5/month) serving everything. **One Durable Object with its own SQLite per user** ("Ledger") for
-money data: isolation by separate databases, serial writes by a single thread, reminders by
-per-object alarms, 30-day point-in-time recovery. D1 held identity, content and FX, and a second
-D1 held analytics. R2 held files and backups.
-
-Why it was the first proposal: no cold starts (an idle agent call ≈ 0.25–0.3 s), a flat $5–10 up
-to ~1,000 users, and structural isolation. Why it was set aside: it costs $5/month from day one
-where the Founder wants $0 for the first users; Durable Objects are less conventional than
-Postgres; schema changes run per user; and Vercel gives per-PR previews with a database branch
-each. Everything above the hosting (§3, §6.5–§6.8, §7, §11) was designed to run on either.
+| 17 | **Resend's 100 emails a day are shared** by reminders, security emails, verification and resets | Reminders capped at 60 a day; security emails retried; the §9.4 trigger moves to the paid plan well before the cap |
+| 18 | "Checking" is inferred: a tab left open without requests does not count, and an agent that only lists tools does not count | Matches the PRD's intent (a look, or the agent reading or writing); the first is rare and costs one gentle reminder |

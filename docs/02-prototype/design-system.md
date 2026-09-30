@@ -1,18 +1,9 @@
-# NetNet Design System — v2 "Poster"
+# NetNet Design System — "Poster"
 
-Status: **chosen by the Founder, 2026-09-26** (variant B "Poster", over A "Two Inks" and C "Calm");
-approved with the prototype, 2026-09-26
-Owner: Product designer · Stage 2
+Status: **approved** · Owner: Product designer · Stage 2
 
 > This is the design system, not a style guide written after the fact. It is the thing the
 > prototype is built from, and the thing Stage 4 plans component work against.
-
-**History.** v1 was "Two Inks" (a typeset ledger in two fluorescent inks, no cards). Three looks were
-then built over the same product: A "Two Inks", B "Poster", C "Calm". The Founder chose B. A and C
-are kept, unmerged, on their own branches (`claude/design-a-two-inks`,
-`claude/design-c-soft`); their design docs live there. Everything below that is not about the look
-(content rules §2.1, chart rules §5, hit targets §6.1, layout §7) was written for v1 and carried
-over unchanged.
 
 ---
 
@@ -36,9 +27,9 @@ What that means, concretely:
 Reference: the Founder's brief, "a bold colourful retro/vintage style", with a subscription-app
 mockup set (cream stock, black outlines, hard shadows, tomato orange, a wide chunky display face).
 
-### What this replaces
+### The mockups
 The Founder's original mockups are a **functional** brief — information architecture, flows,
-controls — and are not the visual target. Everything in §3–§8 supersedes them on appearance.
+controls — and are not the visual target. On appearance, this document is the only reference.
 
 ---
 
@@ -48,7 +39,7 @@ controls — and are not the visual target. Everything in §3–§8 supersedes t
    tracking. Everything else recedes.
 2. **A card, not a line.** Each section is one outlined card. Inside it, rows are split by soft
    rules, never by more cards. A card inside a card is how the poster turns into clutter.
-3. **Colour carries meaning, with one exception.** Six chromatic roles exist (§4.3). Mustard is
+3. **Colour carries meaning, with one exception.** Six chromatic roles exist (§4.1). Mustard is
    the one decorative colour, and it never touches data.
 4. **Provenance is quiet, and always there.** A mark says an agent wrote a number; opening the
    number says which agent and when. The agent's name is never louder than the figure.
@@ -59,10 +50,9 @@ controls — and are not the visual target. Everything in §3–§8 supersedes t
 
 ### 2.1 Content — binding
 
-**One figure, one place.** Added after the Founder found the screens cluttered: an opened value
-repeated the amount, the change and the percentage from the row above it, added an exchange rate
-nobody asked for, and named the agent twice. The cause was a system gap. The system specified how
-things look but never what may appear, so every screen showed everything it had.
+**One figure, one place.** The system specifies what may appear, not only how it looks. Without
+that, every screen shows everything it has: an opened value restating its row's amount, change and
+percentage, an exchange rate nobody asked for, the agent named twice.
 
 1. **A figure appears once per screen.** A detail never restates its header, and a summary never
    restates a row beside it.
@@ -90,12 +80,13 @@ things look but never what may appear, so every screen showed everything it had.
 10. **One primary action per screen.** A screen offers one thing to do next, as its only filled
     button. An alternative is a quiet link, or, when it is a genuine second route (the agent, on
     the intro screen and the empty Home), a subtitled block below a rule with an **outlined**
-    button. Never a second filled button. The Founder found the agent too hidden as a link on the
-    intro screen. It is the route v1 is betting on, so it gets a real button, one step down in
-    weight. The Founder found the old empty Home offering
-    four starts at once (the basics, the agent twice, a grid of starting tiles). A new user who
-    cannot tell where to begin does not begin. The empty Home is now what §6 always said an empty
-    state is: a sentence and one action.
+    button. Never a second filled button. The agent is the route v1 is betting on, so it gets a
+    real button, one step down in weight. A new user who cannot tell where to begin does not
+    begin, so an empty state is a sentence and one action (§6).
+11. **No design or scope commentary in the UI.** Why something was or was not built belongs in
+    these docs, not on a screen. Anything addressed to the Founder is noise to a user and makes
+    the product look unfinished. The only UI text about the prototype is tester orientation: the
+    agent replay banner and the PROTO sheet.
 
 ---
 
@@ -123,13 +114,14 @@ all figures set `font-variant-numeric: tabular-nums` so columns align and digits
 | `meta` | Space Grotesk 400 · 12px · sentence case · `ink-3` | Row metadata, dates, counts, axis ticks |
 | `pct` | Space Grotesk 700 · 11.5px · tabular | Change figures under row amounts |
 
-**On a phone, every size above is 15% larger, and nothing is smaller than 11px** (Founder,
-2026-09-25: the small text was a strain to read). The sizes in the table are the computer's.
+**On a phone, every size above is 15% larger, and nothing is smaller than 11px**, so text reads
+at arm's length. The sizes in the table are the computer's.
 The phone scale is one multiplier (`--fs`) and one floor (`--fs-min`), so the hierarchy is kept
 exactly. Display figures already size to the viewport and are not scaled. Where larger text crowds
-a row on the narrowest phones, spacing gives way first. Production should also follow the reader's
-own text-size setting (Dynamic Type, Android font scale) on top of this; Unbounded is wide, so the
-largest accessibility sizes need a rule for money that no longer fits (Stage 3).
+a row on the narrowest phones, spacing gives way first. Production also follows the reader's own
+text-size setting (Dynamic Type, Android font scale) on top of this. Unbounded is wide, so on native
+display figures follow the text size up to 1.5×, then give way to Space Grotesk Bold at the same
+size (architecture §11).
 
 ---
 
@@ -159,12 +151,12 @@ the card surface, where most text sits.
 | `gain` | `#22703F` | `#6FCF8E` | Positive change (5.8 / 8.1) |
 | `loss` | `#B4232F` | `#FF6B81` | Negative change (6.3 / 5.7) — crimson/rose, kept clear of the tomato |
 | `attention` | `#8A5A00` | `#F2B640` | Stale, warnings; notes sit on `warn-bg` `#FBE6B5` / `#3A2E14` |
-| `sun` | `#F4B63F` | `#F2B640` | Mustard, **decoration only** (§4.3) |
+| `sun` | `#F4B63F` | `#F2B640` | Mustard, **decoration only** (§4.1) |
 
 **The risk to watch:** tomato brand and red loss are neighbours. They are separated by hue (orange vs
 crimson), by role (brand is never a figure's colour) and by sign (loss always carries `−`).
 
-### 4.3 The six chromatic roles
+### 4.1 The six chromatic roles
 
 Colour appears for exactly six reasons, plus one decorative colour. Anything else is `ink`,
 `ink-2`, `ink-3`, `rule` or `edge`.
@@ -179,7 +171,7 @@ Colour appears for exactly six reasons, plus one decorative colour. Anything els
 | Category identity | chart palette (§5) | Charts only, never UI |
 | *Decoration* | `sun` | Step numbers, the prompt card's tab, the "Need more data" sticker. Never data, never beside gain or loss, never in a chart |
 
-### 4.4 Rules that hold the system together
+### 4.2 Rules that hold the system together
 
 1. **Gain and loss are never the loudest thing.** They are dark greens and crimsons on cream, so
    the tomato hero stays the one loud surface.
@@ -210,10 +202,10 @@ documented order, verified against NetNet's own two grounds:
 Both modes pass every hard gate on NetNet's surfaces (lightness band, chroma floor, colour-blind
 separation, normal-vision floor).
 
-**A reordering was tried and rejected.** Pushing aqua and magenta late — so the leading slots would
-not echo the brand inks — dropped the worst adjacent colour-blind pair to ΔE 1.6 in dark mode, a
-hard fail. The documented order stands, and the brand-collision worry is handled by rule §4.4.2
-instead: the inks and the chart hues never appear in the same role, so they are never compared.
+**The order is fixed.** Reordering it so the leading slots avoid the brand's hues breaks
+colour-blind separation (ΔE 1.6 in dark mode, a hard fail). Brand collision is handled by §4.2
+rule 2 instead: the inks and the chart hues never appear in the same role, so they are never
+compared.
 
 **Binding constraints**
 
@@ -237,12 +229,13 @@ instead: the inks and the chart hues never appear in the same role, so they are 
   dot marks each series there; the readout gives the date in `meta` and each value in the display face,
   **value first**, keyed by a short stroke of its series colour, largest first. It sits at the top
   of the plot beside the crosshair, flipping sides past the middle so it never covers the dot, on
-  a paper halo rather than a box. Mouse: hover. Touch: tap a point, or press and hold, then drag,
+  a small ink tag (`ink` fill, `paper` text, 8px radius). Mouse: hover. Touch: tap a point, or press and hold, then drag,
   to scrub; a plain swipe still scrolls. Keyboard: focus, then ← → (Home, End, Esc). Screen
   readers hear each reading. The readout adds precision; every figure it shows is also on the
   page (the hero, the history, the period list), so it never gates a value.
 - **The look.** A 3px trend line over a tomato wash, dotted gridlines, a solid ink zero line,
-  outlined legend swatches, and allocation bars as 12px outlined pills.
+  outlined legend swatches, and allocation bars as 12px outlined pills. Gridlines and axis labels
+  can be turned off in View Settings ("Show zero bounds").
 - **The trend line is `brand`**, not gain/loss. It is NetNet's mark, and the change figure beside it
   carries the semantics. A trend line that turned red on a bad quarter would put two conflicting
   signals in one glance.
@@ -261,7 +254,7 @@ Built by us, because they carry the brand:
 | **Margin mark** | 4px `agent` bar on the card's inside left edge, at 75%. The provenance device, quiet on purpose; the client is named only when the value is opened. |
 | **Opened value** | Only what the row does not already say: the original-currency amount if it differs, then a `meta` footer, "Added 3 days ago by Claude", with Edit and Delete. |
 | **Hero figure** | A tomato card with two sparkles in its corner: `label`, `display` amount and change line in `brand-on`; the change figure on a cream pill so gain and loss keep their contrast. On a holding page the name and consequence line sit on it too. |
-| **Trend** | 3px `brand` stroke, wash beneath at 22% light / 26% dark. No gridlines by default. |
+| **Trend** | 3px `brand` stroke, wash beneath at 22% light / 26% dark; gridlines and zero line as in §5. |
 | **Inline chip** | Text at `label` scale, coloured; "stale" is an outlined sticker on `warn-bg`. |
 | **Segmented control** | An outlined tray with a 3px shadow; the chosen segment fills tomato. |
 | **Button** | Tomato, 2px outline, 10px radius, 3px hard shadow that collapses when pressed. Secondary: `card` fill. Ghost: underlined text. |
@@ -275,8 +268,8 @@ Built by us, because they carry the brand:
 | **Agent roll** | The 18px icon slot on "Connect to agent": the generic agent icon, then each supported agent's logo in turn, two seconds each, counted from when the button appears. Each logo rises in and out (550ms, ease-out), drawn as a silhouette in the button's ink so any official file fits both themes. Still under reduced motion; hidden from screen readers. Missing logo files show the agent's initial in a circle (`agents/README.md`). |
 | **Agent logo** | The same silhouette at 18px beside an agent's name in lists ("Which AI agent do you use?", the Agent tab). At launch: ChatGPT and Claude, whose marks come from LobeHub's open-source AI icon set (`agents/README.md`), and "Other agent", which uses NetNet's own agent icon. Grok and Muse are parked until after launch. |
 | **Setup step** | A numbered step (the number on a mustard disc), the client's own words in `ink` 600, then its screenshot in an outlined frame, at most 420px tall. A missing screenshot is a dashed placeholder naming the file to add (`connect/README.md`). |
-| **Floating action** | The holding page's **Update**: a tomato pill with a plus, outlined, 52px tall, with a 4px hard shadow, floating bottom-right in line with the amounts inside the cards, 16px above the tab bar (24px from the bottom on a computer). At the very bottom of the page it sinks behind the tab bar (off the bottom on a computer), so it never sits on the last value, and it resurfaces as soon as the page scrolls back up. It comes back when it takes keyboard focus. Under reduced motion it goes and comes without sliding. A page too short to scroll keeps it up and leaves room under its last row. The only floating control in the system, on the one page whose list grows without limit (Founder, 2026-09-25). |
-| **Prompt card** | A message to send the agent (the starting prompt on the blank Home, "Ask your agent"; Muse's first setup step once Muse is offered): a card with a mustard tab on its top edge, `body` 15px in `ink`. **Copy** sits inside it, bottom right, unless the screen's primary action is already Copy. An address (the MCP URL) is a setting, not a message, and sits in a dashed mono box. |
+| **Floating action** | The holding page's **Update**: a tomato pill with a plus, outlined, 52px tall, with a 4px hard shadow, floating bottom-right in line with the amounts inside the cards, 16px above the tab bar (24px from the bottom on a computer). At the very bottom of the page it sinks behind the tab bar (off the bottom on a computer), so it never sits on the last value, and it resurfaces as soon as the page scrolls back up. It comes back when it takes keyboard focus. Under reduced motion it goes and comes without sliding. A page too short to scroll keeps it up and leaves room under its last row. The only floating control in the system, on the one page whose list grows without limit, so Update stays reachable however long the history is. |
+| **Prompt card** | A message to send the agent (the starting prompt on the blank Home, "Ask your agent"): a card with a mustard tab on its top edge, `body` 15px in `ink`. **Copy** sits inside it, bottom right, unless the screen's primary action is already Copy. An address (the MCP URL) is a setting, not a message, and sits in a dashed mono box. |
 | **Amount entry** | The one place a number is *typed* at display size: Unbounded 600 · 24px in a boxed field that takes a tomato shadow on focus, currency symbol in `ink-3`. |
 | **Icon button** | An outlined disc with a 2px shadow (the reference's menu and settings buttons). |
 | **Fields** | Boxed: 2px outline, `card` fill; focus adds a tomato hard shadow. |
@@ -290,7 +283,7 @@ Built by us, because they carry the brand:
 | **Email** | NetNet's messages outside the app (the comeback reminder, the security email): `card` with a 2px outline, the wordmark, **one line** in the display face at 18px, at most one `body-sm` line beneath, **at most one button** (tomato), then a `meta` footer above a rule saying why it was sent and, for reminders, a one-click unsubscribe. Never an amount, a total, a holding, type or tag name (N9); the subject repeats the line. A link in a sentence keeps the sentence's size. |
 | **Push** | Title "NetNet"; body is the reminder line, plus "Just ask *agent*." when one is connected. Nothing else can be styled: the operating system draws it. The prototype shows it on a lock screen drawn in the OS's own neutral colours, not NetNet's tokens. |
 
-Deferred to the platform, per the Founder's "brand chrome, native controls" decision:
+Deferred to the platform (brand chrome, native controls):
 
 | Deferred | Why |
 |---|---|
@@ -315,20 +308,20 @@ thumb. So visual size and tap size are specified separately, and only the second
 | Token | Value | Applies |
 |---|---|---|
 | `--hit` | **44px** | Default — touch is the reference case (J4: mobile is primary, not a fallback) |
-| `--hit` | **32px** | Only under `(hover:hover) and (pointer:fine)` — a mouse, positively detected |
+| `--hit` | **36px** | Only under `(hover:hover) and (pointer:fine)` — a mouse, positively detected |
 
 1. **Every control's tap area is at least `--hit` in both dimensions**, however small it draws. A
    17px icon sits in a 44px box; a "Show $" label is 44px tall.
-2. **Default large, relax only on evidence.** An unknown device gets 44px. The relaxed 32px never goes
-   below WCAG 2.5.8's 24px floor.
+2. **Default large, relax only on evidence.** An unknown device gets 44px. The relaxed 36px stays
+   well above WCAG 2.5.8's 24px floor.
 3. **Adjacent targets may touch; they may not overlap.** A bigger target that steals its
    neighbour's taps is a regression, not a fix.
 4. **Grow the row, not the sentence.** A link in a row (section header, sheet header) makes the row
    `--hit` tall. A link *inside a sentence* keeps the line height and lets its target overflow the
    line box instead, so the prose does not break apart.
-5. **Indicators follow the text, not the box.** Selected states under range bars and chips, and the
-   baseline in a change line, are text underlines, so a 44px box does not push the underline 14px
-   away from the word it marks.
+5. **Indicators follow the text, not the box.** A chosen range or chip is a pill drawn tight
+   around its label inside the 44px target, and the baseline in a change line is a text underline,
+   so the target's size never pushes the indicator away from the word it marks.
 6. **A pager says what it is paging.** Bare ‹ › arrows are unreadable on a phone. The pager is
    ‹ *period* ›, and an arrow with nowhere to go is disabled rather than leading to an empty chart.
 
@@ -342,44 +335,40 @@ thumb. So visual size and tap size are specified separately, and only the second
    Screen readers still announce it as unavailable, and the click handler ignores it.
 
 **Verified, not eyeballed.** Every tappable element on every screen and sheet is measured at phone
-width with touch emulated (target 44) and at desktop width with a mouse (target 32). Targets that
-overlap are reported too. This rule shipped missing: the first audit, prompted by the Founder
-tapping a 6×22px chart arrow on a real phone, found **426 undersized targets across 65 component
-patterns**. After the fix there are none at either size, and no overlaps.
+width with touch emulated (target 44) and at desktop width with a mouse (target 36), and targets
+that overlap are reported too (`tests/touch.mjs`). The prototype has none at either size.
 
 ## 7. Layout
 
-- **Mobile-first.** Single column, 24px side margin, bottom tab bar. The reference case.
-- **Desktop (≥900px).** Sidebar nav plus a content column that widens to two columns for the
-  summary and holdings. The page does not become a card grid — the ruled-section structure holds;
-  there is simply more room between rules.
+- **Mobile-first.** Single column, 20px side margin, bottom tab bar. The reference case.
+- **Desktop (≥900px).** Sidebar nav plus a content column that widens to two columns (a 12-column
+  grid) for the summary and holdings. It stays a column of sections, not a dashboard of tiles;
+  there is simply more room.
 - **Wide (≥1500px).** The measure grows to 1340px, then 1440px past 1800px, and is **centred** in
   the space beside the sidebar. A ledger is read in a column, so the measure stays capped rather
   than stretching to fill a 2560px display — but it is centred, never left-aligned against a void.
 - **The content column's width never depends on what is on screen.** Switching a tab or a view must
   not resize the page. Centre it with an explicit `width` plus `justify-self`, never with `margin:0
   auto` — auto margins on a grid item cancel `stretch`, so the item falls back to fitting its
-  content and the container silently starts tracking whatever is inside it. This shipped once and
-  was caught by the Founder switching between the Insights views.
+  content and the container silently starts tracking whatever is inside it.
 - **Hiding a grid item changes where everything else lands.** A `display:none` sidebar leaves the
   grid, and the content column auto-places into the sidebar's 232px track. Routes without chrome
-  (sign-up, log-in, onboarding) switch the shell to a single column rather than just hiding the sidebar.
-  Shipped once; the Founder found the landing page poured into a 232px column on desktop.
-- **Home's trend and allocation share one place, under the total** (Founder, 2026-09-26). On a
+  (sign-up, log-in, onboarding) switch the shell to a single column rather than just hiding the
+  sidebar.
+- **Home's trend and allocation share one place, under the total.** On a
   phone they are a carousel: one card each, full width, swiped sideways with snap, two dots
   beneath. The line chart's own reading (press and hold, then drag) is unchanged, so a plain
   swipe moves the carousel. The slide a reader is on survives a re-render (Show $, a range, a
   filter, coming back from a holding). On a computer the two sit side by side on the grid's 7/5
   columns, with no dots, above holdings and position. With one type there is no allocation, and
   the trend stands alone.
-- **The agent margin gutter is reserved at every breakpoint.** It is 24px of the left margin, and
-  rows offset their mark into it. Nothing else may occupy it.
+- **The agent's mark owns the inner left edge.** It sits on the inside left edge of a card (in the
+  page margin for a row outside a card), and nothing else may occupy that edge.
 - **No horizontal scrolling at phone width**, ever (PRD J4, J11).
 - **Only navigation moves the page.** Going to another screen starts at the top. An action that
   updates the screen you are on (a chart pager, a range, a view switch, undo, expanding a row)
   leaves the reader exactly where they were. A reader halfway down Insights who pages a chart
-  must still be looking at that chart. Shipped once; the Founder found every chart arrow
-  jumping to the top of the page.
+  must still be looking at that chart.
 
 ---
 
@@ -390,18 +379,17 @@ patterns**. After the fix there are none at either size, and no overlaps.
 - **Both themes are authored, not derived.** Dark is not an inverted light. Every token is declared
   twice and measured against its own ground.
 - **Fonts** (Unbounded, Space Grotesk) are committed under `fonts/` (SIL OFL, redistribution
-  permitted). Stage 3 decides how they are served, including `expo-font` on native, where each
-  weight should ship as its own static file (variable fonts are unreliable on Android).
+  permitted). The web app self-hosts them. On native, each weight ships as its own static file
+  through `expo-font` (variable fonts are unreliable on Android).
 - **Verify, do not eyeball.** Any change to a chart colour re-runs the palette validator; any change
-  to a text token re-runs the contrast check. Both are cheap and both have already caught real
-  failures in this system's own development.
+  to a text token re-runs the contrast check. Hand-picked "muted" chart colours and fluorescent text
+  both failed these checks.
+- **Native** follows the three native-build rules in architecture §11: platform controls take the
+  palette, not the outline treatment; Unbounded gives way to Space Grotesk Bold past 1.5× text
+  size; frosted placeholders blur where the platform can and use the solid veil otherwise.
 
 ## 9. Open questions
 
 1. **A wordmark still needs drawing.** The sparkle stands in for now.
-2. **Native build (Stage 3).** The look carries to iOS and Android without web-only tricks. Three
-   things need a rule there: platform sheets and switches take the palette but not the full outline
-   treatment; Unbounded at the largest accessibility text sizes; frosted placeholders on Android
-   below 12 fall back to the solid veil.
-3. **Dark mode on real phones.** The cream outline on espresso is measured, but not yet checked on
+2. **Dark mode on real phones.** The cream outline on espresso is measured, but not yet checked on
    a device.
