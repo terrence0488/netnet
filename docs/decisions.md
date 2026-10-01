@@ -108,6 +108,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | A capability lands in the Ledger, REST and MCP in the same phase; its screen may follow later | One implementation, so the agent is never behind the UI (J6) |
 | A throwaway spike connects real Claude and ChatGPT before the auth and MCP work starts | The newest parts (the OAuth provider with CIMD, MCP 2026-07-28) are proven with the real clients before anything depends on them |
 | The build adds endpoints, fields, parameters and message kinds that the architecture implies, and reports them; any other interface change is stop-and-raise | Keeps architecture §7 current without a Founder gate for every implied detail |
+| CI checks every push and the opening of every pull request. Previews deploy from CI with the Vercel CLI, only for a branch with an open pull request (or a manual run); Vercel's own Git deployments are off | Production comes only from the manual workflow, and previews stay one per pull request, within Neon's branch limit |
 
 ## Architecture
 
@@ -116,6 +117,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Verification and password-reset emails go through `notify()`, as two email-only message kinds | Every message to a person takes one path, so the no-amount template test covers all of them |
 | Neon and CI run Postgres 17 | One major version from tests to production (CONVENTIONS §1) |
 | Vercel (Hobby) + Neon Postgres (Free) in Singapore; one TypeScript codebase, one Hono function; upgrades on measured triggers (architecture §9.4) | $0 for the first ~70–100 users, conventional Postgres, per-PR previews with their own database branch |
+| The function is the API bundled by esbuild into one file (`apps/api/dist/vercel.js`), which `api/index.ts` re-exports | Vercel compiles TypeScript file by file and cannot run workspace packages from source; one self-contained file runs the same in CI's E2E and on Vercel |
 | Per-user isolation by Postgres row-level security with `FORCE`, composite keys and one `withUser()` entry | Enforced by the database, not by remembering a filter (N4) |
 | Better Auth for accounts and the agents' OAuth 2.1 server (CIMD and DCR); our own MCP token check | No hand-rolled security code; protocol support stays in our hands |
 | MCP is stateless Streamable HTTP across three protocol versions, with one summary tool, `get_financial_context`, of at most 8 KB | Clients migrate at different speeds; one dense call answers a question |

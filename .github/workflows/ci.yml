@@ -1,11 +1,11 @@
 name: CI
 
-# Every push runs the checks; a push to any branch but main also deploys a Vercel preview.
-# Pull requests from this repository are already covered by their branch's push, so only
-# pull requests from forks run here (without secrets, so without a preview).
+# Every push runs the checks, and so does opening a pull request. A Vercel preview follows for a
+# branch with an open pull request (architecture §9.1), or on a manual run of this workflow.
 on:
   push:
   pull_request:
+    types: [opened, reopened]
   workflow_dispatch:
 
 concurrency:
@@ -21,7 +21,6 @@ env:
 jobs:
   checks:
     name: Checks
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:
@@ -79,20 +78,36 @@ jobs:
   preview:
     name: Preview
     needs: checks
-    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
-      - name: Check the Vercel secrets (F4)
+      - name: Decide whether to deploy
         id: vercel
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_FROM_EVENT: ${{ github.event.pull_request.number }}
         run: |
-          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
+          pr="$PR_FROM_EVENT"
+          if [ -z "$pr" ]; then
+            pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --state open \
+              --json number --jq '.[0].number // empty')
+          fi
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+          if [ -z "$pr" ] && [ "$GITHUB_EVENT_NAME" != "workflow_dispatch" ]; then
+            msg="No preview: $GITHUB_REF_NAME has no open pull request. Open one, or run CI by hand on this branch."
+          elif [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
             msg="Preview skipped: add the GitHub secrets VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_PROJECT_ID (Founder checklist F4)."
+          fi
+          if [ -n "${msg:-}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "::notice::$msg"
             echo "$msg" >> "$GITHUB_STEP_SUMMARY"
           else
@@ -120,7 +135,7 @@ jobs:
         id: deploy
         if: steps.vercel.outputs.ready == 'true'
         run: |
-          url=$(pnpm exec vercel deploy --prebuilt --token="$VERCEL_TOKEN")
+          url=$(pnpm exec vercel deploy --prebuilt --debug --token="$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"
       - name: Install Chromium for Playwright
