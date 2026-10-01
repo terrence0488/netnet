@@ -44,6 +44,9 @@ If `docs/WORKFLOW.md` or `docs/STATE.md` does not exist, tell the Founder and st
 - Stop at gates. One session runs one stage (or one task), then ends.
 - Never commit secrets. Use environment variables.
 - Follow `CONVENTIONS.md` for all code.
+- **Branches:** a cloud session starts on a `claude/<random-name>` branch. The Founder's standing
+  instruction is not to use it: create and push the branch CONVENTIONS §15 names (`p1-t2`, one per
+  task) and open each pull request from it.
 - **Documents state the current decision only.** When a decision changes, rewrite the affected
   text in place. Never add amendment sections, revision tables, "superseded" notes, "changed on"
   markers or rejected alternatives. Git history is the record of how it got here.
