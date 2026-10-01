@@ -1,7 +1,5 @@
 /**
- * Design tokens from docs/02-prototype/design-system.md ("Poster"), as CSS custom properties for
- * the web and a typed object for native. P1-T5 fills them in.
+ * Design tokens from docs/02-prototype/design-system.md ("Poster"): `tokens.css` (CSS custom
+ * properties, both themes) for the web, and the same names as a typed object for native.
  */
-export const tokens = {} as const;
-
-export type Tokens = typeof tokens;
+export * from './tokens';
