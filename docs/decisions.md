@@ -12,6 +12,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Build through the staged AI workflow (`docs/WORKFLOW.md`); only the Founder approves a stage | One source of truth across independent sessions, with a human deciding every gate |
 | Documents state the current decision only; changes are rewritten in place, never appended as amendments | Keeps each session's context small and unambiguous; git history holds the past |
 | Each approved stage lands on `main`; work happens on a branch from `main` | `main` always reflects the last Founder-approved state |
+| `main` has no branch protection while the repository is private on GitHub's free plan; the Founder merges a pull request only when its Checks job is green | Protection for a private repository needs a paid plan. One person merges, and CI on `main` shows a slip at once |
 | Mockup images and any material with real personal data are never committed (`.gitignore` blocks them) | They hold the Founder's real name, email and finances; git history is permanent and the repo may go public |
 | No user interviews and no waitlist: launch, then promote | Founder decision. Live usage is the only test, so P1 instrumentation is the experiment and distribution is planned work (A9) |
 

@@ -4,9 +4,9 @@
 Stage: Build (Stage 5)
 Phase: P1
 Status: in-progress
-Next action: merge P1-T1 into `main` (branch `claude/affectionate-hamilton-kkgrla`), then `continue`
-in a **new session** → `stage: build P1`, wave 2 (P1-T2, T3, T4, T5). Inputs: `docs/04-plan.md` §3,
-`CONVENTIONS.md`, `docs/phases/P1/tasks/`. The build runs wave by wave (plan §3.4).
+Next action: `continue` in a **new session** → `stage: build P1`, wave 2 (P1-T2, T3, T4, T5). Inputs:
+`docs/04-plan.md` §3, `CONVENTIONS.md`, `docs/phases/P1/tasks/`. The build runs wave by wave (plan
+§3.4) and hands off to a new session between waves when context runs heavy.
 **Branch:** one branch per task, from `main` (CONVENTIONS §15).
 
 ## Approvals
@@ -24,12 +24,12 @@ in a **new session** → `stage: build P1`, wave 2 (P1-T2, T3, T4, T5). Inputs: 
 | P5 | not-started | | |
 
 ## Handoff note (last session)
-Wave 1 done: P1-T1 (report in its brief). The workspace, root scripts (CLAUDE.md → Commands), CI
-and per-PR previews work; CI run 36835613408 deployed and smoke-tested a preview. The function is
-the API bundled by esbuild, re-exported by `api/index.ts`: new server dependencies must bundle
-(mark native-only optional modules external). Previews deploy only for a branch with an open pull
-request, or a manual run of CI. CI reads the Vercel owner from the project; `VERCEL_ORG_ID` is
-unused. Founder: F6 (protect `main`, Renovate) once T1 merges; F2 before wave 4. Recheck
-`api.neon.tech` before T2 and T4. TypeScript stays on 6.0 until typescript-eslint supports 7.
+Wave 1 done and merged: P1-T1 (PR #3; report in its brief). The function is the API bundled by
+esbuild, re-exported by `api/index.ts`: new server dependencies must bundle (mark native-only
+optional modules external). Previews deploy only for a branch with an open pull request, or a manual
+run of CI; CI reads the Vercel owner from the project. F6 done: Renovate is installed (Dependency
+Dashboard, issue #4; weekly PRs on Monday); `main` is unprotected by decision, so merge only on green
+Checks. Founder next: F2 before wave 4. Recheck `api.neon.tech` before T2 and T4. TypeScript stays
+on 6.0 until typescript-eslint supports 7.
 Plan tracker: https://claude.ai/artifact/UkJfDYaAAi8gJV1aBbk3nB. When a task's status or this file
 changes, update its database with ArtifactData: `tasks/<id> {status}`, `meta/state` (this block).
