@@ -1,0 +1,31 @@
+{
+  "$comment": "N10: local knowledge lives in content/ only. These terms must not appear in source outside content/ and docs/ (CONVENTIONS §3). Matched as whole words; case-sensitive unless listed under caseInsensitive.",
+  "caseSensitive": [
+    "CPF",
+    "MediSave",
+    "Medisave",
+    "MediShield",
+    "HDB",
+    "SRS",
+    "EPF",
+    "KWSP",
+    "PRS",
+    "ASB",
+    "BPJS",
+    "Pag-IBIG",
+    "MPF",
+    "ORSO",
+    "EPFO",
+    "PPF",
+    "NPS",
+    "ISA",
+    "LISA",
+    "SIPP",
+    "IRA",
+    "Roth",
+    "TFSA",
+    "RRSP",
+    "KiwiSaver"
+  ],
+  "caseInsensitive": ["Superannuation", "401(k)", "403(b)", "Tabung Haji"]
+}
