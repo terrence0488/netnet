@@ -1,11 +1,12 @@
 name: CI
 
 # Every push runs the checks, and so does opening a pull request. A Vercel preview follows for a
-# branch with an open pull request (architecture §9.1), or on a manual run of this workflow.
+# branch with an open pull request (architecture §9.1), or on a manual run of this workflow, with a
+# Neon branch of the preview project of its own. Closing the pull request deletes that branch.
 on:
   push:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, closed]
   workflow_dispatch:
 
 concurrency:
@@ -17,10 +18,12 @@ permissions:
 
 env:
   VERCEL_TELEMETRY_DISABLED: '1'
+  NEON_API: https://console.neon.tech/api/v2
 
 jobs:
   checks:
     name: Checks
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:
@@ -67,8 +70,8 @@ jobs:
         run: pnpm test
       - name: Integration tests (Postgres 17)
         run: pnpm test:int
-      # What CI runs against a preview's database, on an empty database, twice: every step must be
-      # safe to repeat. The owner here is the service's superuser.
+      # What CI runs against a preview's Neon branch, on an empty database, twice: every step must
+      # be safe to repeat. The owner here is the service's superuser.
       - name: Bootstrap, migrate and seed an empty database, twice
         env:
           DATABASE_OWNER_URL: ${{ env.DATABASE_URL }}
@@ -105,9 +108,9 @@ jobs:
   preview:
     name: Preview
     needs: checks
-    if: github.ref != 'refs/heads/main'
+    if: github.ref != 'refs/heads/main' && github.event.action != 'closed'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: read
@@ -139,6 +142,34 @@ jobs:
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
+      # The preview's database is a branch of the separate preview project, named after the pull
+      # request (architecture §9.1). Production's project and secrets are never read here.
+      - name: Decide whether to make a Neon branch
+        id: neon
+        if: steps.vercel.outputs.ready == 'true'
+        env:
+          PR: ${{ steps.vercel.outputs.pr }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PREVIEW_PROJECT_ID }}
+          NEON_PROD_PROJECT_ID: ${{ vars.NEON_PROD_PROJECT_ID }}
+          APP_PASSWORD: ${{ secrets.NETNET_APP_DB_PASSWORD_PREVIEW }}
+        run: |
+          if [ -z "$PR" ]; then
+            msg="No Neon branch: this run has no pull request, so the preview has no database."
+          elif [ -z "$NEON_API_KEY" ] || [ -z "$NEON_PROJECT_ID" ] || [ -z "$APP_PASSWORD" ]; then
+            msg="No Neon branch: add the secrets NEON_API_KEY and NETNET_APP_DB_PASSWORD_PREVIEW and the variable NEON_PREVIEW_PROJECT_ID (Founder checklist F7). The preview deploys without a database."
+          elif [ "$NEON_PROJECT_ID" = "$NEON_PROD_PROJECT_ID" ]; then
+            echo "::error::NEON_PREVIEW_PROJECT_ID names the production project. Previews never touch production."
+            exit 1
+          fi
+          if [ -n "${msg:-}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$msg"
+            echo "$msg" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "branch=pr-$PR" >> "$GITHUB_OUTPUT"
+          fi
       - if: steps.vercel.outputs.ready == 'true'
         uses: actions/checkout@v5
       - if: steps.vercel.outputs.ready == 'true'
@@ -151,6 +182,121 @@ jobs:
       - name: Install
         if: steps.vercel.outputs.ready == 'true'
         run: pnpm install --frozen-lockfile
+      # Bootstrap and migrations run as netnet_owner on the branch's direct connection; the seed
+      # runs as netnet_app through the pooler, which is the connection string the preview gets.
+      # Every value with a password in it is masked before anything could print it.
+      - name: Make or reuse the Neon branch, then migrate and seed it
+        id: database
+        if: steps.neon.outputs.ready == 'true'
+        env:
+          BRANCH_NAME: ${{ steps.neon.outputs.branch }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PREVIEW_PROJECT_ID }}
+          NETNET_APP_DB_PASSWORD: ${{ secrets.NETNET_APP_DB_PASSWORD_PREVIEW }}
+        run: |
+          set -euo pipefail
+          project="/projects/$NEON_PROJECT_ID"
+
+          # One Neon API call; prints the response body. Retries while Neon is busy with another
+          # operation (423), rate-limits (429) or fails (5xx); any other answer is an error.
+          neon() {
+            local method=$1 path=$2 body=${3:-} out status attempt
+            out=$(mktemp)
+            local args=(-sS -o "$out" -w '%{http_code}' -X "$method"
+              -H "Authorization: Bearer $NEON_API_KEY" -H 'Accept: application/json')
+            if [ -n "$body" ]; then args+=(-H 'Content-Type: application/json' --data "$body"); fi
+            for attempt in 1 2 3 4 5 6; do
+              status=$(curl "${args[@]}" "$NEON_API$path") || status=000
+              case $status in
+                2??) cat "$out"; rm -f "$out"; return 0 ;;
+                423 | 429 | 5?? | 000) sleep $((attempt * 5)) ;;
+                *) break ;;
+              esac
+            done
+            echo "::error::Neon answered $status to $method $path: $(jq -r '.message // empty' "$out" 2>/dev/null)" >&2
+            rm -f "$out"
+            return 1
+          }
+
+          # The oldest branch with this name, if any.
+          find_branch() {
+            neon GET "$project/branches?search=$BRANCH_NAME&sort_by=created_at&sort_order=asc" |
+              jq -r --arg name "$BRANCH_NAME" '[.branches[] | select(.name == $name)][0].id // empty'
+          }
+
+          # Waits for each operation id on stdin to finish.
+          wait_for() {
+            local op status attempt
+            while read -r op; do
+              for attempt in $(seq 90); do
+                status=$(neon GET "$project/operations/$op" | jq -r '.operation.status')
+                case $status in
+                  finished | skipped) break ;;
+                  failed | error | cancelled) echo "::error::Neon operation $op $status." >&2; return 1 ;;
+                esac
+                if [ "$attempt" = 90 ]; then echo "::error::Neon operation $op is still $status." >&2; return 1; fi
+                sleep 2
+              done
+            done
+          }
+
+          branch=$(find_branch)
+          if [ -n "$branch" ]; then
+            echo "Reusing the Neon branch $BRANCH_NAME."
+          else
+            request=$(jq -nc --arg name "$BRANCH_NAME" '{branch: {name: $name}, endpoints: [{type: "read_write"}]}')
+            if created=$(neon POST "$project/branches" "$request"); then
+              branch=$(jq -r '.branch.id' <<<"$created")
+              jq -r '.operations[].id' <<<"$created" | wait_for
+              echo "Made the Neon branch $BRANCH_NAME."
+            else
+              # A run for the same pull request may have made it a moment earlier.
+              branch=$(find_branch)
+              if [ -z "$branch" ]; then exit 1; fi
+              echo "Reusing the Neon branch $BRANCH_NAME, made by a concurrent run."
+            fi
+          fi
+          endpoints=$(neon GET "$project/branches/$branch/endpoints" | jq '[.endpoints[] | select(.type == "read_write")] | length')
+          if [ "$endpoints" = 0 ]; then
+            request=$(jq -nc --arg branch "$branch" '{endpoint: {branch_id: $branch, type: "read_write"}}')
+            neon POST "$project/endpoints" "$request" | jq -r '.operations[].id' | wait_for
+          fi
+
+          # The database netnet_owner owns, or else the branch's only database.
+          database=$(neon GET "$project/branches/$branch/databases" | jq -r '
+            ([.databases[] | select(.owner_name == "netnet_owner") | .name] | first)
+            // (if (.databases | length) == 1 then .databases[0].name else empty end)')
+          if [ -z "$database" ]; then
+            echo "::error::The preview project has no database owned by netnet_owner (F7), and more than one database to choose from."
+            exit 1
+          fi
+
+          connection_uri() {
+            neon GET "$project/connection_uri?branch_id=$branch&database_name=$database&role_name=netnet_owner&pooled=$1" |
+              jq -r '.uri'
+          }
+          owner_url=$(connection_uri false)
+          owner_pooled_url=$(connection_uri true)
+          echo "::add-mask::$owner_url"
+          echo "::add-mask::$owner_pooled_url"
+          owner_password=$(URI="$owner_url" node -e 'process.stdout.write(new URL(process.env.URI).password)')
+          echo "::add-mask::$owner_password"
+          # netnet_app through the same pooler: the owner's pooled string with the app's role, and
+          # verify-full, which node-postgres keeps verifying the certificate under in its next major
+          # version (it will read "require" as libpq does).
+          app_url=$(URI="$owner_pooled_url" node -e '
+            const url = new URL(process.env.URI);
+            url.username = "netnet_app";
+            url.password = process.env.NETNET_APP_DB_PASSWORD;
+            if (url.searchParams.get("sslmode") === "require") url.searchParams.set("sslmode", "verify-full");
+            process.stdout.write(url.href);')
+          echo "::add-mask::$app_url"
+
+          DATABASE_OWNER_URL="$owner_url" pnpm --silent db:bootstrap
+          DATABASE_OWNER_URL="$owner_url" pnpm --silent db:migrate
+          DATABASE_URL="$app_url" pnpm --silent db:seed
+          echo "database_url=$app_url" >> "$GITHUB_OUTPUT"
+          echo "Database: the Neon branch $BRANCH_NAME of the preview project, database $database, migrated and seeded with fictional data." >> "$GITHUB_STEP_SUMMARY"
       # The CLI needs the project's owner (a team id for a Hobby team), so it is read from the
       # project itself rather than trusted from the VERCEL_ORG_ID secret.
       - name: Find the project's owner
@@ -170,11 +316,17 @@ jobs:
       - name: Build
         if: steps.vercel.outputs.ready == 'true'
         run: pnpm exec vercel build --token="$VERCEL_TOKEN"
+      # DATABASE_URL becomes a run-time variable of this deployment only. Named with no value, the
+      # CLI reads it from the environment, so it never appears on a command line.
       - name: Deploy the preview
         id: deploy
         if: steps.vercel.outputs.ready == 'true'
+        env:
+          DATABASE_URL: ${{ steps.database.outputs.database_url }}
         run: |
-          url=$(pnpm exec vercel deploy --prebuilt --token="$VERCEL_TOKEN")
+          args=(--prebuilt --token="$VERCEL_TOKEN")
+          if [ -n "$DATABASE_URL" ]; then args+=(--env DATABASE_URL); fi
+          url=$(pnpm exec vercel deploy "${args[@]}")
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"
       - name: Install Chromium for Playwright
@@ -185,3 +337,67 @@ jobs:
         run: pnpm test:e2e
         env:
           E2E_BASE_URL: ${{ steps.deploy.outputs.url }}
+
+  # Deletes the closed pull request's Neon branch, and any other pull request branch whose pull
+  # request is closed (a run that raced a close). It does nothing else.
+  cleanup:
+    name: Delete the preview database
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Delete closed pull requests' Neon branches
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PREVIEW_PROJECT_ID }}
+          NEON_PROD_PROJECT_ID: ${{ vars.NEON_PROD_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NEON_API_KEY" ] || [ -z "$NEON_PROJECT_ID" ]; then
+            msg="No Neon branch to delete: the secret NEON_API_KEY or the variable NEON_PREVIEW_PROJECT_ID is not set (Founder checklist F7)."
+            echo "::notice::$msg"
+            echo "$msg" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [ "$NEON_PROJECT_ID" = "$NEON_PROD_PROJECT_ID" ]; then
+            echo "::error::NEON_PREVIEW_PROJECT_ID names the production project. Previews never touch production."
+            exit 1
+          fi
+          project="/projects/$NEON_PROJECT_ID"
+
+          # One Neon API call; prints the response body. Retries while Neon is busy with another
+          # operation (423), rate-limits (429) or fails (5xx); any other answer is an error.
+          neon() {
+            local method=$1 path=$2 out status attempt
+            out=$(mktemp)
+            for attempt in 1 2 3 4 5 6; do
+              status=$(curl -sS -o "$out" -w '%{http_code}' -X "$method" \
+                -H "Authorization: Bearer $NEON_API_KEY" -H 'Accept: application/json' \
+                "$NEON_API$path") || status=000
+              case $status in
+                2??) cat "$out"; rm -f "$out"; return 0 ;;
+                423 | 429 | 5?? | 000) sleep $((attempt * 5)) ;;
+                *) break ;;
+              esac
+            done
+            echo "::error::Neon answered $status to $method $path: $(jq -r '.message // empty' "$out" 2>/dev/null)" >&2
+            rm -f "$out"
+            return 1
+          }
+
+          neon GET "$project/branches?search=pr-&limit=100" |
+            jq -r '.branches[] | select(.name | test("^pr-[0-9]+$")) | "\(.id) \(.name)"' |
+            while read -r id name; do
+              number=${name#pr-}
+              if [ "$number" != "$PR" ]; then
+                state=$(gh pr view "$number" --repo "$GITHUB_REPOSITORY" --json state --jq .state || echo UNKNOWN)
+                if [ "$state" = OPEN ] || [ "$state" = UNKNOWN ]; then continue; fi
+              fi
+              neon DELETE "$project/branches/$id" > /dev/null
+              echo "Deleted the Neon branch $name." | tee -a "$GITHUB_STEP_SUMMARY"
+            done
