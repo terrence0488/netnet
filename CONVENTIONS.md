@@ -227,6 +227,9 @@ sources, Google, Apple) are faked at their interface.
   the commit belongs to a task.
 - One logical change per commit. Never commit secrets, `.env.local`, real financial data or
   mockup images.
-- One branch per task, from `main`. A PR names its task brief, passes CI, and meets the brief's
-  done criteria before the engineering manager marks the task done.
+- One branch per task, from `main`, named after the task in lower case: `p1-t2`, optionally with
+  a short slug (`p1-t2-spike`). A change outside a task gets a short descriptive name, such as
+  `docs-branch-names`. Never work on the `claude/…` branch a cloud session starts on. A PR names
+  its task brief, passes CI, and meets the brief's done criteria before the engineering manager
+  marks the task done.
 - Significant decisions go in `docs/decisions.md` (date, decision, reason, stage).
