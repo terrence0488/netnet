@@ -53,10 +53,37 @@ jobs:
         run: pnpm lint
       - name: Typecheck
         run: pnpm typecheck
+      # A schema change without its migration would deploy code the database does not match.
+      - name: Migrations match the schema
+        timeout-minutes: 2
+        run: |
+          pnpm db:generate
+          if [ -n "$(git status --porcelain -- apps/api/migrations)" ]; then
+            git status --short -- apps/api/migrations
+            echo "::error::The schema has changed without a migration. Run pnpm db:generate and commit what it writes."
+            exit 1
+          fi
       - name: Unit tests
         run: pnpm test
       - name: Integration tests (Postgres 17)
         run: pnpm test:int
+      # What CI runs against a preview's database, on an empty database, twice: every step must be
+      # safe to repeat. The owner here is the service's superuser.
+      - name: Bootstrap, migrate and seed an empty database, twice
+        env:
+          DATABASE_OWNER_URL: ${{ env.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          NETNET_APP_DB_PASSWORD=$(openssl rand -hex 32)
+          echo "::add-mask::$NETNET_APP_DB_PASSWORD"
+          export NETNET_APP_DB_PASSWORD
+          app_url="postgres://netnet_app:$NETNET_APP_DB_PASSWORD@localhost:5432/netnet_test"
+          for run in first second; do
+            echo "The $run run:"
+            pnpm --silent db:bootstrap
+            pnpm --silent db:migrate
+            DATABASE_URL="$app_url" pnpm --silent db:seed
+          done
       - name: Build
         run: pnpm build
       - name: Install Chromium for Playwright
