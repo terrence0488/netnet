@@ -186,8 +186,8 @@ describe('the bootstrap', () => {
 });
 
 describe('the seed', () => {
-  it('writes fictional data as netnet_app, and can run again', async () => {
-    await seed(db.appDb);
+  it('writes fictional data as netnet_app, and can run again, even two at once', async () => {
+    await Promise.all([seed(db.appDb), seed(db.appDb)]);
     await seed(db.appDb);
     const { rows } = await db.owner.query<{ table: string; n: number }>(
       `select 'holding' as table, count(*)::int as n from ledger.holding where user_id = $1

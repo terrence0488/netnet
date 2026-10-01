@@ -48,7 +48,8 @@ function fixtureId(prefix: IdPrefix, userId: string, key: string): string {
 
 /**
  * Writes the fixture through `withUser` as a `system` write, with an audit row per entity and
- * `data_version` 1. Does nothing if the user's ledger already exists, so it can run again.
+ * `data_version` 1. Does nothing if the user's ledger already exists, so it can run again, even
+ * while another run is under way.
  */
 export async function seedLedger(
   withUser: WithUser,
@@ -59,11 +60,6 @@ export async function seedLedger(
     { kind: 'system' },
     async (tx) => {
       const seeded = plan(tx, fixture);
-      const existing = await tx.db
-        .select({ userId: ledgerState.userId })
-        .from(ledgerState)
-        .limit(1);
-      if (existing.length > 0) return seeded.ids;
       await write(tx, seeded);
       return seeded.ids;
     },
@@ -207,12 +203,13 @@ function plan(tx: LedgerTx, fixture: LedgerFixture) {
 
 async function write(tx: LedgerTx, { rows, links }: Plan): Promise<void> {
   const { db, userId } = tx;
-  await db.insert(ledgerState).values({
-    userId,
-    baseCurrency: rows.baseCurrency,
-    dataVersion: 1,
-    createdAt: rows.at,
-  });
+  const created = await db
+    .insert(ledgerState)
+    .values({ userId, baseCurrency: rows.baseCurrency, dataVersion: 1, createdAt: rows.at })
+    .onConflictDoNothing()
+    .returning({ userId: ledgerState.userId });
+  // The ledger exists already. A concurrent seed waits on this insert until the first commits.
+  if (created.length === 0) return;
   await db.insert(userType).values(rows.types);
   await db.insert(tag).values(rows.longTerm);
   await db.insert(holding).values(rows.holdings);
