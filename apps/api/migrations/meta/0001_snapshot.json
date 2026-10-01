@@ -1,0 +1,1907 @@
+{
+  "id": "a3440b0b-372a-4b58-89ff-1d4e7001f199",
+  "prevId": "ecdb32d9-3f72-4a46-b06f-c657b0caa352",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "core.agent_connection": {
+      "name": "agent_connection",
+      "schema": "core",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_name": {
+          "name": "client_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "registration": {
+          "name": "registration",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client": {
+          "name": "client",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "first_call_at": {
+          "name": "first_call_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "security_email_sent_at": {
+          "name": "security_email_sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "agent_connection_user_id_idx": {
+          "name": "agent_connection_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "agent_connection_id_check": {
+          "name": "agent_connection_id_check",
+          "value": "\"core\".\"agent_connection\".\"id\" ~ '^con_[0-7][0-9A-HJKMNP-TV-Z]{25}$'"
+        },
+        "agent_connection_registration_check": {
+          "name": "agent_connection_registration_check",
+          "value": "\"core\".\"agent_connection\".\"registration\" in ('cimd', 'dcr')"
+        },
+        "agent_connection_client_check": {
+          "name": "agent_connection_client_check",
+          "value": "\"core\".\"agent_connection\".\"client\" in ('claude', 'chatgpt', 'other')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "core.connection_attempt": {
+      "name": "connection_attempt",
+      "schema": "core",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client": {
+          "name": "client",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entry": {
+          "name": "entry",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "platform": {
+          "name": "platform",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'started'"
+        },
+        "failed_step": {
+          "name": "failed_step",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "connection_attempt_user_id_started_at_idx": {
+          "name": "connection_attempt_user_id_started_at_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "started_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "connection_attempt_id_check": {
+          "name": "connection_attempt_id_check",
+          "value": "\"core\".\"connection_attempt\".\"id\" ~ '^att_[0-7][0-9A-HJKMNP-TV-Z]{25}$'"
+        },
+        "connection_attempt_client_check": {
+          "name": "connection_attempt_client_check",
+          "value": "\"core\".\"connection_attempt\".\"client\" in ('claude', 'chatgpt', 'other')"
+        },
+        "connection_attempt_entry_check": {
+          "name": "connection_attempt_entry_check",
+          "value": "\"core\".\"connection_attempt\".\"entry\" in ('onboarding', 'home', 'holding', 'agent')"
+        },
+        "connection_attempt_platform_check": {
+          "name": "connection_attempt_platform_check",
+          "value": "\"core\".\"connection_attempt\".\"platform\" in ('phone', 'computer', 'any')"
+        },
+        "connection_attempt_state_check": {
+          "name": "connection_attempt_state_check",
+          "value": "\"core\".\"connection_attempt\".\"state\" in ('started', 'approved', 'live', 'failed')"
+        },
+        "connection_attempt_failed_step_check": {
+          "name": "connection_attempt_failed_step_check",
+          "value": "\"core\".\"connection_attempt\".\"failed_step\" in ('authorise', 'callback', 'discovery', 'first_call')"
+        },
+        "connection_attempt_failed_step_state_check": {
+          "name": "connection_attempt_failed_step_state_check",
+          "value": "(\"core\".\"connection_attempt\".\"state\" = 'failed') = (\"core\".\"connection_attempt\".\"failed_step\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "core.content_audit": {
+      "name": "content_audit",
+      "schema": "core",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "name": "content_audit_id_seq",
+            "increment": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "startWith": "1",
+            "cache": "1",
+            "cycle": false,
+            "schema": "core",
+            "type": "always"
+          }
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_version": {
+          "name": "from_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_version": {
+          "name": "to_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor": {
+          "name": "actor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "at": {
+          "name": "at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "content_audit_kind_key_at_idx": {
+          "name": "content_audit_kind_key_at_idx",
+          "columns": [
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "core.content_current": {
+      "name": "content_current",
+      "schema": "core",
+      "columns": {
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "content_current_doc_fk": {
+          "name": "content_current_doc_fk",
+          "tableFrom": "content_current",
+          "columnsFrom": ["kind", "key", "version"],
+          "tableTo": "content_doc",
+          "schemaTo": "core",
+          "columnsTo": ["kind", "key", "version"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "content_current_kind_key_pk": {
+          "name": "content_current_kind_key_pk",
+          "columns": ["kind", "key"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "core.content_doc": {
+      "name": "content_doc",
+      "schema": "core",
+      "columns": {
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body": {
+          "name": "body",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sha256": {
+          "name": "sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author": {
+          "name": "author",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_commit": {
+          "name": "source_commit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "content_doc_kind_key_version_pk": {
+          "name": "content_doc_kind_key_version_pk",
+          "columns": ["kind", "key", "version"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "content_doc_version_check": {
+          "name": "content_doc_version_check",
+          "value": "\"core\".\"content_doc\".\"version\" >= 1"
+        },
+        "content_doc_sha256_check": {
+          "name": "content_doc_sha256_check",
+          "value": "\"core\".\"content_doc\".\"sha256\" ~ '^[0-9a-f]{64}$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "analytics.event": {
+      "name": "event",
+      "schema": "analytics",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "name": "event_id_seq",
+            "increment": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "startWith": "1",
+            "cache": "1",
+            "cycle": false,
+            "schema": "analytics",
+            "type": "always"
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "at": {
+          "name": "at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visitor": {
+          "name": "visitor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "segment": {
+          "name": "segment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "props": {
+          "name": "props",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "app_version": {
+          "name": "app_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "event_name_at_idx": {
+          "name": "event_name_at_idx",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "event_user_id_at_idx": {
+          "name": "event_user_id_at_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "event_segment_check": {
+          "name": "event_segment_check",
+          "value": "\"analytics\".\"event\".\"segment\" in ('starting_out', 'accumulating', 'established', 'unknown')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "core.fx_rate": {
+      "name": "fx_rate",
+      "schema": "core",
+      "columns": {
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "per_usd": {
+          "name": "per_usd",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "fx_rate_currency_date_idx": {
+          "name": "fx_rate_currency_date_idx",
+          "columns": [
+            {
+              "expression": "currency",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "fx_rate_date_currency_pk": {
+          "name": "fx_rate_date_currency_pk",
+          "columns": ["date", "currency"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "fx_rate_currency_check": {
+          "name": "fx_rate_currency_check",
+          "value": "\"core\".\"fx_rate\".\"currency\" ~ '^[A-Z]{3}$'"
+        },
+        "fx_rate_per_usd_check": {
+          "name": "fx_rate_per_usd_check",
+          "value": "\"core\".\"fx_rate\".\"per_usd\" > 0"
+        },
+        "fx_rate_source_check": {
+          "name": "fx_rate_source_check",
+          "value": "\"core\".\"fx_rate\".\"source\" in ('ecb', 'fallback')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "core.profile": {
+      "name": "profile",
+      "schema": "core",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "time_zone": {
+          "name": "time_zone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'UTC'"
+        },
+        "segment": {
+          "name": "segment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'unknown'"
+        },
+        "onboarding_state": {
+          "name": "onboarding_state",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "profile_country_check": {
+          "name": "profile_country_check",
+          "value": "\"core\".\"profile\".\"country\" ~ '^[A-Z]{2}$'"
+        },
+        "profile_time_zone_check": {
+          "name": "profile_time_zone_check",
+          "value": "\"core\".\"profile\".\"time_zone\" <> ''"
+        },
+        "profile_segment_check": {
+          "name": "profile_segment_check",
+          "value": "\"core\".\"profile\".\"segment\" in ('starting_out', 'accumulating', 'established', 'unknown')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "core.rate_limit": {
+      "name": "rate_limit",
+      "schema": "core",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "window_start": {
+          "name": "window_start",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "count": {
+          "name": "count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "rate_limit_key_window_start_pk": {
+          "name": "rate_limit_key_window_start_pk",
+          "columns": ["key", "window_start"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "ledger.audit": {
+      "name": "audit",
+      "schema": "ledger",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "at": {
+          "name": "at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor": {
+          "name": "actor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_name": {
+          "name": "client_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "connection_id": {
+          "name": "connection_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "batch_id": {
+          "name": "batch_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity": {
+          "name": "entity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "before": {
+          "name": "before",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "after": {
+          "name": "after",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "undoes": {
+          "name": "undoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "undone_by": {
+          "name": "undone_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "audit_user_id_at_idx": {
+          "name": "audit_user_id_at_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "audit_user_id_batch_id_idx": {
+          "name": "audit_user_id_batch_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "batch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "audit_state_fk": {
+          "name": "audit_state_fk",
+          "tableFrom": "audit",
+          "columnsFrom": ["user_id"],
+          "tableTo": "ledger_state",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "audit_batch_fk": {
+          "name": "audit_batch_fk",
+          "tableFrom": "audit",
+          "columnsFrom": ["user_id", "batch_id"],
+          "tableTo": "batch",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id", "id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "audit_undoes_fk": {
+          "name": "audit_undoes_fk",
+          "tableFrom": "audit",
+          "columnsFrom": ["user_id", "undoes"],
+          "tableTo": "audit",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id", "id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "audit_undone_by_fk": {
+          "name": "audit_undone_by_fk",
+          "tableFrom": "audit",
+          "columnsFrom": ["user_id", "undone_by"],
+          "tableTo": "audit",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id", "id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "audit_user_id_id_pk": {
+          "name": "audit_user_id_id_pk",
+          "columns": ["user_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "user_isolation": {
+          "name": "user_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "user_id = current_setting('app.user_id', true)",
+          "withCheck": "user_id = current_setting('app.user_id', true)"
+        }
+      },
+      "checkConstraints": {
+        "audit_id_check": {
+          "name": "audit_id_check",
+          "value": "\"ledger\".\"audit\".\"id\" ~ '^aud_[0-7][0-9A-HJKMNP-TV-Z]{25}$'"
+        },
+        "audit_actor_check": {
+          "name": "audit_actor_check",
+          "value": "\"ledger\".\"audit\".\"actor\" in ('user', 'agent', 'system')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "ledger.batch": {
+      "name": "batch",
+      "schema": "ledger",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "connection_id": {
+          "name": "connection_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "opened_at": {
+          "name": "opened_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_write_at": {
+          "name": "last_write_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "batch_user_id_connection_id_last_write_at_idx": {
+          "name": "batch_user_id_connection_id_last_write_at_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "connection_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "last_write_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "batch_state_fk": {
+          "name": "batch_state_fk",
+          "tableFrom": "batch",
+          "columnsFrom": ["user_id"],
+          "tableTo": "ledger_state",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "batch_user_id_id_pk": {
+          "name": "batch_user_id_id_pk",
+          "columns": ["user_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "user_isolation": {
+          "name": "user_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "user_id = current_setting('app.user_id', true)",
+          "withCheck": "user_id = current_setting('app.user_id', true)"
+        }
+      },
+      "checkConstraints": {
+        "batch_id_check": {
+          "name": "batch_id_check",
+          "value": "\"ledger\".\"batch\".\"id\" ~ '^bat_[0-7][0-9A-HJKMNP-TV-Z]{25}$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "ledger.holding": {
+      "name": "holding",
+      "schema": "ledger",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type_id": {
+          "name": "type_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cadence_days": {
+          "name": "cadence_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "row_version": {
+          "name": "row_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "access": {
+          "name": "access",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_basis": {
+          "name": "access_basis",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_reason": {
+          "name": "access_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_until": {
+          "name": "access_until",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "holding_user_id_type_id_idx": {
+          "name": "holding_user_id_type_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "type_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "holding_state_fk": {
+          "name": "holding_state_fk",
+          "tableFrom": "holding",
+          "columnsFrom": ["user_id"],
+          "tableTo": "ledger_state",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "holding_type_fk": {
+          "name": "holding_type_fk",
+          "tableFrom": "holding",
+          "columnsFrom": ["user_id", "type_id"],
+          "tableTo": "user_type",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id", "id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "holding_user_id_id_pk": {
+          "name": "holding_user_id_id_pk",
+          "columns": ["user_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "user_isolation": {
+          "name": "user_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "user_id = current_setting('app.user_id', true)",
+          "withCheck": "user_id = current_setting('app.user_id', true)"
+        }
+      },
+      "checkConstraints": {
+        "holding_id_check": {
+          "name": "holding_id_check",
+          "value": "\"ledger\".\"holding\".\"id\" ~ '^hld_[0-7][0-9A-HJKMNP-TV-Z]{25}$'"
+        },
+        "holding_kind_check": {
+          "name": "holding_kind_check",
+          "value": "\"ledger\".\"holding\".\"kind\" in ('asset', 'liability')"
+        },
+        "holding_currency_check": {
+          "name": "holding_currency_check",
+          "value": "\"ledger\".\"holding\".\"currency\" ~ '^[A-Z]{3}$'"
+        },
+        "holding_access_check": {
+          "name": "holding_access_check",
+          "value": "\"ledger\".\"holding\".\"access\" in ('accessible', 'illiquid', 'locked', 'undecided')"
+        },
+        "holding_access_kind_check": {
+          "name": "holding_access_kind_check",
+          "value": "(\"ledger\".\"holding\".\"kind\" = 'liability') = (\"ledger\".\"holding\".\"access\" is null)"
+        },
+        "holding_cadence_days_check": {
+          "name": "holding_cadence_days_check",
+          "value": "\"ledger\".\"holding\".\"cadence_days\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "ledger.holding_tag": {
+      "name": "holding_tag",
+      "schema": "ledger",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "holding_id": {
+          "name": "holding_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag_id": {
+          "name": "tag_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "holding_tag_user_id_tag_id_idx": {
+          "name": "holding_tag_user_id_tag_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "tag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "holding_tag_state_fk": {
+          "name": "holding_tag_state_fk",
+          "tableFrom": "holding_tag",
+          "columnsFrom": ["user_id"],
+          "tableTo": "ledger_state",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "holding_tag_holding_fk": {
+          "name": "holding_tag_holding_fk",
+          "tableFrom": "holding_tag",
+          "columnsFrom": ["user_id", "holding_id"],
+          "tableTo": "holding",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id", "id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "holding_tag_tag_fk": {
+          "name": "holding_tag_tag_fk",
+          "tableFrom": "holding_tag",
+          "columnsFrom": ["user_id", "tag_id"],
+          "tableTo": "tag",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id", "id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "holding_tag_user_id_holding_id_tag_id_pk": {
+          "name": "holding_tag_user_id_holding_id_tag_id_pk",
+          "columns": ["user_id", "holding_id", "tag_id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "user_isolation": {
+          "name": "user_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "user_id = current_setting('app.user_id', true)",
+          "withCheck": "user_id = current_setting('app.user_id', true)"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "ledger.ledger_state": {
+      "name": "ledger_state",
+      "schema": "ledger",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "base_currency": {
+          "name": "base_currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_version": {
+          "name": "data_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "user_isolation": {
+          "name": "user_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "user_id = current_setting('app.user_id', true)",
+          "withCheck": "user_id = current_setting('app.user_id', true)"
+        }
+      },
+      "checkConstraints": {
+        "ledger_state_base_currency_check": {
+          "name": "ledger_state_base_currency_check",
+          "value": "\"ledger\".\"ledger_state\".\"base_currency\" ~ '^[A-Z]{3}$'"
+        },
+        "ledger_state_data_version_check": {
+          "name": "ledger_state_data_version_check",
+          "value": "\"ledger\".\"ledger_state\".\"data_version\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "ledger.prefs": {
+      "name": "prefs",
+      "schema": "ledger",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "prefs_state_fk": {
+          "name": "prefs_state_fk",
+          "tableFrom": "prefs",
+          "columnsFrom": ["user_id"],
+          "tableTo": "ledger_state",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "prefs_user_id_key_pk": {
+          "name": "prefs_user_id_key_pk",
+          "columns": ["user_id", "key"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "user_isolation": {
+          "name": "user_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "user_id = current_setting('app.user_id', true)",
+          "withCheck": "user_id = current_setting('app.user_id', true)"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "ledger.tag": {
+      "name": "tag",
+      "schema": "ledger",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort": {
+          "name": "sort",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "tag_user_id_name_key": {
+          "name": "tag_user_id_name_key",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"name\")",
+              "isExpression": true,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "tag_state_fk": {
+          "name": "tag_state_fk",
+          "tableFrom": "tag",
+          "columnsFrom": ["user_id"],
+          "tableTo": "ledger_state",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "tag_user_id_id_pk": {
+          "name": "tag_user_id_id_pk",
+          "columns": ["user_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "user_isolation": {
+          "name": "user_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "user_id = current_setting('app.user_id', true)",
+          "withCheck": "user_id = current_setting('app.user_id', true)"
+        }
+      },
+      "checkConstraints": {
+        "tag_id_check": {
+          "name": "tag_id_check",
+          "value": "\"ledger\".\"tag\".\"id\" ~ '^tag_[0-7][0-9A-HJKMNP-TV-Z]{25}$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "ledger.user_type": {
+      "name": "user_type",
+      "schema": "ledger",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "universal": {
+          "name": "universal",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pack_type_key": {
+          "name": "pack_type_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_name": {
+          "name": "custom_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sort": {
+          "name": "sort",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "archived": {
+          "name": "archived",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_type_state_fk": {
+          "name": "user_type_state_fk",
+          "tableFrom": "user_type",
+          "columnsFrom": ["user_id"],
+          "tableTo": "ledger_state",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_type_user_id_id_pk": {
+          "name": "user_type_user_id_id_pk",
+          "columns": ["user_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "user_isolation": {
+          "name": "user_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "user_id = current_setting('app.user_id', true)",
+          "withCheck": "user_id = current_setting('app.user_id', true)"
+        }
+      },
+      "checkConstraints": {
+        "user_type_id_check": {
+          "name": "user_type_id_check",
+          "value": "\"ledger\".\"user_type\".\"id\" ~ '^typ_[0-7][0-9A-HJKMNP-TV-Z]{25}$'"
+        },
+        "user_type_universal_check": {
+          "name": "user_type_universal_check",
+          "value": "\"ledger\".\"user_type\".\"universal\" in ('cash', 'listed', 'retirement', 'property', 'vehicle', 'equity', 'crypto', 'mortgage', 'loan', 'wrapper', 'card', 'other')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "ledger.value": {
+      "name": "value",
+      "schema": "ledger",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "holding_id": {
+          "name": "holding_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount_minor": {
+          "name": "amount_minor",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_minor": {
+          "name": "base_minor",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_currency": {
+          "name": "base_currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fx_rate": {
+          "name": "fx_rate",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fx_rate_date": {
+          "name": "fx_rate_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fx_source": {
+          "name": "fx_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_name": {
+          "name": "client_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "connection_id": {
+          "name": "connection_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "batch_id": {
+          "name": "batch_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entered_at": {
+          "name": "entered_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "row_version": {
+          "name": "row_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        }
+      },
+      "indexes": {
+        "value_user_id_holding_id_date_key": {
+          "name": "value_user_id_holding_id_date_key",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "holding_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "value_user_id_batch_id_idx": {
+          "name": "value_user_id_batch_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "batch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "value_state_fk": {
+          "name": "value_state_fk",
+          "tableFrom": "value",
+          "columnsFrom": ["user_id"],
+          "tableTo": "ledger_state",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "value_holding_fk": {
+          "name": "value_holding_fk",
+          "tableFrom": "value",
+          "columnsFrom": ["user_id", "holding_id"],
+          "tableTo": "holding",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id", "id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "value_batch_fk": {
+          "name": "value_batch_fk",
+          "tableFrom": "value",
+          "columnsFrom": ["user_id", "batch_id"],
+          "tableTo": "batch",
+          "schemaTo": "ledger",
+          "columnsTo": ["user_id", "id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "value_user_id_id_pk": {
+          "name": "value_user_id_id_pk",
+          "columns": ["user_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "user_isolation": {
+          "name": "user_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "user_id = current_setting('app.user_id', true)",
+          "withCheck": "user_id = current_setting('app.user_id', true)"
+        }
+      },
+      "checkConstraints": {
+        "value_id_check": {
+          "name": "value_id_check",
+          "value": "\"ledger\".\"value\".\"id\" ~ '^val_[0-7][0-9A-HJKMNP-TV-Z]{25}$'"
+        },
+        "value_currency_check": {
+          "name": "value_currency_check",
+          "value": "\"ledger\".\"value\".\"currency\" ~ '^[A-Z]{3}$'"
+        },
+        "value_base_currency_check": {
+          "name": "value_base_currency_check",
+          "value": "\"ledger\".\"value\".\"base_currency\" ~ '^[A-Z]{3}$'"
+        },
+        "value_fx_rate_check": {
+          "name": "value_fx_rate_check",
+          "value": "\"ledger\".\"value\".\"fx_rate\" > 0"
+        },
+        "value_fx_source_check": {
+          "name": "value_fx_source_check",
+          "value": "\"ledger\".\"value\".\"fx_source\" in ('ecb', 'fallback', 'same', 'user', 'agent')"
+        },
+        "value_source_check": {
+          "name": "value_source_check",
+          "value": "\"ledger\".\"value\".\"source\" in ('web', 'agent', 'system')"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {
+    "analytics": "analytics",
+    "core": "core",
+    "ledger": "ledger"
+  },
+  "views": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

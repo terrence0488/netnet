@@ -8,22 +8,29 @@
     "./vercel": {
       "types": "./src/vercel.ts",
       "default": "./dist/vercel.js"
-    }
+    },
+    "./db/bootstrap": "./src/db/bootstrap.ts",
+    "./db/client": "./src/db/client.ts",
+    "./db/migrate": "./src/db/migrate.ts",
+    "./db/seed": "./src/db/seed.ts"
   },
   "scripts": {
     "dev": "tsx watch src/dev.ts",
-    "build": "esbuild src/vercel.ts --bundle --platform=node --format=esm --target=node22 --sourcemap --outfile=dist/vercel.js",
+    "build": "esbuild src/vercel.ts --bundle --platform=node --format=esm --target=node22 --sourcemap --external:pg-native --outfile=dist/vercel.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@netnet/contracts": "workspace:*",
-    "hono": "4.13.12"
+    "drizzle-orm": "0.45.3",
+    "hono": "4.13.12",
+    "pg": "8.23.1"
   },
   "devDependencies": {
     "@hono/node-server": "2.1.3",
-    "tsx": "4.23.15",
     "@types/node": "22.20.4",
-    "typescript": "6.0.3",
-    "esbuild": "0.28.2"
+    "@types/pg": "8.23.1",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3"
   }
 }
