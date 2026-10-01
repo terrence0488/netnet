@@ -31,3 +31,5 @@ note and the Insights decision now say "built last (P5)"; approving the plan app
 P1-T2 (the spike) needs about 45 minutes of the Founder's hands-on time and gates P1-T11 and P1-T13.
 The architecture's own fallbacks may be taken inside it; anything else comes back to the Founder.
 Start now: F1 Apple Developer, F2 domain, F3 pack reviewers. Before the build: F4–F8.
+Plan tracker: https://claude.ai/artifact/UkJfDYaAAi8gJV1aBbk3nB. When a task's status or this file
+changes, update its database with ArtifactData: `tasks/<id> {status}`, `meta/state` (this block).
