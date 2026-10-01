@@ -147,7 +147,7 @@ jobs:
         id: deploy
         if: steps.vercel.outputs.ready == 'true'
         run: |
-          url=$(pnpm exec vercel deploy --prebuilt --debug --token="$VERCEL_TOKEN")
+          url=$(pnpm exec vercel deploy --prebuilt --token="$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"
       - name: Install Chromium for Playwright
