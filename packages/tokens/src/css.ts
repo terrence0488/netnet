@@ -1,4 +1,4 @@
-import type { Tokens, TypeStep } from './tokens';
+import type { Theme, Tokens, TypeStep } from './tokens';
 
 type Declarations = [name: string, value: string][];
 
@@ -34,10 +34,18 @@ function group(prefix: string, values: Record<string, number>, unit = 'px'): Dec
   return Object.entries(values).map(([k, v]) => [`${prefix}-${k}`, `${v}${unit}`]);
 }
 
+/** The colours a theme authors: its palette, the trend's wash and the chart hues. */
+function themeDeclarations(t: Tokens, theme: Theme): Declarations {
+  return [
+    ...Object.entries(t.color[theme]).map(([k, v]): [string, string] => [k, v.toLowerCase()]),
+    ['wash', String(t.wash[theme])],
+    ...t.chart[theme].map((v, i): [string, string] => [`chart-${i + 1}`, v.toLowerCase()]),
+  ];
+}
+
 function rootDeclarations(t: Tokens): Declarations {
   return [
-    ...Object.entries(t.color.light).map(([k, v]): [string, string] => [k, v.toLowerCase()]),
-    ['wash', String(t.wash.light)],
+    ...themeDeclarations(t, 'light'),
     ...Object.entries(t.font).map(([k, v]): [string, string] => [`font-${k}`, stack(v)]),
     ['fs', String(t.scale.phone)],
     ['fs-min', px(t.scale.phoneFloor)],
@@ -54,6 +62,7 @@ function rootDeclarations(t: Tokens): Declarations {
     ['shadow-focus', 'var(--offset-control) var(--offset-control) 0 var(--brand)'],
     ['hit', px(t.hit.touch)],
     ...Object.entries(t.layout).map(([k, v]): [string, string] => [k, px(v)]),
+    ...group('viewport', t.viewport, 'dvh'),
     ...group('icon', t.icon),
     ...group('duration', t.duration, 'ms'),
     ...Object.entries(t.easing).map(([k, v]): [string, string] => [
@@ -87,10 +96,7 @@ export function renderCss(t: Tokens): string {
     root,
     '',
     '/* Dark (espresso) follows the OS, authored separately (design-system §8). */',
-    media('(prefers-color-scheme: dark)', [
-      ...Object.entries(t.color.dark).map(([k, v]): [string, string] => [k, v.toLowerCase()]),
-      ['wash', String(t.wash.dark)],
-    ]),
+    media('(prefers-color-scheme: dark)', themeDeclarations(t, 'dark')),
     '',
     '/* A computer reads the sizes as written; a phone reads them 15% larger, never below 11px. */',
     media(`(min-width: ${px(t.breakpoint.computer)})`, [

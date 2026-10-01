@@ -25,6 +25,14 @@
   --sun-on: #1a1714;
   --scrim: rgba(26, 23, 20, 0.55);
   --wash: 0.22;
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #4a3aa7;
+  --chart-8: #e34948;
   --font-display: Unbounded, 'Arial Black', sans-serif;
   --font-text: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -113,6 +121,8 @@
   --inset-row: 13px;
   --inset-sheet: 22px;
   --inset-field: 12px;
+  --inset-page-end: 30px;
+  --inset-page-end-computer: 70px;
   --radius-card: 14px;
   --radius-control: 10px;
   --radius-sheet: 22px;
@@ -121,6 +131,7 @@
   --border-edge: 2px;
   --border-rule: 1.5px;
   --border-hair: 1px;
+  --border-mark: 4px;
   --offset-card: 4px;
   --offset-control: 3px;
   --offset-icon: 2px;
@@ -140,6 +151,9 @@
   --field-max: 420px;
   --tab-h: 64px;
   --sheet-w: 460px;
+  --viewport-full: 100dvh;
+  --viewport-sheet: 88dvh;
+  --viewport-dialog: 82dvh;
   --icon-tab: 21px;
   --icon-ui: 18px;
   --icon-mark: 16px;
@@ -182,6 +196,14 @@
     --sun-on: #1a1714;
     --scrim: rgba(26, 23, 20, 0.55);
     --wash: 0.26;
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --chart-3: #199e70;
+    --chart-4: #c98500;
+    --chart-5: #d55181;
+    --chart-6: #008300;
+    --chart-7: #9085e9;
+    --chart-8: #e66767;
   }
 }
 

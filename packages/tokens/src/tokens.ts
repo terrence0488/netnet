@@ -66,6 +66,15 @@ export const color: Record<Theme, Record<ColorName, string>> = { light, dark };
 /** The trend's wash beneath its line, per theme (design-system §6, Trend). */
 export const wash: Record<Theme, number> = { light: 0.22, dark: 0.26 };
 
+/**
+ * The categorical chart palette (design-system §5), in its fixed order: charts only, never UI
+ * chrome. A ninth category folds into "Other"; it never gets a generated hue.
+ */
+export const chart: Record<Theme, readonly string[]> = {
+  light: ['#2A78D6', '#EB6834', '#1BAF7A', '#EDA100', '#E87BA4', '#008300', '#4A3AA7', '#E34948'],
+  dark: ['#3987E5', '#D95926', '#199E70', '#C98500', '#D55181', '#008300', '#9085E9', '#E66767'],
+};
+
 /** Unbounded for money and headings, Space Grotesk for everything else (design-system §3). */
 export const font = {
   display: ['Unbounded', 'Arial Black', 'sans-serif'],
@@ -156,6 +165,9 @@ export const inset = {
   row: 13,
   sheet: 22,
   field: 12,
+  /** Room under a screen's last row: above the tab bar on a phone, at the foot on a computer. */
+  'page-end': 30,
+  'page-end-computer': 70,
 } as const;
 
 export const radius = {
@@ -166,8 +178,11 @@ export const radius = {
   pill: 99,
 } as const;
 
-/** Outlines: `edge` for cards and controls, `rule` for the soft rules inside a card. */
-export const border = { edge: 2, rule: 1.5, hair: 1 } as const;
+/**
+ * Outlines: `edge` for cards and controls, `rule` for the soft rules inside a card. `mark` is a
+ * bar that marks an edge: the active tab's tomato bar, the agent's margin mark.
+ */
+export const border = { edge: 2, rule: 1.5, hair: 1, mark: 4 } as const;
 
 /** The hard offset shadow's offsets (design-system §4.2 rule 4: cards and controls you can press). */
 export const offset = { card: 4, control: 3, icon: 2, sheet: 6 } as const;
@@ -194,6 +209,9 @@ export const layout = {
   'sheet-w': 460,
 } as const;
 
+/** Heights as a share of the viewport (%): the page, a sheet on a phone, a dialog on a computer. */
+export const viewport = { full: 100, sheet: 88, dialog: 82 } as const;
+
 export const icon = { tab: 21, ui: 18, mark: 16, spinner: 22 } as const;
 
 /** Motion in ms. Every duration is 0 under `prefers-reduced-motion: reduce`. */
@@ -215,6 +233,7 @@ export const layer = { tabbar: 40, toast: 60 } as const;
 export const tokens = {
   color,
   wash,
+  chart,
   font,
   type,
   displaySize,
@@ -227,6 +246,7 @@ export const tokens = {
   hit,
   breakpoint,
   layout,
+  viewport,
   icon,
   duration,
   easing,

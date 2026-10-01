@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderCss } from './css';
-import { color, hit, scale, tokens, type ColorName, type Theme } from './index';
+import { chart, color, hit, scale, tokens, type ColorName, type Theme } from './index';
 
 const THEMES: Theme[] = ['light', 'dark'];
 
@@ -35,6 +35,15 @@ describe('tokens', () => {
     expect(color.light['brand-on']).toBe(color.dark['brand-on']);
     expect(hit).toStrictEqual({ touch: 44, fine: 36 });
     expect(scale).toStrictEqual({ phone: 1.15, phoneFloor: 11 });
+  });
+
+  it('keeps the chart palette in its fixed order, eight slots per theme (design-system §5)', () => {
+    expect(chart.light).toHaveLength(8);
+    expect(chart.dark).toHaveLength(8);
+    expect([chart.light[0], chart.light[7]]).toStrictEqual(['#2A78D6', '#E34948']);
+    expect([chart.dark[0], chart.dark[7]]).toStrictEqual(['#3987E5', '#E66767']);
+    const ui = new Set(Object.values(color.light).concat(Object.values(color.dark)));
+    expect([...chart.light, ...chart.dark].filter((hue) => ui.has(hue))).toStrictEqual([]);
   });
 
   describe.each(THEMES)('%s theme: text meets WCAG AA (4.5:1)', (theme) => {
