@@ -19,7 +19,7 @@
     "db:bootstrap": "tsx scripts/db-bootstrap.ts",
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:seed": "tsx scripts/db-seed.ts",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "tsx scripts/db-generate.ts"
   },
   "dependencies": {
     "@netnet/api": "workspace:*"
