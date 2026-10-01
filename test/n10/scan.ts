@@ -23,6 +23,7 @@ const SKIPPED_DIRS = new Set([
   'test-results',
   '.git',
   '.vercel',
+  '.claude',
 ]);
 
 const SCANNED = /\.(ts|tsx|js|jsx|mjs|cjs|json|html|css|sql|ya?ml)$/;
