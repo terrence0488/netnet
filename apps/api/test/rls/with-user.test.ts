@@ -10,6 +10,7 @@ import {
   USER_B,
   createTestDatabase,
   seedUsers,
+  sqlState,
   type Fixtures,
   type TestDatabase,
 } from '../isolation/harness';
@@ -110,9 +111,29 @@ describe('the user setting', () => {
     expect(await db.withUser(USER_A, user, holdingNames)).not.toContain('changed');
   });
 
-  it('refuses an empty user id rather than opening a transaction with no user', async () => {
-    await expect(db.withUser('', user, holdingNames)).rejects.toThrow(/userId/);
-    await expect(db.withUser('  ', user, holdingNames)).rejects.toThrow(/userId/);
+  it.each([
+    ['empty', ''],
+    ['blank', '  '],
+    ['another kind of id', 'hld_01K1G4KX00AAAAAAAAAAAAAAAA'],
+    ['not an id', "usr_' or true --"],
+  ])('refuses a user id that is %s, before opening a transaction', async (_, userId) => {
+    await expect(db.withUser(userId, user, holdingNames)).rejects.toThrow(/usr_ ULID/);
+  });
+});
+
+describe('a read', () => {
+  it('cannot write: every write goes through the write lock', async () => {
+    const state = await sqlState(
+      db.withUser(USER_A, user, (tx) =>
+        tx.db.execute(sql`update ledger.holding set row_version = row_version + 1`),
+      ),
+    );
+    expect(state).toBe('25006');
+    const { rows } = await db.owner.query<{ n: number }>(
+      'select count(*)::int as n from ledger.holding where user_id = $1 and row_version <> 1',
+      [USER_A],
+    );
+    expect(rows).toEqual([{ n: 0 }]);
   });
 });
 
