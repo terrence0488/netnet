@@ -101,11 +101,12 @@ CREATE TABLE "core"."profile" (
 	"country" text,
 	"time_zone" text DEFAULT 'UTC' NOT NULL,
 	"segment" text DEFAULT 'unknown' NOT NULL,
-	"onboarding_state" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"onboarding_state" text DEFAULT 'country' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "profile_country_check" CHECK ("core"."profile"."country" ~ '^[A-Z]{2}$'),
 	CONSTRAINT "profile_time_zone_check" CHECK ("core"."profile"."time_zone" <> ''),
-	CONSTRAINT "profile_segment_check" CHECK ("core"."profile"."segment" in ('starting_out', 'accumulating', 'established', 'unknown'))
+	CONSTRAINT "profile_segment_check" CHECK ("core"."profile"."segment" in ('starting_out', 'accumulating', 'established', 'unknown')),
+	CONSTRAINT "profile_onboarding_state_check" CHECK ("core"."profile"."onboarding_state" in ('country', 'segment', 'done'))
 );
 --> statement-breakpoint
 CREATE TABLE "core"."rate_limit" (
@@ -185,6 +186,7 @@ CREATE TABLE "ledger"."ledger_state" (
 	"base_currency" text NOT NULL,
 	"data_version" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "ledger_state_user_id_check" CHECK ("ledger"."ledger_state"."user_id" ~ '^usr_[0-7][0-9A-HJKMNP-TV-Z]{25}$'),
 	CONSTRAINT "ledger_state_base_currency_check" CHECK ("ledger"."ledger_state"."base_currency" ~ '^[A-Z]{3}$'),
 	CONSTRAINT "ledger_state_data_version_check" CHECK ("ledger"."ledger_state"."data_version" >= 0)
 );

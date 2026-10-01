@@ -24,7 +24,7 @@ afterAll(async () => {
 /** Every table in scope and its columns, as `format_type` names them. */
 const TABLES: Record<string, string> = {
   'core.profile':
-    'user_id text, country text, time_zone text, segment text, onboarding_state jsonb, created_at timestamptz',
+    'user_id text, country text, time_zone text, segment text, onboarding_state text, created_at timestamptz',
   'core.agent_connection':
     'id text, user_id text, client_id text, client_name text, registration text, client text, ' +
     'created_at timestamptz, first_call_at timestamptz, last_used_at timestamptz, ' +
@@ -124,6 +124,16 @@ describe('the migrations', () => {
       { definition: `CHECK ((id ~ '^${prefix}_[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))` },
     ]);
     expect(schema).toMatch(/^(core|ledger)$/);
+  });
+
+  it('give ledger_state user ids that must be usr_ ULIDs, so every ledger row has one', async () => {
+    const { rows } = await db.owner.query<{ definition: string }>(
+      `select pg_get_constraintdef(oid) as definition from pg_constraint
+        where conrelid = 'ledger.ledger_state'::regclass and conname = 'ledger_state_user_id_check'`,
+    );
+    expect(rows).toEqual([
+      { definition: `CHECK ((user_id ~ '^usr_[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))` },
+    ]);
   });
 
   it('apply nothing a second time', async () => {

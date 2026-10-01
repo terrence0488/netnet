@@ -1,5 +1,5 @@
 {
-  "id": "ecdb32d9-3f72-4a46-b06f-c657b0caa352",
+  "id": "c77a6c3a-f9b1-4212-b900-95a1b35f7029",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -696,10 +696,10 @@
         },
         "onboarding_state": {
           "name": "onboarding_state",
-          "type": "jsonb",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'{}'::jsonb"
+          "default": "'country'"
         },
         "created_at": {
           "name": "created_at",
@@ -726,6 +726,10 @@
         "profile_segment_check": {
           "name": "profile_segment_check",
           "value": "\"core\".\"profile\".\"segment\" in ('starting_out', 'accumulating', 'established', 'unknown')"
+        },
+        "profile_onboarding_state_check": {
+          "name": "profile_onboarding_state_check",
+          "value": "\"core\".\"profile\".\"onboarding_state\" in ('country', 'segment', 'done')"
         }
       },
       "isRLSEnabled": false
@@ -1397,6 +1401,10 @@
         }
       },
       "checkConstraints": {
+        "ledger_state_user_id_check": {
+          "name": "ledger_state_user_id_check",
+          "value": "\"ledger\".\"ledger_state\".\"user_id\" ~ '^usr_[0-7][0-9A-HJKMNP-TV-Z]{25}$'"
+        },
         "ledger_state_base_currency_check": {
           "name": "ledger_state_base_currency_check",
           "value": "\"ledger\".\"ledger_state\".\"base_currency\" ~ '^[A-Z]{3}$'"

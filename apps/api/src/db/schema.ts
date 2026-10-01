@@ -25,6 +25,9 @@ export const analytics = pgSchema('analytics');
 export const SEGMENTS = ['starting_out', 'accumulating', 'established', 'unknown'] as const;
 export type Segment = (typeof SEGMENTS)[number];
 
+/** Where onboarding resumes (J1): P1's steps in order. P2 adds its own. */
+export const ONBOARDING_STATES = ['country', 'segment', 'done'] as const;
+
 /** The guide chosen, or a connection's classification (§3); never a registered name. */
 export const CLIENTS = ['claude', 'chatgpt', 'other'] as const;
 export const REGISTRATIONS = ['cimd', 'dcr'] as const;
@@ -44,13 +47,16 @@ export const profile = core.table(
     timeZone: text('time_zone').notNull().default('UTC'),
     segment: text('segment', { enum: SEGMENTS }).notNull().default('unknown'),
     /** Where to resume onboarding (J1). */
-    onboardingState: jsonb('onboarding_state').notNull().default({}),
+    onboardingState: text('onboarding_state', { enum: ONBOARDING_STATES })
+      .notNull()
+      .default('country'),
     createdAt: instant('created_at').notNull().defaultNow(),
   },
   (t) => [
     check('profile_country_check', sql`${t.country} ~ '^[A-Z]{2}$'`),
     check('profile_time_zone_check', sql`${t.timeZone} <> ''`),
     checkOneOf('profile', t.segment, SEGMENTS),
+    checkOneOf('profile', t.onboardingState, ONBOARDING_STATES),
   ],
 );
 

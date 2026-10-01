@@ -83,6 +83,8 @@ export const ledgerState = ledger.table(
     createdAt: instant('created_at').notNull().defaultNow(),
   },
   (t) => [
+    /** Every other table hangs off this one, so no ledger row can belong to a malformed id. */
+    checkId('ledger_state', t.userId, 'usr'),
     checkCurrency('ledger_state', t.baseCurrency),
     check('ledger_state_data_version_check', sql`${t.dataVersion} >= 0`),
     userIsolation(),

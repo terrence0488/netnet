@@ -23,6 +23,7 @@ export async function seed(db: Database): Promise<void> {
       country: null,
       timeZone: 'UTC',
       segment: 'accumulating',
+      onboardingState: 'done',
       createdAt: SEEDED_AT,
     })
     .onConflictDoNothing();
