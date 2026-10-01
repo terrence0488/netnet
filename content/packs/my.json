@@ -1,0 +1,134 @@
+{
+  "id": "my",
+  "locale": "en-MY",
+  "currency": "MYR",
+  "labels": {
+    "cash": "Cash",
+    "retirement": "EPF",
+    "vehicle": "Car",
+    "mortgage": "Home loan",
+    "wrapper": "PRS"
+  },
+  "examples": {
+    "cash": "e.g. Maybank savings",
+    "listed": "e.g. Rakuten Trade, StashAway",
+    "retirement": "e.g. EPF Akaun Persaraan",
+    "property": "e.g. Condo in PJ",
+    "vehicle": "e.g. Perodua Myvi",
+    "mortgage": "e.g. Housing loan",
+    "loan": "e.g. PTPTN loan",
+    "wrapper": "e.g. PRS fund"
+  },
+  "meaning": {},
+  "cadenceDays": {},
+  "defaults": {
+    "wrapper": {
+      "access": "locked",
+      "reason": "PRS withdrawals before retirement age carry a tax penalty",
+      "until": "until retirement age"
+    }
+  },
+  "questions": {
+    "retirement": {
+      "ask": "Is this your EPF Akaun Fleksibel?",
+      "answers": [
+        {
+          "id": "yes",
+          "label": "Yes, Akaun Fleksibel",
+          "access": "accessible",
+          "reason": "Akaun Fleksibel can be withdrawn at any time"
+        },
+        {
+          "id": "no",
+          "label": "No",
+          "access": "locked",
+          "reason": "EPF is locked until you’re eligible to withdraw",
+          "until": "until you’re eligible to withdraw"
+        }
+      ]
+    }
+  },
+  "types": [
+    {
+      "key": "car_loan",
+      "u": "loan",
+      "label": "Car loan",
+      "example": "e.g. Hire purchase on the Myvi"
+    }
+  ],
+  "checklist": [
+    {
+      "id": "bank",
+      "u": "cash",
+      "name": "Bank accounts",
+      "ask": "Do you have money in a bank account?",
+      "amount": "Roughly how much, across all of them?"
+    },
+    {
+      "id": "epf",
+      "u": "retirement",
+      "name": "EPF",
+      "ask": "Do you have EPF savings?",
+      "amount": "Roughly how much in Akaun Persaraan and Akaun Sejahtera?",
+      "answer": "no",
+      "hint": "The KWSP app shows each account."
+    },
+    {
+      "id": "epf_flex",
+      "u": "retirement",
+      "name": "EPF Akaun Fleksibel",
+      "ask": "Anything in Akaun Fleksibel?",
+      "amount": "Roughly how much?",
+      "answer": "yes",
+      "onlyIf": "epf",
+      "hint": "This part you can withdraw at any time."
+    },
+    {
+      "id": "invest",
+      "u": "listed",
+      "name": "Investments",
+      "ask": "Any investments — shares, unit trusts, an investing app?",
+      "amount": "Roughly what are they worth today?"
+    },
+    {
+      "id": "home",
+      "u": "property",
+      "name": "Home",
+      "ask": "Do you own the home you live in?",
+      "amount": "Roughly what would it sell for?",
+      "answer": "yes"
+    },
+    {
+      "id": "home_loan",
+      "u": "mortgage",
+      "name": "Home loan",
+      "ask": "Is there a home loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "home",
+      "hint": "Your latest loan statement shows what’s outstanding."
+    },
+    {
+      "id": "car",
+      "u": "vehicle",
+      "name": "Car",
+      "ask": "Do you own a car?",
+      "amount": "Roughly what would it sell for?"
+    },
+    {
+      "id": "car_loan",
+      "u": "loan",
+      "type": "car_loan",
+      "name": "Car loan",
+      "ask": "Is there a car loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "car"
+    },
+    {
+      "id": "owed",
+      "u": "loan",
+      "name": "Other loans",
+      "ask": "Anything else you owe — a PTPTN loan, a personal loan or a card balance?",
+      "amount": "Roughly how much, all together?"
+    }
+  ]
+}

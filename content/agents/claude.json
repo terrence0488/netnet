@@ -1,0 +1,43 @@
+{
+  "id": "claude",
+  "name": "Claude",
+  "logo": "images/agents/claude.svg",
+  "listed": true,
+  "order": 1,
+  "prefillUrl": "https://claude.ai/new?q={prompt}",
+  "matchHosts": ["claude.ai", "claude.com", "anthropic.com"],
+  "platforms": {
+    "computer": {
+      "steps": [
+        {
+          "text": "In Claude, open **Settings → Connectors**.",
+          "image": "images/connect/claude-computer-1.png"
+        },
+        {
+          "text": "Choose **Add custom connector**. Name it NetNet and paste NetNet’s connector address.",
+          "image": "images/connect/claude-computer-2.png"
+        },
+        {
+          "text": "Press **Connect**, then **Allow** on the NetNet page that opens.",
+          "image": "images/connect/claude-computer-3.png"
+        }
+      ]
+    },
+    "phone": {
+      "steps": [
+        {
+          "text": "In the Claude app, open **Settings → Connectors**.",
+          "image": "images/connect/claude-phone-1.png"
+        },
+        {
+          "text": "Tap **Add custom connector**. Name it NetNet and paste NetNet’s connector address.",
+          "image": "images/connect/claude-phone-2.png"
+        },
+        {
+          "text": "Tap **Connect**, then **Allow** on the NetNet page that opens.",
+          "image": "images/connect/claude-phone-3.png"
+        }
+      ]
+    }
+  }
+}
