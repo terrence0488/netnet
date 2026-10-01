@@ -1,0 +1,160 @@
+name: CI
+
+# Every push runs the checks, and so does opening a pull request. A Vercel preview follows for a
+# branch with an open pull request (architecture §9.1), or on a manual run of this workflow.
+on:
+  push:
+  pull_request:
+    types: [opened, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_TELEMETRY_DISABLED: '1'
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        # The same major version as Neon (F7).
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: netnet_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/netnet_test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test
+      - name: Integration tests (Postgres 17)
+        run: pnpm test:int
+      - name: Build
+        run: pnpm build
+      - name: Install Chromium for Playwright
+        run: pnpm exec playwright install --with-deps chromium
+      - name: E2E against the built app
+        run: pnpm test:e2e
+      - name: Content check
+        run: pnpm content:check
+      - name: Audit production dependencies (fails on high or critical)
+        run: pnpm audit --prod --audit-level high
+      - name: Keep the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  preview:
+    name: Preview
+    needs: checks
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Decide whether to deploy
+        id: vercel
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_FROM_EVENT: ${{ github.event.pull_request.number }}
+        run: |
+          pr="$PR_FROM_EVENT"
+          if [ -z "$pr" ]; then
+            pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --state open \
+              --json number --jq '.[0].number // empty')
+          fi
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+          if [ -z "$pr" ] && [ "$GITHUB_EVENT_NAME" != "workflow_dispatch" ]; then
+            msg="No preview: $GITHUB_REF_NAME has no open pull request. Open one, or run CI by hand on this branch."
+          elif [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            msg="Preview skipped: add the GitHub secrets VERCEL_TOKEN and VERCEL_PROJECT_ID (Founder checklist F4)."
+          fi
+          if [ -n "${msg:-}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$msg"
+            echo "$msg" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.vercel.outputs.ready == 'true'
+        uses: actions/checkout@v5
+      - if: steps.vercel.outputs.ready == 'true'
+        uses: pnpm/action-setup@v4
+      - if: steps.vercel.outputs.ready == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        if: steps.vercel.outputs.ready == 'true'
+        run: pnpm install --frozen-lockfile
+      # The CLI needs the project's owner (a team id for a Hobby team), so it is read from the
+      # project itself rather than trusted from the VERCEL_ORG_ID secret.
+      - name: Find the project's owner
+        if: steps.vercel.outputs.ready == 'true'
+        run: |
+          owner=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID" | jq -r '.accountId')
+          echo "::add-mask::$owner"
+          case "$owner" in
+            team_*) echo "The project belongs to a team." ;;
+            *) echo "The project belongs to a personal account." ;;
+          esac
+          echo "VERCEL_ORG_ID=$owner" >> "$GITHUB_ENV"
+      - name: Pull the preview settings
+        if: steps.vercel.outputs.ready == 'true'
+        run: pnpm exec vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+      - name: Build
+        if: steps.vercel.outputs.ready == 'true'
+        run: pnpm exec vercel build --token="$VERCEL_TOKEN"
+      - name: Deploy the preview
+        id: deploy
+        if: steps.vercel.outputs.ready == 'true'
+        run: |
+          url=$(pnpm exec vercel deploy --prebuilt --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Install Chromium for Playwright
+        if: steps.vercel.outputs.ready == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Smoke-test the preview
+        if: steps.vercel.outputs.ready == 'true'
+        run: pnpm test:e2e
+        env:
+          E2E_BASE_URL: ${{ steps.deploy.outputs.url }}

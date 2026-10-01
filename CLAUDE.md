@@ -51,4 +51,16 @@ If `docs/WORKFLOW.md` or `docs/STATE.md` does not exist, tell the Founder and st
   changed decision replaces its entry; it is not appended as a correction.
 
 ## Commands
-<not yet scaffolded — filled in during Stage 5, Phase 1>
+Node 22 and pnpm. A SessionStart hook runs `pnpm install --frozen-lockfile`.
+
+| Command | What it does |
+|---|---|
+| `pnpm dev` | Web app (http://localhost:5173/app/), landing (:5174) and API (:8787) with reload |
+| `pnpm build` | Landing and web app into `dist/`, the API bundle into `apps/api/dist/` |
+| `pnpm lint` | ESLint (CONVENTIONS §3's import rules; fails on warnings) and Prettier's check |
+| `pnpm format` | Prettier, writing |
+| `pnpm typecheck` | `tsc` in every package and at the root |
+| `pnpm test` | Unit tests in every package, and the N10 deny-list scan |
+| `pnpm test:int` | Integration tests against Postgres (`DATABASE_URL`) |
+| `pnpm test:e2e` | Playwright against the built app (run `pnpm build` first), at 390 and 1280 px |
+| `pnpm content:check` | Validates `content/` against its schemas |

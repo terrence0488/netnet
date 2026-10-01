@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "schedule:weekly", "helpers:pinGitHubActionDigests"],
+  "timezone": "Asia/Singapore",
+  "labels": ["dependencies"],
+  "rangeStrategy": "pin",
+  "commitMessagePrefix": "Deps:",
+  "commitMessageLowerCase": "never",
+  "postUpdateOptions": ["pnpmDedupe"],
+  "lockFileMaintenance": { "enabled": true },
+  "packageRules": [
+    {
+      "description": "One weekly pull request for every minor and patch update.",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "minor and patch updates"
+    },
+    {
+      "description": "Node 22 LTS (CONVENTIONS §1): its types, engines and CI stay on 22.",
+      "matchDepNames": ["node", "@types/node"],
+      "allowedVersions": "<23"
+    },
+    {
+      "description": "Postgres in CI matches Neon's major version (F7).",
+      "matchDepNames": ["postgres"],
+      "allowedVersions": "<18"
+    },
+    {
+      "description": "typescript-eslint supports TypeScript below 6.1; lift this when it supports more.",
+      "matchDepNames": ["typescript"],
+      "allowedVersions": "<6.1"
+    }
+  ]
+}

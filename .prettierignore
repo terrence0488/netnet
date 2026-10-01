@@ -1,0 +1,8 @@
+docs/
+*.md
+pnpm-lock.yaml
+dist/
+.vercel/
+coverage/
+playwright-report/
+test-results/

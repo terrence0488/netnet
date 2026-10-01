@@ -39,3 +39,9 @@ docs/reference/mockups/*.pdf
 **/mockups/*.jpg
 **/mockups/*.jpeg
 **/mockups/*.webp
+
+# Vercel CLI and test output
+.vercel/
+coverage/
+playwright-report/
+test-results/
