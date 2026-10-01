@@ -6,12 +6,21 @@ export function requireEnv(name: string): string {
   return value;
 }
 
-/** Runs a script's body, printing one line on success and the error's message on failure. */
+/** An error's message and its causes' (Drizzle wraps Postgres's error in `cause`). */
+function describe(error: unknown): string {
+  const messages: string[] = [];
+  for (let e: unknown = error; e instanceof Error && messages.length < 3; e = e.cause) {
+    messages.push(e.message);
+  }
+  return messages.length > 0 ? messages.join('\n  caused by: ') : String(error);
+}
+
+/** Runs a script's body, printing one line on success and the error's messages on failure. */
 export async function run(script: string, body: () => Promise<string>): Promise<void> {
   try {
     console.log(`${script}: ${await body()}`);
   } catch (error) {
-    console.error(`${script} failed: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`${script} failed: ${describe(error)}`);
     process.exitCode = 1;
   }
 }
