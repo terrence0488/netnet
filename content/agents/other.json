@@ -1,0 +1,17 @@
+{
+  "id": "other",
+  "name": "Other agent",
+  "listed": true,
+  "order": 3,
+  "platforms": {
+    "any": {
+      "steps": [
+        {
+          "text": "In your agent’s settings, add a **custom connector**. It may be called an MCP server, a tool or an integration."
+        },
+        { "text": "Name it NetNet and use NetNet’s connector address." },
+        { "text": "Approve it, then press **Allow** on the NetNet page that opens." }
+      ]
+    }
+  }
+}

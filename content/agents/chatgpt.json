@@ -1,0 +1,43 @@
+{
+  "id": "chatgpt",
+  "name": "ChatGPT",
+  "logo": "images/agents/chatgpt.svg",
+  "listed": true,
+  "order": 2,
+  "prefillUrl": "https://chatgpt.com/?q={prompt}",
+  "matchHosts": ["chatgpt.com", "openai.com"],
+  "platforms": {
+    "computer": {
+      "steps": [
+        {
+          "text": "In ChatGPT, open **Settings → Connectors** and choose **Create**.",
+          "image": "images/connect/chatgpt-computer-1.png"
+        },
+        {
+          "text": "Name it NetNet, paste NetNet’s connector address, and choose **OAuth**.",
+          "image": "images/connect/chatgpt-computer-2.png"
+        },
+        {
+          "text": "Press **Create**, then **Allow** on the NetNet page that opens.",
+          "image": "images/connect/chatgpt-computer-3.png"
+        }
+      ]
+    },
+    "phone": {
+      "steps": [
+        {
+          "text": "In the ChatGPT app, open **Settings → Connectors** and tap **Create**.",
+          "image": "images/connect/chatgpt-phone-1.png"
+        },
+        {
+          "text": "Name it NetNet, paste NetNet’s connector address, and choose **OAuth**.",
+          "image": "images/connect/chatgpt-phone-2.png"
+        },
+        {
+          "text": "Tap **Create**, then **Allow** on the NetNet page that opens.",
+          "image": "images/connect/chatgpt-phone-3.png"
+        }
+      ]
+    }
+  }
+}
