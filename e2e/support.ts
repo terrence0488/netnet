@@ -40,8 +40,25 @@ export async function expectNoHorizontalScroll(page: Page): Promise<void> {
   expect(overflow.scrolled, 'the page scrolls sideways').toBe(0);
 }
 
-/** axe (WCAG 2.2 A and AA) finds nothing serious or critical. */
+/**
+ * Waits for running transitions and finite animations to end. Mid-fade colours are blended, so axe
+ * would measure a sheet still fading in and report contrast it does not have. Infinite animations,
+ * such as the spinner's, never end and are left alone.
+ */
+async function settleAnimations(page: Page): Promise<void> {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  );
+}
+
+/** axe (WCAG 2.2 A and AA) finds nothing serious or critical, once motion has settled. */
 export async function expectNoSeriousAxeViolations(page: Page, include?: string): Promise<void> {
+  await settleAnimations(page);
   let axe = new AxeBuilder({ page }).withTags([
     'wcag2a',
     'wcag2aa',
