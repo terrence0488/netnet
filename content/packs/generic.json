@@ -1,0 +1,193 @@
+{
+  "id": "generic",
+  "locale": null,
+  "currency": null,
+  "labels": {
+    "cash": "Cash & savings",
+    "listed": "Investments",
+    "retirement": "Retirement account",
+    "property": "Property",
+    "vehicle": "Vehicle",
+    "equity": "Employee shares",
+    "crypto": "Crypto",
+    "mortgage": "Mortgage",
+    "loan": "Loan",
+    "wrapper": "Tax-advantaged account",
+    "card": "Credit card",
+    "other": "Other"
+  },
+  "examples": {
+    "cash": "e.g. Everyday savings",
+    "listed": "e.g. Brokerage account",
+    "retirement": "e.g. Workplace pension",
+    "property": "e.g. Home",
+    "vehicle": "e.g. Car",
+    "equity": "e.g. Company RSUs",
+    "crypto": "e.g. Bitcoin",
+    "mortgage": "e.g. Home mortgage",
+    "loan": "e.g. Student loan",
+    "wrapper": "e.g. Tax-free savings account",
+    "card": "e.g. Credit card",
+    "other": "e.g. Something I own"
+  },
+  "meaning": {
+    "cash": "Cash and money in bank, savings or deposit accounts. Usually readily accessible, so it counts toward what can be spent this month.",
+    "listed": "Listed investments: shares, funds, ETFs and bonds, held directly or through a broker or investing app. Can usually be sold within days; the value moves with the market.",
+    "retirement": "Mandatory or workplace retirement savings. Counts toward net worth. Usually locked until the owner is eligible to withdraw, so it does not count toward what can be spent this month unless the holding is marked accessible.",
+    "property": "Real estate: a home the user lives in, or a property held to let or as an investment. Counts at its estimated sale value; a loan on it is a separate liability.",
+    "vehicle": "A car, motorbike or other vehicle. Counts at its estimated resale value, which usually falls over time; a loan on it is a separate liability.",
+    "equity": "Shares or options granted by an employer, such as RSUs or stock options. Vested shares can usually be sold; unvested ones are locked until they vest.",
+    "crypto": "Cryptocurrency, on an exchange or in a wallet the user controls. Can usually be sold within days; the value is volatile.",
+    "mortgage": "A loan secured on property. A liability: the amount still owed reduces net worth.",
+    "loan": "Money owed on a loan other than a mortgage, such as a car, student or personal loan. A liability: the amount still owed reduces net worth.",
+    "wrapper": "A tax-advantaged savings or investment account. Whether money can be taken out early without a penalty depends on the account; the holding’s access records which.",
+    "card": "A credit card balance. A liability: the amount owed reduces net worth.",
+    "other": "Anything the user owns or owes that no other type describes. How accessible it is comes from the user’s own answer."
+  },
+  "cadenceDays": {
+    "cash": 30,
+    "listed": 30,
+    "retirement": 90,
+    "property": 365,
+    "vehicle": 180,
+    "equity": 90,
+    "crypto": 30,
+    "mortgage": 90,
+    "loan": 90,
+    "wrapper": 90,
+    "card": 30,
+    "other": 90
+  },
+  "defaults": {
+    "cash": { "access": "accessible", "reason": "it’s money in the bank" },
+    "listed": { "access": "accessible", "reason": "listed investments can be sold within days" },
+    "retirement": {
+      "access": "locked",
+      "reason": "a retirement account is locked until you’re eligible to withdraw",
+      "until": "until you’re eligible to withdraw"
+    },
+    "vehicle": { "access": "illiquid", "reason": "you’d have to sell it first" },
+    "crypto": { "access": "accessible", "reason": "it can be sold within days" }
+  },
+  "questions": {
+    "property": {
+      "ask": "Do you live in it?",
+      "answers": [
+        {
+          "id": "yes",
+          "label": "Yes, it’s my home",
+          "access": "locked",
+          "reason": "it’s your home",
+          "until": "while you live in it"
+        },
+        { "id": "no", "label": "No", "access": "illiquid", "reason": "you’d have to sell it first" }
+      ]
+    },
+    "equity": {
+      "ask": "Has it vested?",
+      "answers": [
+        {
+          "id": "yes",
+          "label": "Yes",
+          "access": "accessible",
+          "reason": "vested shares are yours to sell"
+        },
+        {
+          "id": "no",
+          "label": "Not yet",
+          "access": "locked",
+          "reason": "unvested shares are locked until they vest",
+          "until": "until vesting"
+        }
+      ]
+    },
+    "wrapper": {
+      "ask": "Could you take money out today without a penalty?",
+      "answers": [
+        {
+          "id": "yes",
+          "label": "Yes",
+          "access": "accessible",
+          "reason": "you can take money out without a penalty"
+        },
+        {
+          "id": "no",
+          "label": "No",
+          "access": "locked",
+          "reason": "taking money out early costs a penalty",
+          "until": "until you can withdraw without a penalty"
+        }
+      ]
+    },
+    "other": {
+      "ask": "If you needed this money, could you use it within a month?",
+      "answers": [
+        {
+          "id": "now",
+          "label": "Yes",
+          "access": "accessible",
+          "reason": "you said you could use it within a month"
+        },
+        {
+          "id": "sell",
+          "label": "Only by selling it",
+          "access": "illiquid",
+          "reason": "you said you’d have to sell it first"
+        },
+        {
+          "id": "tied",
+          "label": "No, it’s tied up",
+          "access": "locked",
+          "reason": "you said it’s tied up"
+        }
+      ]
+    }
+  },
+  "types": [],
+  "checklist": [
+    {
+      "id": "bank",
+      "u": "cash",
+      "name": "Bank accounts",
+      "ask": "Do you have money in a bank account?",
+      "amount": "Roughly how much, across all of them?"
+    },
+    {
+      "id": "pension",
+      "u": "retirement",
+      "name": "Retirement savings",
+      "ask": "Do you have a pension or retirement savings?",
+      "amount": "Roughly how much?",
+      "hint": "Your provider’s app or latest statement shows the total."
+    },
+    {
+      "id": "invest",
+      "u": "listed",
+      "name": "Investments",
+      "ask": "Any investments — shares, funds, an investing app?",
+      "amount": "Roughly what are they worth today?"
+    },
+    {
+      "id": "home",
+      "u": "property",
+      "name": "Home",
+      "ask": "Do you own the home you live in?",
+      "amount": "Roughly what would it sell for?",
+      "answer": "yes"
+    },
+    {
+      "id": "car",
+      "u": "vehicle",
+      "name": "Car",
+      "ask": "Do you own a car?",
+      "amount": "Roughly what would it sell for?"
+    },
+    {
+      "id": "owed",
+      "u": "loan",
+      "name": "Loans",
+      "ask": "Do you owe anything — a student loan, car loan, mortgage or card balance?",
+      "amount": "Roughly how much, all together?"
+    }
+  ]
+}

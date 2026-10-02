@@ -1,0 +1,105 @@
+{
+  "id": "sg",
+  "locale": "en-SG",
+  "currency": "SGD",
+  "labels": {
+    "cash": "Cash",
+    "retirement": "CPF",
+    "vehicle": "Car",
+    "equity": "RSUs & options",
+    "mortgage": "Home loan",
+    "wrapper": "SRS"
+  },
+  "examples": {
+    "cash": "e.g. DBS Multiplier",
+    "listed": "e.g. IBKR, Endowus",
+    "retirement": "e.g. CPF Ordinary Account",
+    "property": "e.g. HDB flat",
+    "vehicle": "e.g. Toyota Corolla",
+    "mortgage": "e.g. HDB loan",
+    "loan": "e.g. Car loan",
+    "wrapper": "e.g. SRS account"
+  },
+  "meaning": {},
+  "cadenceDays": {},
+  "defaults": {
+    "retirement": {
+      "access": "locked",
+      "reason": "CPF is locked until you’re eligible to withdraw",
+      "until": "until you’re eligible to withdraw"
+    },
+    "wrapper": {
+      "access": "locked",
+      "reason": "SRS withdrawals before retirement age carry a penalty",
+      "until": "until retirement age"
+    }
+  },
+  "questions": {},
+  "types": [
+    { "key": "car_loan", "u": "loan", "label": "Car loan", "example": "e.g. DBS car loan" }
+  ],
+  "checklist": [
+    {
+      "id": "bank",
+      "u": "cash",
+      "name": "Bank accounts",
+      "ask": "Do you have money in a bank account?",
+      "amount": "Roughly how much, across all of them?"
+    },
+    {
+      "id": "cpf",
+      "u": "retirement",
+      "name": "CPF",
+      "ask": "Do you have CPF savings?",
+      "amount": "Roughly how much, all accounts together?",
+      "hint": "The CPF app shows your total."
+    },
+    {
+      "id": "invest",
+      "u": "listed",
+      "name": "Investments",
+      "ask": "Any investments — shares, funds, a robo-advisor?",
+      "amount": "Roughly what are they worth today?"
+    },
+    {
+      "id": "home",
+      "u": "property",
+      "name": "Home",
+      "ask": "Do you own the home you live in?",
+      "amount": "Roughly what would it sell for?",
+      "answer": "yes"
+    },
+    {
+      "id": "home_loan",
+      "u": "mortgage",
+      "name": "Home loan",
+      "ask": "Is there a home loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "home",
+      "hint": "Your latest loan statement shows what’s outstanding."
+    },
+    {
+      "id": "car",
+      "u": "vehicle",
+      "name": "Car",
+      "ask": "Do you own a car?",
+      "amount": "Roughly what would it sell for?"
+    },
+    {
+      "id": "car_loan",
+      "u": "loan",
+      "type": "car_loan",
+      "name": "Car loan",
+      "ask": "Is there a car loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "car"
+    },
+    {
+      "id": "owed",
+      "u": "loan",
+      "name": "Other loans",
+      "ask": "Anything else you owe — a study loan, a personal loan or a card balance?",
+      "amount": "Roughly how much, all together?"
+    }
+  ]
+}

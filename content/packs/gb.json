@@ -1,0 +1,104 @@
+{
+  "id": "gb",
+  "locale": "en-GB",
+  "currency": "GBP",
+  "labels": {
+    "cash": "Cash & savings",
+    "retirement": "Pension",
+    "vehicle": "Car",
+    "mortgage": "Mortgage",
+    "wrapper": "ISA"
+  },
+  "examples": {
+    "cash": "e.g. Monzo, Premium Bonds",
+    "listed": "e.g. Vanguard, Trading 212",
+    "retirement": "e.g. Workplace pension",
+    "property": "e.g. Flat in Leeds",
+    "vehicle": "e.g. Ford Focus",
+    "mortgage": "e.g. Nationwide mortgage",
+    "loan": "e.g. Student loan",
+    "wrapper": "e.g. Stocks & Shares ISA"
+  },
+  "meaning": {},
+  "cadenceDays": {},
+  "defaults": {
+    "retirement": {
+      "access": "locked",
+      "reason": "a pension is locked until you can start drawing it",
+      "until": "until you can draw it"
+    }
+  },
+  "questions": {},
+  "types": [
+    {
+      "key": "car_finance",
+      "u": "loan",
+      "label": "Car finance",
+      "example": "e.g. PCP on the Focus"
+    }
+  ],
+  "checklist": [
+    {
+      "id": "bank",
+      "u": "cash",
+      "name": "Bank accounts",
+      "ask": "Do you have money in a bank or savings account?",
+      "amount": "Roughly how much, across all of them?"
+    },
+    {
+      "id": "pension",
+      "u": "retirement",
+      "name": "Pensions",
+      "ask": "Do you have a workplace or personal pension?",
+      "amount": "Roughly how much, all of them together?",
+      "hint": "Your provider’s app or annual statement shows the value."
+    },
+    {
+      "id": "invest",
+      "u": "listed",
+      "name": "Investments",
+      "ask": "Any investments — an ISA, funds, shares, an investing app?",
+      "amount": "Roughly what are they worth today?"
+    },
+    {
+      "id": "home",
+      "u": "property",
+      "name": "Home",
+      "ask": "Do you own the home you live in?",
+      "amount": "Roughly what would it sell for?",
+      "answer": "yes"
+    },
+    {
+      "id": "mortgage",
+      "u": "mortgage",
+      "name": "Mortgage",
+      "ask": "Is there a mortgage on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "home",
+      "hint": "Your latest mortgage statement shows what’s outstanding."
+    },
+    {
+      "id": "car",
+      "u": "vehicle",
+      "name": "Car",
+      "ask": "Do you own a car?",
+      "amount": "Roughly what would it sell for?"
+    },
+    {
+      "id": "car_finance",
+      "u": "loan",
+      "type": "car_finance",
+      "name": "Car finance",
+      "ask": "Is there finance on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "car"
+    },
+    {
+      "id": "owed",
+      "u": "loan",
+      "name": "Other loans",
+      "ask": "Anything else you owe — a student loan, a personal loan or a credit card?",
+      "amount": "Roughly how much, all together?"
+    }
+  ]
+}
