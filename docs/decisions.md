@@ -116,7 +116,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Decision | Why |
 |---|---|
 | Verification and password-reset emails go through `notify()`, as two email-only message kinds | Every message to a person takes one path, so the no-amount template test covers all of them |
-| Neon and CI run Postgres 17 | One major version from tests to production (CONVENTIONS §1) |
+| Neon and CI run Postgres 18 | One major version from tests to production (CONVENTIONS §1) |
 | Vercel (Hobby) + Neon Postgres (Free) in Singapore; one TypeScript codebase, one Hono function; upgrades on measured triggers (architecture §9.4) | $0 for the first ~70–100 users, conventional Postgres, per-PR previews with their own database branch |
 | The function is the API bundled by esbuild into one file (`apps/api/dist/vercel.js`), which `api/index.ts` re-exports | Vercel compiles TypeScript file by file and cannot run workspace packages from source; one self-contained file runs the same in CI's E2E and on Vercel |
 | Per-user isolation by Postgres row-level security with `FORCE`, composite keys and one `withUser()` entry | Enforced by the database, not by remembering a filter (N4) |

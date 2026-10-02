@@ -22,7 +22,7 @@
     {
       "description": "Postgres in CI matches Neon's major version (F7).",
       "matchDepNames": ["postgres"],
-      "allowedVersions": "<18"
+      "allowedVersions": "<19"
     },
     {
       "description": "typescript-eslint supports TypeScript below 6.1; lift this when it supports more.",

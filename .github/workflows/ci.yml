@@ -29,7 +29,7 @@ jobs:
     services:
       postgres:
         # The same major version as Neon (F7).
-        image: postgres:17
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -68,7 +68,7 @@ jobs:
           fi
       - name: Unit tests
         run: pnpm test
-      - name: Integration tests (Postgres 17)
+      - name: Integration tests (Postgres 18)
         run: pnpm test:int
       # What CI runs against a preview's Neon branch, on an empty database, twice: every step must
       # be safe to repeat. The owner here is the service's superuser.
