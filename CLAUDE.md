@@ -66,4 +66,4 @@ Node 22 and pnpm. A SessionStart hook runs `pnpm install --frozen-lockfile`.
 | `pnpm test` | Unit tests in every package, and the N10 deny-list scan |
 | `pnpm test:int` | Integration tests against Postgres (`DATABASE_URL`) |
 | `pnpm test:e2e` | Playwright against the built app (run `pnpm build` first), at 390 and 1280 px |
-| `pnpm content:check` | Validates `content/` against its schemas |
+| `pnpm content:check` | Validates `content/` against its schemas and the §7.8 rules; `--strict` also fails on a missing image |
