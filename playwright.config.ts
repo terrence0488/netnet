@@ -25,9 +25,16 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: { baseURL: BASE_URL, trace: 'retain-on-failure' },
   projects: [
+    // A phone is touch, the reference case: `pointer: coarse`, so hit targets are 44px
+    // (design-system §6.1). The computer has a mouse, where they relax to 36px.
     {
       name: 'phone',
-      use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, launchOptions },
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 390, height: 844 },
+        hasTouch: true,
+        launchOptions,
+      },
     },
     {
       name: 'computer',

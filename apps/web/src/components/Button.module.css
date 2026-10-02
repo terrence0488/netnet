@@ -1,0 +1,71 @@
+/* Button (design-system §6): tomato, 2px outline, 10px radius, a 3px hard shadow that collapses
+   when pressed. Outlined fills with the card; quiet is underlined text. */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  min-height: var(--hit);
+  min-width: var(--hit);
+  padding: var(--space-4) var(--space-7);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  font-family: var(--font-text);
+  font-size: var(--size-button);
+  font-weight: var(--weight-button);
+  letter-spacing: var(--tracking-button);
+  line-height: var(--leading-body-sm);
+  text-align: center;
+  text-decoration: none;
+  transition:
+    transform var(--duration-press),
+    box-shadow var(--duration-press);
+}
+
+.block {
+  display: flex;
+  width: 100%;
+  padding-block: var(--inset-row);
+}
+
+.primary {
+  background: var(--brand);
+  color: var(--brand-on);
+  box-shadow: var(--shadow-control);
+}
+
+.outlined {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-control);
+}
+
+.primary:not([aria-disabled='true']):active,
+.outlined:not([aria-disabled='true']):active {
+  transform: translate(var(--offset-control), var(--offset-control));
+  box-shadow: none;
+}
+
+.outlined:not([aria-disabled='true']):hover {
+  background: var(--paper);
+}
+
+.quiet {
+  padding-inline: var(--space-2);
+  border-color: transparent;
+  background: none;
+  color: var(--brand-text);
+  text-decoration: underline;
+  text-decoration-thickness: var(--border-rule);
+  text-underline-offset: var(--offset-control);
+}
+
+.quiet:not([aria-disabled='true']):hover {
+  color: var(--ink);
+}
+
+.button[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}

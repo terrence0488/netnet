@@ -1,0 +1,82 @@
+.viewport {
+  position: fixed;
+  inset-inline: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-8));
+  z-index: var(--layer-toast);
+  display: flex;
+  justify-content: center;
+  padding-inline: var(--inset-gutter);
+  pointer-events: none;
+}
+
+/* Above the tab bar on a phone; beside the sidebar on a computer. */
+.withChrome {
+  bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + var(--space-8));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  width: 100%;
+  max-width: var(--field-max);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--inset-card);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: var(--shadow-control);
+  pointer-events: auto;
+  transition:
+    transform var(--duration-toast) var(--easing-sheet),
+    opacity var(--duration-toast);
+}
+
+@starting-style {
+  .toast {
+    opacity: 0;
+    transform: translateY(var(--space-8));
+  }
+}
+
+.message {
+  flex: 1;
+  min-width: 0;
+  padding-block: var(--space-5);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-nav);
+  line-height: var(--leading-body-sm);
+}
+
+.action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit);
+  min-width: var(--hit);
+  padding-inline: var(--space-5);
+  color: var(--paper);
+  font-size: var(--size-link);
+  font-weight: var(--weight-link);
+  letter-spacing: var(--tracking-link);
+  text-decoration: underline;
+  text-decoration-thickness: var(--border-rule);
+  text-underline-offset: var(--offset-control);
+}
+
+/* The toast is ink, so its focus ring is drawn in the paper colour. */
+.action:focus-visible {
+  outline-color: var(--paper);
+}
+
+@media (min-width: 900px) {
+  .viewport,
+  .withChrome {
+    bottom: var(--space-12);
+  }
+
+  .withChrome {
+    padding-inline-start: calc(var(--sidebar) + var(--inset-gutter));
+  }
+}

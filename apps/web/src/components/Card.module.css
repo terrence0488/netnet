@@ -1,0 +1,16 @@
+/* Card (design-system §6): card fill, 2px edge, 14px radius, a 4px hard shadow in drop. */
+
+.card {
+  min-width: 0;
+  padding: var(--inset-card) var(--inset-card) var(--space-7);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
+
+.flush {
+  padding: 0;
+  overflow: hidden;
+}

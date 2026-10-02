@@ -1,0 +1,20 @@
+/* Wordmark (design-system §6): Unbounded 800 with a four-point tomato sparkle for the dot. */
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-family: var(--font-display);
+  font-size: var(--size-wordmark);
+  font-weight: var(--weight-wordmark);
+  letter-spacing: var(--tracking-wordmark);
+  color: var(--ink);
+}
+
+.sparkle {
+  flex: none;
+  width: var(--icon-mark);
+  height: var(--icon-mark);
+  background: var(--brand);
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+}

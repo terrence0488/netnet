@@ -1,0 +1,28 @@
+/* Typographic, like the empty state: a sentence and one action, never an illustration. */
+
+.state {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: var(--space-4);
+  max-width: var(--field-max);
+  padding: var(--space-13) 0;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--size-heading-signup);
+  font-weight: var(--weight-heading-signup);
+  letter-spacing: var(--tracking-heading-signup);
+  line-height: var(--leading-heading-signup);
+}
+
+.detail {
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.next {
+  margin-top: var(--space-6);
+}

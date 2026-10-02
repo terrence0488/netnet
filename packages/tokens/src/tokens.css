@@ -1,0 +1,248 @@
+/* Generated from tokens.ts: edit that file, then run `pnpm test -u` to rewrite this one. */
+
+/* Light (cream) is the reference theme; every name is declared here. */
+:root {
+  color-scheme: light dark;
+  --paper: #f2eadb;
+  --card: #fffaf1;
+  --ink: #1a1714;
+  --ink-2: #4a433a;
+  --ink-3: #6b6255;
+  --rule: #e3d7c1;
+  --rule-strong: #bfae90;
+  --edge: #1a1714;
+  --drop: #1a1714;
+  --brand: #f0643a;
+  --brand-text: #b23c0c;
+  --brand-on: #1a1714;
+  --agent: #2f5bd6;
+  --agent-text: #2447b0;
+  --gain: #22703f;
+  --loss: #b4232f;
+  --attention: #8a5a00;
+  --warn-bg: #fbe6b5;
+  --sun: #f4b63f;
+  --sun-on: #1a1714;
+  --scrim: rgba(26, 23, 20, 0.55);
+  --wash: 0.22;
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #4a3aa7;
+  --chart-8: #e34948;
+  --font-display: Unbounded, 'Arial Black', sans-serif;
+  --font-text: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --fs: 1.15;
+  --fs-min: 11px;
+  --size-display: clamp(28px, 8.6vw, 46px);
+  --weight-display: 700;
+  --tracking-display: -0.045em;
+  --leading-display: 1.05;
+  --size-figure: max(var(--fs-min), calc(15px * var(--fs)));
+  --weight-figure: 600;
+  --tracking-figure: -0.03em;
+  --size-heading-section: max(var(--fs-min), calc(13.5px * var(--fs)));
+  --weight-heading-section: 700;
+  --tracking-heading-section: -0.01em;
+  --size-heading-card: max(var(--fs-min), calc(13px * var(--fs)));
+  --weight-heading-card: 700;
+  --tracking-heading-card: -0.01em;
+  --size-heading-screen: max(var(--fs-min), calc(18px * var(--fs)));
+  --weight-heading-screen: 700;
+  --tracking-heading-screen: -0.02em;
+  --size-heading-signup: max(var(--fs-min), calc(23px * var(--fs)));
+  --weight-heading-signup: 700;
+  --tracking-heading-signup: -0.035em;
+  --leading-heading-signup: 1.2;
+  --size-body: max(var(--fs-min), calc(15px * var(--fs)));
+  --weight-body: 500;
+  --tracking-body: -0.005em;
+  --leading-body: 1.45;
+  --size-body-sm: max(var(--fs-min), calc(13.5px * var(--fs)));
+  --weight-body-sm: 400;
+  --tracking-body-sm: 0;
+  --leading-body-sm: 1.5;
+  --size-label: max(var(--fs-min), calc(10.5px * var(--fs)));
+  --weight-label: 700;
+  --tracking-label: 0.12em;
+  --size-meta: max(var(--fs-min), calc(12px * var(--fs)));
+  --weight-meta: 400;
+  --tracking-meta: 0;
+  --size-pct: max(var(--fs-min), calc(11.5px * var(--fs)));
+  --weight-pct: 700;
+  --tracking-pct: 0;
+  --size-button: max(var(--fs-min), calc(14px * var(--fs)));
+  --weight-button: 700;
+  --tracking-button: 0;
+  --size-link: max(var(--fs-min), calc(12px * var(--fs)));
+  --weight-link: 700;
+  --tracking-link: 0.02em;
+  --size-field: max(var(--fs-min), calc(16px * var(--fs)));
+  --weight-field: 500;
+  --tracking-field: 0;
+  --size-amount: max(var(--fs-min), calc(24px * var(--fs)));
+  --weight-amount: 600;
+  --tracking-amount: -0.04em;
+  --size-amount-symbol: max(var(--fs-min), calc(20px * var(--fs)));
+  --weight-amount-symbol: 600;
+  --tracking-amount-symbol: 0;
+  --size-nav: max(var(--fs-min), calc(14px * var(--fs)));
+  --weight-nav: 600;
+  --tracking-nav: 0;
+  --size-tab: max(var(--fs-min), calc(10px * var(--fs)));
+  --weight-tab: 700;
+  --tracking-tab: 0.02em;
+  --size-wordmark: max(var(--fs-min), calc(19px * var(--fs)));
+  --weight-wordmark: 800;
+  --tracking-wordmark: -0.03em;
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;
+  --space-8: 16px;
+  --space-9: 18px;
+  --space-10: 20px;
+  --space-11: 22px;
+  --space-12: 24px;
+  --space-13: 26px;
+  --space-15: 30px;
+  --space-16: 32px;
+  --space-20: 40px;
+  --inset-gutter: 20px;
+  --inset-gutter-computer: 40px;
+  --inset-card: 16px;
+  --inset-row: 13px;
+  --inset-sheet: 22px;
+  --inset-field: 12px;
+  --inset-page-end: 30px;
+  --inset-page-end-computer: 70px;
+  --radius-card: 14px;
+  --radius-control: 10px;
+  --radius-sheet: 22px;
+  --radius-dialog: 18px;
+  --radius-pill: 99px;
+  --border-edge: 2px;
+  --border-rule: 1.5px;
+  --border-hair: 1px;
+  --border-mark: 4px;
+  --offset-card: 4px;
+  --offset-control: 3px;
+  --offset-icon: 2px;
+  --offset-sheet: 6px;
+  --shadow-card: var(--offset-card) var(--offset-card) 0 var(--drop);
+  --shadow-control: var(--offset-control) var(--offset-control) 0 var(--drop);
+  --shadow-icon: var(--offset-icon) var(--offset-icon) 0 var(--drop);
+  --shadow-sheet: var(--offset-sheet) var(--offset-sheet) 0 var(--drop);
+  --shadow-focus: var(--offset-control) var(--offset-control) 0 var(--brand);
+  --hit: 44px;
+  --sidebar: 232px;
+  --measure-phone: 520px;
+  --measure: 1180px;
+  --measure-wide: 1340px;
+  --measure-wider: 1440px;
+  --measure-narrow: 400px;
+  --field-max: 420px;
+  --tab-h: 64px;
+  --sheet-w: 460px;
+  --viewport-full: 100dvh;
+  --viewport-sheet: 88dvh;
+  --viewport-dialog: 82dvh;
+  --icon-tab: 21px;
+  --icon-ui: 18px;
+  --icon-mark: 16px;
+  --icon-spinner: 22px;
+  --duration-press: 80ms;
+  --duration-switch: 160ms;
+  --duration-dialog: 160ms;
+  --duration-sheet: 220ms;
+  --duration-toast: 220ms;
+  --duration-spin: 900ms;
+  --easing-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  --opacity-disabled: 0.45;
+  --opacity-agent-mark: 0.75;
+  --layer-tabbar: 40;
+  --layer-toast: 60;
+}
+
+/* Dark (espresso) follows the OS, authored separately (design-system §8). */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1b1712;
+    --card: #2a231b;
+    --ink: #f5eddf;
+    --ink-2: #d2c5af;
+    --ink-3: #a7987f;
+    --rule: #3e3529;
+    --rule-strong: #6b5e4b;
+    --edge: #e8dcc6;
+    --drop: #000000;
+    --brand: #ff7438;
+    --brand-text: #ff8f5e;
+    --brand-on: #1a1714;
+    --agent: #7c98ff;
+    --agent-text: #9db2ff;
+    --gain: #6fcf8e;
+    --loss: #ff6b81;
+    --attention: #f2b640;
+    --warn-bg: #3a2e14;
+    --sun: #f2b640;
+    --sun-on: #1a1714;
+    --scrim: rgba(26, 23, 20, 0.55);
+    --wash: 0.26;
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --chart-3: #199e70;
+    --chart-4: #c98500;
+    --chart-5: #d55181;
+    --chart-6: #008300;
+    --chart-7: #9085e9;
+    --chart-8: #e66767;
+  }
+}
+
+/* A computer reads the sizes as written; a phone reads them 15% larger, never below 11px. */
+@media (min-width: 900px) {
+  :root {
+    --fs: 1;
+    --fs-min: 0px;
+  }
+}
+
+/* Wide screens: the measure grows, then stays capped (design-system §7). */
+@media (min-width: 1500px) {
+  :root {
+    --measure: 1340px;
+  }
+}
+
+@media (min-width: 1800px) {
+  :root {
+    --measure: 1440px;
+  }
+}
+
+/* Hit targets relax to 36px only where a mouse is positively detected (design-system §6.1). */
+@media (hover: hover) and (pointer: fine) {
+  :root {
+    --hit: 36px;
+  }
+}
+
+/* Reduced motion: nothing moves. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-press: 0ms;
+    --duration-switch: 0ms;
+    --duration-dialog: 0ms;
+    --duration-sheet: 0ms;
+    --duration-toast: 0ms;
+    --duration-spin: 0ms;
+  }
+}

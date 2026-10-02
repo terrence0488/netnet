@@ -1,0 +1,57 @@
+/* The gallery is a test page; it still uses tokens only, like every stylesheet. */
+
+.top {
+  padding: var(--space-10) 0 var(--space-8);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--measure-narrow)), 1fr));
+  align-items: start;
+  gap: var(--space-9) var(--space-16);
+}
+
+.specimen {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.heading {
+  padding-block: var(--space-2);
+}
+
+/* A column that may shrink below its content, so no field's intrinsic width widens the page. */
+.stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.figures {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.figures dt {
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+}
+
+.figures dd + dt {
+  margin-top: var(--space-4);
+}
+
+.sentence {
+  margin-top: var(--space-8);
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body-sm);
+}
