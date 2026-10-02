@@ -7,20 +7,43 @@
 const MINUS = '−';
 
 /**
- * The currency's minor unit: 2 for most, 0 for some, 3 for a few. Read from Intl until the ISO 4217
- * table lands in packages/contracts (P1-T6); CLDR gives 0 for a few currencies where ISO 4217 gives
- * 2 or 3 (MMK, LAK, IQD among them), and core is the authority.
+ * ISO 4217's minor units where they are not 2. The browser's Intl is not used: its CLDR data
+ * differs from ISO 4217 for some currencies (IDR, MMK, LAK, IQD among them) and changes between
+ * browser versions, while the server stores amounts in ISO 4217 minor units. P1-T6's currency table
+ * in packages/contracts replaces this one.
  */
+const MINOR_DIGITS: Readonly<Record<string, number>> = {
+  BIF: 0,
+  CLP: 0,
+  DJF: 0,
+  GNF: 0,
+  ISK: 0,
+  JPY: 0,
+  KMF: 0,
+  KRW: 0,
+  PYG: 0,
+  RWF: 0,
+  UGX: 0,
+  UYI: 0,
+  VND: 0,
+  VUV: 0,
+  XAF: 0,
+  XOF: 0,
+  XPF: 0,
+  BHD: 3,
+  IQD: 3,
+  JOD: 3,
+  KWD: 3,
+  LYD: 3,
+  OMR: 3,
+  TND: 3,
+  CLF: 4,
+  UYW: 4,
+};
+
+/** The currency's minor unit per ISO 4217: 2 for most, 0 for some, 3 or 4 for a few. */
 export function minorDigits(currency: string): number {
-  try {
-    const { maximumFractionDigits } = new Intl.NumberFormat('en', {
-      style: 'currency',
-      currency,
-    }).resolvedOptions();
-    return maximumFractionDigits ?? 2;
-  } catch {
-    return 2;
-  }
+  return MINOR_DIGITS[currency] ?? 2;
 }
 
 const formats = new Map<string, Intl.NumberFormat>();

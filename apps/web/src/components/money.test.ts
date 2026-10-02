@@ -9,6 +9,13 @@ describe('minorDigits', () => {
     expect(minorDigits('JPY')).toBe(0);
     expect(minorDigits('KWD')).toBe(3);
   });
+
+  it('follows ISO 4217 where the browser’s CLDR data differs', () => {
+    expect(minorDigits('IDR')).toBe(2);
+    expect(minorDigits('MMK')).toBe(2);
+    expect(minorDigits('LAK')).toBe(2);
+    expect(minorDigits('IQD')).toBe(3);
+  });
 });
 
 describe('formatMoney', () => {
