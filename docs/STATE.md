@@ -29,8 +29,8 @@ Wave 2: T3, T4, T5 merged (#7–#9). T2's spike is live at https://netnet-p1-spi
 workflow (`spike.yml`, dispatch by API on that ref) has `report` and, at the end, `cleanup`. Raise
 with the Founder before T11/T13/T15: Better Auth serves OAuth at `/api/auth/oauth2/*`, not §7.1's
 `/oauth2/*`; remembered consent skips the approval page and the security email on reconnect;
-`netnet-preview` runs Postgres 18.6, not 17 (check prod; CI uses 17); calls after idle exceed §5.1's
-estimate; cron timing is unverifiable before production. Per-PR Neon branches work end to end.
+calls after idle exceed §5.1's estimate; cron timing is unverifiable before production. Both Neon
+projects run Postgres 18.6, so CI and the decision moved to 18. Per-PR Neon branches work.
 Later: account deletion vs the insert-only analytics grant (P3 decision); Ledger.init creates
 `ledger_state` (T10); `money.ts` → T6's ISO 4217 table; T18 bootstraps prod and builds as production.
 Plan tracker: https://claude.ai/artifact/UkJfDYaAAi8gJV1aBbk3nB. When a task's status or this file
