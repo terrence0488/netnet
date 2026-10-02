@@ -33,7 +33,7 @@ is built last (PRD §4.1).
 
 | Phase | Slice | Checkpoint (on production) | Jobs |
 |---|---|---|---|
-| **P1** | **Ask your agent about your real position** | Sign up by email, confirm the country, add holdings by hand and see what you could use; connect Claude or ChatGPT in one flow; the agent answers from `get_financial_context` and writes values that appear in the app, marked as its own. Instrumented, isolated, backed up, probed | J1–J3 (core), J5, J6, J8; J10 isolation |
+| **P1** | **Ask your agent about your real position** | Sign up by email, confirm the country, add holdings by hand and see what you could use; connect Claude (or any MCP agent through "Other agent") in one flow; the agent answers from `get_financial_context` and writes values that appear in the app, marked as its own. Instrumented, isolated, backed up, probed | J1–J3 (core), J5, J6, J8; J10 isolation |
 | **P2** | **Worth using on its own** | Google and Apple sign-in; onboarding's start screen and the basics; the full Home (trend, allocation, baseline, filters, staleness, the agent handoff); the full holding page; types and tags | J1–J5 (rest), J9 |
 | **P3** | **Trust, ownership and the comeback** | Activity with undo of an entry or an agent turn; settings (currency, country); export and account deletion; the comeback reminder by web push or email; the security email's retries | J2 (country change), J7, J10, J12 |
 | **P4** | **Ready to launch** | The landing page; the metrics per segment; usage and SLO alerts; all ten packs reviewed; guides and directory listings ready; the launch note; the M12 harness | G-D1–G-D4, M12, packs |
@@ -52,7 +52,8 @@ On `https://‹domain›`, deployed by the production workflow:
 3. They add holdings with the Add form: an asset or a liability, any currency, accessibility settled
    by a fact question, a pack default with its reason, or "Not sure". Home shows net worth and what
    they could use, what is locked (and until when) and what they owe.
-4. From the Agent tab they connect Claude or ChatGPT (or any MCP agent through "Other agent") in one
+4. From the Agent tab they connect Claude (or any MCP agent through "Other agent"; ChatGPT joins once
+   NetNet is listed in OpenAI's directory) in one
    flow: steps for their platform, NetNet's approval page, and NetNet moving on by itself. The
    security email arrives.
 5. In the agent they ask "what am I worth?" or "can I afford a S$120K car?" and get an answer built
@@ -137,11 +138,9 @@ flowchart LR
 | 6 | T15, T16, T17 |
 | 7 | T18 (its setup parts, such as Sentry, headers and the backup workflow, can start after T4) |
 
-**The spike gates the auth work.** T2 needs about 45 minutes of the Founder's hands-on time: adding
-the spike's URL as a connector in Claude and in ChatGPT, on a computer and a phone. Waves 3 and 4
-carry on meanwhile, but T11 and T13 start only after T2's verdict. If the verdict takes one of the
-architecture's stated fallbacks (a standalone OAuth library; GitHub Actions for scheduled runs), it
-is recorded in `decisions.md`. Anything beyond them comes back to the Founder.
+**The spike gates the auth work.** T2's verdict (`docs/phases/P1/spike.md` §5): the architecture
+holds for Claude, on a computer and a phone, with no fallback library. The Founder's decisions on
+its deviations are in `decisions.md`, and T11, T13, T15 and T18 build on them.
 
 ### 3.5 Running the build
 
@@ -229,7 +228,8 @@ listings and launch note ready to submit and post.
 - The seven remaining launch packs (ID, PH, TH, VN, HK, IN, AU), and all ten reviewed by someone who
   knows each market, the reviewer named in each publish message.
 - Agent guides checked against the clients' current screens; listing materials for Claude's and
-  ChatGPT's directories and the public MCP registries (G-D2). Submitting them needs the privacy
+  ChatGPT's directories and the public MCP registries (G-D2). Once OpenAI lists NetNet, ChatGPT is
+  tested on a free account and its guide is listed in the connect flow. Submitting them needs the privacy
   policy and terms (Stage 8's legal basics).
 - The launch note (G-D3): one text, the proof varied per audience.
 - The M12 harness: a fixed fictional dataset and question set, a deliberately weak model, NetNet
@@ -270,7 +270,7 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | F5 | **Cloud environment network access:** in this environment's settings (the environment menu in the session's title bar → Edit → Network access), allow Vercel and Neon: `vercel.com`, `api.vercel.com`, `*.vercel.app`, `console.neon.tech`, `*.neon.tech` | T1, T2, T4 |
 | F6 | After T1 merges: install the free **Renovate** GitHub app (github.com/apps/renovate) on this repository only, in the mode **Scan and Alert** ("Scan Only" silences Renovate), so library updates arrive as weekly pull requests. Merge any pull request only when its **Checks** job is green: `main` has no branch protection (decisions.md) | T2 onward |
 | F7 | **Neon:** projects `netnet-prod` and `netnet-preview`, region AWS Singapore (`aws-ap-southeast-1`), **Postgres 18**, compute 0.25 CU. In each, a role `netnet_owner` (made in the console). GitHub secrets: `NEON_API_KEY`; `DATABASE_OWNER_URL` (prod, `netnet_owner`, direct connection); `NETNET_APP_DB_PASSWORD_PROD` and `NETNET_APP_DB_PASSWORD_PREVIEW`, two different values from `openssl rand -hex 32` (letters and digits only, because they go inside a connection string; keep the prod one in your password manager for F12). GitHub variables: `NEON_PROD_PROJECT_ID`, `NEON_PREVIEW_PROJECT_ID` | T2, T4 |
-| F8 | Plans that allow a custom connector: Claude (the free plan allows one) and ChatGPT (Plus or above, developer mode on) | T2 |
+| F8 | A Claude plan that allows a custom connector (every plan; the free plan allows one) | T2 |
 
 **During P1**
 
@@ -278,7 +278,7 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 |---|---|---|
 | F9 | Vercel env `CRON_SECRET` (generated) | T8 |
 | F10 | **Resend:** an account; add the domain and set the DNS records it shows (SPF, DKIM, DMARC). Vercel env: `RESEND_API_KEY`, `EMAIL_FROM` (e.g. `NetNet <hello@‹domain›>`), `BETTER_AUTH_SECRET` (generated), and on Preview only `EMAIL_PREVIEW_ALLOW` (the addresses previews may email) | T11 |
-| F11 | After the spike: the 12 setup screenshots for Claude and ChatGPT, computer and phone, named as in `docs/02-prototype/connect/README.md`, cropped, with name, email, avatar and chat titles removed. Put them in `content/images/connect/` | T17 (tested), P1 checkpoint |
+| F11 | After the spike: the 6 setup screenshots for Claude, computer and phone (ChatGPT's 6 once it is listed), named as in `docs/02-prototype/connect/README.md`, cropped, with name, email, avatar and chat titles removed. Put them in `content/images/connect/` | T17 (tested), P1 checkpoint |
 | F12 | Point the domain at the Vercel project. Vercel env (Production): `PUBLIC_ORIGIN` (`https://‹domain›`) and `DATABASE_URL` (the pooled `netnet_app` connection string; T4's report gives its exact form) | T18 |
 | F13 | **Sentry** (Developer plan, free): one project for the function, one for the web app. Vercel env: `SENTRY_DSN`, `VITE_SENTRY_DSN` | T18 |
 | F14 | **Backup key**, on your own computer: install `age`, run `age-keygen -o netnet-backup.key`. The public key (`age1…`) → GitHub secret `BACKUP_PUBLIC_KEY`. Keep the key file offline, in two places. It is the only way to read a backup | T18 |

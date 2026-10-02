@@ -3,7 +3,7 @@ import type { AppEnv } from './lib/context';
 import { handleError, handleNotFound } from './lib/error-handler';
 import { noStore, requestContext } from './lib/request-context';
 
-/** The one Hono app behind /api, /mcp, /oauth2 and /.well-known (architecture §7.1). */
+/** The one Hono app behind /api, /mcp and /.well-known (architecture §7.1). */
 export const app = new Hono<AppEnv>();
 
 app.use('*', requestContext(), noStore());

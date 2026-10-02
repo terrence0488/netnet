@@ -546,7 +546,6 @@ describe('the starting content', () => {
       expect(g.logo).toBe(`images/agents/${id}.svg`);
       expect(g.prefillUrl).toMatch(/^https:\/\/.+\{prompt\}$/);
       expect(g.matchHosts?.length).toBeGreaterThan(0);
-      expect(g.listed).toBe(true);
     }
   });
 
@@ -561,8 +560,9 @@ describe('the starting content', () => {
     ]);
   });
 
-  it('orders the listed guides Claude, ChatGPT, Other agent', () => {
+  it('lists Claude, then Other agent; ChatGPT stays unlisted until OpenAI lists NetNet', () => {
     const listed = c.agents.filter((g) => g.listed).sort((a, b) => a.order - b.order);
-    expect(listed.map((g) => g.id)).toStrictEqual(['claude', 'chatgpt', 'other']);
+    expect(listed.map((g) => g.id)).toStrictEqual(['claude', 'other']);
+    expect(guide(c, 'chatgpt').listed).toBe(false);
   });
 });

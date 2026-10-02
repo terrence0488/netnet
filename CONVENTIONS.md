@@ -26,7 +26,7 @@ api/
 apps/
   api/                    the Hono app (runs as one Vercel Node function in sin1)
     src/
-      app.ts              routes: /api, /api/auth, /oauth2, /.well-known, /mcp, /api/cron
+      app.ts              routes: /api, /api/auth (OAuth too), /.well-known, /mcp, /api/cron
       http/               REST route handlers (thin: parse → call → map)
       mcp/                MCP server, one file per tool
       auth/               Better Auth config, OAuth server, approval-page API

@@ -342,7 +342,7 @@ assets-vs-liabilities, and a user-chosen comparison baseline · **an Insights vi
 calendar period (monthly, quarterly, yearly) with its own filters and exclusions** · staleness
 labels · **a gentle comeback reminder after a month away, by web push where the user has turned it
 on and by email otherwise** (J12) · **a comprehensive MCP layer with full CRUD, plus read tools shaped for advice, reached
-by OAuth from ChatGPT or Claude** · audit log and undo for every agent write · export and account
+by OAuth from Claude, and ChatGPT once listed** · audit log and undo for every agent write · export and account
 deletion · the §3.5 analytics · the §3.4 distribution assets. Mobile-first responsive web, one API
 that native clients reuse later.
 
@@ -575,8 +575,10 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   steps for their client **and their platform** (phone or computer, detected and
   switchable), each step with a screenshot, and the connector URL, with no token to generate,
   paste or store. The steps and screenshots are administered content (§2.3), because the clients'
-  own screens change without notice. So is the client list itself: **Claude and ChatGPT, plus
-  the generic "Other agent" guide below.** Grok and Muse are parked until after launch; their
+  own screens change without notice. So is the client list itself: **Claude, plus the generic
+  "Other agent" guide below; ChatGPT joins once NetNet is listed in OpenAI's directory** (its free
+  plan allows no custom connector, so it cannot be tested or offered before). Grok and Muse are
+  parked until after launch; their
   draft guides are kept in the prototype's `connectors.js`. The agent list is one list, the same
   in every country.
 - **Given** an agent that is not on the list, **when** the user chooses **Other agent**, **then**
@@ -850,8 +852,9 @@ reconsider, and it is currently neither in scope nor reserved.
 ## 9. Open questions
 
 1. **Which plans of each client allow a custom connector** is parked. It changes guide content and
-   connector-directory submissions, not the product. Last checked at Stage 3: Claude's free plan
-   allows one custom connector; ChatGPT's free plan does not (Plus and above), though free accounts
-   can use directory-listed apps. Standalone value (§2.2, A12) matters either way.
+   connector-directory submissions, not the product. Checked in the P1 spike: Claude allows custom
+   connectors on every plan (Free allows one; the Founder used Pro); ChatGPT's free plan allows
+   none, though free accounts can use directory-listed apps, which is why ChatGPT waits for the
+   listing; OpenAI's Codex added the connection but could not call it from a chat. Standalone value (§2.2, A12) matters either way.
 2. **Income and expenses** is the first candidate to reconsider if M7 is dominated by affordability
    questions (the named risk in §8).
