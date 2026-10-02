@@ -1,0 +1,104 @@
+/* The page itself, on tokens: self-hosted faces, the reset, and the ground both themes stand on.
+   Components style themselves in CSS Modules; this file holds only what every screen shares. */
+
+@font-face {
+  font-family: Unbounded;
+  src: url('/fonts/unbounded.woff2') format('woff2');
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fonts/space-grotesk.woff2') format('woff2');
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  /* No double-tap zoom; pinch-zoom kept (design-system §6.1 rule 7). On every element, because a
+     scroll container resets touch-action for everything inside it. */
+  touch-action: manipulation;
+}
+
+html {
+  background: var(--paper);
+  /* The scrollbar's room is kept whether or not a screen scrolls, so switching screens never
+     resizes the content column (design-system §7). */
+  scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* A sheet holds the page still behind it. */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+body {
+  min-height: var(--viewport-full);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-body);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+a {
+  color: var(--brand-text);
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: var(--size-heading-screen);
+  font-weight: var(--weight-heading-screen);
+  letter-spacing: var(--tracking-heading-screen);
+  line-height: var(--leading-heading-signup);
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: var(--size-heading-section);
+  font-weight: var(--weight-heading-section);
+  letter-spacing: var(--tracking-heading-section);
+}
+
+:focus-visible {
+  outline: var(--border-edge) dashed var(--edge);
+  outline-offset: var(--offset-control);
+}
+
+/* Read by a screen reader, not shown. */
+.visually-hidden {
+  position: absolute;
+  width: var(--border-hair);
+  height: var(--border-hair);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -1,0 +1,25 @@
+.spinner {
+  display: inline-grid;
+  place-items: center;
+}
+
+.ring {
+  width: var(--icon-spinner);
+  height: var(--icon-spinner);
+  border: var(--border-edge) solid var(--rule-strong);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: spin var(--duration-spin) linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring {
+    animation: none;
+  }
+}

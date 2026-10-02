@@ -1,0 +1,42 @@
+/* The figure is the hero (design-system §2): money takes the display face and the tightest
+   tracking; a change figure is a measurement, in the text face. */
+
+.money {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.display {
+  font-family: var(--font-display);
+  font-size: var(--size-display);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
+}
+
+.figure {
+  font-family: var(--font-display);
+  font-size: var(--size-figure);
+  font-weight: var(--weight-figure);
+  letter-spacing: var(--tracking-figure);
+}
+
+.inline {
+  font-family: var(--font-display);
+  font-weight: var(--weight-figure);
+  letter-spacing: var(--tracking-figure);
+}
+
+.change {
+  font-family: var(--font-text);
+  font-size: var(--size-pct);
+  font-weight: var(--weight-pct);
+}
+
+.gain {
+  color: var(--gain);
+}
+
+.loss {
+  color: var(--loss);
+}

@@ -1,0 +1,16 @@
+.rule {
+  border: none;
+  width: 100%;
+}
+
+.soft {
+  border-top: var(--border-rule) solid var(--rule);
+}
+
+.strong {
+  border-top: var(--border-edge) solid var(--rule-strong);
+}
+
+.dashed {
+  border-top: var(--border-edge) dashed var(--edge);
+}

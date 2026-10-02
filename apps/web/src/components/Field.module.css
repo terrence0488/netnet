@@ -1,0 +1,48 @@
+/* Fields (design-system §6): boxed, 2px outline, card fill; focus adds a tomato hard shadow.
+   Never below 16px, or iOS zooms into them (§6.1 rule 8). */
+
+/* One column that may shrink below its content: an input's intrinsic width never widens a form. */
+.field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.hint,
+.error {
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  line-height: var(--leading-body-sm);
+  color: var(--ink-3);
+}
+
+.error {
+  font-weight: var(--weight-body);
+  color: var(--attention);
+}
+
+.box {
+  width: 100%;
+  min-height: var(--hit);
+  padding: var(--space-4) var(--inset-field);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--ink);
+  font-size: var(--size-field);
+  font-weight: var(--weight-field);
+}
+
+.box:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}

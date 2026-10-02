@@ -1,0 +1,24 @@
+.wrap {
+  position: relative;
+  display: block;
+}
+
+.control {
+  appearance: none;
+  cursor: pointer;
+  padding-inline-end: calc(var(--inset-field) * 2 + var(--space-4));
+}
+
+/* The chevron, drawn in the field's ink so it follows the theme. */
+.wrap::after {
+  content: '';
+  position: absolute;
+  inset-inline-end: calc(var(--inset-field) + var(--space-1));
+  top: 50%;
+  width: var(--space-4);
+  height: var(--space-4);
+  border-right: var(--border-edge) solid var(--ink-2);
+  border-bottom: var(--border-edge) solid var(--ink-2);
+  transform: translateY(-75%) rotate(45deg);
+  pointer-events: none;
+}
