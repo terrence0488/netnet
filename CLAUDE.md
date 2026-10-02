@@ -67,3 +67,7 @@ Node 22 and pnpm. A SessionStart hook runs `pnpm install --frozen-lockfile`.
 | `pnpm test:int` | Integration tests against Postgres (`DATABASE_URL`) |
 | `pnpm test:e2e` | Playwright against the built app (run `pnpm build` first), at 390 and 1280 px |
 | `pnpm content:check` | Validates `content/` against its schemas and the §7.8 rules; `--strict` also fails on a missing image |
+| `pnpm db:bootstrap` | Creates the app roles by SQL, as `netnet_owner` (`DATABASE_OWNER_URL`, `NETNET_APP_DB_PASSWORD`) |
+| `pnpm db:migrate` | Applies `apps/api/migrations/`, as `netnet_owner` |
+| `pnpm db:seed` | Fictional data, as `netnet_app` (`DATABASE_URL`) |
+| `pnpm db:generate` | A new migration from the Drizzle schema (drizzle-kit, then Prettier) |
