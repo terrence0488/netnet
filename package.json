@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "engines": {
-    "node": ">=22.12.0 <23"
+    "node": ">=22.22.0 <23"
   },
   "scripts": {
     "dev": "pnpm --parallel --filter @netnet/api --filter @netnet/web --filter @netnet/landing dev",
