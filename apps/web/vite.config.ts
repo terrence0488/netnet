@@ -7,6 +7,8 @@ const API = `http://localhost:${process.env.API_PORT ?? 8787}`;
 export default defineConfig({
   base: '/app/',
   plugins: [react()],
+  // VERCEL_ENV tells a production build to leave the component gallery out (src/app/routes.tsx).
+  envPrefix: ['VITE_', 'VERCEL_ENV'],
   build: {
     outDir: '../../dist/app',
     emptyOutDir: true,

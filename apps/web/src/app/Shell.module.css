@@ -1,0 +1,162 @@
+/* The app's frame (design-system §7). Mobile first: one column and a bottom tab bar. From 900px a
+   sidebar and the content column; past 1500px the measure grows, capped and centred.
+
+   The content column's width depends on the viewport alone: an explicit width with justify-self,
+   never auto margins, which would make a grid item fit its content. */
+
+.shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  min-height: var(--viewport-full);
+}
+
+.main {
+  justify-self: center;
+  width: min(100%, var(--measure-phone));
+  padding: 0 var(--inset-gutter)
+    calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + var(--inset-page-end));
+}
+
+/* Without chrome (sign-up, log-in, onboarding, the approval page): one narrow column. */
+.shell.bare .main {
+  width: min(100%, calc(var(--measure-narrow) + 2 * var(--inset-gutter)));
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--inset-page-end));
+}
+
+/* ---------- sidebar: a computer's nav ---------- */
+
+.sidebar {
+  display: none;
+}
+
+.brand {
+  padding: 0 var(--space-4) var(--space-13);
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  width: 100%;
+  min-height: var(--hit);
+  margin-bottom: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border: var(--border-edge) solid transparent;
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-size: var(--size-nav);
+  font-weight: var(--weight-nav);
+  letter-spacing: var(--tracking-nav);
+  text-decoration: none;
+}
+
+.navItem svg {
+  flex: none;
+  width: var(--icon-ui);
+  height: var(--icon-ui);
+}
+
+.navItem:not([aria-current='page']):hover {
+  border-color: var(--edge);
+  color: var(--ink);
+}
+
+/* The active item is a tomato pill. */
+.navItem[aria-current='page'] {
+  border-color: var(--edge);
+  background: var(--brand);
+  color: var(--brand-on);
+  box-shadow: var(--shadow-control);
+}
+
+/* ---------- tab bar: a phone's nav ---------- */
+
+.tabbar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: var(--layer-tabbar);
+  height: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: var(--border-edge) solid var(--edge);
+  background: var(--card);
+}
+
+.tabs {
+  display: flex;
+  width: 100%;
+  max-width: var(--measure-phone);
+  height: 100%;
+  margin-inline: auto;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: var(--hit);
+  border-left: var(--border-rule) solid var(--rule-strong);
+  color: var(--ink-2);
+  font-size: var(--size-tab);
+  font-weight: var(--weight-tab);
+  letter-spacing: var(--tracking-tab);
+  text-decoration: none;
+}
+
+.tab:first-child {
+  border-left: none;
+}
+
+.tab svg {
+  width: var(--icon-tab);
+  height: var(--icon-tab);
+}
+
+/* The active tab gets a tomato bar on top. */
+.tab[aria-current='page'] {
+  color: var(--brand-text);
+  box-shadow: inset 0 var(--border-mark) 0 var(--brand);
+}
+
+/* ---------- a computer ---------- */
+
+@media (min-width: 900px) {
+  .shell {
+    grid-template-columns: var(--sidebar) minmax(0, 1fr);
+  }
+
+  /* Hiding the sidebar would let the column fall into its track: without chrome the grid itself
+     is one column (design-system §7). */
+  .shell.bare {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    display: block;
+    position: sticky;
+    top: 0;
+    height: var(--viewport-full);
+    overflow-y: auto;
+    padding: var(--space-13) var(--space-8);
+    border-right: var(--border-edge) solid var(--edge);
+    background: var(--card);
+  }
+
+  .main {
+    width: min(100%, var(--measure));
+    padding: 0 var(--inset-gutter-computer) var(--inset-page-end-computer);
+  }
+
+  .shell.bare .main {
+    width: min(100%, calc(var(--measure-narrow) + 2 * var(--inset-gutter-computer)));
+    padding-bottom: var(--inset-page-end-computer);
+  }
+
+  .tabbar {
+    display: none;
+  }
+}
