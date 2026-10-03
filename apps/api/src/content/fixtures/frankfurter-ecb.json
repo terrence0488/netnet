@@ -1,0 +1,20 @@
+[
+  { "date": "2026-07-30", "base": "EUR", "quote": "EUR", "rate": 1.0 },
+  { "date": "2026-07-30", "base": "EUR", "quote": "GBP", "rate": 0.8652 },
+  { "date": "2026-07-30", "base": "EUR", "quote": "JPY", "rate": 172.41 },
+  { "date": "2026-07-30", "base": "EUR", "quote": "SGD", "rate": 1.4987 },
+  { "date": "2026-07-30", "base": "EUR", "quote": "USD", "rate": 1.1712 },
+  { "date": "2026-07-31", "base": "EUR", "quote": "BGN", "rate": 1.9558 },
+  { "date": "2026-07-31", "base": "EUR", "quote": "EUR", "rate": 1.0 },
+  { "date": "2026-07-31", "base": "EUR", "quote": "GBP", "rate": 0.8641 },
+  { "date": "2026-07-31", "base": "EUR", "quote": "IDR", "rate": 19024.65 },
+  { "date": "2026-07-31", "base": "EUR", "quote": "JPY", "rate": 171.2 },
+  { "date": "2026-07-31", "base": "EUR", "quote": "SGD", "rate": 1.495 },
+  { "date": "2026-07-31", "base": "EUR", "quote": "USD", "rate": 1.165 },
+  { "date": "2026-08-03", "base": "EUR", "quote": "EUR", "rate": 1.0 },
+  { "date": "2026-08-03", "base": "EUR", "quote": "GBP", "rate": 0.8633 },
+  { "date": "2026-08-03", "base": "EUR", "quote": "JPY", "rate": 170.95 },
+  { "date": "2026-08-03", "base": "EUR", "quote": "SGD", "rate": 1.4921 },
+  { "date": "2026-08-03", "base": "EUR", "quote": "USD", "rate": 1.1625 },
+  { "date": "2026-08-04", "base": "EUR", "quote": "JPY", "rate": 171.05 }
+]

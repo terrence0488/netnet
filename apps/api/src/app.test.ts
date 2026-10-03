@@ -18,7 +18,12 @@ describe('GET /api/health', () => {
   });
 });
 
-describe('content routes', () => {
+describe('content and cron routes', () => {
+  it('guards the FX cron with the bearer secret', async () => {
+    const res = await app.request('/api/cron/fx');
+    expect(res.status).toBe(401);
+  });
+
   it('serves content under /api/content, checking the path before any database read', async () => {
     const res = await app.request('/api/content/nothing/generic@1');
     expect(res.status).toBe(400);
