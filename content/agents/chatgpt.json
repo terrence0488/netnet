@@ -2,7 +2,7 @@
   "id": "chatgpt",
   "name": "ChatGPT",
   "logo": "images/agents/chatgpt.svg",
-  "listed": true,
+  "listed": false,
   "order": 2,
   "prefillUrl": "https://chatgpt.com/?q={prompt}",
   "matchHosts": ["chatgpt.com", "openai.com"],

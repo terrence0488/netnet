@@ -59,15 +59,16 @@ write-ups. The P1 spike re-checks them before anything depends on them.
 
 ## 3. Agent clients at launch
 
-**Claude and ChatGPT, plus the generic "Other agent" guide** (PRD J5). Grok and Muse are parked
-until after launch. The server is standard
+**Claude, plus the generic "Other agent" guide; ChatGPT once NetNet is listed in OpenAI's
+directory** (PRD J5). ChatGPT's free plan allows no custom connector, so it could not be tested;
+its guide stays in content, unlisted, until then. Grok and Muse are parked until after launch. The server is standard
 remote MCP with OAuth and no client-specific code, so adding a named client later is content (a
 guide, a logo), not a release.
 
 | Client | How it identifies itself to our OAuth server | Source |
 |---|---|---|
-| **Claude** | CIMD ("Use Claude's published identity", recommended), DCR, or a pre-registered client | claude.com connector docs; Claude Help Center (2026-08-11) |
-| **ChatGPT** | CIMD preferred, DCR, or a predefined client; PKCE | OpenAI's pages are blocked here; consistent across 2026 guides. The P1 spike confirms it |
+| **Claude** | CIMD ("Use Claude's published identity", recommended), DCR, or a pre-registered client. Confirmed in the P1 spike: CIMD `https://claude.ai/oauth/mcp-oauth-client-metadata`, protocol 2026-07-28, computer and phone | claude.com connector docs; Claude Help Center (2026-08-11); `docs/phases/P1/spike.md` |
+| **ChatGPT** (unlisted until OpenAI's directory) | CIMD preferred, DCR, or a predefined client; PKCE. Untested: its free plan allows no custom connector. OpenAI's Codex connected in the P1 spike by CIMD (`https://chatgpt.com/oauth/codex/client.json`, protocol 2025-06-18) | 2026 guides; `docs/phases/P1/spike.md` |
 | **Other agent** | Any client that supports remote MCP with OAuth: CIMD or DCR. One generic guide, no platform split, no screenshots | PRD J5 |
 
 **Which client a connection is.** Analytics and the reminder's "Just ask Claude." need to know,
@@ -132,7 +133,7 @@ flowchart LR
     subgraph fn[Node function · Hono · sin1 Singapore]
       GATE[Sign-in check<br/>Better Auth · cookie or OAuth token → user id]
       API[REST API /api]
-      AS[OAuth 2.1 server /oauth2]
+      AS[OAuth 2.1 server /api/auth/oauth2]
       MCP[MCP server /mcp]
       CRON[Cron handlers<br/>reminder runs ×3 · FX · daily]
     end
@@ -183,9 +184,11 @@ itself against our JWKS (issuer, audience = the `/mcp` URL, expiry, scope) → `
 checks the connection is not revoked and reads the user's data in-region → `core.compileContext()`
 → the tool result → after the response, `agent_tool_called {kind: read, latency_ms}` and
 `touchChecked` (the person has checked NetNet today, J12; §7.10). **Warm: ≈ 0.25–0.3 s**, mostly
-the trip from the client's servers to Singapore. **After 5 minutes idle: ≈ 0.7–1.5 s**, because
-Neon wakes "within a few hundred milliseconds" (Neon docs; 0.3–0.8 s in third-party measurements)
-and the function may start cold (0.2–0.5 s). Slow, not failed. §9.4 has the trigger that removes it.
+the trip from the client's servers to Singapore. **After 5 minutes idle, measured in the P1
+spike: the first request on a new instance takes ≈ 0.9–1.4 s in the function** (the auth library
+starting and Neon waking), ≈ 2.1–2.7 s as seen from the US; the calls after it are warm again.
+Slow, not failed, and accepted for P1: `latency_ms` and the probe watch it, and §9.4 has the
+trigger that removes it.
 
 **Connecting an agent** (J5):
 
@@ -199,13 +202,13 @@ sequenceDiagram
   U->>C: adds connector URL https://‹domain›/mcp
   C->>S: POST /mcp (no token) → 401 + resource_metadata
   C->>S: GET /.well-known/oauth-protected-resource, /oauth-authorization-server
-  C->>S: GET /oauth2/authorize (PKCE, resource, client_id = CIMD URL or DCR id)
+  C->>S: GET /api/auth/oauth2/authorize (PKCE, resource, client_id = CIMD URL or DCR id)
   S->>U: approval page — the name the client registered with — Allow / Cancel
   U->>S: Allow (email must be verified)
   S->>S: grant → agent_connection row (classified claude / chatgpt / other); the attempt becomes "approved"
   S-->>U: the NetNet tab moves on by itself
   Note over S: straight away, after the response: the security email to the account address (J5)
-  C->>S: POST /oauth2/token (code + verifier) → access + refresh token
+  C->>S: POST /api/auth/oauth2/token (code + verifier) → access + refresh token
   C->>S: first tool call → the attempt becomes "live"
 ```
 
@@ -216,7 +219,7 @@ flowchart LR
   SRC[apps/web · React<br/>apps/landing · HTML] -->|vite build in CI| DIST[static files<br/>index.html · hashed JS/CSS · fonts · images]
   DIST -->|vercel deploy| CDN[Vercel CDN<br/>edges worldwide, incl. Singapore]
   B[Browser or<br/>Home Screen web app] -->|"GET / and /app/* · files"| CDN
-  B -->|"/api, /mcp, /oauth2 · data, same domain"| FN[Function · sin1]
+  B -->|"/api, /mcp · data, same domain"| FN[Function · sin1]
   FN --> DB[(Neon · Singapore)]
 ```
 
@@ -224,7 +227,7 @@ flowchart LR
 |---|---|
 | Where are the files? | Built by Vite in CI (`apps/web` → `/app/*`, `apps/landing` → `/`) and deployed to **Vercel's CDN** in the same project as the function. Hobby includes 100 GB of transfer a month; the app is a few hundred KB, so that is tens of thousands of visits |
 | What domain? | The Founder's domain for everything: `‹domain›/` (landing), `‹domain›/app` (web app), `‹domain›/api` and `‹domain›/mcp` (function). **One origin**: no CORS, the session cookie stays first-party, one TLS certificate (issued by Vercel) |
-| How does routing work? | `vercel.json` rewrites send `/api/*`, `/mcp`, `/oauth2/*` and `/.well-known/*` to the function. `/app/*` falls back to the app's `index.html` (client-side routes). Everything else is a file |
+| How does routing work? | `vercel.json` rewrites send `/api/*` (the OAuth server included), `/mcp` and `/.well-known/*` to the function. `/app/*` falls back to the app's `index.html` (client-side routes). Everything else is a file |
 | Caching | Hashed JS and CSS are cached forever (`immutable`). `index.html` is never cached, so a deploy reaches users on their next load. No financial data is ever cached at the edge: API responses carry `Cache-Control: private, no-store` |
 | Previews | Every pull request gets its own full copy (files + function + Neon branch) at a preview URL |
 | Installable, with push | A web app manifest (name, icons, `display: standalone`, `scope: /app/`) ships in v1, so the app can be added to a phone's Home Screen, which iOS requires before web push works. NetNet never explains that step: where a browser can't receive push, no push option is shown and reminders go by email (PRD J12). A **minimal service worker** (`/app/sw.js`) handles only `push` and `notificationclick`. It has **no fetch handler and caches nothing**, so financial data is never stored offline (§7.10) |
@@ -368,7 +371,7 @@ worth, never toward what could be used, and is reported to the agent as incomple
 | `/api/*` | REST API, JSON; cookie session (web), bearer session (native later) | function |
 | `/api/auth/*` | Better Auth: sign-up, sign-in (email, Google, Apple), verify email, reset, sign-out | function |
 | `/api/cron/*` | Cron handlers; require `Authorization: Bearer $CRON_SECRET` | function |
-| `/oauth2/authorize` · `/oauth2/token` · `/oauth2/register` (DCR) · `/oauth2/revoke` · `/oauth2/jwks` | OAuth 2.1 authorization server | function |
+| `/api/auth/oauth2/authorize` · `/api/auth/oauth2/token` · `/api/auth/oauth2/register` (DCR) · `/api/auth/oauth2/revoke` · `/api/auth/jwks` | OAuth 2.1 authorization server, at the library's own paths; clients find them in the metadata | function |
 | `/.well-known/oauth-authorization-server` · `/.well-known/oauth-protected-resource` (and `/…/mcp`) | RFC 8414 and RFC 9728 metadata; `client_id_metadata_document_supported: true` | function |
 | `/mcp` | **The connector URL users paste.** MCP Streamable HTTP, `POST`, stateless | function |
 
@@ -573,7 +576,11 @@ byte for byte for fixed inputs (N11).
   RFC 9207 `iss` in the response.
 - **Approval page** `/app/connect/approve`: needs a signed-in, **email-verified** user. Shows the
   name the client registered with (for a DCR client, that NetNet cannot verify it). **Allow** /
-  **Cancel**. `frame-ancestors 'none'`.
+  **Cancel**. `frame-ancestors 'none'`. It is shown for **every** new connection: a remembered
+  approval is never used, so each connection is a deliberate Allow and sends the security email.
+- **Browser redirects:** the library answers a browser's authorize request with a JSON
+  `{redirect, url}`; the function turns every such `GET` into a `302`, keeping its cookies (the
+  P1 spike's first real run stopped on that JSON).
 - **Tokens:** access tokens are JWTs (our JWKS, 1 h, `aud` = the resource, `sub`, `client_id`,
   `scope`), checked in the function with no database lookup. Refresh tokens rotate and last 90 days
   sliding.
@@ -936,11 +943,11 @@ paid plans.
 
 | # | Risk / trade-off | Mitigation |
 |---|---|---|
-| 1 | **Slow first calls while traffic is thin.** Neon sleeps after 5 min; the next agent call takes ≈ 0.7–1.5 s instead of ≈ 0.25–0.3 s | Measured by `latency_ms`; trigger to Neon Launch with scale-to-zero off (~$19/month) |
+| 1 | **Slow first calls while traffic is thin.** Neon sleeps after 5 min; the next agent call takes ≈ 0.9–1.4 s in the function (≈ 2.1–2.7 s seen from the US, measured in the P1 spike) instead of ≈ 0.25–0.3 s | Measured by `latency_ms`; trigger to Neon Launch with scale-to-zero off (~$19/month) |
 | 2 | **Neon Free's monthly compute cap is a hard stop.** Estimated to run short around 70–100 active users | Daily usage check; upgrade at 60%. Previews in their own Neon project; no probe or health check wakes production needlessly |
 | 3 | **Vercel Hobby is for non-commercial use.** A free product with no payments or ads is arguably outside that, but Vercel decides | Move to Pro before any monetisation, and at once if Vercel asks |
 | 4 | Neon Free keeps 6 hours of restore history | Our own daily encrypted backups, 30 days |
-| 5 | **MCP protocol churn** (2026-07-28 is new) | Negotiate three versions; contract tests per version; the P1 spike connects real Claude and ChatGPT first |
+| 5 | **MCP protocol churn** (2026-07-28 is new) | Negotiate three versions; contract tests per version; the P1 spike connected real Claude (2026-07-28) and OpenAI's Codex (2025-06-18) |
 | 6 | **Auth library maturity** (OAuth provider + CIMD in Better Auth are recent) | Our resource server is standard JWT checks; a fallback library; the spike decides |
 | 7 | An RLS mistake would be a leak | `FORCE` RLS, composite keys, one entry point, a schema test for every `ledger` table, and the isolation suite in CI |
 | 8 | Cost rises past ~100 users (~$35–45/month at 1,000) | Accepted; still under the $50 ceiling (§9.4) |

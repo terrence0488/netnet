@@ -9,7 +9,6 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/mcp", "destination": "/api" },
-    { "source": "/oauth2/(.*)", "destination": "/api" },
     { "source": "/.well-known/(.*)", "destination": "/api" },
     { "source": "/app", "destination": "/app/index.html" },
     { "source": "/app/(.*)", "destination": "/app/index.html" }
@@ -26,7 +25,7 @@
       ]
     },
     {
-      "source": "/(api|api/.*|mcp|oauth2/.*|\\.well-known/.*)",
+      "source": "/(api|api/.*|mcp|\\.well-known/.*)",
       "headers": [{ "key": "Cache-Control", "value": "private, no-store" }]
     },
     {

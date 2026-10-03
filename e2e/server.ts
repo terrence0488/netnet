@@ -10,7 +10,7 @@ import { extname, join, normalize, resolve } from 'node:path';
 
 const DIST = resolve(import.meta.dirname, '..', 'dist');
 const PORT = Number(process.env.PORT ?? 3100);
-const FUNCTION_ROUTE = /^\/(api(\/|$)|mcp$|oauth2\/|\.well-known\/)/;
+const FUNCTION_ROUTE = /^\/(api(\/|$)|mcp$|\.well-known\/)/;
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',

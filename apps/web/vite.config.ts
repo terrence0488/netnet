@@ -19,7 +19,6 @@ export default defineConfig({
     proxy: {
       '/api': API,
       '/mcp': API,
-      '/oauth2': API,
       '/.well-known': API,
     },
   },
