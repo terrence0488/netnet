@@ -1,7 +1,25 @@
 /**
  * Pure domain logic and chart geometry (CONVENTIONS §3): no I/O, no clock, no randomness.
- * `today` and ids are always passed in.
+ * `today` and ids are always passed in. Every figure the product shows or tells an agent comes
+ * from here (CONVENTIONS §5).
  */
+
+export { accessBucket, accessRule, resolveAccess } from './access';
+export { baselineChange } from './baseline';
+export { addDays, addMonths, daysBetween, isCalendarDate } from './dates';
+export {
+  DUPLICATE_SIMILARITY,
+  MAX_CANDIDATES,
+  likelyDuplicates,
+  nameSimilarity,
+  normaliseName,
+} from './duplicates';
+export { filterHoldings } from './filter';
+export { MAX_MINOR, convert, fromMinor, minorRate, toMinor } from './money';
+export { chainValue, packChain, typeLabel } from './pack-chain';
+export { compareValues, latestValues, position } from './position';
+export { series } from './series';
+export { staleness } from './staleness';
 
 /** Marks a branch the type system has proven unreachable, for exhaustive switches. */
 export function assertNever(value: never): never {
