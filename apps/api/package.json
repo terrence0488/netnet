@@ -9,6 +9,7 @@
       "types": "./src/vercel.ts",
       "default": "./dist/vercel.js"
     },
+    "./content/publish": "./src/content/publish.ts",
     "./db/bootstrap": "./src/db/bootstrap.ts",
     "./db/client": "./src/db/client.ts",
     "./db/migrate": "./src/db/migrate.ts",

@@ -18,6 +18,14 @@ describe('GET /api/health', () => {
   });
 });
 
+describe('content routes', () => {
+  it('serves content under /api/content, checking the path before any database read', async () => {
+    const res = await app.request('/api/content/nothing/generic@1');
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ error: { code: 'VALIDATION_FAILED' } });
+  });
+});
+
 describe('unknown routes', () => {
   it('answer NOT_FOUND in the error shape', async () => {
     const res = await app.request('/api/nothing-here', { method: 'POST' });

@@ -36,10 +36,13 @@ export function requestContext(): MiddlewareHandler<AppEnv> {
   };
 }
 
-/** Function responses carry personal data: never cached anywhere (architecture §5.2). */
+/**
+ * Function responses carry personal data: never cached anywhere (architecture §5.2). A route that
+ * serves only public, immutable data (a published content version) sets its own Cache-Control.
+ */
 export function noStore(): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
     await next();
-    c.header('Cache-Control', 'private, no-store');
+    if (!c.res.headers.has('Cache-Control')) c.header('Cache-Control', 'private, no-store');
   };
 }
