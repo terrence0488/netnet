@@ -29,6 +29,9 @@ const countryCode = z
   .string()
   .regex(/^[A-Z]{2}$/, 'Use an ISO 3166-1 alpha-2 code in capitals, such as "SG".');
 
+/** A country as the country list keys it: ISO 3166-1 alpha-2, in capitals. */
+export const countryCodeSchema = countryCode;
+
 const locale = z.string().refine((s) => {
   try {
     return Intl.getCanonicalLocales(s)[0] === s;
