@@ -699,7 +699,9 @@ Threshold alerts stay reserved (PRD §4.2).
 type Message =                                     // typed parameters, never free text
   | { kind: 'reminder.comeback'; agentName?: string }                           // J12
   | { kind: 'security.agent_connected'; agentName: string; nameVerified: boolean;
-      connectedAt: string /* ISO instant */; timeZone: string };                // J5
+      connectedAt: string /* ISO instant */; timeZone: string }                 // J5
+  | { kind: 'account.verify_email'; token: string }                             // J1
+  | { kind: 'account.reset_password'; token: string };                          // §8
   // later: 'agent.wrote' (candidate after launch), 'threshold.crossed' (reserved, PRD §4.2)
 
 type Delivery = { channel: 'push' | 'email' | null; devices?: number; reason?: 'off' | 'nowhere' | 'failed' };
