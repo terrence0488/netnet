@@ -65,6 +65,8 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Ten launch packs (SG, MY, ID, PH, TH, VN, HK, IN, AU, GB), each reviewed by someone who knows the market. Other countries get generic, and their country is recorded | Covers where the first users live and hold assets; the recorded country says which pack to write next |
 | Packs and agent guides are versioned, validated, audited content, editable later through an admin portal with no access to user data. A pack edit never reclassifies an existing holding | They change more often than the product; one edited default must not silently move everyone's "could use" figure |
 | Money is stored in integer minor units. The FX rate for the value's date is fixed at write, stored, exported and readable by the agent, but not displayed | No float drift; periods are not distorted by later FX moves; the rate is almost never wanted on screen |
+| A change against a baseline is worked out per holding and summed; a holding first valued after the baseline counts from its first value | Adding a holding is not growth, and the total and every row are measured against the same thing |
+| The calendar baselines are month ends: last month is the end of last month, last quarter the end of the month three months back, last year the end of the same month last year; Jan 1 is 1 January | Statements are dated at month ends, so the comparison is like with like, and "since 31 Aug" reads as a fixed point |
 
 ## Onboarding and agents
 
@@ -121,6 +123,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Vercel (Hobby) + Neon Postgres (Free) in Singapore; one TypeScript codebase, one Hono function; upgrades on measured triggers (architecture §9.4) | $0 for the first ~70–100 users, conventional Postgres, per-PR previews with their own database branch |
 | The function is the API bundled by esbuild into one file (`apps/api/dist/vercel.js`), which `api/index.ts` re-exports | Vercel compiles TypeScript file by file and cannot run workspace packages from source; one self-contained file runs the same in CI's E2E and on Vercel |
 | Per-user isolation by Postgres row-level security with `FORCE`, composite keys and one `withUser()` entry | Enforced by the database, not by remembering a filter (N4) |
+| One ISO 4217 table, in contracts; core imports it by its zod-free path, `@netnet/contracts/currencies`, the one value core takes from contracts | One list to keep current, and core stays free of zod |
 | Better Auth for accounts and the agents' OAuth 2.1 server (CIMD and DCR); our own MCP token check | No hand-rolled security code; protocol support stays in our hands |
 | The OAuth endpoints are Better Auth's own paths, `/api/auth/oauth2/*` and `/api/auth/jwks` | Clients find them from the server's metadata, so a rewrite to other paths would be a route to maintain for nothing |
 | MCP is stateless Streamable HTTP across three protocol versions, with one summary tool, `get_financial_context`, of at most 8 KB | Clients migrate at different speeds; one dense call answers a question |
