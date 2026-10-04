@@ -1,0 +1,15 @@
+[
+  { "date": "2026-07-31", "base": "USD", "quote": "AED", "rate": 3.6725 },
+  { "date": "2026-07-31", "base": "USD", "quote": "EUR", "rate": 0.85837 },
+  { "date": "2026-07-31", "base": "USD", "quote": "KWD", "rate": 0.30574 },
+  { "date": "2026-07-31", "base": "USD", "quote": "TWD", "rate": 29.412 },
+  { "date": "2026-07-31", "base": "USD", "quote": "USD", "rate": 1.0 },
+  { "date": "2026-07-31", "base": "USD", "quote": "VND", "rate": 26145 },
+  { "date": "2026-07-31", "base": "USD", "quote": "XAU", "rate": 0.00030125 },
+  { "date": "2026-08-01", "base": "USD", "quote": "AED", "rate": 3.6725 },
+  { "date": "2026-08-01", "base": "USD", "quote": "VND", "rate": 26150 },
+  { "date": "2026-08-03", "base": "USD", "quote": "AED", "rate": 3.6725 },
+  { "date": "2026-08-03", "base": "USD", "quote": "KWD", "rate": 0.30561 },
+  { "date": "2026-08-03", "base": "USD", "quote": "TWD", "rate": 29.385 },
+  { "date": "2026-08-03", "base": "USD", "quote": "VND", "rate": 26160 }
+]

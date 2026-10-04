@@ -71,8 +71,9 @@ jobs:
       - name: Integration tests (Postgres 18)
         run: pnpm test:int
       # What CI runs against a preview's Neon branch, on an empty database, twice: every step must
-      # be safe to repeat. The owner here is the service's superuser.
-      - name: Bootstrap, migrate and seed an empty database, twice
+      # be safe to repeat (the second publish changes nothing). The owner here is the service's
+      # superuser.
+      - name: Bootstrap, migrate, seed and publish content to an empty database, twice
         env:
           DATABASE_OWNER_URL: ${{ env.DATABASE_URL }}
         run: |
@@ -86,6 +87,7 @@ jobs:
             pnpm --silent db:bootstrap
             pnpm --silent db:migrate
             DATABASE_URL="$app_url" pnpm --silent db:seed
+            DATABASE_URL="$app_url" pnpm --silent content:publish --env local
           done
       - name: Build
         run: pnpm build
@@ -182,10 +184,10 @@ jobs:
       - name: Install
         if: steps.vercel.outputs.ready == 'true'
         run: pnpm install --frozen-lockfile
-      # Bootstrap and migrations run as netnet_owner on the branch's direct connection; the seed
-      # runs as netnet_app through the pooler, which is the connection string the preview gets.
-      # Every value with a password in it is masked before anything could print it.
-      - name: Make or reuse the Neon branch, then migrate and seed it
+      # Bootstrap and migrations run as netnet_owner on the branch's direct connection; the seed and
+      # the content publish run as netnet_app through the pooler, which is the connection string the
+      # preview gets. Every value with a password in it is masked before anything could print it.
+      - name: Make or reuse the Neon branch, then migrate, seed and publish content to it
         id: database
         if: steps.neon.outputs.ready == 'true'
         env:
@@ -295,8 +297,10 @@ jobs:
           DATABASE_OWNER_URL="$owner_url" pnpm --silent db:bootstrap
           DATABASE_OWNER_URL="$owner_url" pnpm --silent db:migrate
           DATABASE_URL="$app_url" pnpm --silent db:seed
+          # Content is published after the migrations, as every environment's is (CONVENTIONS §8).
+          DATABASE_URL="$app_url" pnpm --silent content:publish --env preview
           echo "database_url=$app_url" >> "$GITHUB_OUTPUT"
-          echo "Database: the Neon branch $BRANCH_NAME of the preview project, database $database, migrated and seeded with fictional data." >> "$GITHUB_STEP_SUMMARY"
+          echo "Database: the Neon branch $BRANCH_NAME of the preview project, database $database, migrated, seeded with fictional data, and with content/ published." >> "$GITHUB_STEP_SUMMARY"
       # The CLI needs the project's owner (a team id for a Hobby team), so it is read from the
       # project itself rather than trusted from the VERCEL_ORG_ID secret.
       - name: Find the project's owner
