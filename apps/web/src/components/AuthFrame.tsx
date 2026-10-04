@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { cx } from './cx';
 import { Wordmark } from './Wordmark';
 import styles from './AuthFrame.module.css';
 
@@ -81,22 +80,9 @@ export function FormProblem({ children }: { readonly children: ReactNode }) {
   );
 }
 
-/** A quiet line: a hint, or the result of a small action. */
-export function Hint({
-  children,
-  live = false,
-  className,
-}: {
-  readonly children: ReactNode;
-  /** Read out when it changes, as the result of an action is. */
-  readonly live?: boolean;
-  readonly className?: string;
-}) {
-  return (
-    <p className={cx(styles.hint, className)} aria-live={live ? 'polite' : undefined}>
-      {children}
-    </p>
-  );
+/** A quiet line under a question: why it is asked, or that it may be skipped. */
+export function Hint({ children }: { readonly children: ReactNode }) {
+  return <p className={styles.hint}>{children}</p>;
 }
 
 /** The ways on from the screen: log in instead, create an account, forgot password. */
