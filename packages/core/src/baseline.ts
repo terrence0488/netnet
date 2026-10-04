@@ -1,68 +1,95 @@
-import type { Baseline, Change, Point } from '@netnet/contracts';
-import { addMonths } from './dates';
+import type { Baseline, Change, HoldingFilter, HoldingIn, ValueIn } from '@netnet/contracts';
+import { addMonths, bucketEnd } from './dates';
+import { filterHoldings } from './filter';
+import { compareValues } from './position';
 
-/** The index of the last point dated on or before `date`, or -1. Points are in date order. */
-function lastOnOrBefore(points: readonly Point[], date: string): number {
-  for (let i = points.length - 1; i >= 0; i -= 1) {
-    if (points[i]!.date <= date) return i;
-  }
-  return -1;
-}
+type CalendarBaseline = Exclude<Baseline, 'initial' | 'last_update'>;
 
 /**
- * The point before the latest change in the total, at the start of its run of equal totals: what
- * the picture was before the last update that moved it.
+ * The date a calendar baseline compares with (PRD J4): the end of last month, of the month three
+ * months back or of the same month last year, or 1 January.
  */
-function beforeLastUpdate(points: readonly Point[], now: number): number {
-  let i = now;
-  while (i > 0 && points[i]!.total === points[i - 1]!.total) i -= 1;
-  if (i === 0) return 0;
-  let start = i - 1;
-  while (start > 0 && points[start - 1]!.total === points[start]!.total) start -= 1;
-  return start;
-}
-
-/** The date a calendar baseline compares with (PRD J4): relative to today, or 1 January. */
-function baselineDate(baseline: Exclude<Baseline, 'initial' | 'last_update'>, today: string) {
+export function baselineDate(baseline: CalendarBaseline, today: string): string {
   switch (baseline) {
     case 'last_month':
-      return addMonths(today, -1);
+      return bucketEnd(addMonths(today, -1), 'month');
     case 'last_quarter':
-      return addMonths(today, -3);
+      return bucketEnd(addMonths(today, -3), 'month');
     case 'year_start':
       return `${today.slice(0, 4)}-01-01`;
     case 'last_year':
-      return addMonths(today, -12);
+      return bucketEnd(addMonths(today, -12), 'month');
   }
 }
 
+/** The last of `values` (in value order) dated on or before `date`. */
+function lastOnOrBefore(values: readonly ValueIn[], date: string): ValueIn | undefined {
+  for (let i = values.length - 1; i >= 0; i -= 1) {
+    if (values[i]!.date <= date) return values[i];
+  }
+  return undefined;
+}
+
 /**
- * The change from a baseline to today (PRD J4), on a series from `series` (a `day` series gives
- * exact dates). Today's figure is the last point on or before `today`. `initial` compares with the
- * first point; `last_update` with the total before the latest change; the calendar baselines with
- * the last point on or before their date, or the first point when the series starts later. With
- * nothing earlier than today's point, every figure is null.
+ * The change from a baseline to today (PRD J4), worked out per holding and summed, so the total
+ * and every row are measured against the same thing. For one holding's own change, pass just
+ * that holding. Each holding counted (never archived; only those the filter keeps) compares its
+ * latest value on or before `today` with: its first value (`initial`); its value before that
+ * (`last_update`); or its latest value on or before the baseline's date (the calendar
+ * baselines). A holding first valued after that date compares with its first value, so adding
+ * it is never counted as growth. Amounts are each value's stored `baseMinor`, negative for a
+ * liability.
+ *
+ * `since` is the baseline's date when some holding had a value by then; otherwise, and for
+ * `initial` and `last_update`, the earliest value compared with. With nothing to compare (no
+ * value by today, or no holding with an earlier value), every figure is null.
  */
 export function baselineChange(
-  points: readonly Point[],
+  values: readonly ValueIn[],
+  holdings: readonly HoldingIn[],
   baseline: Baseline,
   today: string,
+  filter?: HoldingFilter,
 ): Change {
-  const now = lastOnOrBefore(points, today);
-  const base =
-    baseline === 'initial'
-      ? 0
-      : baseline === 'last_update'
-        ? beforeLastUpdate(points, now)
-        : Math.max(0, lastOnOrBefore(points, baselineDate(baseline, today)));
-  const from = points[base];
-  const to = points[now];
-  if (now <= base || !from || !to) return { baseline, since: null, amount: null, pct: null };
-  const amount = to.total - from.total;
+  const date =
+    baseline === 'initial' || baseline === 'last_update'
+      ? undefined
+      : baselineDate(baseline, today);
+  const counted = filterHoldings(holdings, filter);
+  const tracks = new Map(counted.map((h) => [h.id, [] as ValueIn[]]));
+  for (const value of values) {
+    if (value.date <= today) tracks.get(value.holdingId)?.push(value);
+  }
+
+  let now = 0;
+  let base = 0;
+  let valuedByDate = false;
+  let earliest: string | undefined;
+  for (const holding of counted) {
+    const track = tracks.get(holding.id)!.sort(compareValues);
+    const latest = track.at(-1);
+    if (!latest) continue;
+    const asOfDate = date === undefined ? undefined : lastOnOrBefore(track, date);
+    const from =
+      baseline === 'initial'
+        ? track[0]!
+        : baseline === 'last_update'
+          ? (track.at(-2) ?? latest)
+          : (asOfDate ?? track[0]!);
+    const sign = holding.kind === 'liability' ? -1 : 1;
+    now += sign * latest.baseMinor;
+    base += sign * from.baseMinor;
+    if (asOfDate) valuedByDate = true;
+    if (from !== latest && (earliest === undefined || from.date < earliest)) earliest = from.date;
+  }
+
+  const since = valuedByDate ? date! : earliest;
+  if (since === undefined) return { baseline, since: null, amount: null, pct: null };
+  const amount = now - base;
   return {
     baseline,
-    since: from.date,
+    since,
     amount,
-    pct: from.total === 0 ? null : (amount / Math.abs(from.total)) * 100,
+    pct: base === 0 ? null : (amount / Math.abs(base)) * 100,
   };
 }
