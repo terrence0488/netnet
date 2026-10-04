@@ -3,7 +3,12 @@ import { isConnectionActive } from '../db/agent-connections';
 import { database, type Database, type Transaction } from '../db/client';
 import { isId } from '../lib/ids';
 
-/** Who is acting: the person on the web, an agent through one of their connections, or NetNet. */
+/**
+ * Who is acting: the person on the web, an agent through one of their connections, or NetNet. An
+ * agent's `clientName` is the name its values and audit entries carry: the guide's name for a
+ * connection classified `claude` or `chatgpt`, else the name it registered with
+ * (`agentClientName()` in `./ledger`).
+ */
 export type Actor = {
   kind: 'user' | 'agent' | 'system';
   connectionId?: string;
@@ -14,12 +19,13 @@ export type Actor = {
  * What `withUser` hands its callback: the Drizzle transaction (`db`), with `app.user_id` set for
  * it alone, plus the actor and the clock. `now()` is the instant the transaction got under way
  * (after the write lock, for a write), the same on every call, so one write's rows share it.
- * P1-T10 builds the `Ledger` interface on this.
+ * `write` says whether it holds the write lock. `openLedger()` builds the `Ledger` on this.
  */
 export interface LedgerTx {
   readonly db: Transaction;
   readonly userId: string;
   readonly actor: Actor;
+  readonly write: boolean;
   now(): Date;
 }
 
@@ -82,7 +88,7 @@ export function createWithUser(deps: () => WithUserDeps): WithUser {
           }
         }
         const startedAt = clock().getTime();
-        return fn({ db: tx, userId, actor, now: () => new Date(startedAt) });
+        return fn({ db: tx, userId, actor, write, now: () => new Date(startedAt) });
       },
       // A read cannot write by mistake, so every write goes through the lock (CONVENTIONS §10).
       { accessMode: write ? 'read write' : 'read only' },
