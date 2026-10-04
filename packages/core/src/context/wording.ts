@@ -4,7 +4,7 @@ import type { FinancialContext } from '@netnet/contracts';
  * The context's fixed English (architecture §7.5). It states facts and uncertainty, never what to
  * do (PRD §2.4, N2): a test scans every sentence here for advice. The answer guide is an opinion
  * about the interaction, universal and not local knowledge, so it lives in code; what a holding
- * is comes from the pack (`meaning`).
+ * is comes from the pack (`types[].meaning`).
  */
 
 /** Which figure answers which kind of question (PRD §2.4's answer-shape layer). */

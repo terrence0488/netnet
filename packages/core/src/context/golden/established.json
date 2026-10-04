@@ -128,6 +128,32 @@
       }
     ]
   },
+  "types": [
+    {
+      "type": "Property",
+      "meaning": "Land or a building. Counts toward net worth; turning it into money means selling it."
+    },
+    {
+      "type": "Mortgage",
+      "meaning": "A loan secured on property. Reduces net worth by the amount still owed."
+    },
+    {
+      "type": "Workplace pension",
+      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month."
+    },
+    {
+      "type": "Shares & funds",
+      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price."
+    },
+    {
+      "type": "Startup equity",
+      "meaning": "Shares in a private company or awards not yet vested. Counts at an estimated value."
+    },
+    {
+      "type": "Current account",
+      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now."
+    }
+  ],
   "holdings": [
     {
       "id": "hld_015",
@@ -136,7 +162,6 @@
       "tags": [
         "Joint"
       ],
-      "meaning": "Land or a building. Counts toward net worth; turning it into money means selling it.",
       "access": "locked",
       "access_reason": "it’s your home",
       "until": "while you live in it",
@@ -161,7 +186,6 @@
       "tags": [
         "Joint"
       ],
-      "meaning": "A loan secured on property. Reduces net worth by the amount still owed.",
       "access": "owed",
       "access_reason": null,
       "until": null,
@@ -184,7 +208,6 @@
       "name": "Rental flat",
       "type": "Property",
       "tags": [],
-      "meaning": "Land or a building. Counts toward net worth; turning it into money means selling it.",
       "access": "illiquid",
       "access_reason": "you’d have to sell it first",
       "until": null,
@@ -207,7 +230,6 @@
       "name": "Workplace pension",
       "type": "Workplace pension",
       "tags": [],
-      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
       "access": "locked",
       "access_reason": "a retirement account is locked",
       "until": "until you’re eligible to withdraw",
@@ -232,7 +254,6 @@
       "tags": [
         "Kids"
       ],
-      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
       "access": "illiquid",
       "access_reason": "you’d sell the shares first",
       "until": null,
@@ -255,7 +276,6 @@
       "name": "Tech growth fund",
       "type": "Shares & funds",
       "tags": [],
-      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
       "access": "illiquid",
       "access_reason": "you’d sell the shares first",
       "until": null,
@@ -278,7 +298,6 @@
       "name": "Old employer pension",
       "type": "Workplace pension",
       "tags": [],
-      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
       "access": "locked",
       "access_reason": "a retirement account is locked",
       "until": "until you’re eligible to withdraw",
@@ -301,7 +320,6 @@
       "name": "Holiday cabin share",
       "type": "Property",
       "tags": [],
-      "meaning": "Land or a building. Counts toward net worth; turning it into money means selling it.",
       "access": "undecided",
       "access_reason": null,
       "until": null,
@@ -324,7 +342,6 @@
       "name": "Bond ladder",
       "type": "Shares & funds",
       "tags": [],
-      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
       "access": "illiquid",
       "access_reason": "you’d sell the shares first",
       "until": null,
@@ -347,7 +364,6 @@
       "name": "Personal pension",
       "type": "Workplace pension",
       "tags": [],
-      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
       "access": "locked",
       "access_reason": "a retirement account is locked",
       "until": "until you’re eligible to withdraw",
@@ -370,7 +386,6 @@
       "name": "Startup options",
       "type": "Startup equity",
       "tags": [],
-      "meaning": "Shares in a private company or awards not yet vested. Counts at an estimated value.",
       "access": "locked",
       "access_reason": "you said it’s tied up",
       "until": null,
@@ -393,7 +408,6 @@
       "name": "Brokerage US shares",
       "type": "Shares & funds",
       "tags": [],
-      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
       "access": "illiquid",
       "access_reason": "you’d sell the shares first",
       "until": null,
@@ -410,27 +424,68 @@
         "amount": 0,
         "pct": 0
       }
+    },
+    {
+      "id": "hld_002",
+      "name": "Lantern Bank savings",
+      "type": "Current account",
+      "tags": [
+        "Emergency fund",
+        "Joint"
+      ],
+      "access": "accessible",
+      "access_reason": "it’s money in the bank",
+      "until": null,
+      "value": {
+        "amount": 30100,
+        "currency": "EUR",
+        "base": 30100,
+        "as_of": "2026-09-25",
+        "age_days": 2,
+        "stale": false,
+        "written_by": "agent:Claude"
+      },
+      "change": {
+        "amount": 600,
+        "pct": 2.03
+      }
+    },
+    {
+      "id": "hld_021",
+      "name": "Employee share plan",
+      "type": "Startup equity",
+      "tags": [],
+      "access": "illiquid",
+      "access_reason": "you’d sell it first",
+      "until": null,
+      "value": {
+        "amount": 24100,
+        "currency": "USD",
+        "base": 22172,
+        "as_of": "2026-09-15",
+        "age_days": 12,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 1196,
+        "pct": 5.7
+      }
     }
   ],
   "omitted": {
-    "holdings": 18,
+    "holdings": 16,
     "by_type": [
       {
         "type": "Current account",
-        "holdings": 6,
-        "assets": 59551.7,
+        "holdings": 5,
+        "assets": 29451.7,
         "owed": 0
       },
       {
         "type": "Vehicle",
         "holdings": 2,
         "assets": 23600,
-        "owed": 0
-      },
-      {
-        "type": "Startup equity",
-        "holdings": 1,
-        "assets": 22172,
         "owed": 0
       },
       {

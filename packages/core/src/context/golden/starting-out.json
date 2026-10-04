@@ -73,13 +73,26 @@
       }
     ]
   },
+  "types": [
+    {
+      "type": "Loan",
+      "meaning": "Money borrowed. Reduces net worth by the amount still owed."
+    },
+    {
+      "type": "Current account",
+      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now."
+    },
+    {
+      "type": "Other",
+      "meaning": "Something of value that fits no other type. Counts toward net worth."
+    }
+  ],
   "holdings": [
     {
       "id": "hld_003",
       "name": "Study loan",
       "type": "Loan",
       "tags": [],
-      "meaning": "Money borrowed. Reduces net worth by the amount still owed.",
       "access": "owed",
       "access_reason": null,
       "until": null,
@@ -104,7 +117,6 @@
       "tags": [
         "Emergency fund"
       ],
-      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now.",
       "access": "accessible",
       "access_reason": "it’s money in the bank",
       "until": null,
@@ -127,7 +139,6 @@
       "name": "Gold coins",
       "type": "Other",
       "tags": [],
-      "meaning": "Something of value that fits no other type. Counts toward net worth.",
       "access": "undecided",
       "access_reason": null,
       "until": null,

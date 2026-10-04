@@ -15,8 +15,6 @@ const holding = {
   name: 'Workplace pension',
   type: 'Retirement account',
   tags: ['Joint'],
-  meaning:
-    'A retirement account. Counts toward net worth, never toward what can be spent this month.',
   access: 'locked',
   access_reason: 'a retirement account is locked',
   until: 'until you’re eligible to withdraw',
@@ -71,6 +69,13 @@ const example = {
     ],
     concentration: [{ holding_id: 'hld_01J9ZK3M4N5P6Q7R8S9T0V1W2Y', name: 'Flat', share: 0.41 }],
   },
+  types: [
+    {
+      type: 'Retirement account',
+      meaning:
+        'A retirement account. Counts toward net worth, never toward what can be spent this month.',
+    },
+  ],
   holdings: [holding, { ...holding, id: 'hld_2', access: 'owed', value: null, change: null }],
   omitted: {
     holdings: 10,
@@ -85,7 +90,7 @@ describe('financialContextSchema', () => {
   it('converts to JSON Schema, as get_financial_context’s outputSchema', () => {
     const schema = z.toJSONSchema(financialContextSchema);
     expect(schema).toMatchObject({ type: 'object', additionalProperties: false });
-    expect(Object.keys(schema.properties ?? {})).toHaveLength(8);
+    expect(Object.keys(schema.properties ?? {})).toHaveLength(9);
   });
 
   it('accepts architecture §7.5’s example', () => {
@@ -101,6 +106,7 @@ describe('financialContextSchema', () => {
       'totals',
       'picture',
       'exposure',
+      'types',
       'holdings',
       'omitted',
     ]);
@@ -126,6 +132,11 @@ describe('financialContextSchema', () => {
       (d) => ({ ...d, holdings: Array.from({ length: 26 }, () => holding) }),
     ],
     ['an unknown access', (d) => ({ ...d, holdings: [{ ...holding, access: 'spendable' }] })],
+    [
+      'a meaning on a holding instead of in types',
+      (d) => ({ ...d, holdings: [{ ...holding, meaning: 'A retirement account.' }] }),
+    ],
+    ['a type without its meaning', (d) => ({ ...d, types: [{ type: 'Retirement account' }] })],
     [
       'a writer that is not web, system or an agent',
       (d) => ({
