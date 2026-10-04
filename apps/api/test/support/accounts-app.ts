@@ -92,6 +92,8 @@ export function accountsApp(db: TestDatabase): AccountsApp {
       db: () => db.appDb,
       baseCurrency: (userId) => baseCurrencyOf(db.withUser, userId),
       countries,
+      // These suites are about the profile; making the ledger is test/http's (me-init).
+      initLedger: () => Promise.resolve(),
     }),
   );
   app.route('/api/geo', geoRoutes(countries));

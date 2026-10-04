@@ -31,6 +31,7 @@ function appAs(user: SessionUser | null) {
       },
       baseCurrency: () => Promise.reject(new Error('the ledger was reached')),
       countries: () => Promise.resolve(COUNTRIES),
+      initLedger: () => Promise.reject(new Error('the ledger was reached')),
     }),
   );
   app.route(

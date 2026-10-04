@@ -7,13 +7,16 @@ import { accountOf, ensureProfile, updateProfile, type Profile } from '../db/pro
 import { COUNTRIES_KEY } from '../content/publish';
 import { contentStore, type ContentStore } from '../content/store';
 import { baseCurrencyOf } from '../ledger/base-currency';
-import { withUser } from '../ledger/with-user';
+import { appLedgerOptions } from '../ledger/content';
+import { createWithLedger, type LedgerOptions } from '../ledger/ledger';
+import { withUser, type WithUser } from '../ledger/with-user';
 import type { AppEnv } from '../lib/context';
 import { AppError } from '../lib/errors';
 
 /**
  * `GET /api/me` and `PATCH /api/me` (architecture §7.2): the signed-in person's profile. The user
- * is the session's, never one named in the request (CONVENTIONS §3).
+ * is the session's, never one named in the request (CONVENTIONS §3). The first country the person
+ * confirms makes their ledger, in the same request.
  */
 
 export interface MeDeps {
@@ -22,6 +25,11 @@ export interface MeDeps {
   baseCurrency: (userId: string) => Promise<string | null>;
   /** The live country list (content). */
   countries: () => Promise<Countries>;
+  /**
+   * Makes the person's ledger in `baseCurrency`, with their country's pack types (generic only
+   * when it has no pack). Called on the first country confirmation; does nothing once it exists.
+   */
+  initLedger: (userId: string, profile: Profile, baseCurrency: string) => Promise<void>;
 }
 
 /** A profile change is a few short fields. */
@@ -41,10 +49,32 @@ export function liveCountries(store: () => ContentStore): () => Promise<Countrie
   };
 }
 
+/**
+ * `MeDeps.initLedger` over `withUser` and the person's Ledger options: `Ledger.init` with the pack
+ * chain live now for their country (architecture §7.3), as the person.
+ */
+export function ledgerInit(
+  withLedgerUser: WithUser,
+  options: (profile: Profile) => LedgerOptions,
+): MeDeps['initLedger'] {
+  return async (userId, profile, baseCurrency) => {
+    const ledgerOptions = options(profile);
+    const chain = await ledgerOptions.content.chain();
+    const pack = chain.map((p) => ({ key: p.id, version: p.version }));
+    await createWithLedger(withLedgerUser, ledgerOptions)(
+      userId,
+      { kind: 'user' },
+      (ledger) => ledger.init({ baseCurrency, pack }),
+      { write: true },
+    );
+  };
+}
+
 const defaultDeps: MeDeps = {
   db: database,
   baseCurrency: (userId) => baseCurrencyOf(withUser, userId),
   countries: liveCountries(contentStore),
+  initLedger: ledgerInit(withUser, appLedgerOptions),
 };
 
 function invalid(fields: Record<string, string>): AppError {
@@ -119,7 +149,12 @@ export function meRoutes(deps: MeDeps = defaultDeps): Hono<AppEnv> {
     async (c) => {
       const { userId } = await requireSession(c);
       const change = parseChange(await readJson(c));
-      if (change.country !== undefined && !Object.hasOwn(await deps.countries(), change.country)) {
+      const countries = change.country === undefined ? undefined : await deps.countries();
+      const country =
+        change.country !== undefined && countries && Object.hasOwn(countries, change.country)
+          ? countries[change.country]
+          : undefined;
+      if (change.country !== undefined && country === undefined) {
         throw invalid({
           country: 'Choose a country from the list: an ISO 3166-1 code, such as "SG".',
         });
@@ -129,6 +164,11 @@ export function meRoutes(deps: MeDeps = defaultDeps): Hono<AppEnv> {
         throw invalid({
           segment: 'It is set once, in onboarding, and cannot be changed now. Leave it out.',
         });
+      }
+      // The first confirmed country makes the ledger, in its currency (PRD J1). A later change of
+      // country leaves the ledger as it is (P3).
+      if (country !== undefined && (await deps.baseCurrency(userId)) === null) {
+        await deps.initLedger(userId, updated, country.currency);
       }
       return c.json(await view(deps, userId, updated));
     },
