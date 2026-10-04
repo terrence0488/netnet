@@ -7,6 +7,7 @@ describe('error codes', () => {
       VALIDATION_FAILED: 400,
       OUT_OF_RANGE: 400,
       CURRENCY_UNSUPPORTED: 400,
+      UNAUTHENTICATED: 401,
       NOT_FOUND: 404,
       LIKELY_DUPLICATE: 409,
       UNDO_CONFLICT: 409,
@@ -16,7 +17,7 @@ describe('error codes', () => {
       RATE_LIMITED: 429,
       INTERNAL: 500,
     });
-    expect(ERROR_CODES).toHaveLength(11);
+    expect(ERROR_CODES).toHaveLength(12);
   });
 
   it('accepts an error body with fields and code-specific details', () => {
