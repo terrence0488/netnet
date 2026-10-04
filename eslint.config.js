@@ -92,14 +92,16 @@ export default tseslint.config(
             {
               name: '@netnet/contracts',
               allowTypeImports: true,
-              message: 'core may import only types from @netnet/contracts (CONVENTIONS §3).',
+              message:
+                'core may import only types from @netnet/contracts, and its currency table from @netnet/contracts/currencies (CONVENTIONS §3).',
             },
           ],
           patterns: [
             RELATIVE_OUT_OF_PACKAGE,
             {
-              regex: String.raw`^(?!\.{1,2}/|@netnet/contracts$|d3-)`,
-              message: 'core imports only @netnet/contracts types and d3-* maths (CONVENTIONS §3).',
+              regex: String.raw`^(?!\.{1,2}/|@netnet/contracts(/currencies)?$|d3-)`,
+              message:
+                'core imports only @netnet/contracts types, @netnet/contracts/currencies and d3-* maths (CONVENTIONS §3).',
             },
           ],
         },

@@ -18,6 +18,32 @@ describe('GET /api/health', () => {
   });
 });
 
+describe('POST /api/events', () => {
+  it('is mounted, and refuses a server-only event before touching the database', async () => {
+    const res = await app.request('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'value_recorded', props: { source: 'web' } }),
+    });
+    expect(res.status).toBe(400);
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store');
+    expect(await res.json()).toMatchObject({ error: { code: 'VALIDATION_FAILED' } });
+  });
+});
+
+describe('content and cron routes', () => {
+  it('guards the FX cron with the bearer secret', async () => {
+    const res = await app.request('/api/cron/fx');
+    expect(res.status).toBe(401);
+  });
+
+  it('serves content under /api/content, checking the path before any database read', async () => {
+    const res = await app.request('/api/content/nothing/generic@1');
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ error: { code: 'VALIDATION_FAILED' } });
+  });
+});
+
 describe('unknown routes', () => {
   it('answer NOT_FOUND in the error shape', async () => {
     const res = await app.request('/api/nothing-here', { method: 'POST' });

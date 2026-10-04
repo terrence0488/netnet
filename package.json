@@ -16,10 +16,12 @@
     "test:int": "vitest run --project integration --passWithNoTests",
     "test:e2e": "playwright test",
     "content:check": "tsx scripts/content-check.ts",
+    "content:publish": "tsx scripts/content-publish.ts",
     "db:bootstrap": "tsx scripts/db-bootstrap.ts",
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:seed": "tsx scripts/db-seed.ts",
-    "db:generate": "tsx scripts/db-generate.ts"
+    "db:generate": "tsx scripts/db-generate.ts",
+    "fx:backfill": "tsx scripts/fx-backfill.ts"
   },
   "dependencies": {
     "@netnet/api": "workspace:*"
@@ -31,6 +33,7 @@
     "@netnet/contracts": "workspace:*",
     "@playwright/test": "1.63.0",
     "@types/node": "22.20.4",
+    "@vitest/coverage-v8": "5.0.3",
     "drizzle-kit": "0.31.11",
     "eslint": "10.11.0",
     "eslint-config-prettier": "10.1.8",
