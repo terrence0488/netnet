@@ -78,6 +78,7 @@ const SPEC: Record<string, Record<string, SpecLeaf>> = {
       'VALIDATION_FAILED',
       'OUT_OF_RANGE',
       'CURRENCY_UNSUPPORTED',
+      'UNAUTHENTICATED',
       'NOT_FOUND',
       'LIKELY_DUPLICATE',
       'UNDO_CONFLICT',
