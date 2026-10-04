@@ -1,3 +1,4 @@
+import { agentConnectionSchema, approvalSchema, attemptSchema } from '@netnet/contracts';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createVerifyAccessToken, jwksFrom } from '../../src/auth/mcp-token';
 import { seedLedger } from '../../src/ledger/seed';
@@ -69,7 +70,9 @@ async function attempt(person: Person, id: string): Promise<Record<string, unkno
   const res = await person.browser.send(`/api/agent/attempts/${id}`);
   expect(res.status).toBe(200);
   await target.settle();
-  return body(res);
+  const read = await body(res);
+  expect(attemptSchema.safeParse(read).success).toBe(true);
+  return read;
 }
 
 async function events(userId: string, name?: string) {
@@ -110,7 +113,9 @@ describe('GET /api/agent/approval', () => {
     const { location } = await claude().authorize(person.browser);
     const res = await person.browser.send(`/api/agent/approval${location.search}`);
     expect(res.status).toBe(200);
-    expect(await body(res)).toEqual({
+    const view = await body(res);
+    expect(approvalSchema.safeParse(view).success).toBe(true);
+    expect(view).toEqual({
       clientName: 'Claude',
       registration: 'cimd',
       nameVerified: true,
@@ -618,6 +623,7 @@ describe('the Agent tab', () => {
     const res = await person.browser.send('/api/agent/connections');
     expect(res.status).toBe(200);
     const list = (await res.json()) as Record<string, unknown>[];
+    for (const item of list) expect(agentConnectionSchema.safeParse(item).success).toBe(true);
     expect(list).toEqual([
       {
         id: expect.stringMatching(/^con_/) as unknown,
