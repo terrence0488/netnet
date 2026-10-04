@@ -4,6 +4,8 @@ import type { Segment } from '@netnet/contracts';
 export interface SessionUser {
   /** The verified user id (`usr_…`), the only one `withUser` may be given (CONVENTIONS §3). */
   userId: string;
+  /** Whether the account's email is verified: connecting an agent needs it (PRD J1, J5). */
+  emailVerified: boolean;
   /** Set when the profile was loaded with the session; `track()` reads it itself otherwise. */
   segment?: Segment;
 }

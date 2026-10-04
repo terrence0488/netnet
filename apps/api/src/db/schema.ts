@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   bigint,
+  boolean,
   check,
   date,
   foreignKey,
@@ -16,11 +17,91 @@ import { checkCurrency, checkId, checkOneOf, instant } from './columns';
 
 /**
  * The `core` and `analytics` schemas (architecture §6.2, §6.4). `core` holds no money. Better
- * Auth's and its OAuth plugin's tables join `core` with their own tasks. Only `apps/api/src/db/**`
- * touches these tables (CONVENTIONS §3).
+ * Auth's OAuth plugin's tables join `core` with their own task. Only `apps/api/src/db/**` touches
+ * these tables (CONVENTIONS §3); Better Auth reaches its own through the adapter in `auth-adapter.ts`.
  */
 export const core = pgSchema('core');
 export const analytics = pgSchema('analytics');
+
+/*
+ * Better Auth's tables (architecture §6.2), as its Drizzle adapter addresses them: each table by
+ * the model name it is passed under, each column by its field name. Columns are snake_case and
+ * instants `timestamptz`. The user's id is ours, a `usr_` ULID, because `withUser` takes no other.
+ */
+
+export const user = core.table(
+  'user',
+  {
+    /** `usr_` */
+    id: text('id').primaryKey(),
+    /** Always empty: sign-up asks for nothing but an email and a password (PRD J1). */
+    name: text('name').notNull(),
+    /** Lowercase, as Better Auth stores it. Never logged, tracked or put in a message body. */
+    email: text('email').notNull().unique(),
+    emailVerified: boolean('email_verified').notNull().default(false),
+    /** Always null: NetNet keeps no picture of anyone. */
+    image: text('image'),
+    createdAt: instant('created_at').notNull().defaultNow(),
+    updatedAt: instant('updated_at').notNull().defaultNow(),
+  },
+  (t) => [checkId('user', t.id, 'usr')],
+);
+
+export const session = core.table(
+  'session',
+  {
+    id: text('id').primaryKey(),
+    expiresAt: instant('expires_at').notNull(),
+    /** The cookie's value, before its signature. */
+    token: text('token').notNull().unique(),
+    createdAt: instant('created_at').notNull().defaultNow(),
+    updatedAt: instant('updated_at').notNull(),
+    /** Always null: neither the address nor the browser is kept. */
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+  },
+  (t) => [index('session_user_id_idx').on(t.userId)],
+);
+
+/** A way to sign in: `credential` (the password's scrypt hash), and later Google and Apple. */
+export const account = core.table(
+  'account',
+  {
+    id: text('id').primaryKey(),
+    accountId: text('account_id').notNull(),
+    providerId: text('provider_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    accessToken: text('access_token'),
+    refreshToken: text('refresh_token'),
+    idToken: text('id_token'),
+    accessTokenExpiresAt: instant('access_token_expires_at'),
+    refreshTokenExpiresAt: instant('refresh_token_expires_at'),
+    scope: text('scope'),
+    password: text('password'),
+    createdAt: instant('created_at').notNull().defaultNow(),
+    updatedAt: instant('updated_at').notNull(),
+  },
+  (t) => [index('account_user_id_idx').on(t.userId)],
+);
+
+/** Short-lived tokens, such as a password reset's. */
+export const verification = core.table(
+  'verification',
+  {
+    id: text('id').primaryKey(),
+    identifier: text('identifier').notNull(),
+    value: text('value').notNull(),
+    expiresAt: instant('expires_at').notNull(),
+    createdAt: instant('created_at').notNull().defaultNow(),
+    updatedAt: instant('updated_at').notNull().defaultNow(),
+  },
+  (t) => [index('verification_identifier_idx').on(t.identifier)],
+);
 
 export const SEGMENTS = ['starting_out', 'accumulating', 'established', 'unknown'] as const;
 export type Segment = (typeof SEGMENTS)[number];

@@ -25,6 +25,20 @@ afterAll(async () => {
 const TABLES: Record<string, string> = {
   'core.profile':
     'user_id text, country text, time_zone text, segment text, onboarding_state text, created_at timestamptz',
+  'core.user':
+    'id text, name text, email text, email_verified boolean, image text, created_at timestamptz, ' +
+    'updated_at timestamptz',
+  'core.session':
+    'id text, expires_at timestamptz, token text, created_at timestamptz, updated_at timestamptz, ' +
+    'ip_address text, user_agent text, user_id text',
+  'core.account':
+    'id text, account_id text, provider_id text, user_id text, access_token text, ' +
+    'refresh_token text, id_token text, access_token_expires_at timestamptz, ' +
+    'refresh_token_expires_at timestamptz, scope text, password text, created_at timestamptz, ' +
+    'updated_at timestamptz',
+  'core.verification':
+    'id text, identifier text, value text, expires_at timestamptz, created_at timestamptz, ' +
+    'updated_at timestamptz',
   'core.agent_connection':
     'id text, user_id text, client_id text, client_name text, registration text, client text, ' +
     'created_at timestamptz, first_call_at timestamptz, last_used_at timestamptz, ' +
@@ -71,6 +85,7 @@ const TABLES: Record<string, string> = {
 
 /** Tables whose ids are prefixed ULIDs, with the prefix. */
 const PREFIXED: Record<string, string> = {
+  'core.user': 'usr',
   'core.agent_connection': 'con',
   'core.connection_attempt': 'att',
   'ledger.user_type': 'typ',

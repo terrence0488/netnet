@@ -29,9 +29,19 @@ function vercelRequestContext(): VercelRequestContext {
 export function afterResponse(c: Context<AppEnv>, task: Promise<unknown>): void {
   const requestId = c.get('requestId');
   const route = routeOf(c);
+  inBackground(task, () =>
+    log('after_response_failed', { requestId, route, errorCode: 'INTERNAL' }),
+  );
+}
+
+/**
+ * `afterResponse` for code that has no Hono context, such as Better Auth's hooks: `task` finishes
+ * after the response, and `onFailure` (which must not throw) runs if it rejects.
+ */
+export function inBackground(task: Promise<unknown>, onFailure: () => void): void {
   const settled = task.then(
     () => undefined,
-    () => log('after_response_failed', { requestId, route, errorCode: 'INTERNAL' }),
+    () => onFailure(),
   );
   vercelRequestContext().waitUntil?.(settled);
 }

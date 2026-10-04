@@ -1,0 +1,191 @@
+import { randomBytes } from 'node:crypto';
+import { canonicalTimeZone } from '@netnet/contracts';
+import { betterAuth, generateId } from 'better-auth';
+import { createEmailVerificationToken } from 'better-auth/api';
+import { authAdapter } from '../db/auth-adapter';
+import { database, type Database } from '../db/client';
+import { createProfile } from '../db/profiles';
+import { appVersion } from '../events/app-version';
+import { track, type Track } from '../events/track';
+import { inBackground } from '../lib/after-response';
+import { appOrigins, publicOrigin } from '../lib/env';
+import { newId } from '../lib/ids';
+import { log } from '../lib/log';
+import type { Notify } from '../notify/message';
+import { notify } from '../notify/notify';
+
+/**
+ * Accounts (architecture §4, §8): Better Auth 1.7.7 with email and password, its tables in `core`.
+ * Sign-up asks for an email and a password and nothing else, signs the person in at once and sends
+ * the verification email through `notify()`; the person carries on unverified (PRD J1). Google and
+ * Apple (P2) are `socialProviders` entries; the OAuth provider (P1-T13) is a plugin.
+ */
+
+const HOUR_S = 60 * 60;
+const DAY_S = 24 * HOUR_S;
+
+/** Web sessions last 30 days, sliding: each day of use moves the end (architecture §8). */
+export const SESSION_DAYS = 30;
+
+/** The session cookie's name, after its `__Secure-` prefix. */
+export const SESSION_COOKIE = 'netnet.session_token';
+
+export const MIN_PASSWORD_LENGTH = 8;
+
+export interface AuthDeps {
+  /** Connected as `netnet_app`. */
+  db: Database;
+  /** `BETTER_AUTH_SECRET`: signs the session cookie and the verification tokens. */
+  secret: string;
+  /** NetNet's origin; Better Auth lives at `/api/auth` under it. */
+  origin: string;
+  /** The origins a state-changing request may come from (see `appOrigins()`). */
+  trustedOrigins: string[];
+  notify: Notify;
+  track: Track;
+  appVersion: () => string;
+  /** Runs work after the response: the emails and the event. */
+  background: (task: Promise<unknown>) => void;
+}
+
+/** How the account was made: by the path that made it (`/callback/:id` for Google and Apple, P2). */
+function signUpMethod(params: unknown): 'email' | 'google' | 'apple' {
+  const provider = (params as { id?: unknown } | undefined)?.id;
+  return provider === 'google' || provider === 'apple' ? provider : 'email';
+}
+
+/** The browser's time zone sent with the sign-up (`timeZone`), or `UTC` without a valid one. */
+function signUpTimeZone(body: unknown): string {
+  const value = (body as { timeZone?: unknown } | undefined)?.timeZone;
+  return (typeof value === 'string' && canonicalTimeZone(value)) || 'UTC';
+}
+
+export function createAuth(deps: AuthDeps) {
+  const sendVerification = (userId: string, token: string) =>
+    deps.background(deps.notify(userId, { kind: 'account.verify_email', token }));
+
+  return betterAuth({
+    appName: 'NetNet',
+    baseURL: deps.origin,
+    basePath: '/api/auth',
+    secret: deps.secret,
+    database: authAdapter(deps.db),
+    trustedOrigins: deps.trustedOrigins,
+    telemetry: { enabled: false },
+    // core.rate_limit does it, across every function instance (routes.ts).
+    rateLimit: { enabled: false },
+    // Better Auth's messages can carry an email address: only that something failed is kept.
+    logger: {
+      log: (level) => {
+        if (level === 'error') log('auth_error', { errorCode: 'INTERNAL' });
+      },
+    },
+    emailAndPassword: {
+      enabled: true,
+      autoSignIn: true,
+      requireEmailVerification: false,
+      minPasswordLength: MIN_PASSWORD_LENGTH,
+      maxPasswordLength: 128,
+      resetPasswordTokenExpiresIn: HOUR_S,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: ({ user, token }) => {
+        deps.background(deps.notify(user.id, { kind: 'account.reset_password', token }));
+        return Promise.resolve();
+      },
+    },
+    emailVerification: {
+      // The sign-up email goes from the user hook below, once sign-up's transaction has committed;
+      // this sends the ones asked for again.
+      sendOnSignUp: false,
+      sendOnSignIn: false,
+      autoSignInAfterVerification: false,
+      expiresIn: DAY_S,
+      sendVerificationEmail: ({ user, token }) => {
+        sendVerification(user.id, token);
+        return Promise.resolve();
+      },
+    },
+    session: { expiresIn: SESSION_DAYS * DAY_S, updateAge: DAY_S },
+    advanced: {
+      cookiePrefix: 'netnet',
+      useSecureCookies: true,
+      defaultCookieAttributes: { httpOnly: true, secure: true, sameSite: 'lax' },
+      ipAddress: { disableIpTracking: true },
+      backgroundTasks: { handler: deps.background },
+      database: {
+        // Our ids for people, because `withUser` takes no other; Better Auth's for the rest.
+        generateId: ({ model }) => (model === 'user' ? newId('usr') : generateId()),
+      },
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          // NetNet asks for no name and keeps no picture, whatever a client or a provider sends.
+          before: (user) => Promise.resolve({ data: { ...user, name: '', image: null } }),
+          // After sign-up's transaction commits, so the account can be read from elsewhere.
+          after: async (user, ctx) => {
+            try {
+              await createProfile(deps.db, user.id, signUpTimeZone(ctx?.body));
+            } catch {
+              // GET /api/me makes it with its defaults; the sign-up itself has succeeded.
+              log('profile_create_failed', { userId: user.id, errorCode: 'INTERNAL' });
+            }
+            const method = signUpMethod(ctx?.params);
+            deps.background(
+              deps.track(
+                'account_created',
+                { method },
+                { userId: user.id, segment: 'unknown', appVersion: deps.appVersion() },
+              ),
+            );
+            if (method === 'email' && !user.emailVerified) {
+              sendVerification(
+                user.id,
+                await createEmailVerificationToken(deps.secret, user.email, undefined, DAY_S),
+              );
+            }
+          },
+        },
+      },
+      session: {
+        create: {
+          // Neither the address nor the browser of a session is kept.
+          before: (session) =>
+            Promise.resolve({ data: { ...session, ipAddress: null, userAgent: null } }),
+        },
+      },
+    },
+  });
+}
+
+export type Auth = ReturnType<typeof createAuth>;
+
+/**
+ * `BETTER_AUTH_SECRET`. A deployment refuses to run without it; a local run makes one for the
+ * process, so local sessions end when the API restarts.
+ */
+function authSecret(): string {
+  const secret = process.env.BETTER_AUTH_SECRET ?? '';
+  if (secret !== '') return secret;
+  if ((process.env.VERCEL_ENV ?? '') !== '') throw new Error('BETTER_AUTH_SECRET is not set');
+  log('auth_secret_ephemeral');
+  return randomBytes(32).toString('hex');
+}
+
+let shared: Auth | undefined;
+
+/** The running app's accounts. Built on first use, so nothing connects until a request needs it. */
+export function auth(): Auth {
+  shared ??= createAuth({
+    db: database(),
+    secret: authSecret(),
+    origin: publicOrigin(),
+    trustedOrigins: appOrigins(),
+    notify,
+    track,
+    appVersion,
+    background: (task) =>
+      inBackground(task, () => log('auth_task_failed', { errorCode: 'INTERNAL' })),
+  });
+  return shared;
+}

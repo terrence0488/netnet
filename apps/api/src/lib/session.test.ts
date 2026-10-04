@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import type { AppEnv, SessionUser } from './context';
 import { noSession, sessionContext, type ResolveSession } from './session';
 
-const USER: SessionUser = { userId: 'usr_01K1G4KX00AAAAAAAAAAAAAAAA', segment: 'accumulating' };
+const USER: SessionUser = {
+  userId: 'usr_01K1G4KX00AAAAAAAAAAAAAAAA',
+  emailVerified: true,
+  segment: 'accumulating',
+};
 
 function appWith(resolve: ResolveSession) {
   const app = new Hono<AppEnv>();
