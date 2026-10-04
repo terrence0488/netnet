@@ -144,14 +144,19 @@ const valueSchema = z.strictObject({
   written_by: z.string().regex(/^(web|system|agent:.+)$/, 'Use web, system or agent:<name>.'),
 });
 
+/** What a type of holding is, from the pack: given once per type, not on every holding. */
+const typeMeaningSchema = z.strictObject({
+  /** As the holdings' `type` gives it. */
+  type: text,
+  meaning: text,
+});
+
 const holdingSchema = z.strictObject({
   id: text,
   name: text,
-  /** The type's label in the current pack, or the user's own name for it. */
+  /** The type's label in the current pack, or the user's own name for it; `types` says what it is. */
   type: text,
   tags: z.array(text),
-  /** What this kind of holding is, from the pack. */
-  meaning: text,
   access: z.enum(CONTEXT_ACCESSES),
   access_reason: text.nullable(),
   until: text.nullable(),
@@ -182,6 +187,8 @@ export const financialContextSchema = z.strictObject({
   totals: totalsSchema,
   picture: pictureSchema,
   exposure: exposureSchema,
+  /** What each type in `holdings` is, once per type, in the order the holdings first use it. */
+  types: z.array(typeMeaningSchema),
   /** Largest first (by base value, either way), at most `MAX_CONTEXT_HOLDINGS`. */
   holdings: z.array(holdingSchema).max(MAX_CONTEXT_HOLDINGS),
   omitted: omittedSchema,

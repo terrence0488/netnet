@@ -118,13 +118,34 @@
       }
     ]
   },
+  "types": [
+    {
+      "type": "Current account",
+      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now."
+    },
+    {
+      "type": "Workplace pension",
+      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month."
+    },
+    {
+      "type": "Other",
+      "meaning": "Something of value that fits no other type. Counts toward net worth."
+    },
+    {
+      "type": "Shares & funds",
+      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price."
+    },
+    {
+      "type": "Crypto",
+      "meaning": "Cryptocurrency. Counts toward net worth at a price that can move sharply."
+    }
+  ],
   "holdings": [
     {
       "id": "hld_121",
       "name": "Position 121",
       "type": "Current account",
       "tags": [],
-      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now.",
       "access": "accessible",
       "access_reason": "it’s money in the bank",
       "until": null,
@@ -147,7 +168,6 @@
       "name": "Position 163",
       "type": "Workplace pension",
       "tags": [],
-      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
       "access": "locked",
       "access_reason": "a retirement account is locked",
       "until": "until you’re eligible to withdraw",
@@ -170,7 +190,6 @@
       "name": "Position 005",
       "type": "Other",
       "tags": [],
-      "meaning": "Something of value that fits no other type. Counts toward net worth.",
       "access": "illiquid",
       "access_reason": "you’d sell it first",
       "until": null,
@@ -193,7 +212,6 @@
       "name": "Position 047",
       "type": "Shares & funds",
       "tags": [],
-      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
       "access": "illiquid",
       "access_reason": "you’d sell the shares first",
       "until": null,
@@ -216,7 +234,6 @@
       "name": "Position 089",
       "type": "Crypto",
       "tags": [],
-      "meaning": "Cryptocurrency. Counts toward net worth at a price that can move sharply.",
       "access": "illiquid",
       "access_reason": "you’d sell it first",
       "until": null,
@@ -239,7 +256,6 @@
       "name": "Position 010",
       "type": "Other",
       "tags": [],
-      "meaning": "Something of value that fits no other type. Counts toward net worth.",
       "access": "illiquid",
       "access_reason": "you’d sell it first",
       "until": null,
@@ -262,7 +278,6 @@
       "name": "Position 131",
       "type": "Current account",
       "tags": [],
-      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now.",
       "access": "accessible",
       "access_reason": "it’s money in the bank",
       "until": null,
@@ -285,7 +300,6 @@
       "name": "Position 052",
       "type": "Shares & funds",
       "tags": [],
-      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
       "access": "illiquid",
       "access_reason": "you’d sell the shares first",
       "until": null,
@@ -308,7 +322,6 @@
       "name": "Position 173",
       "type": "Workplace pension",
       "tags": [],
-      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
       "access": "locked",
       "access_reason": "a retirement account is locked",
       "until": "until you’re eligible to withdraw",
@@ -331,7 +344,6 @@
       "name": "Position 094",
       "type": "Crypto",
       "tags": [],
-      "meaning": "Cryptocurrency. Counts toward net worth at a price that can move sharply.",
       "access": "illiquid",
       "access_reason": "you’d sell it first",
       "until": null,
@@ -354,7 +366,6 @@
       "name": "Position 136",
       "type": "Current account",
       "tags": [],
-      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now.",
       "access": "accessible",
       "access_reason": "it’s money in the bank",
       "until": null,
@@ -377,7 +388,6 @@
       "name": "Position 178",
       "type": "Workplace pension",
       "tags": [],
-      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
       "access": "locked",
       "access_reason": "a retirement account is locked",
       "until": "until you’re eligible to withdraw",
@@ -400,7 +410,6 @@
       "name": "Position 042",
       "type": "Shares & funds",
       "tags": [],
-      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
       "access": "illiquid",
       "access_reason": "you’d sell the shares first",
       "until": null,
@@ -423,7 +432,6 @@
       "name": "Position 084",
       "type": "Crypto",
       "tags": [],
-      "meaning": "Cryptocurrency. Counts toward net worth at a price that can move sharply.",
       "access": "illiquid",
       "access_reason": "you’d sell it first",
       "until": null,
@@ -440,27 +448,59 @@
         "amount": 0,
         "pct": 0
       }
+    },
+    {
+      "id": "hld_020",
+      "name": "Position 020",
+      "type": "Other",
+      "tags": [],
+      "access": "illiquid",
+      "access_reason": "you’d sell it first",
+      "until": null,
+      "value": {
+        "amount": 91060,
+        "currency": "EUR",
+        "base": 91060,
+        "as_of": "2026-04-30",
+        "age_days": 150,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_126",
+      "name": "Position 126",
+      "type": "Current account",
+      "tags": [],
+      "access": "accessible",
+      "access_reason": "it’s money in the bank",
+      "until": null,
+      "value": {
+        "amount": 98000,
+        "currency": "USD",
+        "base": 90160,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
     }
   ],
   "omitted": {
-    "holdings": 186,
+    "holdings": 184,
     "by_type": [
-      {
-        "type": "Current account",
-        "holdings": 37,
-        "assets": 1728530.4,
-        "owed": 0
-      },
       {
         "type": "Shares & funds",
         "holdings": 37,
         "assets": 1709749.6,
-        "owed": 0
-      },
-      {
-        "type": "Other",
-        "holdings": 36,
-        "assets": 1694126.4,
         "owed": 0
       },
       {
@@ -473,6 +513,18 @@
         "type": "Crypto",
         "holdings": 37,
         "assets": 1674337.2,
+        "owed": 0
+      },
+      {
+        "type": "Current account",
+        "holdings": 36,
+        "assets": 1638370.4,
+        "owed": 0
+      },
+      {
+        "type": "Other",
+        "holdings": 35,
+        "assets": 1603066.4,
         "owed": 0
       },
       {

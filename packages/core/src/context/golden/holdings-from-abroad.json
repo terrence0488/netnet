@@ -92,13 +92,30 @@
       }
     ]
   },
+  "types": [
+    {
+      "type": "Flat abroad",
+      "meaning": "Land or a building. Counts toward net worth; turning it into money means selling it."
+    },
+    {
+      "type": "Workplace pension",
+      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month."
+    },
+    {
+      "type": "Shares & funds",
+      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price."
+    },
+    {
+      "type": "Current account",
+      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now."
+    }
+  ],
   "holdings": [
     {
       "id": "hld_004",
       "name": "Flat in the old town",
       "type": "Flat abroad",
       "tags": [],
-      "meaning": "Land or a building. Counts toward net worth; turning it into money means selling it.",
       "access": "illiquid",
       "access_reason": "you’d have to sell it first",
       "until": null,
@@ -121,7 +138,6 @@
       "name": "Provident plan",
       "type": "Workplace pension",
       "tags": [],
-      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
       "access": "locked",
       "access_reason": "the plan keeps it until the withdrawal age",
       "until": "until the withdrawal age",
@@ -144,7 +160,6 @@
       "name": "Savings bonds",
       "type": "Shares & funds",
       "tags": [],
-      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
       "access": "locked",
       "access_reason": "the bonds can’t be cashed before they mature",
       "until": "until they mature",
@@ -167,7 +182,6 @@
       "name": "Everyday account",
       "type": "Current account",
       "tags": [],
-      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now.",
       "access": "accessible",
       "access_reason": "it’s money in the bank",
       "until": null,

@@ -147,15 +147,28 @@ describe('compileContext', () => {
   });
 
   describe('holdings', () => {
+    it('say what each listed type is once, in the order the holdings first use it', () => {
+      for (const data of [STARTING_OUT, ESTABLISHED, LARGE, ABROAD]) {
+        const ctx = compile(data);
+        const used = [...new Set(ctx.holdings.map((h) => h.type))];
+        expect(ctx.types.map((t) => t.type)).toStrictEqual(used);
+        expect(ctx.types.every((t) => t.meaning.length > 0)).toBe(true);
+      }
+      expect(compile(EMPTY).types).toStrictEqual([]);
+    });
+
     it('carry what each one is, its access as applied, its value and its change', () => {
       const ctx = compile(STARTING_OUT);
+      expect(ctx.types).toContainEqual({
+        type: 'Current account',
+        meaning:
+          'Money in a bank or savings account. Counts toward net worth and toward what can be used now.',
+      });
       expect(holdingNamed(ctx, 'Everyday account')).toStrictEqual({
         id: 'hld_001',
         name: 'Everyday account',
         type: 'Current account',
         tags: ['Emergency fund'],
-        meaning:
-          'Money in a bank or savings account. Counts toward net worth and toward what can be used now.',
         access: 'accessible',
         access_reason: 'it’s money in the bank',
         until: null,
@@ -197,10 +210,13 @@ describe('compileContext', () => {
     it('label types by the current pack, and keep accessibility and its reason as applied', () => {
       const ctx = compile(ABROAD);
       // Applied in xa; labelled and explained by qz, where the holder lives now.
-      expect(holdingNamed(ctx, 'Provident plan')).toMatchObject({
+      expect(ctx.types).toContainEqual({
         type: 'Workplace pension',
         meaning:
           'A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.',
+      });
+      expect(holdingNamed(ctx, 'Provident plan')).toMatchObject({
+        type: 'Workplace pension',
         access: 'locked',
         access_reason: 'the plan keeps it until the withdrawal age',
         until: 'until the withdrawal age',

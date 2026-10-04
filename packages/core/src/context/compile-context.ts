@@ -44,6 +44,7 @@ export const DEFAULT_CONTEXT_BASELINE: Baseline = 'last_month';
 
 type Doc = FinancialContext;
 type HoldingEntry = Doc['holdings'][number];
+type TypeMeaning = Doc['types'][number];
 
 /** A holding's latest value on or before today, and how old that is. */
 interface Latest {
@@ -82,6 +83,8 @@ interface Parts {
   concentration: Doc['exposure']['concentration'];
   /** The first `MAX_HOLDINGS` facts as listed holdings. */
   entries: HoldingEntry[];
+  /** What each entry's type is, from the pack, by holding id. */
+  meanings: ReadonlyMap<string, string>;
   /** Every fact, largest first, so the ones not listed can be summarised. */
   facts: Fact[];
   label: (holding: ContextHolding) => string;
@@ -151,9 +154,24 @@ function omitted(parts: Parts, rest: readonly Fact[], limit: number): Doc['omitt
   return { holdings: rest.length, by_type: byType, hint: OMITTED_HINT };
 }
 
+/** What each listed holding's type is, once per type, in the order the holdings first use it. */
+function typeMeanings(entries: readonly HoldingEntry[], meanings: ReadonlyMap<string, string>) {
+  const seen = new Set<string>();
+  const types: TypeMeaning[] = [];
+  for (const entry of entries) {
+    const meaning = meanings.get(entry.id)!;
+    const key = `${entry.type}\n${meaning}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    types.push({ type: entry.type, meaning });
+  }
+  return types;
+}
+
 /** The document with each list cut to its limit, keys in §7.5's order. */
 function assemble(parts: Parts, limits: Limits): Doc {
   const { picture } = parts;
+  const listed = parts.entries.slice(0, limits.holdings);
   return {
     as_of: parts.asOf,
     currency: parts.currency,
@@ -172,7 +190,8 @@ function assemble(parts: Parts, limits: Limits): Doc {
       by_currency: parts.byCurrency.slice(0, limits.byCurrency),
       concentration: parts.concentration.slice(0, limits.concentration),
     },
-    holdings: parts.entries.slice(0, limits.holdings),
+    types: typeMeanings(listed, parts.meanings),
+    holdings: listed,
     omitted: omitted(parts, parts.facts.slice(limits.holdings), limits.byType),
   };
 }
@@ -312,7 +331,6 @@ export function compileContext(
         .flatMap((id) => tags.get(id) ?? [])
         .sort((a, b) => compareText(a.name, b.name) || compareText(a.id, b.id))
         .map((t) => clipName(t.name)),
-      meaning: requireChainValue(chain, 'meaning', holding.universal),
       access: isLiability(holding) ? 'owed' : (holding.access ?? 'undecided'),
       access_reason: nonEmpty(holding.accessReason),
       until: nonEmpty(holding.accessUntil),
@@ -372,6 +390,11 @@ export function compileContext(
             }))
         : [],
     entries: facts.slice(0, MAX_HOLDINGS).map(entry),
+    meanings: new Map(
+      facts
+        .slice(0, MAX_HOLDINGS)
+        .map(({ holding }) => [holding.id, requireChainValue(chain, 'meaning', holding.universal)]),
+    ),
     facts,
     label,
     major,
