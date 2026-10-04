@@ -1,4 +1,5 @@
-import type { CreateHolding, HoldingQuery } from '@netnet/contracts';
+import { financialContextSchema, type CreateHolding, type HoldingQuery } from '@netnet/contracts';
+import { compileContext } from '@netnet/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestDatabase, type TestDatabase } from '../isolation/harness';
 import {
@@ -166,6 +167,15 @@ describe('context', () => {
       { id: connection, client: 'claude' },
       { id: ids.revoked, client: 'chatgpt' },
     ]);
+  });
+
+  it('compiles into a financial context that holds the schema', async () => {
+    const context = await suite.as(userId).read((l) => l.context());
+    const chain = await suite.content.forCountry('qz').chain();
+    const compiled = compileContext(context, chain, '2026-08-01');
+    expect(financialContextSchema.parse(compiled)).toEqual(compiled);
+    expect(compiled.picture.holdings).toBe(4);
+    expect(compiled.currency).toBe('USD');
   });
 });
 

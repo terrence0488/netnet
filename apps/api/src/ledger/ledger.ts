@@ -1,5 +1,6 @@
 import {
   MAX_NAME_LENGTH,
+  type ContextInput,
   type CreateHolding,
   type Holding,
   type HoldingDetail,
@@ -24,7 +25,6 @@ import {
   type ValueResult,
   type Write,
 } from '@netnet/contracts';
-import type { ContextInput } from './context-input';
 import { createHolding, deleteHolding, updateHolding } from './holdings';
 import { setPrefs } from './prefs';
 import { context, getHolding, history, listHoldings, snapshot } from './reads';

@@ -2,6 +2,7 @@ import {
   historyQuerySchema,
   holdingQuerySchema,
   pageReqSchema,
+  type ContextInput,
   type DateRange,
   type Holding,
   type HoldingDetail,
@@ -22,7 +23,6 @@ import { normaliseName, series, staleness, typeLabel } from '@netnet/core';
 import { and, desc, eq, lt, or } from 'drizzle-orm';
 import { listConnections } from '../db/agent-connections';
 import { isId, type IdPrefix } from '../lib/ids';
-import type { ContextInput } from './context-input';
 import { FieldErrors, notFound, parseInput } from './input';
 import { readPrefs } from './prefs';
 import {
