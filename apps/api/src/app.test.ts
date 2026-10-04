@@ -54,3 +54,17 @@ describe('unknown routes', () => {
     });
   });
 });
+
+describe('the Origin check', () => {
+  it('refuses a state-changing request from another site before any route runs', async () => {
+    for (const path of ['/api/events', '/api/nothing-here']) {
+      const res = await app.request(path, {
+        method: 'POST',
+        headers: { Origin: 'https://evil.example', 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      expect(res.status).toBe(401);
+      expect(await res.json()).toMatchObject({ error: { code: 'UNAUTHENTICATED' } });
+    }
+  });
+});
