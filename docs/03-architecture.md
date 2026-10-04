@@ -384,12 +384,12 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 |---|---|---|
 | `GET /api/geo` | → `{country: "SG" \| null}` from `x-vercel-ip-country` | §2.3 r2 |
 | `GET /api/me` · `PATCH /api/me` | profile: `email, emailVerified, country, baseCurrency, segment, timeZone, onboardingState` | J1 |
-| `GET /api/snapshot` | `If-None-Match: <dataVersion>` → 304, or `{dataVersion, baseCurrency, packRef, prefs, types, tags, holdings, values}`. Values compact per holding: `[date, amountMinor, currency, baseMinor, source, clientName, id]` | J4, J11 |
-| `POST /api/holdings` | `{name, kind, typeId, currency, tagIds?, access?: AccessInput, opening?: {amount, date, fxRate?}, via: "guided"\|"form", allowDuplicate?}` → `Holding`, or `409 LIKELY_DUPLICATE {candidates}` | J1, J2, J6 |
+| `GET /api/snapshot` | `If-None-Match: <dataVersion>` (its `ETag`) → 304, or `{dataVersion, baseCurrency, packRef, prefs, types, tags, holdings, values}`. Values compact per holding: `[date, amountMinor, currency, baseMinor, source, clientName, id]` | J4, J11 |
+| `POST /api/holdings` | `{name, kind, typeId or universal, currency, tagIds?, access?: AccessInput, opening?: {amount, date?, fxRate?}, via: "guided"\|"form", allowDuplicate?}`, `universal` meaning the person's type of it → `Holding`, or `409 LIKELY_DUPLICATE {candidates}` | J1, J2, J6 |
 | `PATCH /api/holdings/:id` | `{name?, typeId?, tagIds?, access?, cadenceDays?, archived?}` | J2 |
 | `DELETE /api/holdings/:id` | — | J2 |
 | `GET /api/holdings/:id/values` | `?cursor&limit≤200` → `{items, nextCursor}`, newest first | J4 |
-| `POST /api/holdings/:id/values` | `{amount, date, currency?, fxRate?}` → warning `SAME_DATE_REPLACED` when it replaces | J3 |
+| `POST /api/holdings/:id/values` | `{amount, date?, currency?, fxRate?}`, `date` the person's today when left out → the `Value` as stored, with the warning `SAME_DATE_REPLACED` when it replaces | J3 |
 | `PATCH /api/values/:id` · `DELETE /api/values/:id` | `{amount?, date?, currency?, fxRate?}` | J3 |
 | `POST /api/types` · `PATCH /api/types/:id` · `DELETE /api/types/:id?moveTo=` | create / rename / delete or merge; holdings follow, nothing orphaned | J2 |
 | `POST /api/tags` · `PATCH /api/tags/:id` · `DELETE /api/tags/:id?mergeInto=` | same for tags | J2 |
