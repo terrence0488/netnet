@@ -1,0 +1,469 @@
+{
+  "as_of": "2026-09-27",
+  "currency": "EUR",
+  "answer_guide": [
+    {
+      "for": "affordability — can I pay for X from what I have",
+      "use": "totals.could_use",
+      "never": "totals.net_worth",
+      "note": "sell_first, locked and undecided money is excluded"
+    },
+    {
+      "for": "progress — am I on track, how did I do",
+      "use": "totals.net_worth, totals.change, holdings[].change"
+    },
+    {
+      "for": "exposure and risk",
+      "use": "exposure"
+    },
+    {
+      "for": "debt burden",
+      "use": "totals.owed, totals.owed_to_could_use"
+    },
+    {
+      "for": "how current and complete the figures are",
+      "use": "picture, holdings[].value"
+    }
+  ],
+  "totals": {
+    "net_worth": 1501627.78,
+    "assets": 1901507.9,
+    "owed": 399880.12,
+    "could_use": 59551.7,
+    "sell_first": 758386.5,
+    "locked": 1038569.7,
+    "undecided": 45000,
+    "owed_to_could_use": 6.71,
+    "change": {
+      "baseline": "last_month",
+      "since": "2026-08-31",
+      "amount": 16565.63,
+      "pct": 1.12
+    }
+  },
+  "picture": {
+    "holdings": 30,
+    "stale": 9,
+    "undecided": 2,
+    "without_value": 1,
+    "oldest_value_days": 635,
+    "freshness": "some_stale",
+    "notes": [
+      "Accessibility of 2 holdings is undecided, the largest “Holiday cabin share”: they count in net_worth, not in could_use",
+      "“Watch” has no value yet, so no total includes it",
+      "9 values are past their usual update interval; the largest, “Startup options”, is 180 days old",
+      "Values in 3 other currencies are converted to the base currency at the rate of each value’s date, not today’s",
+      "NetNet only knows what has been added"
+    ]
+  },
+  "exposure": {
+    "by_currency": [
+      {
+        "currency": "EUR",
+        "share": 0.88
+      },
+      {
+        "currency": "USD",
+        "share": 0.09
+      },
+      {
+        "currency": "GBP",
+        "share": 0.03
+      },
+      {
+        "currency": "JPY",
+        "share": 0
+      }
+    ],
+    "concentration": [
+      {
+        "holding_id": "hld_015",
+        "name": "Family home",
+        "share": 0.35
+      },
+      {
+        "holding_id": "hld_016",
+        "name": "Rental flat",
+        "share": 0.17
+      },
+      {
+        "holding_id": "hld_012",
+        "name": "Workplace pension",
+        "share": 0.12
+      },
+      {
+        "holding_id": "hld_007",
+        "name": "World index fund",
+        "share": 0.11
+      },
+      {
+        "holding_id": "hld_008",
+        "name": "Tech growth fund",
+        "share": 0.03
+      },
+      {
+        "holding_id": "hld_013",
+        "name": "Old employer pension",
+        "share": 0.03
+      },
+      {
+        "holding_id": "hld_017",
+        "name": "Holiday cabin share",
+        "share": 0.02
+      },
+      {
+        "holding_id": "hld_009",
+        "name": "Bond ladder",
+        "share": 0.02
+      },
+      {
+        "holding_id": "hld_014",
+        "name": "Personal pension",
+        "share": 0.02
+      },
+      {
+        "holding_id": "hld_020",
+        "name": "Startup options",
+        "share": 0.02
+      }
+    ]
+  },
+  "holdings": [
+    {
+      "id": "hld_015",
+      "name": "Family home",
+      "type": "Property",
+      "tags": [
+        "Joint"
+      ],
+      "meaning": "Land or a building. Counts toward net worth; turning it into money means selling it.",
+      "access": "locked",
+      "access_reason": "it’s your home",
+      "until": "while you live in it",
+      "value": {
+        "amount": 668000,
+        "currency": "EUR",
+        "base": 668000,
+        "as_of": "2026-03-31",
+        "age_days": 180,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_027",
+      "name": "Home mortgage",
+      "type": "Mortgage",
+      "tags": [
+        "Joint"
+      ],
+      "meaning": "A loan secured on property. Reduces net worth by the amount still owed.",
+      "access": "owed",
+      "access_reason": null,
+      "until": null,
+      "value": {
+        "amount": 390200,
+        "currency": "EUR",
+        "base": 390200,
+        "as_of": "2026-08-31",
+        "age_days": 27,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_016",
+      "name": "Rental flat",
+      "type": "Property",
+      "tags": [],
+      "meaning": "Land or a building. Counts toward net worth; turning it into money means selling it.",
+      "access": "illiquid",
+      "access_reason": "you’d have to sell it first",
+      "until": null,
+      "value": {
+        "amount": 318000,
+        "currency": "EUR",
+        "base": 318000,
+        "as_of": "2026-06-30",
+        "age_days": 89,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_012",
+      "name": "Workplace pension",
+      "type": "Workplace pension",
+      "tags": [],
+      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
+      "access": "locked",
+      "access_reason": "a retirement account is locked",
+      "until": "until you’re eligible to withdraw",
+      "value": {
+        "amount": 232700,
+        "currency": "EUR",
+        "base": 232700,
+        "as_of": "2026-09-26",
+        "age_days": 1,
+        "stale": false,
+        "written_by": "agent:Claude"
+      },
+      "change": {
+        "amount": 7300,
+        "pct": 3.24
+      }
+    },
+    {
+      "id": "hld_007",
+      "name": "World index fund",
+      "type": "Shares & funds",
+      "tags": [
+        "Kids"
+      ],
+      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
+      "access": "illiquid",
+      "access_reason": "you’d sell the shares first",
+      "until": null,
+      "value": {
+        "amount": 214000,
+        "currency": "EUR",
+        "base": 214000,
+        "as_of": "2026-09-26",
+        "age_days": 1,
+        "stale": false,
+        "written_by": "agent:Claude"
+      },
+      "change": {
+        "amount": 5900,
+        "pct": 2.84
+      }
+    },
+    {
+      "id": "hld_008",
+      "name": "Tech growth fund",
+      "type": "Shares & funds",
+      "tags": [],
+      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
+      "access": "illiquid",
+      "access_reason": "you’d sell the shares first",
+      "until": null,
+      "value": {
+        "amount": 70500,
+        "currency": "USD",
+        "base": 64860,
+        "as_of": "2026-08-31",
+        "age_days": 27,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_013",
+      "name": "Old employer pension",
+      "type": "Workplace pension",
+      "tags": [],
+      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
+      "access": "locked",
+      "access_reason": "a retirement account is locked",
+      "until": "until you’re eligible to withdraw",
+      "value": {
+        "amount": 63150,
+        "currency": "EUR",
+        "base": 63150,
+        "as_of": "2026-06-30",
+        "age_days": 89,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_017",
+      "name": "Holiday cabin share",
+      "type": "Property",
+      "tags": [],
+      "meaning": "Land or a building. Counts toward net worth; turning it into money means selling it.",
+      "access": "undecided",
+      "access_reason": null,
+      "until": null,
+      "value": {
+        "amount": 42000,
+        "currency": "EUR",
+        "base": 42000,
+        "as_of": "2026-05-31",
+        "age_days": 119,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_009",
+      "name": "Bond ladder",
+      "type": "Shares & funds",
+      "tags": [],
+      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
+      "access": "illiquid",
+      "access_reason": "you’d sell the shares first",
+      "until": null,
+      "value": {
+        "amount": 40880,
+        "currency": "EUR",
+        "base": 40880,
+        "as_of": "2026-08-31",
+        "age_days": 27,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_014",
+      "name": "Personal pension",
+      "type": "Workplace pension",
+      "tags": [],
+      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
+      "access": "locked",
+      "access_reason": "a retirement account is locked",
+      "until": "until you’re eligible to withdraw",
+      "value": {
+        "amount": 32410,
+        "currency": "GBP",
+        "base": 37919.7,
+        "as_of": "2026-08-31",
+        "age_days": 27,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_020",
+      "name": "Startup options",
+      "type": "Startup equity",
+      "tags": [],
+      "meaning": "Shares in a private company or awards not yet vested. Counts at an estimated value.",
+      "access": "locked",
+      "access_reason": "you said it’s tied up",
+      "until": null,
+      "value": {
+        "amount": 40000,
+        "currency": "USD",
+        "base": 36800,
+        "as_of": "2026-03-31",
+        "age_days": 180,
+        "stale": true,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_010",
+      "name": "Brokerage US shares",
+      "type": "Shares & funds",
+      "tags": [],
+      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
+      "access": "illiquid",
+      "access_reason": "you’d sell the shares first",
+      "until": null,
+      "value": {
+        "amount": 35700,
+        "currency": "USD",
+        "base": 32844,
+        "as_of": "2026-08-31",
+        "age_days": 27,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    }
+  ],
+  "omitted": {
+    "holdings": 18,
+    "by_type": [
+      {
+        "type": "Current account",
+        "holdings": 6,
+        "assets": 59551.7,
+        "owed": 0
+      },
+      {
+        "type": "Vehicle",
+        "holdings": 2,
+        "assets": 23600,
+        "owed": 0
+      },
+      {
+        "type": "Startup equity",
+        "holdings": 1,
+        "assets": 22172,
+        "owed": 0
+      },
+      {
+        "type": "Shares & funds",
+        "holdings": 1,
+        "assets": 18076.5,
+        "owed": 0
+      },
+      {
+        "type": "Other",
+        "holdings": 3,
+        "assets": 15500,
+        "owed": 0
+      },
+      {
+        "type": "Crypto",
+        "holdings": 2,
+        "assets": 11454,
+        "owed": 0
+      },
+      {
+        "type": "Car loan",
+        "holdings": 1,
+        "assets": 0,
+        "owed": 8600
+      },
+      {
+        "type": "Credit card",
+        "holdings": 2,
+        "assets": 0,
+        "owed": 1080.12
+      }
+    ],
+    "hint": "list_holdings returns every holding"
+  }
+}

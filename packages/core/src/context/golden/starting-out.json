@@ -1,0 +1,151 @@
+{
+  "as_of": "2026-09-27",
+  "currency": "EUR",
+  "answer_guide": [
+    {
+      "for": "affordability — can I pay for X from what I have",
+      "use": "totals.could_use",
+      "never": "totals.net_worth",
+      "note": "sell_first, locked and undecided money is excluded"
+    },
+    {
+      "for": "progress — am I on track, how did I do",
+      "use": "totals.net_worth, totals.change, holdings[].change"
+    },
+    {
+      "for": "exposure and risk",
+      "use": "exposure"
+    },
+    {
+      "for": "debt burden",
+      "use": "totals.owed, totals.owed_to_could_use"
+    },
+    {
+      "for": "how current and complete the figures are",
+      "use": "picture, holdings[].value"
+    }
+  ],
+  "totals": {
+    "net_worth": -12579.5,
+    "assets": 4920.5,
+    "owed": 17500,
+    "could_use": 3120.5,
+    "sell_first": 0,
+    "locked": 0,
+    "undecided": 1800,
+    "owed_to_could_use": 5.61,
+    "change": {
+      "baseline": "last_month",
+      "since": "2026-08-31",
+      "amount": 970.5,
+      "pct": 7.16
+    }
+  },
+  "picture": {
+    "holdings": 3,
+    "stale": 0,
+    "undecided": 1,
+    "without_value": 0,
+    "oldest_value_days": 26,
+    "freshness": "fresh",
+    "notes": [
+      "Accessibility of “Gold coins” is undecided: it counts in net_worth, not in could_use",
+      "NetNet only knows what has been added"
+    ]
+  },
+  "exposure": {
+    "by_currency": [
+      {
+        "currency": "EUR",
+        "share": 1
+      }
+    ],
+    "concentration": [
+      {
+        "holding_id": "hld_001",
+        "name": "Everyday account",
+        "share": 0.63
+      },
+      {
+        "holding_id": "hld_002",
+        "name": "Gold coins",
+        "share": 0.37
+      }
+    ]
+  },
+  "holdings": [
+    {
+      "id": "hld_003",
+      "name": "Study loan",
+      "type": "Loan",
+      "tags": [],
+      "meaning": "Money borrowed. Reduces net worth by the amount still owed.",
+      "access": "owed",
+      "access_reason": null,
+      "until": null,
+      "value": {
+        "amount": 17500,
+        "currency": "EUR",
+        "base": 17500,
+        "as_of": "2026-09-15",
+        "age_days": 12,
+        "stale": false,
+        "written_by": "agent:other"
+      },
+      "change": {
+        "amount": 500,
+        "pct": 2.78
+      }
+    },
+    {
+      "id": "hld_001",
+      "name": "Everyday account",
+      "type": "Current account",
+      "tags": [
+        "Emergency fund"
+      ],
+      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now.",
+      "access": "accessible",
+      "access_reason": "it’s money in the bank",
+      "until": null,
+      "value": {
+        "amount": 3120.5,
+        "currency": "EUR",
+        "base": 3120.5,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "agent:Claude"
+      },
+      "change": {
+        "amount": 470.5,
+        "pct": 17.75
+      }
+    },
+    {
+      "id": "hld_002",
+      "name": "Gold coins",
+      "type": "Other",
+      "tags": [],
+      "meaning": "Something of value that fits no other type. Counts toward net worth.",
+      "access": "undecided",
+      "access_reason": null,
+      "until": null,
+      "value": {
+        "amount": 1800,
+        "currency": "EUR",
+        "base": 1800,
+        "as_of": "2026-09-01",
+        "age_days": 26,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": null
+    }
+  ],
+  "omitted": {
+    "holdings": 0,
+    "by_type": [],
+    "hint": "list_holdings returns every holding"
+  }
+}
