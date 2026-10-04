@@ -7,7 +7,13 @@ import { contentStore } from './content/store';
 import { contentRoutes } from './http/content';
 import { eventsRoutes } from './http/events';
 import { geoRoutes } from './http/geo';
+import { holdingsRoutes } from './http/holdings';
 import { liveCountries, meRoutes } from './http/me';
+import { prefsRoutes } from './http/prefs';
+import { snapshotRoutes } from './http/snapshot';
+import { tagsRoutes } from './http/tags';
+import { typesRoutes } from './http/types';
+import { valuesRoutes } from './http/values';
 import { cronAuth, cronSecret } from './jobs/cron';
 import { defaultFxJob } from './jobs/fx';
 import type { AppEnv } from './lib/context';
@@ -41,6 +47,14 @@ app.route('/api/me', meRoutes());
 app.route('/api/geo', geoRoutes(liveCountries(contentStore)));
 
 app.route('/api/events', eventsRoutes());
+
+/** The person's position and every P1 write, over the Ledger (architecture §7.2). */
+app.route('/api/snapshot', snapshotRoutes());
+app.route('/api/holdings', holdingsRoutes());
+app.route('/api', valuesRoutes());
+app.route('/api/types', typesRoutes());
+app.route('/api/tags', tagsRoutes());
+app.route('/api/prefs', prefsRoutes());
 
 /** Published content: no user data, no session (architecture §7.2). */
 app.route('/api/content', contentRoutes(contentStore));
