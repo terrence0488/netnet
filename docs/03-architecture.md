@@ -405,6 +405,7 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 | `POST /api/reminders/opened` | `{token}`, no session needed. Sent by the web app when it opens from a reminder (`/app/?r=<token>`). Fires `reminder_opened {channel}` for the first open of that reminder only → `204` | J12 |
 | `GET /api/agent/connections` · `DELETE /api/agent/connections/:id` | list · revoke (logged; later calls rejected) | J5 |
 | `POST /api/agent/attempts` · `GET /api/agent/attempts/:id` | `{client: "claude"\|"chatgpt"\|"other", entry, platform}` → `{id, state, failedStep?, cause?}` (polled every 2 s) | J5 |
+| `GET /api/agent/approval` · `POST /api/agent/approval` | The approval page's API (§7.6), with the page's query as NetNet signed it: `?‹query›` → `{clientName, registration, nameVerified, client, host, scopes}`; `{accept, query}` → `{url}`, where the browser goes next (the agent, with the code or the refusal). Reading and Allow need a verified email | J5 |
 | `GET /api/content/current` · `GET /api/content/:kind/:key@:version` | live version map · an immutable document | §2.3, J5 |
 | `GET /api/export?format=json\|csv` | everything: holdings, types, tags, accessibility and the answer behind it, all values with currencies, rates and rate dates | J10 |
 | `DELETE /api/account` | needs a sign-in in the last 10 minutes → `{erasedWithinDays: 30}` | J10 |
