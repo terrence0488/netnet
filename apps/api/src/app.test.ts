@@ -55,9 +55,27 @@ describe('unknown routes', () => {
   });
 });
 
+describe('accounts', () => {
+  it('mounts /api/me, which needs a session', async () => {
+    const res = await app.request('/api/me');
+    expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({ error: { code: 'UNAUTHENTICATED' } });
+  });
+
+  it('mounts /api/geo, which suggests nothing without the CDN’s header', async () => {
+    const res = await app.request('/api/geo');
+    expect(await res.json()).toStrictEqual({ country: null });
+  });
+
+  it('serves only the listed Better Auth endpoints', async () => {
+    const res = await app.request('/api/auth/update-user', { method: 'POST' });
+    expect(res.status).toBe(404);
+  });
+});
+
 describe('the Origin check', () => {
   it('refuses a state-changing request from another site before any route runs', async () => {
-    for (const path of ['/api/events', '/api/nothing-here']) {
+    for (const path of ['/api/auth/sign-up/email', '/api/events', '/api/nothing-here']) {
       const res = await app.request(path, {
         method: 'POST',
         headers: { Origin: 'https://evil.example', 'Content-Type': 'application/json' },

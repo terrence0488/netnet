@@ -152,7 +152,7 @@ describe('POST /api/events against the database', () => {
   const app = () => eventsApp({ track, rateLimit, appVersion: () => 'abc1234' }, () => signedIn);
 
   beforeEach(() => {
-    signedIn = { userId: USER_A };
+    signedIn = { userId: USER_A, emailVerified: false };
     vercel = captureWaitUntil();
   });
 

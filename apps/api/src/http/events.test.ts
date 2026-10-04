@@ -52,7 +52,7 @@ beforeEach(() => {
   now = START;
   rows = [];
   counters = new Map();
-  signedIn = { userId: USER };
+  signedIn = { userId: USER, emailVerified: false };
   vercel = captureWaitUntil();
   gate = null;
 });
@@ -119,7 +119,7 @@ describe('POST /api/events', () => {
   });
 
   it('uses the segment the session already carries', async () => {
-    signedIn = { userId: USER, segment: 'established' };
+    signedIn = { userId: USER, emailVerified: true, segment: 'established' };
     await postEvent(app, { name: 'insights_viewed', props: { view: 'monthly' } });
     await vercel.settle();
     expect(rows[0]?.segment).toBe('established');
