@@ -118,6 +118,8 @@
 .foot {
   display: grid;
   justify-items: start;
+  /* Room for a link in a sentence, whose target overflows its line, beside a link of its own. */
+  row-gap: calc(var(--hit) / 2);
   margin-top: var(--space-9);
   color: var(--ink-3);
   font-size: var(--size-body-sm);

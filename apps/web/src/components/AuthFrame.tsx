@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { cx } from './cx';
 import { Wordmark } from './Wordmark';
@@ -25,10 +25,8 @@ export interface AuthFrameProps {
  * question or task per screen.
  */
 export function AuthFrame({ title, sub, back, step, notice, titleId, children }: AuthFrameProps) {
-  const generated = useId();
-  const headingId = titleId ?? generated;
   return (
-    <section className={styles.frame} aria-labelledby={headingId}>
+    <div className={styles.frame}>
       <div className={styles.mark}>
         <Wordmark />
       </div>
@@ -39,12 +37,12 @@ export function AuthFrame({ title, sub, back, step, notice, titleId, children }:
         </Link>
       ) : null}
       {step ? <p className={styles.step}>{step}</p> : null}
-      <h1 id={headingId} className={styles.title}>
+      <h1 id={titleId} className={styles.title}>
         {title}
       </h1>
       {sub ? <p className={styles.sub}>{sub}</p> : null}
       {children}
-    </section>
+    </div>
   );
 }
 
