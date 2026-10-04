@@ -440,40 +440,74 @@ describe('the connection attempt', () => {
     });
   });
 
-  it('is swept daily: every timed-out attempt fails, with its event, and nothing else', async () => {
-    const person = await newPerson();
-    const waiting = await startAttempt(person);
-    const client = claude();
-    const live = await client.connect(person.browser);
-    await client.exchange(live.code, live.verifier);
-    const [connection] = await connectionsOf(person.userId);
-    await target.agent.attempts.markLive(person.userId, String(connection?.id));
-    later(16 * MINUTE);
-    const fresh = await startAttempt(person);
+  it('is swept daily: discovery and first_call timeouts fail, with their events, nothing else', async () => {
+    // One person each: an attempt nobody connected to, one connected with no call, one live.
+    const silent = await newPerson();
+    const undiscovered = await startAttempt(silent, {
+      client: 'other',
+      entry: 'onboarding',
+      platform: 'any',
+    });
+    const quiet = await newPerson();
+    const uncalled = await startAttempt(quiet);
+    const busy = await newPerson();
+    const called = await startAttempt(busy);
+    for (const person of [quiet, busy]) {
+      const client = claude();
+      const { code, verifier } = await client.connect(person.browser);
+      await client.exchange(code, verifier);
+    }
+    const [connection] = await connectionsOf(busy.userId);
+    await target.agent.attempts.markLive(busy.userId, String(connection?.id));
 
+    later(15 * MINUTE - 1000);
+    const fresh = await startAttempt(silent);
     expect((await target.app.request(`${ORIGIN}/api/cron/daily`)).status).toBe(401);
+    // (The sweep is every user's: other tests' attempts may fail in it too.)
+    await cron();
+    expect(await events(silent.userId, 'agent_connection_failed')).toEqual([]);
+    expect(await events(quiet.userId, 'agent_connection_failed')).toEqual([]);
+
+    later(1000);
     const res = await cron();
     expect(res.status).toBe(200);
-    expect((await body(res)).attemptsFailed).toBeGreaterThanOrEqual(1);
-    const { rows } = await db.owner.query(
-      `select id, state, failed_step from core.connection_attempt where user_id = $1 order by started_at, id`,
-      [person.userId],
-    );
-    expect(rows).toEqual(
-      expect.arrayContaining([
-        { id: waiting, state: 'live', failed_step: null },
-        { id: fresh, state: 'started', failed_step: null },
-      ]),
-    );
-    expect(await events(person.userId, 'agent_connection_failed')).toEqual([]);
+    expect((await body(res)).attemptsFailed).toBeGreaterThanOrEqual(2);
+    const states = async (userId: string) =>
+      (
+        await db.owner.query<Record<string, unknown>>(
+          `select id, state, failed_step, cause from core.connection_attempt
+            where user_id = $1 order by started_at, id`,
+          [userId],
+        )
+      ).rows;
+    expect(await states(silent.userId)).toEqual([
+      { id: undiscovered, state: 'failed', failed_step: 'discovery', cause: 'timed_out' },
+      { id: fresh, state: 'started', failed_step: null, cause: null },
+    ]);
+    expect(await states(quiet.userId)).toEqual([
+      { id: uncalled, state: 'failed', failed_step: 'first_call', cause: 'timed_out' },
+    ]);
+    expect(await states(busy.userId)).toEqual([
+      { id: called, state: 'live', failed_step: null, cause: null },
+    ]);
+    expect(await events(silent.userId, 'agent_connection_failed')).toEqual([
+      {
+        name: 'agent_connection_failed',
+        props: { step: 'discovery', client: 'other', entry: 'onboarding' },
+      },
+    ]);
+    expect(await events(quiet.userId, 'agent_connection_failed')).toEqual([
+      {
+        name: 'agent_connection_failed',
+        props: { step: 'first_call', client: 'claude', entry: 'home' },
+      },
+    ]);
+    expect(await events(busy.userId, 'agent_connection_failed')).toEqual([]);
 
-    later(16 * MINUTE);
+    // A second run fails nothing twice.
     await cron();
-    expect(await attempt(person, fresh)).toMatchObject({
-      state: 'failed',
-      failedStep: 'discovery',
-    });
-    expect(await events(person.userId, 'agent_connection_failed')).toHaveLength(1);
+    expect(await events(silent.userId, 'agent_connection_failed')).toHaveLength(1);
+    expect(await events(quiet.userId, 'agent_connection_failed')).toHaveLength(1);
   });
 });
 

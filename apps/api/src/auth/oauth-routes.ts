@@ -74,6 +74,25 @@ async function withoutCookie(request: Request): Promise<Request> {
   return new Request(request.url, { method: request.method, headers, body });
 }
 
+/**
+ * Whether a DCR registration asks for back-channel logout: the library would then POST to a URL
+ * the registrant chose whenever a session ends, which NetNet has no use for. CIMD documents cannot
+ * ask for it (the library refuses them).
+ */
+async function asksForBackChannelLogout(request: Request): Promise<boolean> {
+  try {
+    const body: unknown = JSON.parse(await request.clone().text());
+    return (
+      typeof body === 'object' &&
+      body !== null &&
+      ('backchannel_logout_uri' in body || 'backchannel_logout_session_required' in body)
+    );
+  } catch {
+    // Not JSON: the library refuses it itself.
+    return false;
+  }
+}
+
 /** A redirect with headers that can still be changed, carrying `from`'s cookies. */
 function redirect(location: string, from?: Response): Response {
   const headers = new Headers();
@@ -170,6 +189,15 @@ export function oauthRoutes(deps: OAuthRoutesDeps): Hono<AppEnv> {
   routes.use('/oauth2/register', anyOrigin);
   routes.post('/oauth2/register', smallBody, async (c) => {
     await deps.rateLimit(`dcr:ip:${clientIp(c)}`, REGISTRATIONS_PER_HOUR, 60 * 60);
+    if (await asksForBackChannelLogout(c.req.raw)) {
+      return c.json(
+        {
+          error: 'invalid_client_metadata',
+          error_description: 'NetNet does not offer back-channel logout: leave it out.',
+        },
+        400,
+      );
+    }
     return pass(c);
   });
 

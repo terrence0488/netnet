@@ -218,6 +218,21 @@ describe('the agent’s endpoints', () => {
     expect(REGISTRATIONS_PER_HOUR).toBe(10);
   });
 
+  it('refuses a registration that asks for back-channel logout', async () => {
+    const { app, reached } = harness(() => json({}, { status: 201 }));
+    const res = await app.request(`${ORIGIN}/api/auth/oauth2/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        redirect_uris: ['https://agent.example/cb'],
+        backchannel_logout_uri: 'https://agent.example/logout',
+      }),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ error: 'invalid_client_metadata' });
+    expect(reached).toEqual([]);
+  });
+
   it('refuses a body over 16 KB before Better Auth sees it', async () => {
     const { app, reached } = harness(() => json({}));
     const res = await app.request(`${ORIGIN}/api/auth/oauth2/register`, {
