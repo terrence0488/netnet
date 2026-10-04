@@ -16,10 +16,14 @@ export interface NavEntry {
   readonly places?: readonly NavPlace[];
 }
 
-/** The prototype's tabs, as far as P1 goes: Home, and the Agent tab (design-system §7). */
+/**
+ * The prototype's tabs, as far as P1 goes: Home, the Agent tab, and Account, which holds Log out
+ * until P3's settings join it (design-system §7).
+ */
 export const NAV: readonly NavEntry[] = [
   { to: '/', label: 'Home', icon: 'home', owns: ['/', '/add', '/holdings'] },
   { to: '/agent', label: 'Agent', icon: 'agent', owns: ['/agent', '/connect'] },
+  { to: '/account', label: 'Account', icon: 'account', owns: ['/account'] },
 ];
 
 export function entriesFor(place: NavPlace, nav: readonly NavEntry[] = NAV): NavEntry[] {

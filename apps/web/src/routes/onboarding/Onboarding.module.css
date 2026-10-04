@@ -1,0 +1,20 @@
+/* Onboarding's own lines; the frame, fields and answers style themselves. */
+
+/* An address is one long word: it may break anywhere rather than widen the column. */
+.email {
+  font-weight: var(--weight-button);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* The currency totals follow, from the country chosen (PRD J2). */
+.currency {
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.currency b {
+  color: var(--ink);
+  font-weight: var(--weight-button);
+}
