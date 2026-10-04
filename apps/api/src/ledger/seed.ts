@@ -160,7 +160,7 @@ function plan(tx: LedgerTx, fixture: LedgerFixture) {
     sameCurrency(homeLoan, 'home-loan-1', '2026-07-31', 32_000_000),
   ] satisfies (typeof value.$inferInsert)[];
 
-  const homeFilter = { userId, key: 'home_filter', value: { view: 'all' } };
+  const homeFilter = { userId, key: 'home_filter', value: { show: 'all' } };
 
   const entities: { entity: string; entityId: string; after: unknown; batchId?: string }[] = [
     ...types.map((t) => ({ entity: 'type', entityId: t.id, after: t })),
