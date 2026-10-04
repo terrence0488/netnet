@@ -431,7 +431,7 @@ function withUser<T>(userId: string, actor: Actor, fn: (l: Ledger) => Promise<T>
 interface Ledger {
   init(i: { baseCurrency: string; pack: PackRef }): Promise<void>;
   snapshot(): Promise<Snapshot>;
-  context(o: { baseline?: Baseline; today: string; packs: Pack[] }): Promise<FinancialContext>; // §7.5
+  context(): Promise<ContextInput>;   // the raw data; the caller runs core.compileContext (§7.5)
   listHoldings(q: HoldingQuery): Promise<Page<HoldingView>>;
   getHolding(id: string, values?: PageReq): Promise<HoldingDetail>;
   history(q: HistoryQuery): Promise<Series>;
