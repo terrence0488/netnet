@@ -2,7 +2,7 @@ import type { Pack } from '@netnet/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import type { ContentRef } from '../db/content';
 import { AppError } from '../lib/errors';
-import { createContentStore, CURRENT_TTL_MS, packChain, type ContentSource } from './store';
+import { createContentStore, CURRENT_TTL_MS, type ContentSource } from './store';
 
 /** A minimal pack: only `id` matters to the chain. */
 const pack = (id: string) => ({ id }) as unknown as Pack;
@@ -124,20 +124,5 @@ describe('getPackChain', () => {
     for (const country of ['FR', 'ZZ', null]) {
       expect((await store().getPackChain(country)).map((p) => p.id)).toStrictEqual(['generic']);
     }
-  });
-});
-
-describe('packChain (core.packChain’s contract)', () => {
-  const packs = [pack('generic'), pack('sg'), pack('my')];
-
-  it('puts the country’s pack before generic, or gives generic alone', () => {
-    expect(packChain(packs, 'my').map((p) => p.id)).toStrictEqual(['my', 'generic']);
-    expect(packChain(packs).map((p) => p.id)).toStrictEqual(['generic']);
-    expect(packChain(packs, 'generic').map((p) => p.id)).toStrictEqual(['generic']);
-    expect(packChain(packs, 'gb').map((p) => p.id)).toStrictEqual(['generic']);
-  });
-
-  it('needs the generic pack', () => {
-    expect(() => packChain([pack('sg')], 'sg')).toThrow('generic');
   });
 });

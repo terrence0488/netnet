@@ -1,4 +1,5 @@
 import { GENERIC_PACK, type ContentKind, type Countries, type Pack } from '@netnet/contracts';
+import { packChain } from '@netnet/core';
 import { database, type Executor } from '../db/client';
 import { contentBody, currentVersions, type ContentRef } from '../db/content';
 import { AppError } from '../lib/errors';
@@ -31,20 +32,6 @@ export interface ContentStore {
 
 /** How long what is live is trusted before it is read again. */
 export const CURRENT_TTL_MS = 60_000;
-
-/**
- * The country's pack then generic, or generic alone. Same contract as P1-T6's `core.packChain`
- * (`packChain(packs, countryPackKey?)`); this switches to `core.packChain` once that merges.
- */
-export function packChain(packs: readonly Pack[], countryPackKey?: string): Pack[] {
-  const generic = packs.find((p) => p.id === GENERIC_PACK);
-  if (!generic) throw new Error('The generic pack is missing.');
-  const own =
-    countryPackKey === undefined || countryPackKey === GENERIC_PACK
-      ? undefined
-      : packs.find((p) => p.id === countryPackKey);
-  return own ? [own, generic] : [generic];
-}
 
 export interface StoreOptions {
   source: ContentSource;
