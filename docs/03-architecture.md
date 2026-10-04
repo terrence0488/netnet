@@ -383,7 +383,7 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 | Method & path | Body / query → response | Jobs |
 |---|---|---|
 | `GET /api/geo` | → `{country: "SG" \| null}` from `x-vercel-ip-country` | §2.3 r2 |
-| `GET /api/me` · `PATCH /api/me` | profile: `email, emailVerified, country, baseCurrency, segment, timeZone, onboardingState` | J1 |
+| `GET /api/me` · `PATCH /api/me` | profile: `email, emailVerified, country, baseCurrency, segment, timeZone, onboardingState`. The first `country` confirmed makes the ledger (`init`); another one moves it (`changeCountry`) | J1, J2 |
 | `GET /api/snapshot` | `If-None-Match: <dataVersion>` (its `ETag`) → 304, or `{dataVersion, baseCurrency, packRef, prefs, types, tags, holdings, values}`. Values compact per holding: `[date, amountMinor, currency, baseMinor, source, clientName, id]` | J4, J11 |
 | `POST /api/holdings` | `{name, kind, typeId or universal, currency, tagIds?, access?: AccessInput, opening?: {amount, date?, fxRate?}, via: "guided"\|"form", allowDuplicate?}`, `universal` meaning the person's type of it → `Holding`, or `409 LIKELY_DUPLICATE {candidates}` | J1, J2, J6 |
 | `PATCH /api/holdings/:id` | `{name?, typeId?, tagIds?, access?, cadenceDays?, archived?}` | J2 |
@@ -452,6 +452,8 @@ interface Ledger {
   setPrefs(p: PrefsPatch): Promise<Write<Prefs>>;
   changeBaseCurrency(ccy: string): Promise<Write<void>>;
   applyPackTypes(pack: PackRef): Promise<Write<UserType[]>>;
+  // Another country: with no holding yet, over again in its currency and types; else adds its types
+  changeCountry(i: { baseCurrency: string; pack: PackRef }): Promise<Write<void>>;
   exportAll(): Promise<ExportBundle>;
   destroy(): Promise<void>;                       // deletes every ledger row for this user
 }

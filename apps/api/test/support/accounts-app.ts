@@ -94,6 +94,7 @@ export function accountsApp(db: TestDatabase): AccountsApp {
       countries,
       // These suites are about the profile; making the ledger is test/http's (me-init).
       initLedger: () => Promise.resolve(),
+      changeLedgerCountry: () => Promise.resolve(),
     }),
   );
   app.route('/api/geo', geoRoutes(countries));

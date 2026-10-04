@@ -147,6 +147,11 @@ const CASES: Record<
     run: (l) => l.applyPackTypes(suite.content.ref('qz')),
     touches: [['type', 'create']],
   },
+  // The fixture has a holding, so the currency stays and the pack's type is added.
+  changeCountry: {
+    run: (l) => l.changeCountry({ baseCurrency: 'EUR', pack: suite.content.ref('qz') }),
+    touches: [['type', 'create']],
+  },
 };
 
 /** The fixture for a case: `init` starts from a user with no ledger. */

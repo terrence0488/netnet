@@ -227,6 +227,13 @@ const CASES: Record<keyof Ledger, Case[]> = {
       returns: true,
     },
   ],
+  changeCountry: [
+    {
+      name: 'B’s country change leaves A alone',
+      call: (l) => l.changeCountry({ baseCurrency: 'GBP', pack: suite.content.ref('qz') }),
+      returns: true,
+    },
+  ],
 };
 
 describe('isolation', () => {

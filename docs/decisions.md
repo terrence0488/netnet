@@ -81,6 +81,8 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Every new agent connection shows NetNet's approval page; remembered consent is off | A remembered approval would skip the page, and with it the security email, on a reconnect (P1 spike) |
 | The starting prompt is one line; the country's checklist comes from the MCP layer. Prompts never carry financial data | One source of pack data; weak models follow a structured checklist better; the agent reads what it needs |
 | Agent provenance is quiet: a mark on the row, the client named when a value is opened, full attribution in Activity | Who wrote a number matters when checking it, not while reading the position |
+| Confirming another country moves the ledger: with no holding yet it starts over in the new country's currency and types; once it has one, the currency stays and the new pack's types are added, none removed | A country corrected with Back in onboarding leaves nothing of the first answer; once there is data, changing the totals currency is a deliberate act |
+| In P1, onboarding shows the totals currency without a way to change it; changing it comes with P3's settings | Only someone whose totals currency differs from their country's needs it, and changing it once values exist means converting them all |
 
 ## Notifications
 

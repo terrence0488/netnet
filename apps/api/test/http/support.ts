@@ -11,7 +11,7 @@ import { ensureProfile } from '../../src/db/profiles';
 import { createTrack } from '../../src/events/track';
 import { holdingsRoutes } from '../../src/http/holdings';
 import type { LedgerDeps } from '../../src/http/ledger-edge';
-import { ledgerInit, meRoutes } from '../../src/http/me';
+import { ledgerCountryChange, ledgerInit, meRoutes } from '../../src/http/me';
 import { prefsRoutes } from '../../src/http/prefs';
 import { snapshotRoutes } from '../../src/http/snapshot';
 import { tagsRoutes } from '../../src/http/tags';
@@ -110,6 +110,7 @@ export function ledgerApp(db: TestDatabase): LedgerApp {
       baseCurrency: (userId) => baseCurrencyOf(db.withUser, userId),
       countries: () => Promise.resolve(COUNTRIES),
       initLedger: ledgerInit(deps.withUser, deps.options),
+      changeLedgerCountry: ledgerCountryChange(deps.withUser, deps.options),
     }),
   );
   app.route('/api/snapshot', snapshotRoutes(deps));

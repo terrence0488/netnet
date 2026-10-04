@@ -7,8 +7,9 @@ import { errorOf, json, ledgerApp, newPerson, snapshotOf, type LedgerApp } from 
 /**
  * The first country the person confirms makes their ledger (`PATCH /api/me {country}`, PRD J1),
  * in the same request: in that country's currency, with every universal type and the pack's own
- * types (generic only when the country has no pack). Once. A later confirmation, of the same
- * country or another, leaves the ledger as it is (a change of country is P3's).
+ * types (generic only when the country has no pack). Once. Another country moves it (J2): over
+ * again while it has no holding, else adding the new pack's types; the same country changes
+ * nothing.
  */
 let db: TestDatabase;
 let target: LedgerApp;
@@ -75,7 +76,7 @@ describe('PATCH /api/me {country}', () => {
     ]);
   });
 
-  it('does not make it again: a second confirmation, or another country, leaves it alone', async () => {
+  it('does not make it again: the same country confirmed twice changes nothing', async () => {
     const p = await newPerson(target);
     await json(await p.patch('/api/me', { country: 'QZ' }));
     const types = await typeCount(p.userId);
@@ -83,12 +84,50 @@ describe('PATCH /api/me {country}', () => {
     expect(await json(await p.patch('/api/me', { country: 'QZ' }))).toMatchObject({
       baseCurrency: 'EUR',
     });
-    expect(await json(await p.patch('/api/me', { country: 'GB' }))).toMatchObject({
-      country: 'GB',
-      baseCurrency: 'EUR',
-    });
     expect(await ledgerOf(p.userId)).toStrictEqual({ base_currency: 'EUR', data_version: 1 });
     expect(await typeCount(p.userId)).toBe(types);
+  });
+
+  it('starts the ledger over in another country while it has no holding (Back in onboarding)', async () => {
+    const p = await newPerson(target);
+    await json(await p.patch('/api/me', { country: 'QZ' }));
+    expect(await json(await p.patch('/api/me', { country: 'GB' }))).toMatchObject({
+      country: 'GB',
+      baseCurrency: 'GBP',
+    });
+    const snapshot = await snapshotOf(p);
+    expect(snapshot).toMatchObject({
+      dataVersion: 2,
+      baseCurrency: 'GBP',
+      packRef: [{ key: 'generic', version: 1 }],
+    });
+    expect(snapshot.types).toHaveLength(UNIVERSALS.length);
+    expect(snapshot.types.every((t) => t.packTypeKey === null)).toBe(true);
+  });
+
+  it('keeps the currency once it has a holding, and adds the new pack’s types', async () => {
+    const p = await newPerson(target);
+    await json(await p.patch('/api/me', { country: 'GB' }));
+    await json(
+      await p.post('/api/holdings', {
+        name: 'Current account',
+        kind: 'asset',
+        universal: 'cash',
+        currency: 'GBP',
+        via: 'form',
+      }),
+    );
+    const types = await typeCount(p.userId);
+    expect(await json(await p.patch('/api/me', { country: 'QZ' }))).toMatchObject({
+      country: 'QZ',
+      baseCurrency: 'GBP',
+    });
+    const snapshot = await snapshotOf(p);
+    expect(snapshot.baseCurrency).toBe('GBP');
+    expect(snapshot.types).toHaveLength(types + 1);
+    expect(snapshot.types.filter((t) => t.packTypeKey !== null)).toStrictEqual([
+      like({ universal: 'loan', packTypeKey: 'auto_loan' }),
+    ]);
   });
 
   it('makes a generic ledger for a country without a pack', async () => {

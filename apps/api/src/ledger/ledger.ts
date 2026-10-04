@@ -29,7 +29,16 @@ import { createHolding, deleteHolding, updateHolding } from './holdings';
 import { setPrefs } from './prefs';
 import { context, getHolding, history, listHoldings, snapshot } from './reads';
 import { Scope, type LedgerOptions } from './scope';
-import { applyPackTypes, deleteTag, deleteType, init, upsertTag, upsertType } from './taxonomy';
+import {
+  applyPackTypes,
+  changeCountry,
+  deleteTag,
+  deleteType,
+  init,
+  upsertTag,
+  upsertType,
+  type CountryInput,
+} from './taxonomy';
 import { deleteValue, recordValues, updateValue } from './values';
 import type { Actor, LedgerTx, WithUser } from './with-user';
 
@@ -43,7 +52,7 @@ export type { LedgerContent, LedgerOptions } from './scope';
  */
 export interface Ledger {
   /** The ledger in `baseCurrency`, with every universal type and the pack chain's types. Once. */
-  init(i: { baseCurrency: string; pack: PackRef }): Promise<void>;
+  init(i: CountryInput): Promise<void>;
   snapshot(): Promise<Snapshot>;
   /** The input to `core.compileContext`, which the caller runs with baseline, today and packs. */
   context(): Promise<ContextInput>;
@@ -64,6 +73,11 @@ export interface Ledger {
   deleteTag(id: string, mergeInto?: string): Promise<Write<void>>;
   setPrefs(p: PrefsPatch): Promise<Write<Prefs>>;
   applyPackTypes(pack: PackRef): Promise<Write<UserType[]>>;
+  /**
+   * Another country confirmed: with no holding yet, the ledger starts over in its currency and
+   * types; with one, the currency stays and the pack's types are added (PRD J2).
+   */
+  changeCountry(i: CountryInput): Promise<Write<void>>;
 }
 
 /** The methods that only read. */
@@ -90,6 +104,7 @@ export const LEDGER_WRITES = [
   'deleteTag',
   'setPrefs',
   'applyPackTypes',
+  'changeCountry',
 ] as const satisfies readonly (keyof Ledger)[];
 
 /** The Ledger over one `withUser` transaction. */
@@ -114,6 +129,7 @@ export function openLedger(tx: LedgerTx, options: LedgerOptions): Ledger {
     deleteTag: (id, mergeInto) => deleteTag(s, id, mergeInto),
     setPrefs: (p) => setPrefs(s, p),
     applyPackTypes: (pack) => applyPackTypes(s, pack),
+    changeCountry: (i) => changeCountry(s, i),
   };
 }
 
