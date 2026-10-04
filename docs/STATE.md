@@ -4,10 +4,10 @@
 Stage: Build (Stage 5)
 Phase: P1
 Status: in-progress
-Next action: **Founder:** answer the four questions in the handoff note. Then review and merge
-#14 (T6) first, then #13 (T7), then #15 (T8). Then `continue` in a **new session** →
-`stage: build P1`, wave 4 (P1-T9, T10, T11). Inputs: `docs/04-plan.md` §3, `CONVENTIONS.md`,
-`docs/phases/P1/tasks/`. T9 needs questions 1 and 2 answered.
+Next action: **Founder:** merge #14 (T6) first, then #13 (T7), then #15 (T8, once it uses
+`core.packChain`), then this file's PR. Then `continue` in a **new session** → `stage: build P1`,
+wave 4 (P1-T9, T10, T11). Inputs: `docs/04-plan.md` §3, `CONVENTIONS.md`,
+`docs/phases/P1/tasks/`.
 **Branch:** one branch per task, from `main` (CONVENTIONS §15).
 
 ## Approvals
@@ -26,12 +26,11 @@ Next action: **Founder:** answer the four questions in the handoff note. Then re
 
 ## Handoff note (last session)
 Wave 3 built (reports in the briefs; Status left `todo`: auto mode would not let the build session
-mark its own tasks done, so the Founder does). Questions: (1) change on the total, counting a new
-holding as growth (built), or per holding and summed like the prototype (recommended; changes §7.9
-`baselineChange`); (2) last month/quarter/year = a month before today (built, prototype;
-recommended) or last month's end (§7.5's example); (3) core imports contracts' zod-free currency
-table, dropping its copy (CONVENTIONS §3; recommended); (4) §7.5 has no code for a missing session,
-which T11 needs (recommended: `UNAUTHENTICATED` 401). FX unverified live: run the backfill; set
-`CRON_SECRET`. #15 switches to `core.packChain` once #14 merges. Carried: Ledger.init creates
-`ledger_state` (T10); web `money.ts` → T6's table; deletion vs insert-only analytics (P3).
+mark its own tasks done, so the Founder does). The Founder answered the four questions
+(`docs/decisions.md`): a baseline change is per holding and summed; the calendar baselines are month
+ends; one currency table, which core imports from `@netnet/contracts/currencies`; a missing session
+is `UNAUTHENTICATED` 401 (§7.5, in contracts; T11 uses it). The first three are in #14. FX
+unverified live: run the backfill; set `CRON_SECRET`. #15 switches to `core.packChain` once #14
+merges. Carried: Ledger.init creates `ledger_state` (T10); web `money.ts` → T6's table; deletion vs
+insert-only analytics (P3).
 Plan tracker: https://claude.ai/artifact/UkJfDYaAAi8gJV1aBbk3nB (`tasks/<id>`, `meta/state`).
