@@ -3,7 +3,7 @@ import { fetchClientMetadataResource } from '@better-auth/cimd/node';
 import type { ClientMetadataResourceFetch } from '@better-auth/oauth-provider';
 import { canonicalTimeZone } from '@netnet/contracts';
 import { betterAuth, generateId } from 'better-auth';
-import { createEmailVerificationToken } from 'better-auth/api';
+import { createAuthMiddleware, createEmailVerificationToken } from 'better-auth/api';
 import { authAdapter } from '../db/auth-adapter';
 import { database, type Database } from '../db/client';
 import { createProfile } from '../db/profiles';
@@ -51,6 +51,27 @@ export interface AuthDeps {
   background: (task: Promise<unknown>) => void;
   /** Fetches agents' CIMD documents (see `OAuthPluginOptions`). */
   fetchClientMetadata: ClientMetadataResourceFetch;
+}
+
+/**
+ * The endpoints whose JSON answer carries the session token beside the cookie: sign-up and sign-in
+ * as `token`, get-session as `session.token`. The web app reads neither, and the cookie is HttpOnly
+ * so that page script never holds the token; `withoutSessionToken` takes it out of the bodies.
+ */
+const TOKEN_IN_BODY = new Set(['/sign-up/email', '/sign-in/email', '/get-session']);
+
+/** `body` without the session token, wherever these endpoints put it. */
+export function withoutSessionToken(body: unknown): unknown {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) return body;
+  const rest: Record<string, unknown> = { ...(body as Record<string, unknown>) };
+  delete rest.token;
+  const { session } = rest;
+  if (typeof session === 'object' && session !== null && !Array.isArray(session)) {
+    const kept: Record<string, unknown> = { ...(session as Record<string, unknown>) };
+    delete kept.token;
+    rest.session = kept;
+  }
+  return rest;
 }
 
 /** How the account was made: by the path that made it (`/callback/:id` for Google and Apple, P2). */
@@ -114,6 +135,17 @@ export function createAuth(deps: AuthDeps) {
       },
     },
     session: { expiresIn: SESSION_DAYS * DAY_S, updateAge: DAY_S },
+    hooks: {
+      // A hook's answer replaces the endpoint's (Better Auth's `hooks.after`).
+      after: createAuthMiddleware(async (ctx) => {
+        const returned: unknown = ctx.context.returned;
+        if (!TOKEN_IN_BODY.has(ctx.path) || typeof returned !== 'object' || returned === null) {
+          return;
+        }
+        if (returned instanceof Error || returned instanceof Response) return;
+        return ctx.json(withoutSessionToken(returned) as Record<string, unknown>);
+      }),
+    },
     advanced: {
       cookiePrefix: 'netnet',
       useSecureCookies: true,

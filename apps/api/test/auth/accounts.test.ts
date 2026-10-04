@@ -224,6 +224,35 @@ describe('sign-up', () => {
   });
 });
 
+describe('the session token', () => {
+  it('travels in the HttpOnly cookie only, never in a JSON body', async () => {
+    const email = newEmail();
+    const browser = new Browser(target);
+    const up = await browser.signUp(email, PASSWORD);
+    const cookie = [...browser.cookies.values()][0] ?? '';
+    const token = decodeURIComponent(cookie).split('.')[0] ?? '';
+    expect(token.length).toBeGreaterThan(16);
+    const upBody = (await up.json()) as Record<string, unknown>;
+    expect(upBody).not.toHaveProperty('token');
+    expect(upBody).toMatchObject({ user: { email } });
+
+    const signIn = await browser.signIn(email, PASSWORD);
+    const inBody = (await signIn.json()) as Record<string, unknown>;
+    expect(inBody).not.toHaveProperty('token');
+    expect(inBody).toMatchObject({ user: { email } });
+
+    const session = await browser.send('/api/auth/get-session');
+    const sessionBody = (await session.json()) as { session: Record<string, unknown> };
+    expect(sessionBody.session).not.toHaveProperty('token');
+    expect(sessionBody).toMatchObject({ session: { expiresAt: expect.any(String) as unknown } });
+
+    for (const body of [upBody, inBody, sessionBody]) {
+      expect(JSON.stringify(body)).not.toContain(token);
+    }
+    await target.settle();
+  });
+});
+
 describe('sign-in and sign-out', () => {
   it('signs in with the right password only, and answers an unknown email the same way', async () => {
     const { email } = await signedUp();
