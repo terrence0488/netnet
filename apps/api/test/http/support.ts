@@ -4,7 +4,7 @@ import { expect } from 'vitest';
 import { originCheck } from '../../src/auth/origin-check';
 import { createFx } from '../../src/content/fx';
 import { COUNTRIES_KEY } from '../../src/content/publish';
-import { createContentStore, type ContentSource } from '../../src/content/store';
+import { CURRENT_TTL_MS, createContentStore, type ContentSource } from '../../src/content/store';
 import { eventStore } from '../../src/db/analytics';
 import type { ContentRef } from '../../src/db/content';
 import { ensureProfile } from '../../src/db/profiles';
@@ -46,21 +46,27 @@ export const COUNTRIES: Countries = {
   US: { currency: 'USD' },
 };
 
-/** Published content as the store reads it: each document at version 1. */
-function memoryContent(): ContentSource {
+/** Published content as the store reads it: each document at version 1 until `publish`. */
+function memoryContent(): ContentSource & { publish(ref: ContentRef, body: unknown): void } {
   const docs = new Map<string, unknown>([
     ['pack/generic@1', GENERIC_V1],
     ['pack/qz@1', COUNTRY_V1],
     [`countries/${COUNTRIES_KEY}@1`, COUNTRIES],
   ]);
-  const refs: ContentRef[] = [...docs.keys()].map((id) => {
-    const [kind = '', rest = ''] = id.split('/');
-    const [key = '', version = ''] = rest.split('@');
-    return { kind, key, version: Number(version) };
-  });
+  const live = new Map<string, ContentRef>(
+    [...docs.keys()].map((id) => {
+      const [kind = '', rest = ''] = id.split('/');
+      const [key = '', version = ''] = rest.split('@');
+      return [`${kind}/${key}`, { kind, key, version: Number(version) }];
+    }),
+  );
   return {
-    current: () => Promise.resolve(refs),
+    current: () => Promise.resolve([...live.values()]),
     body: (ref) => Promise.resolve(docs.get(`${ref.kind}/${ref.key}@${ref.version}`)),
+    publish(ref, body) {
+      docs.set(`${ref.kind}/${ref.key}@${ref.version}`, body);
+      live.set(`${ref.kind}/${ref.key}`, ref);
+    },
   };
 }
 
@@ -74,10 +80,14 @@ export interface LedgerApp {
   settle(): Promise<void>;
   /** Puts Vercel's request context back as it was. */
   restore(): void;
+  /** Publishes `body` as `ref`, live at once (the store's cache is passed over). */
+  publish(ref: ContentRef, body: unknown): void;
 }
 
 export function ledgerApp(db: TestDatabase): LedgerApp {
-  const store = createContentStore({ source: memoryContent() });
+  const content = memoryContent();
+  let elapsed = 0;
+  const store = createContentStore({ source: content, clock: () => Date.now() + elapsed });
   const fx = createFx(fakeRates());
   const deps: LedgerDeps = {
     profile: (userId) => ensureProfile(db.appDb, userId),
@@ -129,6 +139,10 @@ export function ledgerApp(db: TestDatabase): LedgerApp {
     waits,
     settle: () => waits.settle(),
     restore: () => waits.restore(),
+    publish(ref, body) {
+      content.publish(ref, body);
+      elapsed += CURRENT_TTL_MS;
+    },
   };
 }
 

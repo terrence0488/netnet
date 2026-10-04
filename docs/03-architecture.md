@@ -282,7 +282,7 @@ $1 FOR UPDATE`. That lock serialises one user's writes, exactly as a single-thre
 
 | Table | Columns (all have `user_id`) | Notes |
 |---|---|---|
-| `ledger_state` | `user_id` PK, `base_currency`, `data_version`, `created_at` | `data_version` goes up by one on every write, and is the snapshot's ETag. The row is the per-user write lock. (Reminder timing lives in `core.reminder_state`) |
+| `ledger_state` | `user_id` PK, `base_currency`, `data_version`, `created_at` | `data_version` goes up by one on every write; with the pack chain's versions it makes the snapshot's ETag. The row is the per-user write lock. (Reminder timing lives in `core.reminder_state`) |
 | `user_type` | `id`, `universal` (§7.8), `pack_type_key` (nullable, e.g. `car_loan`), `custom_name` (nullable), `sort`, `archived` | **No name is stored until the user renames one**, so labels follow the current pack |
 | `tag` | `id`, `name` (unique per user, case-insensitive), `sort` | |
 | `holding` | `id`, `name`, `kind` (`asset`/`liability`), `type_id`, `currency`, `cadence_days`, `archived_at`, `created_at`, `row_version`, **`access`** (`accessible`/`illiquid`/`locked`/`undecided`, null for liabilities), **`access_basis`** jsonb `{via, pack, pack_version, question, answer}`, **`access_reason`**, **`access_until`** | The applied accessibility outcome **and its reason** are kept as applied, with the pack version. A pack edit never moves them (§6.7) |
@@ -384,7 +384,7 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 |---|---|---|
 | `GET /api/geo` | → `{country: "SG" \| null}` from `x-vercel-ip-country` | §2.3 r2 |
 | `GET /api/me` · `PATCH /api/me` | profile: `email, emailVerified, country, baseCurrency, segment, timeZone, onboardingState`. The first `country` confirmed makes the ledger (`init`); another one moves it (`changeCountry`) | J1, J2 |
-| `GET /api/snapshot` | `If-None-Match: <dataVersion>` (its `ETag`) → 304, or `{dataVersion, baseCurrency, packRef, prefs, types, tags, holdings, values}`. Values compact per holding: `[date, amountMinor, currency, baseMinor, source, clientName, id]` | J4, J11 |
+| `GET /api/snapshot` | `If-None-Match:` its `ETag`, sent back as it came → 304, or `{dataVersion, baseCurrency, packRef, prefs, types, tags, holdings, values}`. Values compact per holding: `[date, amountMinor, currency, baseMinor, source, clientName, id]`. The `ETag` is the data version with each pack's version (`"12:sg@3:generic@2"`), so a write and a content publish each change it | J4, J11 |
 | `POST /api/holdings` | `{name, kind, typeId or universal, currency, tagIds?, access?: AccessInput, opening?: {amount, date?, fxRate?}, via: "guided"\|"form", allowDuplicate?}`, `universal` meaning the person's type of it → `Holding`, or `409 LIKELY_DUPLICATE {candidates}` | J1, J2, J6 |
 | `PATCH /api/holdings/:id` | `{name?, typeId?, tagIds?, access?, cadenceDays?, archived?}` | J2 |
 | `DELETE /api/holdings/:id` | — | J2 |

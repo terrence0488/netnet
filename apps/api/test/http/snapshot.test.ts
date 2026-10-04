@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createTestDatabase, type TestDatabase } from '../isolation/harness';
-import { anyNumber, like } from '../ledger/support';
+import { anyNumber, COUNTRY_V1, like } from '../ledger/support';
 import {
   errorOf,
   json,
@@ -75,7 +75,7 @@ describe('GET /api/snapshot', () => {
       'holdings',
       'values',
     ]);
-    expect(res.headers.get('ETag')).toBe(`"${String(body.dataVersion)}"`);
+    expect(res.headers.get('ETag')).toBe(`"${String(body.dataVersion)}:qz@1:generic@1"`);
     expect(body).toMatchObject({
       baseCurrency: 'EUR',
       packRef: [
@@ -93,29 +93,27 @@ describe('GET /api/snapshot', () => {
     });
   });
 
-  it('answers 304 while the data version is current, and 200 once it is not', async () => {
-    const { dataVersion } = await json<{ dataVersion: number }>(await p.get('/api/snapshot'));
-    for (const tag of [
-      String(dataVersion),
-      `"${dataVersion}"`,
-      `W/"${dataVersion}"`,
-      `"0", "${dataVersion}"`,
-      '*',
-    ]) {
+  it('answers 304 while its ETag is current, and 200 once a write changes it', async () => {
+    const first = await p.get('/api/snapshot');
+    const etag = first.headers.get('ETag')!;
+    const { dataVersion } = await json<{ dataVersion: number }>(first);
+    for (const tag of [etag, `W/${etag}`, `"0", ${etag}`, '*']) {
       const res = await p.get('/api/snapshot', { 'If-None-Match': tag });
       expect(res.status, tag).toBe(304);
       expect(await res.text()).toBe('');
-      expect(res.headers.get('ETag')).toBe(`"${dataVersion}"`);
+      expect(res.headers.get('ETag')).toBe(etag);
       expect(res.headers.get('Cache-Control')).toBe('private, no-store');
     }
-    for (const tag of [String(dataVersion - 1), 'v1', '']) {
+    // The data version alone is not the ETag: it would miss a content publish.
+    for (const tag of [String(dataVersion), `"${dataVersion}"`, 'v1', '']) {
       expect((await p.get('/api/snapshot', { 'If-None-Match': tag })).status, tag).toBe(200);
     }
 
     await json(await p.patch('/api/prefs', { sort: 'name' }));
-    const res = await p.get('/api/snapshot', { 'If-None-Match': String(dataVersion) });
+    const res = await p.get('/api/snapshot', { 'If-None-Match': etag });
     const body = await json<{ dataVersion: number }>(res);
     expect(body.dataVersion).toBe(dataVersion + 1);
+    expect(res.headers.get('ETag')).not.toBe(etag);
   });
 
   it('logs its size, raw and gzipped, and its value count, after the response', async () => {
@@ -141,8 +139,7 @@ describe('GET /api/snapshot', () => {
     expect(logged[0]?.gzipBytes).toBeLessThan(Buffer.byteLength(text));
 
     lines.length = 0;
-    const { dataVersion } = JSON.parse(text) as { dataVersion: number };
-    await p.get('/api/snapshot', { 'If-None-Match': String(dataVersion) });
+    await p.get('/api/snapshot', { 'If-None-Match': res.headers.get('ETag')! });
     await target.settle();
     expect(lines.filter((l) => l.event === 'snapshot_sent')).toStrictEqual([]);
   });
@@ -166,5 +163,24 @@ describe('GET /api/snapshot', () => {
       baseCurrency: 'USD',
       packRef: [{ key: 'generic', version: 1 }],
     });
+  });
+
+  // Last: it publishes a new version of the country's pack.
+  it('answers 200 once a content publish changes the pack chain, with no write', async () => {
+    const first = await p.get('/api/snapshot');
+    const etag = first.headers.get('ETag')!;
+    const { dataVersion } = await json<{ dataVersion: number }>(first);
+    expect((await p.get('/api/snapshot', { 'If-None-Match': etag })).status).toBe(304);
+
+    target.publish({ kind: 'pack', key: 'qz', version: 2 }, { ...COUNTRY_V1, version: 2 });
+    const res = await p.get('/api/snapshot', { 'If-None-Match': etag });
+    expect(await json(res)).toMatchObject({
+      dataVersion,
+      packRef: [
+        { key: 'qz', version: 2 },
+        { key: 'generic', version: 1 },
+      ],
+    });
+    expect(res.headers.get('ETag')).toBe(`"${dataVersion}:qz@2:generic@1"`);
   });
 });

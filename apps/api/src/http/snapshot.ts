@@ -1,4 +1,4 @@
-import type { Snapshot } from '@netnet/contracts';
+import type { PackRef, Snapshot } from '@netnet/contracts';
 import { promisify } from 'node:util';
 import { gzip } from 'node:zlib';
 import { Hono } from 'hono';
@@ -12,27 +12,28 @@ import { WEB, appLedgerDeps, type LedgerDeps } from './ledger-edge';
 
 /**
  * `GET /api/snapshot` (architecture §7.2): everything the web app computes figures from, in one
- * call, values compact per holding. `If-None-Match: <dataVersion>` answers `304` when nothing has
- * been written since; the version is read first, so a `304` loads nothing else. Each snapshot sent
- * logs its size and value count: §7.2's revisit trigger is 1 MB gzipped or 20,000 values.
+ * call, values compact per holding. Its ETag is the data version with the pack chain it was built
+ * with, so a write and a content publish each change it; `If-None-Match` with the current one
+ * answers `304`, and reads only the version to tell. Each snapshot sent logs its size and value
+ * count: §7.2's revisit trigger is 1 MB gzipped or 20,000 values.
  */
 
 const gzipped = promisify(gzip);
 
-/** The snapshot's ETag: its data version, quoted as RFC 9110 has it. */
-export function etagOf(dataVersion: number): string {
-  return `"${dataVersion}"`;
+/**
+ * The snapshot's ETag (RFC 9110, quoted): its data version and each pack it was built with, such
+ * as `"12:qz@3:generic@2"`. Opaque to the web app, which sends it back as it came.
+ */
+export function etagOf(dataVersion: number, packRef: PackRef): string {
+  return `"${[String(dataVersion), ...packRef.map((p) => `${p.key}@${p.version}`)].join(':')}"`;
 }
 
-/**
- * Whether `header` (If-None-Match) names `dataVersion`: as §7.2's bare number, as an ETag (`"12"`,
- * `W/"12"`), in a list, or `*`.
- */
-export function matchesVersion(header: string | undefined, dataVersion: number): boolean {
+/** Whether `header` (If-None-Match) names `etag`: strong or weak, alone or in a list, or `*`. */
+export function matchesEtag(header: string | undefined, etag: string): boolean {
   if (header === undefined) return false;
   return header.split(',').some((part) => {
     const tag = part.trim();
-    return tag === '*' || tag.replace(/^W\//, '').replace(/^"(.*)"$/, '$1') === String(dataVersion);
+    return tag === '*' || tag.replace(/^W\//, '') === etag;
   });
 }
 
@@ -40,7 +41,7 @@ function valueCount(snapshot: Snapshot): number {
   return Object.values(snapshot.values).reduce((n, values) => n + values.length, 0);
 }
 
-type Outcome = { notModified: number } | { snapshot: Snapshot };
+type Outcome = { notModified: string } | { snapshot: Snapshot };
 
 export function snapshotRoutes(deps: LedgerDeps = appLedgerDeps): Hono<AppEnv> {
   return new Hono<AppEnv>().get('/', async (c) => {
@@ -48,13 +49,21 @@ export function snapshotRoutes(deps: LedgerDeps = appLedgerDeps): Hono<AppEnv> {
     const ifNoneMatch = c.req.header('If-None-Match');
     const profile = await deps.profile(userId);
     const options = deps.options(profile);
+    // The pack chain live now: a content publish changes it, and so the ETag, as a write does.
+    const packRef =
+      ifNoneMatch === undefined
+        ? undefined
+        : (await options.content.chain()).map((p) => ({ key: p.id, version: p.version }));
     const outcome = await deps.withUser<Outcome>(userId, WEB, async (tx) => {
       const version = await dataVersionOf(tx);
-      if (version !== null && matchesVersion(ifNoneMatch, version)) return { notModified: version };
+      if (version !== null && packRef !== undefined) {
+        const etag = etagOf(version, packRef);
+        if (matchesEtag(ifNoneMatch, etag)) return { notModified: etag };
+      }
       return { snapshot: await openLedger(tx, options).snapshot() };
     });
     if ('notModified' in outcome) {
-      return c.body(null, 304, { ETag: etagOf(outcome.notModified) });
+      return c.body(null, 304, { ETag: outcome.notModified });
     }
 
     const { snapshot } = outcome;
@@ -75,7 +84,7 @@ export function snapshotRoutes(deps: LedgerDeps = appLedgerDeps): Hono<AppEnv> {
     );
     return c.body(json, 200, {
       'Content-Type': 'application/json',
-      ETag: etagOf(snapshot.dataVersion),
+      ETag: etagOf(snapshot.dataVersion, snapshot.packRef),
     });
   });
 }
