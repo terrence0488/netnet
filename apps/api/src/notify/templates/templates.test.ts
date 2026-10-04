@@ -71,6 +71,11 @@ describe('every message template', () => {
 });
 
 describe('the account emails', () => {
+  it('land on the web app’s own pages', () => {
+    expect(EMAIL_VERIFIED_PAGE).toBe('/app/verify');
+    expect(RESET_PASSWORD_PAGE).toBe('/app/reset');
+  });
+
   it('link to Better Auth’s verification, landing on the web app', () => {
     const { text, html } = renderEmail(SAMPLES['account.verify_email'][0]!, { origin: ORIGIN });
     const url = `${ORIGIN}/api/auth/verify-email?token=${JWT}&callbackURL=${encodeURIComponent(EMAIL_VERIFIED_PAGE)}`;

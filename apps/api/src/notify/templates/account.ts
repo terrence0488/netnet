@@ -9,11 +9,11 @@ import type { RenderContext } from './render-context';
  * Auth's endpoints, which redirect to the web app's pages below.
  */
 
-/** Where the verification link lands once the address is verified (`?error=…` if it is not). */
-export const EMAIL_VERIFIED_PAGE = '/app/';
+/** The web app's page the verification link lands on: verified, or `?error=…` if it is not. */
+export const EMAIL_VERIFIED_PAGE = '/app/verify';
 
 /** The web app's page that asks for the new password: `?token=…`, or `?error=INVALID_TOKEN`. */
-export const RESET_PASSWORD_PAGE = '/app/reset-password';
+export const RESET_PASSWORD_PAGE = '/app/reset';
 
 /** Better Auth's tokens: a JWT for verification, a random id for a reset. Nothing else passes. */
 const TOKEN = /^[A-Za-z0-9._~-]{16,2048}$/;

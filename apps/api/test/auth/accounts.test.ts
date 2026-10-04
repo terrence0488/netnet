@@ -183,7 +183,7 @@ describe('sign-up', () => {
 
     const res = await new Browser(target).send(linkIn(sent[0]));
     expect(res.status).toBe(302);
-    expect(res.headers.get('Location')).toBe('/app/');
+    expect(res.headers.get('Location')).toBe('/app/verify');
     const { rows } = await db.owner.query('select email_verified from core.user where id = $1', [
       userId,
     ]);
@@ -304,7 +304,7 @@ describe('password reset', () => {
     const landing = await browser.send(linkIn(reset));
     expect(landing.status).toBe(302);
     const location = new URL(landing.headers.get('Location') ?? '', ORIGIN);
-    expect(location.pathname).toBe('/app/reset-password');
+    expect(location.pathname).toBe('/app/reset');
     const token = location.searchParams.get('token') ?? '';
     expect(token).not.toBe('');
 
