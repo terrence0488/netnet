@@ -6,6 +6,7 @@
 
 export { accessBucket, accessRule, resolveAccess } from './access';
 export { baselineChange } from './baseline';
+export { DEFAULT_CONTEXT_BASELINE, compileContext } from './context/compile-context';
 export { addDays, addMonths, daysBetween, isCalendarDate } from './dates';
 export {
   DUPLICATE_SIMILARITY,
