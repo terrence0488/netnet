@@ -675,7 +675,7 @@ latestValues(values, asOf): Map<HoldingId, Value>;             // latest by date
 position(holdings, latest, filter?): Position;                 // could use / sell first / locked / undecided / owed
 series(values, holdings, range, interval, filter?): Point[];    // carried vs observed (J11)
 periods(values, holdings, view, filter, exclusions): Period[];  // value dates only; stored base
-baselineChange(series, baseline, today): Change;
+baselineChange(values, holdings, baseline, today, filter?): Change;  // per holding, summed; month ends (J4)
 staleness(holding, latest, today, pack): { stale: boolean; days: number };
 compileContext(data, chain, today, opts): FinancialContext;     // §7.5
 likelyDuplicates(existing, candidate): Candidate[];
