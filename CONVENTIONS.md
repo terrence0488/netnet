@@ -64,8 +64,10 @@ docs/                     the workflow's documents; docs/02-prototype is the des
 
 ## 3. Dependency and data-access rules (lint-enforced)
 
-- `packages/core` imports nothing but `packages/contracts` types and `d3-*` maths. No `fetch`,
-  storage, `Date.now()`, `Math.random()` or environment access (N11). `today` and ids are passed in.
+- `packages/core` imports nothing but `packages/contracts` types, contracts' zod-free currency table
+  (`@netnet/contracts/currencies`, the one value core imports from it) and `d3-*` maths. No
+  `fetch`, storage, `Date.now()`, `Math.random()` or environment access (N11). `today` and ids are
+  passed in.
 - `packages/contracts` imports only `zod`.
 - `apps/web` imports `core`, `contracts` and `tokens`, and never anything from `apps/api`.
 - **Only `apps/api/src/ledger/**` may import the `ledger` schema or query `ledger.*`, and only
