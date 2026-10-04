@@ -21,6 +21,7 @@ describe('the public API', () => {
       'baselineChange',
       'staleness',
       'likelyDuplicates',
+      'compileContext',
       'packChain',
       'typeLabel',
     ]) {

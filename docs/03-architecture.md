@@ -508,7 +508,8 @@ returns `LIKELY_DUPLICATE` with up to three candidates. Deterministic, no infere
 
 Deterministic output of `core.compileContext(ledgerData, packChain, today, options)`. **At most
 8 KB** of JSON for any user. Sections are ordered by importance, and holdings largest first,
-capped at 25. The rest is summarised by type, with a pointer to `list_holdings`.
+capped at 25. The rest is summarised by type, with a pointer to `list_holdings`. What a type of
+holding is (its pack `meaning`) is given once per type in `types`, not on every holding.
 
 ```jsonc
 {
@@ -535,9 +536,12 @@ capped at 25. The rest is summarised by type, with a pointer to `list_holdings`.
     "by_currency": [{ "currency": "SGD", "share": 0.77 }, { "currency": "USD", "share": 0.23 }],
     "concentration": [{ "holding_id": "hld_…", "name": "HDB flat", "share": 0.41 }]
   },
+  "types": [
+    { "type": "CPF",
+      "meaning": "Mandatory retirement account. Counts toward net worth, never toward what can be spent this month." }
+  ],
   "holdings": [
     { "id": "hld_…", "name": "CPF Ordinary Account", "type": "CPF",
-      "meaning": "Mandatory retirement account. Counts toward net worth, never toward what can be spent this month.",
       "access": "locked", "access_reason": "CPF is locked until you’re eligible to withdraw",
       "until": "until you’re eligible to withdraw",
       "value": { "amount": 117100.00, "currency": "SGD", "base": 117100.00, "as_of": "2026-08-04",
