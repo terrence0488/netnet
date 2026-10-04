@@ -231,6 +231,8 @@ listings and launch note ready to submit and post.
   ChatGPT's directories and the public MCP registries (G-D2). Once OpenAI lists NetNet, ChatGPT is
   tested on a free account and its guide is listed in the connect flow. Submitting them needs the privacy
   policy and terms (Stage 8's legal basics).
+- A security review before launch, starting with whether sign-up keeps saying that an email already
+  has an account (P1 answers 422; the reset flow reveals nothing).
 - The launch note (G-D3): one text, the proof varied per audience.
 - The M12 harness: a fixed fictional dataset and question set, a deliberately weak model, NetNet
   versus a spreadsheet upload, scored blind. Each run's API spend is approved by the Founder first.
