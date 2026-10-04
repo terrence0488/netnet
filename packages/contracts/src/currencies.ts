@@ -4,9 +4,9 @@
  * 4217 List One without funds, precious metals, bond-market units, special drawing rights and the
  * testing and no-currency codes.
  *
- * The module imports nothing, so it stays free of zod. `packages/core` may import only types from
- * contracts (CONVENTIONS §3), so core keeps its own copy of this table, typed as
- * `CurrencyExponents`: any difference between the two is a compile error.
+ * The module imports nothing, so it stays free of zod: `packages/core` imports it by its own path,
+ * `@netnet/contracts/currencies`, the one part of contracts core may import as a value
+ * (CONVENTIONS §3).
  */
 export const CURRENCY_EXPONENTS = {
   AED: 2,

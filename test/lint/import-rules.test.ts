@@ -27,23 +27,26 @@ async function violations(filePath: string, code: string): Promise<string[]> {
 }
 
 describe('import rules (CONVENTIONS §3)', () => {
-  it('core imports only contracts types and d3-*, and stays pure', async () => {
+  it('core imports only contracts types, its currency table and d3-*, and stays pure', async () => {
     const code = [
       "import type { ErrorCode } from '@netnet/contracts';",
       "import { scaleLinear } from 'd3-scale';",
       "import { helper } from './helper';",
+      "import { currencyExponent } from '@netnet/contracts/currencies';",
       "import { ERROR_STATUS } from '@netnet/contracts';",
       "import { z } from 'zod';",
+      "import { contentSchema } from '@netnet/contracts/content';",
       'export const t = [Date.now(), Math.random(), new Date(), process.env.X, fetch];',
     ].join('\n');
     expect(await violations('packages/core/src/planted.ts', code)).toStrictEqual([
-      '4:@typescript-eslint/no-restricted-imports',
       '5:@typescript-eslint/no-restricted-imports',
-      '6:no-restricted-properties',
-      '6:no-restricted-properties',
-      '6:no-restricted-syntax',
-      '6:no-restricted-globals',
-      '6:no-restricted-globals',
+      '6:@typescript-eslint/no-restricted-imports',
+      '7:@typescript-eslint/no-restricted-imports',
+      '8:no-restricted-properties',
+      '8:no-restricted-properties',
+      '8:no-restricted-syntax',
+      '8:no-restricted-globals',
+      '8:no-restricted-globals',
     ]);
   });
 
