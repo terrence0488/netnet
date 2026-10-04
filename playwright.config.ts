@@ -48,7 +48,13 @@ export default defineConfig({
           command: 'tsx e2e/server.ts',
           url: `${BASE_URL}/api/health`,
           reuseExistingServer: !process.env.CI,
-          env: { PORT: String(PORT) },
+          // The agents' OAuth issuer and resource must be the origin the browser uses, and the
+          // signing keys outlive one server only under a fixed secret (test-only, not a secret).
+          env: {
+            PORT: String(PORT),
+            PUBLIC_ORIGIN: BASE_URL,
+            BETTER_AUTH_SECRET: 'e2e-only-secret-not-used-anywhere-else-0123456789',
+          },
         },
       }),
 });
