@@ -75,9 +75,12 @@ importers:
       '@netnet/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@netnet/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
       drizzle-orm:
         specifier: 0.45.3
-        version: 0.45.3(@types/pg@8.23.1)(pg@8.23.1)
+        version: 0.45.3(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.1)
       hono:
         specifier: 4.13.12
         version: 4.13.12
@@ -2596,6 +2599,10 @@ packages:
   keyv@5.6.0:
     resolution: {integrity: sha512-CYDD3SOtsHtyXeEORYRx2qBtpDJFjRTGXUtmNEMGyzYOKj1TE3tycdlho7kA1Ufx9OYWZzg52QFBGALTirzDSw==}
 
+  kysely@0.29.6:
+    resolution: {integrity: sha512-hHaB8C/rfzDDtr/t8YZwxAuPJTT0zHyaPoVzcXwDYhYNAgH/4sIfVhi/XLLIY+bL/FqaIJnjATDbi8ObSELmxg==}
+    engines: {node: '>=22.0.0'}
+
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
@@ -5103,9 +5110,10 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.15
 
-  drizzle-orm@0.45.3(@types/pg@8.23.1)(pg@8.23.1):
+  drizzle-orm@0.45.3(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.1):
     optionalDependencies:
       '@types/pg': 8.23.1
+      kysely: 0.29.6
       pg: 8.23.1
 
   edge-runtime@2.5.9:
@@ -5583,6 +5591,9 @@ snapshots:
   keyv@5.6.0:
     dependencies:
       '@keyv/serialize': 1.1.1
+
+  kysely@0.29.6:
+    optional: true
 
   levn@0.4.1:
     dependencies:

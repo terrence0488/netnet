@@ -25,6 +25,7 @@
   "dependencies": {
     "@netnet/contracts": "workspace:*",
     "@netnet/core": "workspace:*",
+    "@netnet/tokens": "workspace:*",
     "drizzle-orm": "0.45.3",
     "hono": "4.13.12",
     "pg": "8.23.1"
