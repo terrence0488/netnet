@@ -1,15 +1,20 @@
 import { Hono, type Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
+import { database, type Executor } from '../db/client';
 import type { AppEnv } from '../lib/context';
+import { publicOrigin } from '../lib/env';
 import { AppError } from '../lib/errors';
 import { clientIp, rateLimit, type RateLimit } from '../lib/rate-limit';
+import { agent, type Agent } from './agent';
 import { auth, type Auth } from './auth';
+import { oauthRoutes } from './oauth-routes';
 
 /**
  * `/api/auth/*` (architecture §7.1, §7.2): Better Auth's email and password endpoints, with
- * `core.rate_limit`'s limits in front (§8). Only the endpoints listed here are served; Better
- * Auth's others (updating a name, linking accounts…) answer `NOT_FOUND`. P1-T13 mounts the OAuth
- * server's, and Google and Apple (P2) add `/sign-in/social` and `/callback/:id`.
+ * `core.rate_limit`'s limits in front (§8), and the agents' OAuth server (`oauthRoutes`). Only the
+ * endpoints listed here are served; Better Auth's others (updating a name, linking accounts, the
+ * OAuth provider's consent and admin endpoints…) answer `NOT_FOUND`. Google and Apple (P2) add
+ * `/sign-in/social` and `/callback/:id`.
  */
 
 /** Sign-up: per IP address, in a fixed one-minute window (§8). */
@@ -36,7 +41,20 @@ const smallBody = bodyLimit({
 export interface AuthRoutesDeps {
   auth: () => Auth;
   rateLimit: RateLimit;
+  /** NetNet's origin, where the approval page is. */
+  origin: () => string;
+  agent: () => Agent;
+  /** Connected as `netnet_app`. */
+  db: () => Executor;
 }
+
+const defaultDeps: AuthRoutesDeps = {
+  auth,
+  rateLimit,
+  origin: publicOrigin,
+  agent,
+  db: database,
+};
 
 /** The request's body as an object, read from a copy so Better Auth can still read the original. */
 async function bodyOf(request: Request): Promise<Record<string, unknown>> {
@@ -82,7 +100,7 @@ async function withEmptyName(request: Request): Promise<Request> {
   });
 }
 
-export function authRoutes(deps: AuthRoutesDeps = { auth, rateLimit }): Hono<AppEnv> {
+export function authRoutes(deps: AuthRoutesDeps = defaultDeps): Hono<AppEnv> {
   const routes = new Hono<AppEnv>();
   const pass = (c: Context<AppEnv>) => deps.auth().handler(c.req.raw);
   const perIp = (c: Context<AppEnv>, what: string, limit: number) =>
@@ -114,6 +132,8 @@ export function authRoutes(deps: AuthRoutesDeps = { auth, rateLimit }): Hono<App
   routes.post('/reset-password', smallBody, pass);
   routes.post('/sign-out', smallBody, pass);
   routes.get('/get-session', pass);
+
+  routes.route('/', oauthRoutes(deps));
 
   return routes;
 }

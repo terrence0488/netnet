@@ -1,4 +1,6 @@
 import { randomBytes } from 'node:crypto';
+import { fetchClientMetadataResource } from '@better-auth/cimd/node';
+import type { ClientMetadataResourceFetch } from '@better-auth/oauth-provider';
 import { canonicalTimeZone } from '@netnet/contracts';
 import { betterAuth, generateId } from 'better-auth';
 import { createEmailVerificationToken } from 'better-auth/api';
@@ -13,12 +15,13 @@ import { newId } from '../lib/ids';
 import { log } from '../lib/log';
 import type { Notify } from '../notify/message';
 import { notify } from '../notify/notify';
+import { oauthPlugins } from './oauth';
 
 /**
  * Accounts (architecture §4, §8): Better Auth 1.7.7 with email and password, its tables in `core`.
  * Sign-up asks for an email and a password and nothing else, signs the person in at once and sends
  * the verification email through `notify()`; the person carries on unverified (PRD J1). Google and
- * Apple (P2) are `socialProviders` entries; the OAuth provider (P1-T13) is a plugin.
+ * Apple (P2) are `socialProviders` entries. The agents' OAuth server is its plugins (`./oauth`).
  */
 
 const HOUR_S = 60 * 60;
@@ -46,6 +49,8 @@ export interface AuthDeps {
   appVersion: () => string;
   /** Runs work after the response: the emails and the event. */
   background: (task: Promise<unknown>) => void;
+  /** Fetches agents' CIMD documents (see `OAuthPluginOptions`). */
+  fetchClientMetadata: ClientMetadataResourceFetch;
 }
 
 /** How the account was made: by the path that made it (`/callback/:id` for Google and Apple, P2). */
@@ -72,6 +77,9 @@ export function createAuth(deps: AuthDeps) {
     database: authAdapter(deps.db),
     trustedOrigins: deps.trustedOrigins,
     telemetry: { enabled: false },
+    plugins: oauthPlugins({ origin: deps.origin, fetchClientMetadata: deps.fetchClientMetadata }),
+    // The JWT plugin's session-to-JWT endpoint: agents get their tokens from the OAuth server.
+    disabledPaths: ['/token'],
     // core.rate_limit does it, across every function instance (routes.ts).
     rateLimit: { enabled: false },
     // Better Auth's messages can carry an email address: only that something failed is kept.
@@ -186,6 +194,7 @@ export function auth(): Auth {
     appVersion,
     background: (task) =>
       inBackground(task, () => log('auth_task_failed', { errorCode: 'INTERNAL' })),
+    fetchClientMetadata: fetchClientMetadataResource,
   });
   return shared;
 }

@@ -12,12 +12,13 @@ import {
   pgSchema,
   primaryKey,
   text,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { checkCurrency, checkId, checkOneOf, instant } from './columns';
 
 /**
  * The `core` and `analytics` schemas (architecture §6.2, §6.4). `core` holds no money. Better
- * Auth's OAuth plugin's tables join `core` with their own task. Only `apps/api/src/db/**` touches
+ * Auth's tables, its OAuth provider's among them, are in `core`. Only `apps/api/src/db/**` touches
  * these tables (CONVENTIONS §3); Better Auth reaches its own through the adapter in `auth-adapter.ts`.
  */
 export const core = pgSchema('core');
@@ -103,6 +104,213 @@ export const verification = core.table(
   (t) => [index('verification_identifier_idx').on(t.identifier)],
 );
 
+/*
+ * The agents' OAuth server (architecture §6.2, §7.6): the JWT plugin's signing keys and the OAuth
+ * provider plugin's tables, as Better Auth 1.7.7's `@better-auth/oauth-provider` defines them.
+ * Tokens and codes are stored hashed; a CIMD client is cached here by its URL. `reference_id` on
+ * a token or consent is the agent connection (`con_`) it was granted for.
+ */
+
+/** The keys agents' access tokens are signed with; private keys encrypted with the auth secret. */
+export const jwks = core.table('jwks', {
+  id: text('id').primaryKey(),
+  publicKey: text('public_key').notNull(),
+  privateKey: text('private_key').notNull(),
+  createdAt: instant('created_at').notNull().defaultNow(),
+  expiresAt: instant('expires_at'),
+  alg: text('alg'),
+  crv: text('crv'),
+});
+
+/** A client: registered by DCR, or discovered from its CIMD URL (`client_discovery_id` = `cimd`). */
+export const oauthClient = core.table(
+  'oauth_client',
+  {
+    id: text('id').primaryKey(),
+    /** The DCR id, or the CIMD document's URL. */
+    clientId: text('client_id').notNull().unique(),
+    clientSecret: text('client_secret'),
+    clientDiscoveryId: text('client_discovery_id'),
+    disabled: boolean('disabled').default(false),
+    skipConsent: boolean('skip_consent'),
+    enableEndSession: boolean('enable_end_session'),
+    subjectType: text('subject_type'),
+    scopes: text('scopes').array(),
+    clientCredentialsScopes: text('client_credentials_scopes').array(),
+    userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+    createdAt: instant('created_at'),
+    updatedAt: instant('updated_at'),
+    /** The name the client registered with: untrusted third-party text (architecture §8). */
+    name: text('name'),
+    uri: text('uri'),
+    icon: text('icon'),
+    contacts: text('contacts').array(),
+    tos: text('tos'),
+    policy: text('policy'),
+    softwareId: text('software_id'),
+    softwareVersion: text('software_version'),
+    softwareStatement: text('software_statement'),
+    redirectUris: text('redirect_uris').array().notNull(),
+    postLogoutRedirectUris: text('post_logout_redirect_uris').array(),
+    backchannelLogoutUri: text('backchannel_logout_uri'),
+    backchannelLogoutSessionRequired: boolean('backchannel_logout_session_required'),
+    tokenEndpointAuthMethod: text('token_endpoint_auth_method'),
+    applicationType: text('application_type'),
+    jwks: text('jwks'),
+    jwksUri: text('jwks_uri'),
+    grantTypes: text('grant_types').array(),
+    responseTypes: text('response_types').array(),
+    requirePKCE: boolean('require_pkce'),
+    dpopBoundAccessTokens: boolean('dpop_bound_access_tokens').default(false),
+    referenceId: text('reference_id'),
+    metadata: jsonb('metadata'),
+  },
+  (t) => [index('oauth_client_user_id_idx').on(t.userId)],
+);
+
+/** A protected resource tokens are issued for: `‹origin›/mcp`, seeded when the server starts. */
+export const oauthResource = core.table('oauth_resource', {
+  id: text('id').primaryKey(),
+  identifier: text('identifier').notNull().unique(),
+  name: text('name').notNull(),
+  accessTokenTtl: integer('access_token_ttl'),
+  refreshTokenTtl: integer('refresh_token_ttl'),
+  signingAlgorithm: text('signing_algorithm'),
+  signingKeyId: text('signing_key_id'),
+  allowedScopes: text('allowed_scopes').array(),
+  customClaims: jsonb('custom_claims'),
+  dpopBoundAccessTokensRequired: boolean('dpop_bound_access_tokens_required').default(false),
+  disabled: boolean('disabled').default(false),
+  createdAt: instant('created_at'),
+  updatedAt: instant('updated_at'),
+  policyVersion: integer('policy_version').default(1),
+  metadata: jsonb('metadata'),
+});
+
+/** Which client may ask for which resource. */
+export const oauthClientResource = core.table(
+  'oauth_client_resource',
+  {
+    id: text('id').primaryKey(),
+    clientId: text('client_id')
+      .notNull()
+      .references(() => oauthClient.clientId, { onDelete: 'cascade' }),
+    resourceId: text('resource_id')
+      .notNull()
+      .references(() => oauthResource.identifier, { onDelete: 'cascade' }),
+    metadata: jsonb('metadata'),
+    createdAt: instant('created_at'),
+  },
+  (t) => [
+    index('oauth_client_resource_client_id_idx').on(t.clientId),
+    index('oauth_client_resource_resource_id_idx').on(t.resourceId),
+    uniqueIndex('oauth_client_resource_client_id_resource_id_key').on(t.clientId, t.resourceId),
+  ],
+);
+
+/** A rotating refresh token (stored hashed), one family per connection (`reference_id`). */
+export const oauthRefreshToken = core.table(
+  'oauth_refresh_token',
+  {
+    id: text('id').primaryKey(),
+    token: text('token').notNull().unique(),
+    clientId: text('client_id')
+      .notNull()
+      .references(() => oauthClient.clientId),
+    sessionId: text('session_id').references(() => session.id, { onDelete: 'set null' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    /** The agent connection (`con_`). */
+    referenceId: text('reference_id'),
+    authorizationCodeId: text('authorization_code_id'),
+    resources: text('resources').array(),
+    requestedUserInfoClaims: text('requested_user_info_claims').array(),
+    expiresAt: instant('expires_at').notNull(),
+    createdAt: instant('created_at').notNull(),
+    /** When it was revoked: by rotation, by replay, or by revoking the connection. */
+    revoked: instant('revoked'),
+    rotatedAt: instant('rotated_at'),
+    rotationReplayResponse: text('rotation_replay_response'),
+    rotationReplayExpiresAt: instant('rotation_replay_expires_at'),
+    authTime: instant('auth_time'),
+    confirmation: jsonb('confirmation'),
+    scopes: text('scopes').array().notNull(),
+  },
+  (t) => [
+    index('oauth_refresh_token_client_id_idx').on(t.clientId),
+    index('oauth_refresh_token_session_id_idx').on(t.sessionId),
+    index('oauth_refresh_token_user_id_idx').on(t.userId),
+    index('oauth_refresh_token_reference_id_idx').on(t.referenceId),
+    index('oauth_refresh_token_authorization_code_id_idx').on(t.authorizationCodeId),
+  ],
+);
+
+/**
+ * An opaque access token, made only for a request without `resource`, which `/mcp` refuses. Agents'
+ * access tokens are JWTs and are not stored.
+ */
+export const oauthAccessToken = core.table(
+  'oauth_access_token',
+  {
+    id: text('id').primaryKey(),
+    token: text('token').notNull().unique(),
+    clientId: text('client_id')
+      .notNull()
+      .references(() => oauthClient.clientId),
+    sessionId: text('session_id').references(() => session.id, { onDelete: 'set null' }),
+    userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+    referenceId: text('reference_id'),
+    authorizationCodeId: text('authorization_code_id'),
+    resources: text('resources').array(),
+    requestedUserInfoClaims: text('requested_user_info_claims').array(),
+    refreshId: text('refresh_id').references(() => oauthRefreshToken.id, { onDelete: 'cascade' }),
+    expiresAt: instant('expires_at').notNull(),
+    createdAt: instant('created_at').notNull(),
+    revoked: instant('revoked'),
+    confirmation: jsonb('confirmation'),
+    scopes: text('scopes').array().notNull(),
+  },
+  (t) => [
+    index('oauth_access_token_client_id_idx').on(t.clientId),
+    index('oauth_access_token_session_id_idx').on(t.sessionId),
+    index('oauth_access_token_user_id_idx').on(t.userId),
+    index('oauth_access_token_authorization_code_id_idx').on(t.authorizationCodeId),
+    index('oauth_access_token_refresh_id_idx').on(t.refreshId),
+  ],
+);
+
+/**
+ * A consent, written by an Allow and deleted straight after it: a remembered approval is never used
+ * (architecture §7.6).
+ */
+export const oauthConsent = core.table(
+  'oauth_consent',
+  {
+    id: text('id').primaryKey(),
+    clientId: text('client_id')
+      .notNull()
+      .references(() => oauthClient.clientId),
+    userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+    referenceId: text('reference_id'),
+    resources: text('resources').array(),
+    requestedUserInfoClaims: text('requested_user_info_claims').array(),
+    scopes: text('scopes').array().notNull(),
+    createdAt: instant('created_at').notNull(),
+    updatedAt: instant('updated_at').notNull(),
+  },
+  (t) => [
+    index('oauth_consent_client_id_idx').on(t.clientId),
+    index('oauth_consent_user_id_idx').on(t.userId),
+  ],
+);
+
+/** Single-use `jti`s of `private_key_jwt` client assertions. */
+export const oauthClientAssertion = core.table('oauth_client_assertion', {
+  id: text('id').primaryKey(),
+  expiresAt: instant('expires_at').notNull(),
+});
+
 export const SEGMENTS = ['starting_out', 'accumulating', 'established', 'unknown'] as const;
 export type Segment = (typeof SEGMENTS)[number];
 
@@ -116,6 +324,13 @@ export const ATTEMPT_ENTRIES = ['onboarding', 'home', 'holding', 'agent'] as con
 export const ATTEMPT_PLATFORMS = ['phone', 'computer', 'any'] as const;
 export const ATTEMPT_STATES = ['started', 'approved', 'live', 'failed'] as const;
 export const ATTEMPT_FAILED_STEPS = ['authorise', 'callback', 'discovery', 'first_call'] as const;
+/** Why an attempt failed, for the web app's plain-language cause (PRD J5). */
+export const ATTEMPT_CAUSES = [
+  'cancelled',
+  'invalid_request',
+  'token_rejected',
+  'timed_out',
+] as const;
 export const FX_SOURCES = ['ecb', 'fallback'] as const;
 
 export const profile = core.table(
@@ -181,15 +396,25 @@ export const connectionAttempt = core.table(
     failedStep: text('failed_step', { enum: ATTEMPT_FAILED_STEPS }),
     startedAt: instant('started_at').notNull().defaultNow(),
     updatedAt: instant('updated_at').notNull().defaultNow(),
+    /** The connection its Allow made (`con_`), once approved. */
+    connectionId: text('connection_id'),
+    /** When the agent's authorize request reached NetNet for this person: no `discovery` timeout after. */
+    authorizeSeenAt: instant('authorize_seen_at'),
+    /** When the agent exchanged the code for its tokens: the `first_call` timeout counts from it. */
+    tokenIssuedAt: instant('token_issued_at'),
+    cause: text('cause', { enum: ATTEMPT_CAUSES }),
   },
   (t) => [
     index('connection_attempt_user_id_started_at_idx').on(t.userId, t.startedAt),
+    index('connection_attempt_connection_id_idx').on(t.connectionId),
+    checkId('connection_attempt', t.connectionId, 'con'),
     checkId('connection_attempt', t.id, 'att'),
     checkOneOf('connection_attempt', t.client, CLIENTS),
     checkOneOf('connection_attempt', t.entry, ATTEMPT_ENTRIES),
     checkOneOf('connection_attempt', t.platform, ATTEMPT_PLATFORMS),
     checkOneOf('connection_attempt', t.state, ATTEMPT_STATES),
     checkOneOf('connection_attempt', t.failedStep, ATTEMPT_FAILED_STEPS),
+    checkOneOf('connection_attempt', t.cause, ATTEMPT_CAUSES),
     check(
       'connection_attempt_failed_step_state_check',
       sql`(${t.state} = 'failed') = (${t.failedStep} is not null)`,

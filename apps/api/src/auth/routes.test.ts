@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { AppEnv } from '../lib/context';
 import { handleError, handleNotFound } from '../lib/error-handler';
 import { requestContext } from '../lib/request-context';
+import type { Agent } from './agent';
 import type { Auth } from './auth';
 import { authRoutes } from './routes';
 
@@ -25,6 +26,11 @@ function harness() {
       rateLimit: (key) => {
         counted.push(key);
         return Promise.resolve();
+      },
+      origin: () => 'http://localhost:5173',
+      agent: () => ({}) as Agent,
+      db: () => {
+        throw new Error('no database in this test');
       },
     }),
   );
@@ -66,6 +72,14 @@ describe('authRoutes()', () => {
     ['GET', '/api/auth/list-accounts'],
     ['POST', '/api/auth/link-social'],
     ['GET', '/api/auth/ok'],
+    ['POST', '/api/auth/oauth2/consent'],
+    ['POST', '/api/auth/oauth2/continue'],
+    ['POST', '/api/auth/oauth2/introspect'],
+    ['GET', '/api/auth/oauth2/userinfo'],
+    ['POST', '/api/auth/oauth2/create-client'],
+    ['GET', '/api/auth/oauth2/get-consents'],
+    ['POST', '/api/auth/token'],
+    ['GET', '/api/auth/token'],
   ])('answers NOT_FOUND for Better Auth’s other endpoints: %s %s', async (method, path) => {
     const { app, reached } = harness();
     const res = await app.request(path, { method });

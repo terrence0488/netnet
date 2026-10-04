@@ -1,14 +1,17 @@
 import { Hono } from 'hono';
 import { auth } from './auth/auth';
+import { wellKnownRoutes } from './auth/oauth-routes';
 import { originCheck } from './auth/origin-check';
 import { authRoutes } from './auth/routes';
 import { sessionFromCookie } from './auth/session';
 import { contentStore } from './content/store';
+import { agentRoutes } from './http/agent';
 import { contentRoutes } from './http/content';
 import { eventsRoutes } from './http/events';
 import { geoRoutes } from './http/geo';
 import { liveCountries, meRoutes } from './http/me';
 import { cronAuth, cronSecret } from './jobs/cron';
+import { dailyJob } from './jobs/daily';
 import { defaultFxJob } from './jobs/fx';
 import type { AppEnv } from './lib/context';
 import { appOrigins } from './lib/env';
@@ -37,6 +40,12 @@ app.get('/api/health', (c) => c.json({ ok: true }));
 /** Sign-up, sign-in, verification, reset and sign-out: Better Auth, rate-limited (§7.2, §8). */
 app.route('/api/auth', authRoutes());
 
+/** The agents' OAuth server's metadata (RFC 8414, RFC 9728), at the root (§7.1). */
+app.route('/.well-known', wellKnownRoutes(auth));
+
+/** Connection attempts, the approval page's API and the Agent tab (§7.2). */
+app.route('/api/agent', agentRoutes());
+
 app.route('/api/me', meRoutes());
 app.route('/api/geo', geoRoutes(liveCountries(contentStore)));
 
@@ -48,6 +57,7 @@ app.route('/api/content', contentRoutes(contentStore));
 /** Vercel Cron calls these with GET and the bearer secret (architecture §9.3). */
 app.use('/api/cron/*', cronAuth(cronSecret));
 app.get('/api/cron/fx', defaultFxJob());
+app.get('/api/cron/daily', dailyJob());
 
 app.notFound(handleNotFound);
 app.onError(handleError);

@@ -23,12 +23,19 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-auth/cimd": "1.7.7",
+    "@better-auth/core": "1.7.7",
+    "@better-auth/mcp": "1.7.7",
+    "@better-auth/oauth-provider": "1.7.7",
+    "@better-auth/utils": "0.4.2",
     "@netnet/contracts": "workspace:*",
     "@netnet/core": "workspace:*",
     "@netnet/tokens": "workspace:*",
     "better-auth": "1.7.7",
+    "better-call": "1.4.0",
     "drizzle-orm": "0.45.3",
     "hono": "4.13.12",
+    "jose": "6.2.12",
     "pg": "8.23.1"
   },
   "devDependencies": {

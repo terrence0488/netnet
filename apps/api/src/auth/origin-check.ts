@@ -11,18 +11,28 @@ import { AppError } from '../lib/errors';
  * (or `null`) is refused. Without `Origin`, a request that the browser's Fetch Metadata says came
  * from another site is refused too; one with neither header did not come from a browser (an
  * agent's server, a script) and carries no ambient cookie to abuse, so it passes.
+ *
+ * The agents' token, registration and revocation endpoints are not checked either: their routes
+ * drop any cookie, so another site can forge nothing there, and a browser-based agent calls them
+ * from its own origin.
  */
 
 const STATE_CHANGING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 const CHECKED = /^\/api(\/|$)/;
 
+const COOKIELESS = /^\/api\/auth\/oauth2\/(token|register|revoke)$/;
+
 /** `Sec-Fetch-Site` values a request from NetNet's own pages, or typed by the person, can have. */
 const OWN_SITE = new Set(['same-origin', 'none']);
 
 export function originCheck(trusted: () => readonly string[]): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
-    if (STATE_CHANGING.has(c.req.method) && CHECKED.test(c.req.path)) {
+    if (
+      STATE_CHANGING.has(c.req.method) &&
+      CHECKED.test(c.req.path) &&
+      !COOKIELESS.test(c.req.path)
+    ) {
       const origin = c.req.header('Origin');
       const site = c.req.header('Sec-Fetch-Site');
       const allowed =
