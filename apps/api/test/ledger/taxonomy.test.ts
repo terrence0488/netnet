@@ -315,7 +315,7 @@ describe('tags', () => {
     expect(same.dataVersion).toBe(renamed.dataVersion);
   });
 
-  it('deletes an unused tag, refuses one in use without mergeInto, and merges with it', async () => {
+  it('deletes a tag, removing it from its holdings, or merges it into another', async () => {
     const userId = await suite.newUser('USD');
     const [a, b] = await Promise.all(
       ['A', 'B'].map(
@@ -346,24 +346,44 @@ describe('tags', () => {
       .as(userId)
       .write((l) => l.setPrefs({ homeFilter: { tagIds: [a!], hideTagIds: [a!, b!] } }));
 
-    const refused = await appError(suite.as(userId).write((l) => l.deleteTag(a!)));
-    expect(refused).toMatchObject({
-      code: 'VALIDATION_FAILED',
-      details: { fields: { mergeInto: anyString } },
-    });
     expect((await appError(suite.as(userId).write((l) => l.deleteTag(a!, 'tag_nope')))).code).toBe(
       'NOT_FOUND',
     );
 
-    await suite.as(userId).write((l) => l.deleteTag(a!, b));
-    const holdings = await suite.as(userId).read((l) => l.listHoldings({}));
-    expect(holdings.items.map((h) => [h.id, h.tagIds])).toEqual([
+    // Without mergeInto, the holdings that carry the tag lose it; each change is audited.
+    await suite.as(userId).write((l) => l.deleteTag(a!));
+    const audits = (await auditRows(suite, userId)).slice(-4);
+    expect(audits.map((r) => [r.entity, r.action])).toEqual([
+      ['holding', 'update'],
+      ['holding', 'update'],
+      ['prefs', 'update'],
+      ['tag', 'delete'],
+    ]);
+    expect(audits.filter((r) => r.entity === 'holding').map((r) => r.entity_id)).toEqual([
+      both.result.id,
+      onlyA.result.id,
+    ]);
+    const untagged = await suite.as(userId).read((l) => l.listHoldings({}));
+    expect(untagged.items.map((h) => [h.id, h.tagIds])).toEqual([
+      [both.result.id, [b]],
+      [onlyA.result.id, []],
+    ]);
+    const afterRemove = await suite.as(userId).read((l) => l.snapshot());
+    expect(afterRemove.tags.map((t) => t.id)).toEqual([b]);
+    expect(afterRemove.prefs.homeFilter).toEqual({ tagIds: [], hideTagIds: [b] });
+
+    // With mergeInto, they carry that tag instead.
+    const c = await suite.as(userId).write((l) => l.upsertTag({ name: 'C' }));
+    await suite
+      .as(userId)
+      .write((l) => l.updateHolding(onlyA.result.id, { tagIds: [c.result.id] }));
+    await suite.as(userId).write((l) => l.deleteTag(c.result.id, b));
+    const merged = await suite.as(userId).read((l) => l.listHoldings({}));
+    expect(merged.items.map((h) => [h.id, h.tagIds])).toEqual([
       [both.result.id, [b]],
       [onlyA.result.id, [b]],
     ]);
-    const snapshot = await suite.as(userId).read((l) => l.snapshot());
-    expect(snapshot.tags.map((t) => t.id)).toEqual([b]);
-    expect(snapshot.prefs.homeFilter).toEqual({ tagIds: [b], hideTagIds: [b] });
+    expect((await suite.as(userId).read((l) => l.snapshot())).tags.map((t) => t.id)).toEqual([b]);
     expect(await orphans(userId)).toEqual([]);
   });
 });

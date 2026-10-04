@@ -271,8 +271,9 @@ export function upsertTag(s: Scope, input: TagInput): Promise<Write<Tag>> {
 }
 
 /**
- * `deleteTag` (`delete_tag`). While holdings carry the tag it needs `mergeInto`, the tag they
- * carry instead; each holding's change is audited, and saved filters follow.
+ * `deleteTag` (`delete_tag`). Holdings that carry the tag lose it, or carry `mergeInto` instead (a
+ * merge); a tag is only a label, so nothing is refused. Each holding's change is audited, so undo
+ * can put the tag back, and saved filters follow.
  */
 export function deleteTag(s: Scope, id: string, mergeInto?: string): Promise<Write<void>> {
   return runWrite(s, 'deleteTag', async (w) => {
@@ -289,16 +290,10 @@ export function deleteTag(s: Scope, id: string, mergeInto?: string): Promise<Wri
     }
     errors.throwIfAny();
     const carrying = (await loadHoldings(s)).filter((h) => h.tagIds.includes(id));
-    if (carrying.length > 0 && mergeInto === undefined) {
-      errors.add(
-        'VALIDATION_FAILED',
-        'mergeInto',
-        `${carrying.length === 1 ? 'A holding carries' : `${carrying.length} holdings carry`} this tag: give mergeInto, the tag to carry instead, or remove it from ${carrying.length === 1 ? 'that holding' : 'them'} first.`,
-      );
-      errors.throwIfAny();
-    }
     for (const h of carrying) {
-      const tagIds = [...new Set(h.tagIds.map((t) => (t === id ? mergeInto! : t)))].sort();
+      const tagIds = [
+        ...new Set(h.tagIds.flatMap((t) => (t !== id ? [t] : mergeInto ? [mergeInto] : []))),
+      ].sort();
       await saveHolding(w, h, { ...h, tagIds });
     }
     await scrubPrefs(w, 'tag', id, mergeInto);
