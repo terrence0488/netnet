@@ -4,7 +4,8 @@
 Stage: Build (Stage 5)
 Phase: P1
 Status: in-progress
-Next action: `continue` in a **new session** → `stage: build P1`, wave 4 (P1-T9, T10, T11).
+Next action: the Founder merges wave 4 (#18, then #20, and #19), then this file's PR; then
+`continue` in a **new session** → `stage: build P1`, wave 5 (P1-T12, T13, T14).
 Inputs: `docs/04-plan.md` §3, `CONVENTIONS.md`, `docs/phases/P1/tasks/`.
 **Branch:** one branch per task, from `main` (CONVENTIONS §15).
 
@@ -23,11 +24,14 @@ Inputs: `docs/04-plan.md` §3, `CONVENTIONS.md`, `docs/phases/P1/tasks/`.
 | P5 | not-started | | |
 
 ## Handoff note (last session)
-Wave 3 merged and done (reports in the briefs). The Founder answered the four questions
-(`docs/decisions.md`): a baseline change is per holding and summed; the calendar baselines are month
-ends; one currency table, which core imports from `@netnet/contracts/currencies`; a missing session
-is `UNAUTHENTICATED` 401 (§7.5, in contracts; T11 uses it). The API depends on `@netnet/core`, and
-content's `getPackChain` uses `core.packChain`. FX is unverified live: run the backfill; set
-`CRON_SECRET`. Carried: Ledger.init creates `ledger_state` (T10); web `money.ts` → contracts'
-currency table and `core.fromMinor`; deletion vs insert-only analytics (P3).
+Wave 4 is built and in review; the three branches pass lint, typecheck and tests together. Merge #18
+(T9) first: #20 (T10) is stacked on it and retargets to `main` when its branch is deleted. Reports
+are in the briefs; their Status lines are the Founder's. The Founder answered wave 4's five
+questions (`docs/decisions.md`): `get_financial_context` gives each type's meaning once, in `types`
+(#18; 14–16 holdings now fit in 8 KB); §7.3's `context()` returns `ContextInput`; deleting a tag
+removes it from its holdings (#20); sign-up's 422 for an existing email stays for P1, and P4's
+security review revisits it; the Origin check's refusal stays `401 UNAUTHENTICATED`. Founder setup:
+`BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_PREVIEW_ALLOW`, `PUBLIC_ORIGIN` (F10).
+Carried: FX backfill and `CRON_SECRET`; web `money.ts` → contracts' currency table and
+`core.fromMinor`; deletion vs insert-only analytics (P3).
 Plan tracker: https://claude.ai/artifact/UkJfDYaAAi8gJV1aBbk3nB (`tasks/<id>`, `meta/state`).

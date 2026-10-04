@@ -126,6 +126,8 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Per-user isolation by Postgres row-level security with `FORCE`, composite keys and one `withUser()` entry | Enforced by the database, not by remembering a filter (N4) |
 | One ISO 4217 table, in contracts; core imports it by its zod-free path, `@netnet/contracts/currencies`, the one value core takes from contracts | One list to keep current, and core stays free of zod |
 | Better Auth for accounts and the agents' OAuth 2.1 server (CIMD and DCR); our own MCP token check | No hand-rolled security code; protocol support stays in our hands |
+| In P1, sign-up says when an email already has an account (422); P4's security review revisits it | Sign-up is limited to 5 a minute per IP and the reset flow reveals nothing; hiding it would mean sending an "already registered" email instead |
+| A change refused by the Origin check gets `401 UNAUTHENTICATED`, with no code of its own | Either way the request lacks a session from this site, and §7.5's list stays short |
 | The OAuth endpoints are Better Auth's own paths, `/api/auth/oauth2/*` and `/api/auth/jwks` | Clients find them from the server's metadata, so a rewrite to other paths would be a route to maintain for nothing |
 | MCP is stateless Streamable HTTP across three protocol versions, with one summary tool, `get_financial_context`, of at most 8 KB | Clients migrate at different speeds; one dense call answers a question |
 | `get_financial_context` says what each type of holding is once per type (`types`), not on every holding | The repeated pack text was about a quarter of each holding's bytes; more holdings fit in the 8 KB |

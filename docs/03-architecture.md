@@ -560,7 +560,7 @@ byte for byte for fixed inputs (N11).
 | `VALIDATION_FAILED` | 400 | `fields` names each bad field and the allowed form |
 | `OUT_OF_RANGE` | 400 | e.g. more decimals than the currency allows, a date far in the future |
 | `CURRENCY_UNSUPPORTED` | 400 | not an ISO 4217 code we have rates for; lists the nearest matches |
-| `UNAUTHENTICATED` | 401 | no valid session on a route that needs one; the web app sends the person to sign in. An agent without a valid token gets OAuth's `401` instead (§7.6) |
+| `UNAUTHENTICATED` | 401 | no valid session on a route that needs one, or a change sent from another site (the Origin check, §8); the web app sends the person to sign in. An agent without a valid token gets OAuth's `401` instead (§7.6) |
 | `NOT_FOUND` | 404 | also for another user's ids. Never "forbidden", which would confirm the id exists |
 | `LIKELY_DUPLICATE` | 409 | `candidates: [{id, name, latest}]`; retry with `allow_duplicate` |
 | `UNDO_CONFLICT` | 409 | `blockers: [{entry_id, action, at}]` |
