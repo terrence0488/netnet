@@ -7,7 +7,20 @@ export type Message =
   /** The link that verifies a new account's email (PRD J1). `token` is Better Auth's. */
   | { kind: 'account.verify_email'; token: string }
   /** The link that sets a new password. `token` is Better Auth's, single use. */
-  | { kind: 'account.reset_password'; token: string };
+  | { kind: 'account.reset_password'; token: string }
+  /**
+   * An agent was connected (PRD J5): sent on every Allow, by email only, whatever the Reminders
+   * switches say. `agentName` is the name it registered with, untrusted: the template cleans,
+   * cuts and escapes it. `nameVerified` is false for a DCR client, whose name NetNet cannot check.
+   * `connectedAt` is an ISO instant, shown in `timeZone` (IANA).
+   */
+  | {
+      kind: 'security.agent_connected';
+      agentName: string;
+      nameVerified: boolean;
+      connectedAt: string;
+      timeZone: string;
+    };
 
 export type MessageKind = Message['kind'];
 

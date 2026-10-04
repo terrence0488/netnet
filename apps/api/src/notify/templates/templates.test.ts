@@ -4,6 +4,7 @@ import { privacyProblems } from '../privacy';
 import { EMAIL_VERIFIED_PAGE, RESET_PASSWORD_PAGE } from './account';
 import { renderEmail } from './index';
 import { escapeHtml } from './layout';
+import { AGENT_TAB, UNVERIFIED_NAME, dayAndTime } from './security';
 
 /**
  * The template privacy test (architecture §7.10, CONVENTIONS §9): every kind of message, rendered
@@ -18,9 +19,43 @@ const JWT =
 /** A reset token: a random id. Fictional. */
 const RESET_TOKEN = 'Qm9vazEyQ2hhcHRlcjM0WFla';
 
+/** When a fictional agent was connected: 5 Aug 2026, 05:32 in Singapore. */
+const CONNECTED_AT = '2026-08-04T21:32:00.000Z';
+
 const SAMPLES: { [K in MessageKind]: MessageOf<K>[] } = {
   'account.verify_email': [{ kind: 'account.verify_email', token: JWT }],
   'account.reset_password': [{ kind: 'account.reset_password', token: RESET_TOKEN }],
+  'security.agent_connected': [
+    {
+      kind: 'security.agent_connected',
+      agentName: 'Claude',
+      nameVerified: true,
+      connectedAt: CONNECTED_AT,
+      timeZone: 'Asia/Singapore',
+    },
+    {
+      kind: 'security.agent_connected',
+      agentName:
+        '<b>Fictional</b> "agent" & co\u202e\nwith a name far longer than forty characters',
+      nameVerified: false,
+      connectedAt: CONNECTED_AT,
+      timeZone: 'Europe/London',
+    },
+    {
+      kind: 'security.agent_connected',
+      agentName: '',
+      nameVerified: false,
+      connectedAt: CONNECTED_AT,
+      timeZone: 'Not/AZone',
+    },
+  ],
+};
+
+/** The line each kind's footer starts with: why it was sent. */
+const REASON: Record<MessageKind, string> = {
+  'account.verify_email': 'You’re getting this because',
+  'account.reset_password': 'You’re getting this because',
+  'security.agent_connected': 'We send this every time an agent is connected.',
 };
 
 const ALL: Message[] = Object.values(SAMPLES).flat();
@@ -51,7 +86,7 @@ describe('every message template', () => {
       expect(html).toContain(`>${escapeHtml(subject)}</h1>`);
       expect(html.match(/<a /g)).toHaveLength(1);
       expect(text.startsWith(`${subject}\n`)).toBe(true);
-      expect(text).toContain('You’re getting this because');
+      expect(text).toContain(REASON[msg.kind]);
     },
   );
 
@@ -83,6 +118,56 @@ describe('the account emails', () => {
     expect(text).toContain(
       `${ORIGIN}/api/auth/reset-password/${RESET_TOKEN}?callbackURL=${encodeURIComponent(RESET_PASSWORD_PAGE)}`,
     );
+  });
+});
+
+describe('the security email', () => {
+  const [verified, unverified, nameless] = SAMPLES['security.agent_connected'] as [
+    MessageOf<'security.agent_connected'>,
+    MessageOf<'security.agent_connected'>,
+    MessageOf<'security.agent_connected'>,
+  ];
+
+  it('says which agent was connected and when, in the person’s time zone, and links to revoke it', () => {
+    const { subject, text, html } = renderEmail(verified, { origin: ORIGIN });
+    expect(subject).toBe('Claude was connected to your NetNet');
+    expect(text).toContain(
+      'On 5 Aug 2026 at 5:32 am, you allowed Claude to see your holdings and their history, ' +
+        'and to add or update them.',
+    );
+    expect(text).toContain(`Not you? Revoke it: ${ORIGIN}${AGENT_TAB}`);
+    expect(html).toContain(`href="${ORIGIN}${AGENT_TAB}"`);
+    expect(text).toContain('It can’t be turned off.');
+    expect(text).not.toContain(UNVERIFIED_NAME);
+  });
+
+  it('escapes a registered name, keeps it to one line of 40 characters, and says it is unverified', () => {
+    const { subject, text, html } = renderEmail(unverified, { origin: ORIGIN });
+    const name = '<b>Fictional</b> "agent" & co with a na…';
+    expect(Array.from(name)).toHaveLength(40);
+    expect(subject).toBe(`${name} ${UNVERIFIED_NAME} was connected to your NetNet`);
+    expect(subject).not.toMatch(/[\n\u202e]/);
+    expect(html).not.toContain('<b>Fictional');
+    expect(html).toContain(escapeHtml(name));
+    expect(text).toContain('On 4 Aug 2026 at 10:32 pm');
+  });
+
+  it('names no one when the agent gave no name, and falls back to UTC for an unknown zone', () => {
+    const { subject, text } = renderEmail(nameless, { origin: ORIGIN });
+    expect(subject).toBe(`An agent ${UNVERIFIED_NAME} was connected to your NetNet`);
+    expect(text).toContain('On 4 Aug 2026 at 9:32 pm, you allowed an agent to see');
+  });
+
+  it('formats the time as the prototype does', () => {
+    expect(dayAndTime('2026-01-09T00:05:00Z', 'UTC')).toEqual({
+      day: '9 Jan 2026',
+      time: '12:05 am',
+    });
+    expect(dayAndTime('2026-01-09T12:00:00Z', 'UTC')).toEqual({
+      day: '9 Jan 2026',
+      time: '12:00 pm',
+    });
+    expect(() => dayAndTime('not a time', 'UTC')).toThrow();
   });
 });
 

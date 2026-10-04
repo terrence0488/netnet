@@ -11,7 +11,8 @@ export interface EmailParts {
   line: string;
   /** At most one sentence beneath it. */
   detail?: string;
-  button: { label: string; url: string };
+  /** The button, and a few words that may lead into it ("Not you?"). */
+  button: { label: string; url: string; lead?: string };
   /** Why this was sent. */
   footer: string;
 }
@@ -81,7 +82,9 @@ ${
         'line-height': '1.5',
         color: ink['ink-2'],
       })}">${e(parts.detail)}</p>\n`
-}<p style="${style({ margin: '22px 0 0' })}"><a href="${e(parts.button.url)}" style="${style({
+}<p style="${style({ margin: '22px 0 0' })}">${
+    parts.button.lead === undefined ? '' : `${e(parts.button.lead)} `
+  }<a href="${e(parts.button.url)}" style="${style({
     display: 'inline-block',
     background: ink.brand,
     color: ink['brand-on'],
@@ -108,7 +111,7 @@ ${
   const text = [
     parts.line,
     ...(parts.detail === undefined ? [] : [parts.detail]),
-    `${parts.button.label}: ${parts.button.url}`,
+    `${parts.button.lead === undefined ? '' : `${parts.button.lead} `}${parts.button.label}: ${parts.button.url}`,
     parts.footer,
   ].join('\n\n');
   return { html, text: `${text}\n` };

@@ -2,6 +2,7 @@ import type { RenderedEmail } from '../channel';
 import type { Message, MessageKind, MessageOf } from '../message';
 import { resetPassword, verifyEmail } from './account';
 import type { RenderContext } from './render-context';
+import { agentConnected } from './security';
 
 export type { RenderContext } from './render-context';
 
@@ -14,6 +15,7 @@ type EmailTemplate<K extends MessageKind> = (
 const EMAIL_TEMPLATES: { [K in MessageKind]: EmailTemplate<K> } = {
   'account.verify_email': verifyEmail,
   'account.reset_password': resetPassword,
+  'security.agent_connected': agentConnected,
 };
 
 /** Renders `msg` as an email: `{subject, html, text, headers}` (architecture §7.10). */
