@@ -1,0 +1,65 @@
+{
+  "as_of": "2026-09-27",
+  "currency": "EUR",
+  "answer_guide": [
+    {
+      "for": "affordability — can I pay for X from what I have",
+      "use": "totals.could_use",
+      "never": "totals.net_worth",
+      "note": "sell_first, locked and undecided money is excluded"
+    },
+    {
+      "for": "progress — am I on track, how did I do",
+      "use": "totals.net_worth, totals.change, holdings[].change"
+    },
+    {
+      "for": "exposure and risk",
+      "use": "exposure"
+    },
+    {
+      "for": "debt burden",
+      "use": "totals.owed, totals.owed_to_could_use"
+    },
+    {
+      "for": "how current and complete the figures are",
+      "use": "picture, holdings[].value"
+    }
+  ],
+  "totals": {
+    "net_worth": 0,
+    "assets": 0,
+    "owed": 0,
+    "could_use": 0,
+    "sell_first": 0,
+    "locked": 0,
+    "undecided": 0,
+    "owed_to_could_use": null,
+    "change": {
+      "baseline": "last_month",
+      "since": null,
+      "amount": null,
+      "pct": null
+    }
+  },
+  "picture": {
+    "holdings": 0,
+    "stale": 0,
+    "undecided": 0,
+    "without_value": 0,
+    "oldest_value_days": null,
+    "freshness": "empty",
+    "notes": [
+      "No holdings have been added yet"
+    ]
+  },
+  "exposure": {
+    "by_currency": [],
+    "concentration": []
+  },
+  "holdings": [],
+  "omitted": {
+    "holdings": 0,
+    "by_type": [],
+    "hint": "list_holdings returns every holding"
+  }
+}

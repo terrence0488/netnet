@@ -13,8 +13,11 @@ export function compareValues(a: Pick<ValueIn, 'date' | 'id'>, b: Pick<ValueIn, 
 }
 
 /** Each holding's latest value dated on or before `asOf`: the latest by date wins (PRD J3). */
-export function latestValues(values: readonly ValueIn[], asOf: string): Map<string, ValueIn> {
-  const latest = new Map<string, ValueIn>();
+export function latestValues<V extends ValueIn>(
+  values: readonly V[],
+  asOf: string,
+): Map<string, V> {
+  const latest = new Map<string, V>();
   for (const value of values) {
     if (value.date > asOf) continue;
     const current = latest.get(value.holdingId);

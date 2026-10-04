@@ -7,3 +7,5 @@ coverage/
 playwright-report/
 test-results/
 .claude/worktrees/
+# compileContext golden files: byte for byte what the code writes, never reformatted
+packages/core/src/context/golden/

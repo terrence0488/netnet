@@ -1,0 +1,194 @@
+{
+  "as_of": "2026-09-27",
+  "currency": "EUR",
+  "answer_guide": [
+    {
+      "for": "affordability — can I pay for X from what I have",
+      "use": "totals.could_use",
+      "never": "totals.net_worth",
+      "note": "sell_first, locked and undecided money is excluded"
+    },
+    {
+      "for": "progress — am I on track, how did I do",
+      "use": "totals.net_worth, totals.change, holdings[].change"
+    },
+    {
+      "for": "exposure and risk",
+      "use": "exposure"
+    },
+    {
+      "for": "debt burden",
+      "use": "totals.owed, totals.owed_to_could_use"
+    },
+    {
+      "for": "how current and complete the figures are",
+      "use": "picture, holdings[].value"
+    }
+  ],
+  "totals": {
+    "net_worth": 363392,
+    "assets": 363392,
+    "owed": 0,
+    "could_use": 4520,
+    "sell_first": 278800,
+    "locked": 80072,
+    "undecided": 0,
+    "owed_to_could_use": 0,
+    "change": {
+      "baseline": "last_month",
+      "since": "2026-08-31",
+      "amount": 420,
+      "pct": 0.12
+    }
+  },
+  "picture": {
+    "holdings": 4,
+    "stale": 1,
+    "undecided": 0,
+    "without_value": 0,
+    "oldest_value_days": 270,
+    "freshness": "some_stale",
+    "notes": [
+      "The value of “Savings bonds” is 150 days old, past its usual update interval",
+      "Values in 2 other currencies are converted to the base currency at the rate of each value’s date, not today’s",
+      "NetNet only knows what has been added"
+    ]
+  },
+  "exposure": {
+    "by_currency": [
+      {
+        "currency": "CAD",
+        "share": 0.94
+      },
+      {
+        "currency": "JPY",
+        "share": 0.05
+      },
+      {
+        "currency": "EUR",
+        "share": 0.01
+      }
+    ],
+    "concentration": [
+      {
+        "holding_id": "hld_004",
+        "name": "Flat in the old town",
+        "share": 0.77
+      },
+      {
+        "holding_id": "hld_002",
+        "name": "Provident plan",
+        "share": 0.17
+      },
+      {
+        "holding_id": "hld_003",
+        "name": "Savings bonds",
+        "share": 0.05
+      },
+      {
+        "holding_id": "hld_001",
+        "name": "Everyday account",
+        "share": 0.01
+      }
+    ]
+  },
+  "holdings": [
+    {
+      "id": "hld_004",
+      "name": "Flat in the old town",
+      "type": "Flat abroad",
+      "tags": [],
+      "meaning": "Land or a building. Counts toward net worth; turning it into money means selling it.",
+      "access": "illiquid",
+      "access_reason": "you’d have to sell it first",
+      "until": null,
+      "value": {
+        "amount": 410000,
+        "currency": "CAD",
+        "base": 278800,
+        "as_of": "2025-12-31",
+        "age_days": 270,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_002",
+      "name": "Provident plan",
+      "type": "Workplace pension",
+      "tags": [],
+      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
+      "access": "locked",
+      "access_reason": "the plan keeps it until the withdrawal age",
+      "until": "until the withdrawal age",
+      "value": {
+        "amount": 90400,
+        "currency": "CAD",
+        "base": 61472,
+        "as_of": "2026-06-30",
+        "age_days": 89,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_003",
+      "name": "Savings bonds",
+      "type": "Shares & funds",
+      "tags": [],
+      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
+      "access": "locked",
+      "access_reason": "the bonds can’t be cashed before they mature",
+      "until": "until they mature",
+      "value": {
+        "amount": 3000000,
+        "currency": "JPY",
+        "base": 18600,
+        "as_of": "2026-04-30",
+        "age_days": 150,
+        "stale": true,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_001",
+      "name": "Everyday account",
+      "type": "Current account",
+      "tags": [],
+      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now.",
+      "access": "accessible",
+      "access_reason": "it’s money in the bank",
+      "until": null,
+      "value": {
+        "amount": 4520,
+        "currency": "EUR",
+        "base": 4520,
+        "as_of": "2026-09-24",
+        "age_days": 3,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 420,
+        "pct": 10.24
+      }
+    }
+  ],
+  "omitted": {
+    "holdings": 0,
+    "by_type": [],
+    "hint": "list_holdings returns every holding"
+  }
+}

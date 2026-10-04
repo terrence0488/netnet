@@ -1,0 +1,487 @@
+{
+  "as_of": "2026-09-27",
+  "currency": "EUR",
+  "answer_guide": [
+    {
+      "for": "affordability — can I pay for X from what I have",
+      "use": "totals.could_use",
+      "never": "totals.net_worth",
+      "note": "sell_first, locked and undecided money is excluded"
+    },
+    {
+      "for": "progress — am I on track, how did I do",
+      "use": "totals.net_worth, totals.change, holdings[].change"
+    },
+    {
+      "for": "exposure and risk",
+      "use": "exposure"
+    },
+    {
+      "for": "debt burden",
+      "use": "totals.owed, totals.owed_to_could_use"
+    },
+    {
+      "for": "how current and complete the figures are",
+      "use": "picture, holdings[].value"
+    }
+  ],
+  "totals": {
+    "net_worth": 9777340,
+    "assets": 9829400,
+    "owed": 52060,
+    "could_use": 2017630.4,
+    "sell_first": 5839033.2,
+    "locked": 1972736.4,
+    "undecided": 0,
+    "owed_to_could_use": 0.03,
+    "change": {
+      "baseline": "last_month",
+      "since": "2026-08-31",
+      "amount": 4350,
+      "pct": 0.04
+    }
+  },
+  "picture": {
+    "holdings": 200,
+    "stale": 42,
+    "undecided": 0,
+    "without_value": 0,
+    "oldest_value_days": 150,
+    "freshness": "some_stale",
+    "notes": [
+      "42 values are past their usual update interval; the largest, “Position 052”, is 150 days old",
+      "Values in 1 other currency are converted to the base currency at the rate of each value’s date, not today’s",
+      "NetNet only knows what has been added"
+    ]
+  },
+  "exposure": {
+    "by_currency": [
+      {
+        "currency": "EUR",
+        "share": 0.68
+      },
+      {
+        "currency": "USD",
+        "share": 0.32
+      }
+    ],
+    "concentration": [
+      {
+        "holding_id": "hld_121",
+        "name": "Position 121",
+        "share": 0.01
+      },
+      {
+        "holding_id": "hld_163",
+        "name": "Position 163",
+        "share": 0.01
+      },
+      {
+        "holding_id": "hld_005",
+        "name": "Position 005",
+        "share": 0.01
+      },
+      {
+        "holding_id": "hld_047",
+        "name": "Position 047",
+        "share": 0.01
+      },
+      {
+        "holding_id": "hld_089",
+        "name": "Position 089",
+        "share": 0.01
+      },
+      {
+        "holding_id": "hld_010",
+        "name": "Position 010",
+        "share": 0.01
+      },
+      {
+        "holding_id": "hld_131",
+        "name": "Position 131",
+        "share": 0.01
+      },
+      {
+        "holding_id": "hld_052",
+        "name": "Position 052",
+        "share": 0.01
+      },
+      {
+        "holding_id": "hld_173",
+        "name": "Position 173",
+        "share": 0.01
+      },
+      {
+        "holding_id": "hld_094",
+        "name": "Position 094",
+        "share": 0.01
+      }
+    ]
+  },
+  "holdings": [
+    {
+      "id": "hld_121",
+      "name": "Position 121",
+      "type": "Current account",
+      "tags": [],
+      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now.",
+      "access": "accessible",
+      "access_reason": "it’s money in the bank",
+      "until": null,
+      "value": {
+        "amount": 100520,
+        "currency": "EUR",
+        "base": 100520,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 20,
+        "pct": 0.02
+      }
+    },
+    {
+      "id": "hld_163",
+      "name": "Position 163",
+      "type": "Workplace pension",
+      "tags": [],
+      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
+      "access": "locked",
+      "access_reason": "a retirement account is locked",
+      "until": "until you’re eligible to withdraw",
+      "value": {
+        "amount": 99520,
+        "currency": "EUR",
+        "base": 99520,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 20,
+        "pct": 0.02
+      }
+    },
+    {
+      "id": "hld_005",
+      "name": "Position 005",
+      "type": "Other",
+      "tags": [],
+      "meaning": "Something of value that fits no other type. Counts toward net worth.",
+      "access": "illiquid",
+      "access_reason": "you’d sell it first",
+      "until": null,
+      "value": {
+        "amount": 98550,
+        "currency": "EUR",
+        "base": 98550,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 50,
+        "pct": 0.05
+      }
+    },
+    {
+      "id": "hld_047",
+      "name": "Position 047",
+      "type": "Shares & funds",
+      "tags": [],
+      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
+      "access": "illiquid",
+      "access_reason": "you’d sell the shares first",
+      "until": null,
+      "value": {
+        "amount": 97550,
+        "currency": "EUR",
+        "base": 97550,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 50,
+        "pct": 0.05
+      }
+    },
+    {
+      "id": "hld_089",
+      "name": "Position 089",
+      "type": "Crypto",
+      "tags": [],
+      "meaning": "Cryptocurrency. Counts toward net worth at a price that can move sharply.",
+      "access": "illiquid",
+      "access_reason": "you’d sell it first",
+      "until": null,
+      "value": {
+        "amount": 96550,
+        "currency": "EUR",
+        "base": 96550,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 50,
+        "pct": 0.05
+      }
+    },
+    {
+      "id": "hld_010",
+      "name": "Position 010",
+      "type": "Other",
+      "tags": [],
+      "meaning": "Something of value that fits no other type. Counts toward net worth.",
+      "access": "illiquid",
+      "access_reason": "you’d sell it first",
+      "until": null,
+      "value": {
+        "amount": 96030,
+        "currency": "EUR",
+        "base": 96030,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 30,
+        "pct": 0.03
+      }
+    },
+    {
+      "id": "hld_131",
+      "name": "Position 131",
+      "type": "Current account",
+      "tags": [],
+      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now.",
+      "access": "accessible",
+      "access_reason": "it’s money in the bank",
+      "until": null,
+      "value": {
+        "amount": 95550,
+        "currency": "EUR",
+        "base": 95550,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 50,
+        "pct": 0.05
+      }
+    },
+    {
+      "id": "hld_052",
+      "name": "Position 052",
+      "type": "Shares & funds",
+      "tags": [],
+      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
+      "access": "illiquid",
+      "access_reason": "you’d sell the shares first",
+      "until": null,
+      "value": {
+        "amount": 95030,
+        "currency": "EUR",
+        "base": 95030,
+        "as_of": "2026-04-30",
+        "age_days": 150,
+        "stale": true,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_173",
+      "name": "Position 173",
+      "type": "Workplace pension",
+      "tags": [],
+      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
+      "access": "locked",
+      "access_reason": "a retirement account is locked",
+      "until": "until you’re eligible to withdraw",
+      "value": {
+        "amount": 94550,
+        "currency": "EUR",
+        "base": 94550,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 50,
+        "pct": 0.05
+      }
+    },
+    {
+      "id": "hld_094",
+      "name": "Position 094",
+      "type": "Crypto",
+      "tags": [],
+      "meaning": "Cryptocurrency. Counts toward net worth at a price that can move sharply.",
+      "access": "illiquid",
+      "access_reason": "you’d sell it first",
+      "until": null,
+      "value": {
+        "amount": 94030,
+        "currency": "EUR",
+        "base": 94030,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 30,
+        "pct": 0.03
+      }
+    },
+    {
+      "id": "hld_136",
+      "name": "Position 136",
+      "type": "Current account",
+      "tags": [],
+      "meaning": "Money in a bank or savings account. Counts toward net worth and toward what can be used now.",
+      "access": "accessible",
+      "access_reason": "it’s money in the bank",
+      "until": null,
+      "value": {
+        "amount": 93030,
+        "currency": "EUR",
+        "base": 93030,
+        "as_of": "2026-04-30",
+        "age_days": 150,
+        "stale": true,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_178",
+      "name": "Position 178",
+      "type": "Workplace pension",
+      "tags": [],
+      "meaning": "A workplace retirement scheme. Counts toward net worth, never toward what can be spent this month.",
+      "access": "locked",
+      "access_reason": "a retirement account is locked",
+      "until": "until you’re eligible to withdraw",
+      "value": {
+        "amount": 92030,
+        "currency": "EUR",
+        "base": 92030,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 30,
+        "pct": 0.03
+      }
+    },
+    {
+      "id": "hld_042",
+      "name": "Position 042",
+      "type": "Shares & funds",
+      "tags": [],
+      "meaning": "Listed shares or funds. Counts toward net worth; usable after selling, at the market price.",
+      "access": "illiquid",
+      "access_reason": "you’d sell the shares first",
+      "until": null,
+      "value": {
+        "amount": 100000,
+        "currency": "USD",
+        "base": 92000,
+        "as_of": "2026-09-20",
+        "age_days": 7,
+        "stale": false,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_084",
+      "name": "Position 084",
+      "type": "Crypto",
+      "tags": [],
+      "meaning": "Cryptocurrency. Counts toward net worth at a price that can move sharply.",
+      "access": "illiquid",
+      "access_reason": "you’d sell it first",
+      "until": null,
+      "value": {
+        "amount": 99000,
+        "currency": "USD",
+        "base": 91080,
+        "as_of": "2026-04-30",
+        "age_days": 150,
+        "stale": true,
+        "written_by": "web"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    }
+  ],
+  "omitted": {
+    "holdings": 186,
+    "by_type": [
+      {
+        "type": "Current account",
+        "holdings": 37,
+        "assets": 1728530.4,
+        "owed": 0
+      },
+      {
+        "type": "Shares & funds",
+        "holdings": 37,
+        "assets": 1709749.6,
+        "owed": 0
+      },
+      {
+        "type": "Other",
+        "holdings": 36,
+        "assets": 1694126.4,
+        "owed": 0
+      },
+      {
+        "type": "Workplace pension",
+        "holdings": 37,
+        "assets": 1686636.4,
+        "owed": 0
+      },
+      {
+        "type": "Crypto",
+        "holdings": 37,
+        "assets": 1674337.2,
+        "owed": 0
+      },
+      {
+        "type": "Loan",
+        "holdings": 2,
+        "assets": 0,
+        "owed": 52060
+      }
+    ],
+    "hint": "list_holdings returns every holding"
+  }
+}
