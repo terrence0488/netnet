@@ -12,6 +12,7 @@ import {
 const SPECIMENS = [
   'Buttons',
   'Fields',
+  'Choices',
   'Figures',
   'Rules',
   'Sheet and toast',

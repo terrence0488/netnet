@@ -3,9 +3,11 @@ import { ApiError } from '../../api/client';
 import {
   Button,
   Card,
+  Choice,
   ErrorState,
   Figure,
   MoneyField,
+  PasswordField,
   Picker,
   Rule,
   Sheet,
@@ -48,6 +50,8 @@ export function Gallery() {
   const [amount, setAmount] = useState('1,250.50');
   const [yen, setYen] = useState('1250.5');
   const [sheetAmount, setSheetAmount] = useState('');
+  const [place, setPlace] = useState<string | null>('here');
+  const [stage, setStage] = useState<string | null>(null);
 
   return (
     <>
@@ -85,6 +89,12 @@ export function Gallery() {
             />
             <TextField label="Email" type="email" defaultValue="avery@example.com" />
             <TextField label="Password" type="password" error="Use at least 10 characters." />
+            <PasswordField
+              label="New password"
+              autoComplete="new-password"
+              hint="At least 8 characters."
+              defaultValue="correct horse"
+            />
             <Picker label="Kind" options={KINDS} value={kind} onChange={setKind} />
             <MoneyField
               label="Amount"
@@ -101,6 +111,32 @@ export function Gallery() {
               onChange={setYen}
             />
           </form>
+        </Specimen>
+
+        <Specimen title="Choices">
+          <div className={styles.stack}>
+            <p id="gallery-choice-row">Is this where you live?</p>
+            <Choice
+              labelledBy="gallery-choice-row"
+              options={[
+                { value: 'here', label: 'Singapore' },
+                { value: 'elsewhere', label: 'Somewhere else' },
+              ]}
+              value={place}
+              onChange={setPlace}
+            />
+            <p id="gallery-choice-stacked">Which is closest to you?</p>
+            <Choice
+              stacked
+              labelledBy="gallery-choice-stacked"
+              options={[
+                { value: 'start', label: 'Just starting out' },
+                { value: 'build', label: 'Building up — saving toward something big' },
+              ]}
+              value={stage}
+              onChange={(value) => setStage(value === stage ? null : value)}
+            />
+          </div>
         </Specimen>
 
         <Specimen title="Figures">
