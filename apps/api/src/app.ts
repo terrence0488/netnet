@@ -11,6 +11,7 @@ import { eventsRoutes } from './http/events';
 import { geoRoutes } from './http/geo';
 import { holdingsRoutes } from './http/holdings';
 import { liveCountries, meRoutes } from './http/me';
+import { mcpRoutes } from './mcp/route';
 import { prefsRoutes } from './http/prefs';
 import { snapshotRoutes } from './http/snapshot';
 import { tagsRoutes } from './http/tags';
@@ -51,6 +52,9 @@ app.route('/.well-known', wellKnownRoutes(auth));
 
 /** Connection attempts, the approval page's API and the Agent tab (§7.2). */
 app.route('/api/agent', agentRoutes());
+
+/** The connector URL agents paste: the MCP server, stateless Streamable HTTP (§7.1, §7.4). */
+app.route('/mcp', mcpRoutes());
 
 app.route('/api/me', meRoutes());
 app.route('/api/geo', geoRoutes(liveCountries(contentStore)));
