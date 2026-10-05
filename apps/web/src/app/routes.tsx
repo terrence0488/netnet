@@ -1,7 +1,9 @@
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { Account } from '../routes/account/Account';
+import { Add } from '../routes/add/Add';
 import { Agent } from '../routes/agent/Agent';
 import { Forgot } from '../routes/forgot/Forgot';
+import { Holding } from '../routes/holding/Holding';
 import { Home } from '../routes/home/Home';
 import { LogIn } from '../routes/login/LogIn';
 import { NotFound } from '../routes/not-found/NotFound';
@@ -80,6 +82,12 @@ export const routes: RouteObject[] = [
             Component: RequireAccount,
             children: [
               { index: true, Component: Home, handle: { title: 'Home' } satisfies RouteHandle },
+              { path: 'add', Component: Add, handle: { title: 'Add' } satisfies RouteHandle },
+              {
+                path: 'holdings/:id',
+                Component: Holding,
+                handle: { title: 'Holding' } satisfies RouteHandle,
+              },
               { path: 'agent', Component: Agent, handle: { title: 'Agent' } satisfies RouteHandle },
               {
                 path: 'account',

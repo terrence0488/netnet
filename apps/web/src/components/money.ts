@@ -1,49 +1,33 @@
+import { currencyExponent } from '@netnet/contracts/currencies';
+import { fromMinor } from '@netnet/core';
+
 /**
  * Showing and typing money (design-system §2.1, CONVENTIONS §5). Amounts arrive as integers in the
- * currency's minor unit and are shown exactly: the decimal is built from the integer's digits and
- * handed to Intl as a string, so no amount ever passes through floating point.
+ * currency's minor unit. The web holds no money implementation of its own: the minor unit comes
+ * from the contracts currency table and the decimal from core, and the exact string is handed to
+ * Intl, so no amount ever passes through floating point. The browser's Intl is not the source of
+ * the minor unit: its CLDR data differs from ISO 4217 for some currencies (IDR, MMK, LAK, IQD
+ * among them) and changes between browser versions, while the server stores ISO 4217 minor units.
  */
 
 const MINUS = '−';
 
 /**
- * ISO 4217's minor units where they are not 2. The browser's Intl is not used: its CLDR data
- * differs from ISO 4217 for some currencies (IDR, MMK, LAK, IQD among them) and changes between
- * browser versions, while the server stores amounts in ISO 4217 minor units. P1-T6's currency table
- * in packages/contracts replaces this one.
+ * The currency's minor unit per ISO 4217: 2 for most, 0 for some, 3 or 4 for a few. Unknown codes
+ * read as 2, so a code the table never learned still shows rather than breaking the screen.
  */
-const MINOR_DIGITS: Readonly<Record<string, number>> = {
-  BIF: 0,
-  CLP: 0,
-  DJF: 0,
-  GNF: 0,
-  ISK: 0,
-  JPY: 0,
-  KMF: 0,
-  KRW: 0,
-  PYG: 0,
-  RWF: 0,
-  UGX: 0,
-  UYI: 0,
-  VND: 0,
-  VUV: 0,
-  XAF: 0,
-  XOF: 0,
-  XPF: 0,
-  BHD: 3,
-  IQD: 3,
-  JOD: 3,
-  KWD: 3,
-  LYD: 3,
-  OMR: 3,
-  TND: 3,
-  CLF: 4,
-  UYW: 4,
-};
-
-/** The currency's minor unit per ISO 4217: 2 for most, 0 for some, 3 or 4 for a few. */
 export function minorDigits(currency: string): number {
-  return MINOR_DIGITS[currency] ?? 2;
+  return currencyExponent(currency) ?? 2;
+}
+
+/** The amount as an exact decimal in major units, for Intl to format. */
+function decimalOf(minor: number, currency: string): string {
+  if (!Number.isSafeInteger(minor)) throw new RangeError(`Not an amount in minor units: ${minor}`);
+  if (currencyExponent(currency) === undefined) {
+    const digits = Math.abs(minor).toString().padStart(3, '0');
+    return `${digits.slice(0, -2)}.${digits.slice(-2)}`;
+  }
+  return fromMinor(minor, currency);
 }
 
 const formats = new Map<string, Intl.NumberFormat>();
@@ -79,16 +63,14 @@ export interface MoneyFormat {
  * minus sign.
  */
 export function formatMoney(minor: number, currency: string, options: MoneyFormat = {}): string {
-  if (!Number.isSafeInteger(minor)) throw new RangeError(`Not an amount in minor units: ${minor}`);
-  const digits = minorDigits(currency);
-  const all = Math.abs(minor)
-    .toString()
-    .padStart(digits + 1, '0');
-  const whole = all.slice(0, all.length - digits);
-  const cents = all.slice(all.length - digits);
-  const shown = options.total || !/[1-9]/.test(cents) ? 0 : digits;
-  const decimal = (digits ? `${whole}.${cents}` : whole) as Intl.StringNumericLiteral;
-  let text = numberFormat(options.locale, currency, shown).format(decimal);
+  const signed = decimalOf(minor, currency);
+  // Intl formats the size; the sign is ours (the true minus, and none on a zero).
+  const decimal = signed.startsWith('-') ? signed.slice(1) : signed;
+  const cents = decimal.includes('.') ? (decimal.split('.')[1] ?? '') : '';
+  const shown = options.total || !/[1-9]/.test(cents) ? 0 : cents.length;
+  let text = numberFormat(options.locale, currency, shown).format(
+    decimal as Intl.StringNumericLiteral,
+  );
   if (/[1-9]/.test(text)) {
     if (minor < 0) text = MINUS + text;
     else if (options.signed) text = `+${text}`;
