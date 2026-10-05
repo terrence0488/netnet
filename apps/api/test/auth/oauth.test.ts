@@ -174,6 +174,48 @@ describe('a CIMD client (Claude’s published identity)', () => {
   });
 });
 
+describe('an agent that also asks for OpenID scopes (OpenAI’s Codex)', () => {
+  const CODEX = 'https://chatgpt.com/oauth/codex/client.json';
+  const ASKED = 'openid profile email offline_access';
+
+  it('connects with ledger access, and never learns the person’s name or email', async () => {
+    // Its document declares the OpenID scopes too, and its request names nothing of NetNet's.
+    const client = AgentClient.cimd(target, CODEX, 'Codex', 'http://127.0.0.1:1455/auth/callback', {
+      scope: ASKED,
+    });
+    const { code, verifier } = await client.connect(person.browser, { scope: ASKED });
+    const token = await client.exchange(code, verifier);
+    expect(token.status).toBe(200);
+    expect(String(token.body.scope).split(' ').sort()).toEqual([
+      'ledger.read',
+      'ledger.write',
+      'offline_access',
+      'openid',
+    ]);
+    expect((await verify(bearer(token.body.access_token))).scopes).toEqual([
+      'ledger.read',
+      'ledger.write',
+    ]);
+    // The ID token names the account by its opaque id, and nothing else about the person.
+    const id = decodeJwt(String(token.body.id_token));
+    expect(id.sub).toBe(person.userId);
+    for (const claim of ['email', 'email_verified', 'name', 'given_name', 'picture']) {
+      expect(id, claim).not.toHaveProperty(claim);
+    }
+    expect(JSON.stringify(token.body)).not.toContain(person.email);
+
+    // Naming its scopes again on refresh is not refused, and still releases nothing.
+    const refreshed = await client.refresh(String(token.body.refresh_token), ASKED);
+    expect(refreshed.status).toBe(200);
+    expect(JSON.stringify(refreshed.body)).not.toContain(person.email);
+  });
+
+  it('advertises only the scopes NetNet offers', async () => {
+    const { body } = await json('/.well-known/oauth-authorization-server');
+    expect(body.scopes_supported).toEqual(['ledger.read', 'ledger.write', 'offline_access']);
+  });
+});
+
 describe('a DCR client', () => {
   it('registers without authentication as a public client, and connects', async () => {
     const res = await registration(target, {
@@ -320,9 +362,9 @@ describe('the authorize request', () => {
     expect(other.location.searchParams.get('error')).toBe('invalid_target');
   });
 
-  it('refuses scopes NetNet does not grant', async () => {
+  it('refuses a scope NetNet does not know', async () => {
     const { location } = await client.authorize(person.browser, {
-      scope: 'ledger.read openid email',
+      scope: 'ledger.read everything',
     });
     expect(location.searchParams.get('error')).toBe('invalid_scope');
   });

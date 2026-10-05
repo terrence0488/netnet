@@ -113,14 +113,15 @@ export class AgentClient {
     return new AgentClient(target, String(res.body.client_id), redirectUri);
   }
 
-  /** A client identified by its CIMD URL, whose document the fake server hosts. */
+  /** A client identified by its CIMD URL, whose document (with `extra` fields) the fake server hosts. */
   static cimd(
     target: AccountsApp,
     clientId: string,
     name: string,
     redirectUri = 'https://claude.ai/api/mcp/auth_callback',
+    extra: Record<string, unknown> = {},
   ): AgentClient {
-    target.cimd.serve(clientId, metadataDocument(clientId, name, [redirectUri]));
+    target.cimd.serve(clientId, { ...metadataDocument(clientId, name, [redirectUri]), ...extra });
     return new AgentClient(target, clientId, redirectUri);
   }
 
@@ -207,12 +208,13 @@ export class AgentClient {
     });
   }
 
-  refresh(refreshToken: string) {
+  refresh(refreshToken: string, scope?: string) {
     return this.token({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
       client_id: this.clientId,
       resource: MCP_URL,
+      ...(scope === undefined ? {} : { scope }),
     });
   }
 

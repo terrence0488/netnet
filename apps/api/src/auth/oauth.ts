@@ -26,8 +26,39 @@ export const APPROVAL_PAGE = '/app/connect/approve';
 /** What an agent may be granted (§7.4). v1's approval grants what was asked. */
 export const AGENT_SCOPES = ['ledger.read', 'ledger.write'] as const;
 
-/** `offline_access` asks for a refresh token; it grants nothing at `/mcp`. */
-export const OAUTH_SCOPES = [...AGENT_SCOPES, 'offline_access'];
+/**
+ * What the metadata advertises, and what a request that names no scope gets: the agent scopes and
+ * `offline_access`, which asks for a refresh token and grants nothing at `/mcp`.
+ */
+export const ADVERTISED_SCOPES = [...AGENT_SCOPES, 'offline_access'];
+
+/**
+ * OpenID Connect's identity scopes, which some agents ask for as well (OpenAI's Codex asks for
+ * `openid profile email`). They are accepted, never refused, but never reveal the person:
+ * `openid` gets an ID token that names only the account's opaque id, and `profile` and `email`
+ * are dropped before the library sees the request, so no name or email is ever released.
+ */
+export const DROPPED_SCOPES = ['profile', 'email'];
+
+/** Every scope the library accepts, in a registration or a request. */
+export const OAUTH_SCOPES = [...ADVERTISED_SCOPES, 'openid', ...DROPPED_SCOPES];
+
+/**
+ * The scope NetNet passes on for an agent's `requested` one: none named gets
+ * `ADVERTISED_SCOPES`; otherwise `profile` and `email` are dropped, and a request that names none
+ * of the agent scopes gets both, since the person's Allow on the approval page is the consent and
+ * a connection without them could do nothing. Anything else is passed on as it is, so a scope
+ * NetNet does not know is still refused.
+ */
+export function agentScope(requested: string | null): string {
+  if (requested === null) return ADVERTISED_SCOPES.join(' ');
+  const scopes = [...new Set(requested.split(' ').filter((s) => s !== ''))].filter(
+    (s) => !DROPPED_SCOPES.includes(s),
+  );
+  const agent: readonly string[] = AGENT_SCOPES;
+  if (!scopes.some((s) => agent.includes(s))) scopes.unshift(...AGENT_SCOPES);
+  return scopes.join(' ');
+}
 
 /** Access tokens last an hour (§7.6). */
 export const ACCESS_TOKEN_S = 60 * 60;

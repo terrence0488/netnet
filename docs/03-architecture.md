@@ -476,7 +476,11 @@ uncertainty, and advice is yours; look for an existing holding before creating o
 conversation, ask what `get_setup_guide` asks.
 
 **Scopes.** `ledger.read`, `ledger.write`. v1's approval page grants both (PRD §4.2). Keeping them
-separate allows a read-only connection later.
+separate allows a read-only connection later. Agents that also ask for OpenID's `openid profile
+email` (OpenAI's Codex) are served, never refused, but learn nothing about the person: `profile` and
+`email` are dropped, `openid` gets an ID token with only the account's opaque id, and a request
+naming neither ledger scope gets both. The metadata advertises only the ledger scopes and
+`offline_access`.
 
 | Tool | Kind | Input (main fields) | Returns | Jobs |
 |---|---|---|---|---|

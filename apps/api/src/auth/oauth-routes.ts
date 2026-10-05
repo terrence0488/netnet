@@ -9,7 +9,7 @@ import { AppError } from '../lib/errors';
 import { clientIp, type RateLimit } from '../lib/rate-limit';
 import type { Agent } from './agent';
 import type { Auth } from './auth';
-import { APPROVAL_PAGE, hashToken } from './oauth';
+import { ADVERTISED_SCOPES, APPROVAL_PAGE, DROPPED_SCOPES, agentScope, hashToken } from './oauth';
 
 /**
  * The agents' OAuth endpoints, at Better Auth's own paths (architecture §7.1, §7.6):
@@ -93,6 +93,35 @@ async function asksForBackChannelLogout(request: Request): Promise<boolean> {
   }
 }
 
+/** The agent's authorize request with the scope NetNet grants (`agentScope`), cookies kept. */
+function withAgentScope(request: Request): Request {
+  const url = new URL(request.url);
+  url.searchParams.set('scope', agentScope(url.searchParams.get('scope')));
+  return new Request(url, request);
+}
+
+/**
+ * A refresh request without the scopes NetNet never grants: an agent that names its original
+ * scopes again (Codex's `openid profile email`) is not refused for `profile` and `email`, which its
+ * grant never had. With nothing left, `scope` goes, and the refresh keeps the grant as it was.
+ */
+function refreshForm(form: URLSearchParams): URLSearchParams {
+  const scope = form.get('scope');
+  if (form.get('grant_type') !== 'refresh_token' || scope === null) return form;
+  const kept = scope.split(' ').filter((s) => s !== '' && !DROPPED_SCOPES.includes(s));
+  const next = new URLSearchParams(form);
+  if (kept.length === 0) next.delete('scope');
+  else next.set('scope', kept.join(' '));
+  return next;
+}
+
+/** `request` with `form` as its body, its length worked out afresh. */
+function withForm(request: Request, form: URLSearchParams): Request {
+  const headers = new Headers(request.headers);
+  headers.delete('Content-Length');
+  return new Request(request.url, { method: request.method, headers, body: form.toString() });
+}
+
 /** A redirect with headers that can still be changed, carrying `from`'s cookies. */
 function redirect(location: string, from?: Response): Response {
   const headers = new Headers();
@@ -158,7 +187,7 @@ export function oauthRoutes(deps: OAuthRoutesDeps): Hono<AppEnv> {
     const response =
       new URL(c.req.url).searchParams.getAll('resource').length === 0
         ? redirect(errorPage(origin, 'invalid_target', 'The agent did not name the resource.'))
-        : await asNavigation(await deps.auth().handler(c.req.raw), origin);
+        : await asNavigation(await deps.auth().handler(withAgentScope(c.req.raw)), origin);
     const location = response.headers.get('Location');
     if (location === null) return response;
     const target = new URL(location, origin);
@@ -177,10 +206,12 @@ export function oauthRoutes(deps: OAuthRoutesDeps): Hono<AppEnv> {
 
   routes.use('/oauth2/token', anyOrigin);
   routes.post('/oauth2/token', smallBody, async (c) => {
-    const request = await withoutCookie(c.req.raw);
-    const form = new URLSearchParams(await request.clone().text());
+    const sent = await withoutCookie(c.req.raw);
+    const form = new URLSearchParams(await sent.clone().text());
     const code = form.get('grant_type') === 'authorization_code' ? form.get('code') : null;
     const grant = code ? await codeGrant(deps.db(), hashToken(code)) : null;
+    const refresh = refreshForm(form);
+    const request = refresh === form ? sent : withForm(sent, refresh);
     const response = await deps.auth().handler(request);
     if (grant) afterResponse(c, deps.agent().attempts.codeExchanged(grant, response.ok));
     return response;
@@ -210,12 +241,30 @@ export function oauthRoutes(deps: OAuthRoutesDeps): Hono<AppEnv> {
   return routes;
 }
 
+/**
+ * The authorization server's metadata advertises only `ADVERTISED_SCOPES`: the identity scopes are
+ * accepted from agents that ask for them, never offered, so an agent that requests what is
+ * advertised asks for nothing about the person.
+ */
+async function advertisedScopes(response: Response): Promise<Response> {
+  if (!response.ok) return response;
+  const metadata = (await response.json()) as Record<string, unknown>;
+  const headers = new Headers(response.headers);
+  headers.delete('Content-Length');
+  return new Response(JSON.stringify({ ...metadata, scopes_supported: ADVERTISED_SCOPES }), {
+    status: response.status,
+    headers,
+  });
+}
+
 /** `/.well-known/*`: Better Auth serves the metadata at the root, because its issuer is the origin. */
 export function wellKnownRoutes(auth: () => Auth): Hono<AppEnv> {
   const routes = new Hono<AppEnv>();
   const pass = (c: Context<AppEnv>) => auth().handler(c.req.raw);
   routes.use('*', anyOrigin);
-  routes.get('/oauth-authorization-server', pass);
+  routes.get('/oauth-authorization-server', async (c) =>
+    advertisedScopes(await auth().handler(c.req.raw)),
+  );
   routes.get('/oauth-protected-resource', pass);
   routes.get('/oauth-protected-resource/mcp', pass);
   return routes;
