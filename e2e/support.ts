@@ -163,3 +163,24 @@ export function token(page: Page, name: `--${string}`): Promise<string> {
     name,
   );
 }
+
+/** A fictional person, signed in and onboarded (the shape of `GET /api/me`). */
+export const SIGNED_IN = {
+  email: 'avery@example.com',
+  emailVerified: true,
+  country: 'SG',
+  baseCurrency: 'SGD',
+  segment: 'accumulating',
+  timeZone: 'UTC',
+  onboardingState: 'done',
+} as const;
+
+/**
+ * For specs about the screens rather than accounts: the page is answered as if SIGNED_IN were
+ * signed in, so it needs no database and runs against a deployment too. The account specs
+ * (auth, onboarding) sign in for real.
+ */
+export async function asSignedIn(page: Page): Promise<void> {
+  await page.route('**/api/me', (route) => route.fulfill({ json: SIGNED_IN }));
+  await page.route('**/api/events', (route) => route.fulfill({ status: 204 }));
+}

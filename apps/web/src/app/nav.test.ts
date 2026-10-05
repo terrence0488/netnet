@@ -1,3 +1,4 @@
+import type { RouteObject } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { documentTitle, mergeHandles } from './handle';
 import { activeEntry, entriesFor, NAV, type NavEntry } from './nav';
@@ -26,17 +27,23 @@ describe('the nav', () => {
     expect(entriesFor('sidebar', nav).map((e) => e.label)).toStrictEqual([
       'Home',
       'Agent',
+      'Account',
       'Activity',
     ]);
-    expect(entriesFor('tabs', nav).map((e) => e.label)).toStrictEqual(['Home', 'Agent']);
+    expect(entriesFor('tabs', nav).map((e) => e.label)).toStrictEqual(['Home', 'Agent', 'Account']);
     expect(activeEntry('/activity', nav)).toBe(activity);
   });
 
   it('leads only to screens that exist', () => {
+    // Guards and error boundaries are layout routes without a path: their children sit at the top.
+    const screens = (table: readonly RouteObject[]): RouteObject[] =>
+      table.flatMap((route) =>
+        route.path === undefined && !route.index ? screens(route.children ?? []) : [route],
+      );
     const paths = new Set(
-      (routes[0]?.children ?? [])
-        .flatMap((group) => group.children ?? [group])
-        .map((route) => (route.index ? '/' : `/${route.path ?? ''}`)),
+      screens(routes[0]?.children ?? []).map((route) =>
+        route.index ? '/' : `/${route.path ?? ''}`,
+      ),
     );
     for (const entry of NAV) expect(paths, entry.to).toContain(entry.to);
   });

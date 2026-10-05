@@ -1,0 +1,163 @@
+/* The screens before Home (design-system §7, the prototype's sign-up and onboarding): one narrow
+   column under the wordmark, a sign-up title, one question or task per screen. */
+
+.frame {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: stretch;
+  padding-top: var(--space-13);
+}
+
+.mark {
+  padding-bottom: var(--space-16);
+}
+
+.notice {
+  margin-bottom: var(--space-11);
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--hit);
+  min-width: var(--hit);
+  margin-bottom: var(--space-3);
+  color: var(--brand-text);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-link);
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--ink);
+}
+
+/* Step numbers are one of mustard's decorative uses (design-system §4.1). */
+.step {
+  justify-self: start;
+  margin-bottom: var(--space-6);
+  padding: var(--space-1) var(--space-5);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--sun);
+  color: var(--sun-on);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.title {
+  margin-bottom: var(--space-11);
+  font-size: var(--size-heading-signup);
+  font-weight: var(--weight-heading-signup);
+  letter-spacing: var(--tracking-heading-signup);
+  line-height: var(--leading-heading-signup);
+}
+
+.sub {
+  margin: calc(var(--space-6) * -1) 0 var(--space-11);
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body-sm);
+  overflow-wrap: anywhere;
+}
+
+/* A sentence of the screen's own: what happened, what follows. */
+.body {
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+}
+
+/* The screen's action, when it is not a form's. */
+.actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  margin-top: var(--space-11);
+}
+
+/* An address or a name inside a sentence: one long word that may break anywhere. */
+.strong {
+  color: var(--ink);
+  font-weight: var(--weight-button);
+  overflow-wrap: anywhere;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-8);
+}
+
+/* The form's action sits a little apart from its last field. */
+.form > button:last-child {
+  margin-top: var(--space-3);
+}
+
+.problem {
+  color: var(--attention);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body-sm);
+}
+
+.hint {
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  line-height: var(--leading-body-sm);
+}
+
+.foot {
+  display: grid;
+  justify-items: start;
+  /* Room for a link in a sentence, whose target overflows its line, beside a link of its own. */
+  row-gap: calc(var(--hit) / 2);
+  margin-top: var(--space-9);
+  color: var(--ink-3);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+/* A link inside a sentence: the sentence keeps its line height and the link's 44px target
+   overflows the line box instead (design-system §6.1 rule 4). */
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  min-width: var(--hit);
+  margin-block: calc((var(--hit) - 1lh) / -2);
+  padding: 0 var(--space-2);
+  border: none;
+  background: none;
+  color: var(--brand-text);
+  font-size: var(--size-link);
+  font-weight: var(--weight-link);
+  letter-spacing: var(--tracking-link);
+  text-decoration: underline;
+  text-decoration-thickness: var(--border-rule);
+  text-underline-offset: var(--offset-control);
+  vertical-align: middle;
+}
+
+.link:hover {
+  color: var(--ink);
+}
+
+/* A link on a line of its own: the row is the target's height (§6.1 rule 4). */
+.foot > .link {
+  margin-block: 0;
+  margin-inline-start: calc(var(--space-2) * -1);
+}
+
+.link[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}

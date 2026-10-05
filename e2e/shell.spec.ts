@@ -2,6 +2,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
   VIEWPORTS,
+  asSignedIn,
   expectNoHorizontalScroll,
   expectNoSeriousAxeViolations,
   expectTapTargets,
@@ -11,8 +12,13 @@ import {
   scrollY,
 } from './support';
 
-/** The shell's screens: two tabs, the gallery (long, every component) and an unknown address. */
-const SCREENS = ['/app/', '/app/agent', '/app/gallery', '/app/no/such/screen'];
+/**
+ * The shell's screens: the tabs, the gallery (long, every component) and an unknown address. They
+ * are a signed-in person's, so every test here is signed in.
+ */
+const SCREENS = ['/app/', '/app/agent', '/app/account', '/app/gallery', '/app/no/such/screen'];
+
+test.beforeEach(({ page }) => asSignedIn(page));
 
 const tabs = (page: Page) => page.getByRole('navigation', { name: 'Tabs' });
 const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Main' });
@@ -184,7 +190,7 @@ test('no screen logs an error or throws', async ({ page }) => {
 test('axe finds nothing serious on the shell, in both themes', async ({ page }) => {
   for (const colorScheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme });
-    for (const path of ['/app/', '/app/agent', '/app/no/such/screen']) {
+    for (const path of ['/app/', '/app/agent', '/app/account', '/app/no/such/screen']) {
       await page.goto(path);
       await expectNoSeriousAxeViolations(page);
     }
