@@ -65,7 +65,7 @@ describe('the app shell', () => {
 
   it('marks the Agent entry on the Agent tab', () => {
     const html = render('/app/agent');
-    expect(html).toContain('<h1>Agent</h1>');
+    expect(html).toContain('<h1>Your agent</h1>');
     expect(current(html).every((link) => link.endsWith('Agent</a>'))).toBe(true);
   });
 

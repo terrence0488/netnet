@@ -2,6 +2,8 @@ import { createBrowserRouter, type RouteObject } from 'react-router';
 import { Account } from '../routes/account/Account';
 import { Add } from '../routes/add/Add';
 import { Agent } from '../routes/agent/Agent';
+import { Approve } from '../routes/connect/Approve';
+import { Connect } from '../routes/connect/Connect';
 import { Forgot } from '../routes/forgot/Forgot';
 import { Holding } from '../routes/holding/Holding';
 import { Home } from '../routes/home/Home';
@@ -14,7 +16,7 @@ import { SetPassword } from '../routes/signup/SetPassword';
 import { SignUp } from '../routes/signup/SignUp';
 import { Verify } from '../routes/verify/Verify';
 import { BASENAME } from './basename';
-import { RequireAccount, SignedOutOnly } from './guards';
+import { RequireAccount, RequireSignedIn, SignedOutOnly } from './guards';
 import type { RouteHandle } from './handle';
 import { Shell } from './Shell';
 
@@ -79,6 +81,16 @@ export const routes: RouteObject[] = [
             children: onboardingRoutes,
           },
           {
+            Component: RequireSignedIn,
+            children: [
+              {
+                path: 'connect/approve',
+                Component: Approve,
+                handle: bare('Approve the connection'),
+              },
+            ],
+          },
+          {
             Component: RequireAccount,
             children: [
               { index: true, Component: Home, handle: { title: 'Home' } satisfies RouteHandle },
@@ -89,6 +101,16 @@ export const routes: RouteObject[] = [
                 handle: { title: 'Holding' } satisfies RouteHandle,
               },
               { path: 'agent', Component: Agent, handle: { title: 'Agent' } satisfies RouteHandle },
+              {
+                path: 'agent/connect',
+                Component: Connect,
+                handle: { title: 'Connect your agent', chrome: false } satisfies RouteHandle,
+              },
+              {
+                path: 'agent/connect/:client',
+                Component: Connect,
+                handle: { title: 'Connect your agent', chrome: false } satisfies RouteHandle,
+              },
               {
                 path: 'account',
                 Component: Account,

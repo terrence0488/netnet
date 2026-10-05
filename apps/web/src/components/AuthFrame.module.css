@@ -54,6 +54,7 @@
 
 .title {
   margin-bottom: var(--space-11);
+  overflow-wrap: anywhere;
   font-size: var(--size-heading-signup);
   font-weight: var(--weight-heading-signup);
   letter-spacing: var(--tracking-heading-signup);
@@ -70,6 +71,7 @@
 
 /* A sentence of the screen's own: what happened, what follows. */
 .body {
+  overflow-wrap: anywhere;
   color: var(--ink-2);
   font-size: var(--size-body);
   line-height: var(--leading-body);

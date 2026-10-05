@@ -222,6 +222,8 @@ export const duration = {
   sheet: 220,
   toast: 220,
   spin: 900,
+  /** Each face of the agent roll rising in and out (design-system §6, Agent roll). */
+  roll: 550,
 } as const;
 
 export const easing = { sheet: [0.32, 0.72, 0, 1] } as const;

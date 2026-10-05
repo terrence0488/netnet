@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "pnpm --parallel --filter @netnet/api --filter @netnet/web --filter @netnet/landing dev",
-    "build": "pnpm --filter @netnet/landing build && pnpm --filter @netnet/web build && pnpm --filter @netnet/api build",
+    "build": "pnpm --filter @netnet/landing build && pnpm --filter @netnet/web build && pnpm --filter @netnet/api build && pnpm --silent content:images",
     "lint": "eslint . --max-warnings 0 && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "pnpm -r --no-bail typecheck && tsc -p tsconfig.json --noEmit",
@@ -16,6 +16,7 @@
     "test:int": "vitest run --project integration --passWithNoTests",
     "test:e2e": "playwright test",
     "content:check": "tsx scripts/content-check.ts",
+    "content:images": "tsx scripts/content-images.ts",
     "content:publish": "tsx scripts/content-publish.ts",
     "db:bootstrap": "tsx scripts/db-bootstrap.ts",
     "db:migrate": "tsx scripts/db-migrate.ts",
