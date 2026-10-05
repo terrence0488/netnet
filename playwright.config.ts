@@ -49,8 +49,14 @@ export default defineConfig({
           command: 'tsx e2e/server.ts',
           url: `${BASE_URL}/api/health`,
           reuseExistingServer: !process.env.CI,
-          // The server's own origin, which Better Auth's redirects (the reset link) are built on.
-          env: { PORT: String(PORT), PUBLIC_ORIGIN: BASE_URL },
+          // The server's own origin: Better Auth's redirects (the reset link) and the agents' OAuth
+          // issuer and resource are built on it. The signing keys outlive one server only under a
+          // fixed secret (test-only, not a secret).
+          env: {
+            PORT: String(PORT),
+            PUBLIC_ORIGIN: BASE_URL,
+            BETTER_AUTH_SECRET: 'e2e-only-secret-not-used-anywhere-else-0123456789',
+          },
         },
       }),
 });

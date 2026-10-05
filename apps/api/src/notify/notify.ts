@@ -15,9 +15,10 @@ import { renderEmail } from './templates';
  */
 
 /**
- * How each kind travels (architecture §7.10's table). The account's emails go by email only, to
- * the account's address whether or not it is verified (verifying it is what one of them is for),
- * and ignore the Reminders switches. Push and the switches come with the comeback reminder (P3).
+ * How each kind travels (architecture §7.10's table). The account's emails and the security email
+ * go by email only, to the account's address whether or not it is verified (verifying it is what
+ * one of them is for; the security email is always sent), and ignore the Reminders switches. Push
+ * and the switches come with the comeback reminder (P3).
  */
 interface Route {
   email: { verifiedOnly: boolean };
@@ -26,6 +27,7 @@ interface Route {
 const ROUTES: { [K in MessageKind]: Route } = {
   'account.verify_email': { email: { verifiedOnly: false } },
   'account.reset_password': { email: { verifiedOnly: false } },
+  'security.agent_connected': { email: { verifiedOnly: false } },
 };
 
 export interface NotifyDeps {

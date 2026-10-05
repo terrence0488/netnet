@@ -45,7 +45,44 @@ const TABLES: Record<string, string> = {
     'revoked_at timestamptz, security_email_sent_at timestamptz',
   'core.connection_attempt':
     'id text, user_id text, client text, entry text, platform text, state text, failed_step text, ' +
-    'started_at timestamptz, updated_at timestamptz',
+    'started_at timestamptz, updated_at timestamptz, connection_id text, ' +
+    'authorize_seen_at timestamptz, token_issued_at timestamptz, cause text',
+  'core.jwks':
+    'id text, public_key text, private_key text, created_at timestamptz, expires_at timestamptz, ' +
+    'alg text, crv text',
+  'core.oauth_client':
+    'id text, client_id text, client_secret text, client_discovery_id text, disabled boolean, ' +
+    'skip_consent boolean, enable_end_session boolean, subject_type text, scopes text[], ' +
+    'client_credentials_scopes text[], user_id text, created_at timestamptz, ' +
+    'updated_at timestamptz, name text, uri text, icon text, contacts text[], tos text, ' +
+    'policy text, software_id text, software_version text, software_statement text, ' +
+    'redirect_uris text[], post_logout_redirect_uris text[], backchannel_logout_uri text, ' +
+    'backchannel_logout_session_required boolean, token_endpoint_auth_method text, ' +
+    'application_type text, jwks text, jwks_uri text, grant_types text[], response_types text[], ' +
+    'require_pkce boolean, dpop_bound_access_tokens boolean, reference_id text, metadata jsonb',
+  'core.oauth_resource':
+    'id text, identifier text, name text, access_token_ttl integer, refresh_token_ttl integer, ' +
+    'signing_algorithm text, signing_key_id text, allowed_scopes text[], custom_claims jsonb, ' +
+    'dpop_bound_access_tokens_required boolean, disabled boolean, created_at timestamptz, ' +
+    'updated_at timestamptz, policy_version integer, metadata jsonb',
+  'core.oauth_client_resource':
+    'id text, client_id text, resource_id text, metadata jsonb, created_at timestamptz',
+  'core.oauth_refresh_token':
+    'id text, token text, client_id text, session_id text, user_id text, reference_id text, ' +
+    'authorization_code_id text, resources text[], requested_user_info_claims text[], ' +
+    'expires_at timestamptz, created_at timestamptz, revoked timestamptz, rotated_at timestamptz, ' +
+    'rotation_replay_response text, rotation_replay_expires_at timestamptz, ' +
+    'auth_time timestamptz, confirmation jsonb, scopes text[]',
+  'core.oauth_access_token':
+    'id text, token text, client_id text, session_id text, user_id text, reference_id text, ' +
+    'authorization_code_id text, resources text[], requested_user_info_claims text[], ' +
+    'refresh_id text, expires_at timestamptz, created_at timestamptz, revoked timestamptz, ' +
+    'confirmation jsonb, scopes text[]',
+  'core.oauth_consent':
+    'id text, client_id text, user_id text, reference_id text, resources text[], ' +
+    'requested_user_info_claims text[], scopes text[], created_at timestamptz, ' +
+    'updated_at timestamptz',
+  'core.oauth_client_assertion': 'id text, expires_at timestamptz',
   'core.content_doc':
     'kind text, key text, version integer, body jsonb, sha256 text, author text, source_commit text, ' +
     'created_at timestamptz',

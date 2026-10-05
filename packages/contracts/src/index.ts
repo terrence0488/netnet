@@ -1,4 +1,5 @@
 export * from './account';
+export * from './agent';
 export * from './content';
 export * from './context';
 export * from './currencies';

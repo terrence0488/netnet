@@ -267,9 +267,9 @@ $1 FOR UPDATE`. That lock serialises one user's writes, exactly as a single-thre
 |---|---|---|
 | `user`, `session`, `account`, `verification`, `jwks` | Better Auth's schema | Email, password hash (scrypt), provider links, `email_verified` |
 | `profile` | `user_id` PK, `country` (ISO 3166-1, nullable), `time_zone` (IANA, never null: the browser's at sign-up, `UTC` if it gives none), `segment` (`starting_out`/`accumulating`/`established`/`unknown`), `onboarding_state`, `created_at` | What every request needs: the pack to resolve, the segment every event carries (§3.5), where to resume onboarding (J1). `time_zone` also decides "today" and the reminder's daytime (J12); the web app updates it when the browser reports another |
-| `oauth_client`, `oauth_access_token`, `oauth_refresh_token`, `oauth_consent` | The OAuth plugin's schema | CIMD clients cached by URL; DCR clients unused for 30 days are purged |
+| `oauth_client`, `oauth_resource`, `oauth_client_resource`, `oauth_access_token`, `oauth_refresh_token`, `oauth_consent`, `oauth_client_assertion` | The OAuth plugin's schema | CIMD clients cached by URL; DCR clients unused for 30 days are purged. Tokens are stored hashed; a consent lives only inside the Allow that makes it |
 | `agent_connection` | `id` (`con_`), `user_id`, `client_id`, `client_name`, `registration` (`cimd`/`dcr`), **`client`** (`claude`/`chatgpt`/`other`, §3), `created_at`, `first_call_at`, `last_used_at`, `revoked_at`, **`security_email_sent_at`** | The Agent tab (J5). Checked inside `withUser` on every agent call, so revocation applies to the next call. `security_email_sent_at` stays null until Resend accepts the security email, so a failed send is retried (§7.10) |
-| `connection_attempt` | `id`, `user_id`, `client` (`claude`/`chatgpt`/`other`: the guide chosen), `entry` (`onboarding`/`home`/`holding`/`agent`), `platform`, `state` (`started`/`approved`/`live`/`failed`), `failed_step`, `started_at`, `updated_at` | "Moves on by itself" and `agent_connection_* {entry}`. Timeouts are worked out when an attempt is read (no frequent cron on Hobby) |
+| `connection_attempt` | `id`, `user_id`, `client` (`claude`/`chatgpt`/`other`: the guide chosen), `entry` (`onboarding`/`home`/`holding`/`agent`), `platform`, `state` (`started`/`approved`/`live`/`failed`), `failed_step`, `cause` (`cancelled`/`invalid_request`/`token_rejected`/`timed_out`), `connection_id` (once approved), `authorize_seen_at`, `token_issued_at`, `started_at`, `updated_at` | "Moves on by itself" and `agent_connection_* {entry}`. Timeouts are worked out when an attempt is read (no frequent cron on Hobby) |
 | `content_doc` | (`kind`, `key`, `version`) PK, `body` jsonb, `sha256`, `author`, `source_commit`, `created_at` | Packs, the country list, agent guides. **Immutable once written** |
 | `content_current` | (`kind`, `key`) PK, `version`, `updated_at`, `updated_by` | Which version is live. Rolling back = pointing at an older version |
 | `content_audit` | `id`, `kind`, `key`, `from_version`, `to_version`, `actor`, `at` | Who changed the world, when, old → new (§2.3) |
@@ -404,7 +404,8 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 | `DELETE /api/notifications/endpoints/:id` | `?by=user\|signout`: the switch turned off or Remove (`user`), or signing out on this device (`signout`). Fires `push_disabled {by}` | J12 |
 | `POST /api/reminders/opened` | `{token}`, no session needed. Sent by the web app when it opens from a reminder (`/app/?r=<token>`). Fires `reminder_opened {channel}` for the first open of that reminder only → `204` | J12 |
 | `GET /api/agent/connections` · `DELETE /api/agent/connections/:id` | list · revoke (logged; later calls rejected) | J5 |
-| `POST /api/agent/attempts` · `GET /api/agent/attempts/:id` | `{client: "claude"\|"chatgpt"\|"other", entry, platform}` → `{id, state, failedStep?, cause?}` (polled every 2 s) | J5 |
+| `POST /api/agent/attempts` · `GET /api/agent/attempts/:id` | `{client: "claude"\|"chatgpt"\|"other", entry, platform}` → `{id, state, failedStep?, cause?}` (polled every 2 s); `cause` is `cancelled`, `invalid_request`, `token_rejected` or `timed_out` | J5 |
+| `GET /api/agent/approval` · `POST /api/agent/approval` | The approval page's API (§7.6), with the page's query as NetNet signed it: `?‹query›` → `{clientName, registration, nameVerified, client, host, scopes}`; `{accept, query}` → `{url}`, where the browser goes next (the agent, with the code or the refusal). Reading and Allow need a verified email | J5 |
 | `GET /api/content/current` · `GET /api/content/:kind/:key@:version` | live version map · an immutable document | §2.3, J5 |
 | `GET /api/export?format=json\|csv` | everything: holdings, types, tags, accessibility and the answer behind it, all values with currencies, rates and rate dates | J10 |
 | `DELETE /api/account` | needs a sign-in in the last 10 minutes → `{erasedWithinDays: 30}` | J10 |
@@ -475,7 +476,11 @@ uncertainty, and advice is yours; look for an existing holding before creating o
 conversation, ask what `get_setup_guide` asks.
 
 **Scopes.** `ledger.read`, `ledger.write`. v1's approval page grants both (PRD §4.2). Keeping them
-separate allows a read-only connection later.
+separate allows a read-only connection later. Agents that also ask for OpenID's `openid profile
+email` (OpenAI's Codex) are served, never refused, but learn nothing about the person: `profile` and
+`email` are dropped, `openid` gets an ID token with only the account's opaque id, and a request
+naming neither ledger scope gets both. The metadata advertises only the ledger scopes and
+`offline_access`.
 
 | Tool | Kind | Input (main fields) | Returns | Jobs |
 |---|---|---|---|---|
