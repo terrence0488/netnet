@@ -183,4 +183,6 @@ export const SIGNED_IN = {
 export async function asSignedIn(page: Page): Promise<void> {
   await page.route('**/api/me', (route) => route.fulfill({ json: SIGNED_IN }));
   await page.route('**/api/events', (route) => route.fulfill({ status: 204 }));
+  // The Agent tab's reads, as a signed-in person with no connections sees them (P1-T17).
+  await page.route('**/api/agent/connections', (route) => route.fulfill({ json: [] }));
 }
