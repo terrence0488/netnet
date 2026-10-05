@@ -46,6 +46,12 @@ type Route = (typeof ROUTES)[number];
 const COVERED_ELSEWHERE: Record<string, string> = {
   'GET /api/me': 'test/isolation/me.test.ts',
   'PATCH /api/me': 'test/isolation/me.test.ts',
+  'POST /api/agent/attempts': 'test/isolation/agent.test.ts',
+  'GET /api/agent/attempts/:id': 'test/isolation/agent.test.ts',
+  'GET /api/agent/connections': 'test/isolation/agent.test.ts',
+  'DELETE /api/agent/connections/:id': 'test/isolation/agent.test.ts',
+  'GET /api/agent/approval': 'test/isolation/agent.test.ts',
+  'POST /api/agent/approval': 'test/isolation/agent.test.ts',
 };
 
 /** Routes that reach no one's ledger and take no ids of anyone's, so B has nothing of A's to name. */
@@ -65,6 +71,17 @@ const NO_USER_DATA: Record<string, string> = {
   'GET /api/content/current': 'published content, the same for everyone',
   'GET /api/content/:kind/:ref': 'published content, the same for everyone',
   'GET /api/cron/fx': 'the cron secret, and exchange rates only',
+  'GET /api/cron/daily': 'the cron secret; answers counts only',
+  'GET /.well-known/oauth-authorization-server': 'OAuth metadata, the same for everyone',
+  'GET /.well-known/oauth-protected-resource': 'OAuth metadata, the same for everyone',
+  'GET /.well-known/oauth-protected-resource/mcp': 'OAuth metadata, the same for everyone',
+  'GET /api/auth/jwks': 'the public signing keys, the same for everyone',
+  'GET /api/auth/oauth2/authorize':
+    'Better Auth: sends the session’s own person to the approval page',
+  'POST /api/auth/oauth2/register': 'Better Auth: registers a client; takes no cookie and no ids',
+  'POST /api/auth/oauth2/token':
+    'Better Auth: answers only the holder of the code or token; no cookie',
+  'POST /api/auth/oauth2/revoke': 'Better Auth: answers only the holder of the token; no cookie',
 };
 
 /** Every route the app serves, as `METHOD /path`, middleware aside. */
@@ -362,7 +379,8 @@ describe('the registry', () => {
     for (const [route, file] of Object.entries(COVERED_ELSEWHERE)) {
       const path = `${apiRoot}${file}`;
       expect(existsSync(path), file).toBe(true);
-      expect(readFileSync(path, 'utf8'), file).toContain(route.split(' ')[1]);
+      // The path up to its first parameter: a test names `/api/agent/attempts/${id}`, say.
+      expect(readFileSync(path, 'utf8'), file).toContain(route.split(' ')[1]!.split(':')[0]);
     }
   });
 
