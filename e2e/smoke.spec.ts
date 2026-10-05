@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { asSignedIn } from './support';
 
 test('the built app answers health, serves the web app at /app and its deep links', async ({
   page,
@@ -8,6 +9,13 @@ test('the built app answers health, serves the web app at /app and its deep link
   expect(health.status()).toBe(200);
   expect(await health.json()).toStrictEqual({ ok: true });
 
+  // Signed out, the app asks the visitor to log in, and the API agrees nobody is.
+  await page.goto('/app');
+  await expect(page.getByRole('heading', { level: 1, name: 'Log in' })).toBeVisible();
+  await expect(page).toHaveTitle('Log in · NetNet');
+  expect((await request.get('/api/me')).status()).toBe(401);
+
+  await asSignedIn(page);
   await page.goto('/app');
   await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
   await expect(page).toHaveTitle('Home · NetNet');

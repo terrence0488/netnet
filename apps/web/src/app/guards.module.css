@@ -1,0 +1,7 @@
+/* The moment between opening the app and knowing who is signed in. */
+
+.waiting {
+  display: grid;
+  place-items: center;
+  min-height: calc(var(--hit) * 4);
+}

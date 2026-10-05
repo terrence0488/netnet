@@ -5,9 +5,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '../api/client';
 import { Button } from './Button';
+import { Choice } from './Choice';
 import { ErrorState, errorCopy } from './ErrorState';
 import { Figure } from './Figure';
 import { MoneyField } from './MoneyField';
+import { PasswordField } from './PasswordField';
 import { Sheet } from './Sheet';
 
 const html = renderToStaticMarkup;
@@ -21,6 +23,36 @@ describe('Button', () => {
     const markup = html(<Button aria-disabled>Save</Button>);
     expect(markup).toContain('aria-disabled="true"');
     expect(markup).not.toMatch(/\sdisabled(=|\s|>)/);
+  });
+});
+
+describe('Choice', () => {
+  it('is a group of toggles named by its question, the chosen one pressed', () => {
+    const markup = html(
+      <Choice
+        labelledBy="q"
+        options={[
+          { value: 'SG', label: 'Singapore' },
+          { value: '*', label: 'Somewhere else' },
+        ]}
+        value="SG"
+        onChange={() => undefined}
+      />,
+    );
+    expect(markup).toMatch(/^<div role="group" aria-labelledby="q"/);
+    expect(markup).toMatch(/<button type="button"[^>]*aria-pressed="true"[^>]*>Singapore</);
+    expect(markup).toMatch(/<button type="button"[^>]*aria-pressed="false"[^>]*>Somewhere else</);
+  });
+});
+
+describe('PasswordField', () => {
+  it('hides the password, with Show beside it named for what it shows', () => {
+    const markup = html(
+      <PasswordField label="Password" autoComplete="new-password" value="" onChange={() => {}} />,
+    );
+    expect(markup).toContain('type="password"');
+    expect(markup).toContain('autoComplete="new-password"');
+    expect(markup).toMatch(/>Show<span class="visually-hidden"> password<\/span><\/button>/);
   });
 });
 

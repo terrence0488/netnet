@@ -1,0 +1,47 @@
+.top {
+  padding: var(--space-10) 0 var(--space-8);
+}
+
+.stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-9);
+  max-width: var(--field-max);
+}
+
+.row {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--inset-row) var(--inset-card);
+}
+
+.email {
+  font-weight: var(--weight-button);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  line-height: var(--leading-body-sm);
+}
+
+/* A whole row that does one thing (the prototype's Log out row). */
+.action {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--hit);
+  padding: var(--inset-row) var(--inset-card);
+  font-weight: var(--weight-button);
+  text-align: start;
+}
+
+.action:hover {
+  background: var(--paper);
+}
+
+.action[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}

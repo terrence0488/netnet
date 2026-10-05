@@ -3,9 +3,10 @@ import { existsSync } from 'node:fs';
 
 /**
  * E2E runs against the built app (e2e/server.ts), or against a deployed URL when E2E_BASE_URL is
- * set (CI's preview check).
+ * set (CI's preview check). E2E_PORT moves the local server off 3100, so two runs on one machine
+ * never share a server.
  */
-const PORT = 3100;
+const PORT = Number(process.env.E2E_PORT ?? 3100);
 const BASE_URL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 
 /**
@@ -48,7 +49,8 @@ export default defineConfig({
           command: 'tsx e2e/server.ts',
           url: `${BASE_URL}/api/health`,
           reuseExistingServer: !process.env.CI,
-          env: { PORT: String(PORT) },
+          // The server's own origin, which Better Auth's redirects (the reset link) are built on.
+          env: { PORT: String(PORT), PUBLIC_ORIGIN: BASE_URL },
         },
       }),
 });

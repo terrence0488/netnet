@@ -1,5 +1,8 @@
+import type { ProfileView } from '@netnet/contracts';
 import { useEffect, useLayoutEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
+import { useMe, useTimeZoneSync } from '../api/account';
+import { startSessionTracker } from '../api/events';
 import { ToastViewport } from '../components/Toast';
 import { Wordmark } from '../components/Wordmark';
 import { cx } from '../components/cx';
@@ -23,6 +26,17 @@ function NavLinks({ place, active }: { place: NavPlace; active: NavEntry | undef
 }
 
 /**
+ * What runs while someone is signed in, whichever screen they are on: the session tracker
+ * (`session_started` after 30 minutes idle, architecture §7.7) and the browser's time zone kept on
+ * the profile.
+ */
+function SignedIn({ me }: { me: ProfileView }) {
+  useEffect(() => startSessionTracker(), []);
+  useTimeZoneSync(me);
+  return null;
+}
+
+/**
  * The app's frame (design-system §7): bottom tabs on a phone, a sidebar from 900px, and one
  * content column whose width depends on the viewport alone. Routes without chrome get one narrow
  * column and neither nav.
@@ -33,6 +47,7 @@ export function Shell() {
   const { pathname } = useLocation();
   const active = activeEntry(pathname);
   const title = documentTitle(handle);
+  const me = useMe().data;
 
   // Only navigation moves the page (design-system §7): a new screen starts at the top, while
   // anything that updates the screen in place (a range, a sheet, undo) leaves it where it was.
@@ -67,6 +82,7 @@ export function Shell() {
         </nav>
       ) : null}
       <ToastViewport chrome={chrome} />
+      {me ? <SignedIn me={me} /> : null}
     </div>
   );
 }
