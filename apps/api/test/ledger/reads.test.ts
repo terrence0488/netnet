@@ -116,6 +116,29 @@ describe('snapshot', () => {
   });
 });
 
+describe('a read', () => {
+  it('sees one moment: a write that commits while it runs is not in it', async () => {
+    const person = await suite.newUser('USD');
+    let added: string | undefined;
+    const [before, after] = await suite.as(person).read(async (l) => {
+      const first = await l.snapshot();
+      const write = await suite.as(person).write((w) =>
+        w.createHolding({
+          name: 'Late account',
+          kind: 'asset',
+          universal: 'cash',
+          currency: 'USD',
+        }),
+      );
+      added = write.result.id;
+      return [first, await l.snapshot()];
+    });
+    expect(after).toStrictEqual(before);
+    const now = await suite.as(person).read((l) => l.snapshot());
+    expect(now.holdings.map((h) => h.id)).toContain(added);
+  });
+});
+
 describe('context', () => {
   it('gives compileContext every holding and value, archived included, and every connection', async () => {
     const context = await suite.as(userId).read((l) => l.context());

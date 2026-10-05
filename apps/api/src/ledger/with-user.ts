@@ -91,7 +91,11 @@ export function createWithUser(deps: () => WithUserDeps): WithUser {
         return fn({ db: tx, userId, actor, write, now: () => new Date(startedAt) });
       },
       // A read cannot write by mistake, so every write goes through the lock (CONVENTIONS §10).
-      { accessMode: write ? 'read write' : 'read only' },
+      // A read sees one moment: a write that commits while it runs is not half in a snapshot.
+      // Read-only, so repeatable read never fails to serialise; writes are one at a time anyway.
+      write
+        ? { accessMode: 'read write' }
+        : { accessMode: 'read only', isolationLevel: 'repeatable read' },
     );
   };
 }

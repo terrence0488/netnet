@@ -163,6 +163,100 @@ describe('applyPackTypes', () => {
   });
 });
 
+describe('changeCountry', () => {
+  /** The user's types, in order, as (universal, pack type) pairs, with their ids. */
+  async function typesOf(userId: string) {
+    return suite.rows<{ id: string; universal: string; pack_type_key: string | null }>(
+      'select id, universal, pack_type_key from ledger.user_type where user_id = $1 order by sort',
+      [userId],
+    );
+  }
+
+  it('with no holding, starts the ledger over in the new currency and types', async () => {
+    const userId = await suite.newUser('USD', null);
+    const first = await typesOf(userId);
+    const tag = await suite.as(userId).write((l) => l.upsertTag({ name: 'Kept' }));
+    await suite
+      .as(userId)
+      .write((l) =>
+        l.setPrefs({ homeFilter: { typeIds: [first[0]!.id], tagIds: [tag.result.id] } }),
+      );
+    const version = await dataVersion(suite, userId);
+    const seen = (await auditRows(suite, userId)).length;
+
+    const write = await suite
+      .as(userId)
+      .write((l) => l.changeCountry({ baseCurrency: 'EUR', pack: suite.content.ref('qz') }));
+
+    expect(write.dataVersion).toBe(version! + 1);
+    const types = await typesOf(userId);
+    expect(types.map(({ universal, pack_type_key }) => ({ universal, pack_type_key }))).toEqual([
+      ...UNIVERSALS.map((universal) => ({ universal, pack_type_key: null })),
+      { universal: 'loan', pack_type_key: 'auto_loan' },
+    ]);
+    expect(types.filter((t) => first.some((f) => f.id === t.id))).toEqual([]);
+    const snapshot = await suite.as(userId).read((l) => l.snapshot());
+    expect(snapshot).toMatchObject({
+      baseCurrency: 'EUR',
+      tags: [like({ id: tag.result.id })],
+      prefs: { homeFilter: { tagIds: [tag.result.id] } },
+    });
+    expect(await orphans(userId)).toEqual([]);
+    const audits = (await auditRows(suite, userId)).slice(seen);
+    expect(audits.map((r) => [r.entity, r.action])).toEqual([
+      ['prefs', 'update'],
+      ...first.map(() => ['type', 'delete']),
+      ...types.map(() => ['type', 'create']),
+      ['ledger', 'update'],
+    ]);
+    expect(audits.at(-1)).toMatchObject({
+      before: { baseCurrency: 'USD' },
+      after: { baseCurrency: 'EUR' },
+    });
+  });
+
+  it('with a holding, keeps the currency and adds the pack’s types, removing none', async () => {
+    const userId = await suite.newUser('USD', null);
+    await suite
+      .as(userId)
+      .write((l) =>
+        l.createHolding({ name: 'Account', kind: 'asset', universal: 'cash', currency: 'USD' }),
+      );
+    const first = await typesOf(userId);
+    const write = await suite
+      .as(userId)
+      .write((l) => l.changeCountry({ baseCurrency: 'EUR', pack: suite.content.ref('qz') }));
+    const types = await typesOf(userId);
+    expect(types.slice(0, first.length)).toEqual(first);
+    expect(types.slice(first.length)).toEqual([like({ pack_type_key: 'auto_loan' })]);
+    expect((await suite.as(userId).read((l) => l.snapshot())).baseCurrency).toBe('USD');
+
+    const again = await suite
+      .as(userId)
+      .write((l) => l.changeCountry({ baseCurrency: 'EUR', pack: suite.content.ref('qz') }));
+    expect(again.dataVersion).toBe(write.dataVersion);
+  });
+
+  it('refuses a currency not in circulation, and needs the ledger', async () => {
+    const userId = await suite.newUser('USD', null);
+    const refused = await appError(
+      suite
+        .as(userId)
+        .write((l) => l.changeCountry({ baseCurrency: 'ABC', pack: suite.content.ref(null) })),
+    );
+    expect(refused).toMatchObject({
+      code: 'CURRENCY_UNSUPPORTED',
+      details: { fields: { baseCurrency: anyString } },
+    });
+    const missing = await appError(
+      suite
+        .as(newUserId())
+        .write((l) => l.changeCountry({ baseCurrency: 'USD', pack: suite.content.ref(null) })),
+    );
+    expect(missing.code).toBe('NOT_FOUND');
+  });
+});
+
 describe('types', () => {
   it('creates a custom type and renames it; labels follow the pack until then', async () => {
     const userId = await suite.newUser('USD');

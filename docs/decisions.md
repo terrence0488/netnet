@@ -81,6 +81,8 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Every new agent connection shows NetNet's approval page; remembered consent is off | A remembered approval would skip the page, and with it the security email, on a reconnect (P1 spike) |
 | The starting prompt is one line; the country's checklist comes from the MCP layer. Prompts never carry financial data | One source of pack data; weak models follow a structured checklist better; the agent reads what it needs |
 | Agent provenance is quiet: a mark on the row, the client named when a value is opened, full attribution in Activity | Who wrote a number matters when checking it, not while reading the position |
+| Confirming another country moves the ledger: with no holding yet it starts over in the new country's currency and types; once it has one, the currency stays and the new pack's types are added, none removed | A country corrected with Back in onboarding leaves nothing of the first answer; once there is data, changing the totals currency is a deliberate act |
+| In P1, onboarding shows the totals currency without a way to change it; changing it comes with P3's settings | Only someone whose totals currency differs from their country's needs it, and changing it once values exist means converting them all |
 
 ## Notifications
 
@@ -131,6 +133,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | The OAuth endpoints are Better Auth's own paths, `/api/auth/oauth2/*` and `/api/auth/jwks` | Clients find them from the server's metadata, so a rewrite to other paths would be a route to maintain for nothing |
 | MCP is stateless Streamable HTTP across three protocol versions, with one summary tool, `get_financial_context`, of at most 8 KB | Clients migrate at different speeds; one dense call answers a question |
 | `get_financial_context` says what each type of holding is once per type (`types`), not on every holding | The repeated pack text was about a quarter of each holding's bytes; more holdings fit in the 8 KB |
+| The snapshot's ETag is the data version with the version of each pack in its chain; the web app sends it back as it came | A content publish changes the snapshot (its `packRef`) without a write, so the data version alone would keep an old pack until the person's next write |
 | No charting library: d3 maths and our own SVG, with geometry shared with native | Three heavily specified chart kinds; one geometry for web and native |
 | First-party analytics in its own schema; no tracking SDKs | N9 by construction rather than by auditing a vendor |
 | Web push by the standard (VAPID, a service worker that caches nothing); email by Resend | Free and standard; no financial data ever stored offline |

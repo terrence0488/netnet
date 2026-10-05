@@ -14,6 +14,11 @@ export interface LogFields {
   userId?: string;
   connectionId?: string;
   errorCode?: ErrorCode;
+  /** A response's size, raw and gzipped (the snapshot's revisit trigger, architecture §7.2). */
+  bytes?: number;
+  gzipBytes?: number;
+  /** How many values a response carries (the same trigger). */
+  valueCount?: number;
 }
 
 const FIELD_TYPES: Record<keyof LogFields, 'string' | 'number'> = {
@@ -25,6 +30,9 @@ const FIELD_TYPES: Record<keyof LogFields, 'string' | 'number'> = {
   userId: 'string',
   connectionId: 'string',
   errorCode: 'string',
+  bytes: 'number',
+  gzipBytes: 'number',
+  valueCount: 'number',
 };
 
 const EVENT_NAME = /^[a-z][a-z0-9_]{0,63}$/;
