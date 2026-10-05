@@ -149,12 +149,12 @@ test('log in: a wrong password is refused plainly; then Home, and log out', asyn
 
   await page.getByLabel('Password', { exact: true }).fill(person.password);
   await page.getByLabel('Password', { exact: true }).press('Enter');
-  await expect(heading(page, 'Home')).toBeVisible();
+  await expect(heading(page, 'Net worth')).toBeVisible();
   await expect(page).toHaveURL(/\/app$/);
 
   // Onboarded: sign-up and log-in are behind them.
   await page.goto('/app/signup');
-  await expect(heading(page, 'Home')).toBeVisible();
+  await expect(heading(page, 'Net worth')).toBeVisible();
 
   await page.getByRole('link', { name: 'Account' }).filter({ visible: true }).click();
   await expect(heading(page, 'Account')).toBeVisible();
@@ -256,7 +256,7 @@ test('forgot and reset: never says whether an account exists; the link sets a ne
   ).toBeVisible();
   await page.getByLabel('Password', { exact: true }).fill('a new passphrase');
   await page.getByRole('button', { name: 'Log in' }).click();
-  await expect(heading(page, 'Home')).toBeVisible();
+  await expect(heading(page, 'Net worth')).toBeVisible();
 
   // The link works once.
   await page.goto(link);
@@ -264,7 +264,7 @@ test('forgot and reset: never says whether an account exists; the link sets a ne
   await expectSoundScreen(page, testInfo);
   // Signed in again, so asking for another link leads Home rather than to Forgot password.
   await page.getByRole('link', { name: 'Ask for a new link' }).click();
-  await expect(heading(page, 'Home')).toBeVisible();
+  await expect(heading(page, 'Net worth')).toBeVisible();
 });
 
 test('the verify link’s page: verified, or a new link to ask for', async ({ page }, testInfo) => {
@@ -284,7 +284,7 @@ test('the verify link’s page: verified, or a new link to ask for', async ({ pa
   await expect(heading(page, 'Your email is verified')).toBeVisible();
   await expectSoundScreen(page, testInfo);
   await page.getByRole('link', { name: 'Continue' }).click();
-  await expect(heading(page, 'Home')).toBeVisible();
+  await expect(heading(page, 'Net worth')).toBeVisible();
   await page.goto('/app/account');
   await expect(page.getByText('Not verified yet.')).toHaveCount(0);
 
@@ -320,7 +320,7 @@ test('the browser’s time zone follows the person to the profile', async ({
   await page.getByLabel('Email').fill(person.email);
   await page.getByLabel('Password', { exact: true }).fill(person.password);
   await page.getByRole('button', { name: 'Log in' }).click();
-  await expect(heading(page, 'Home')).toBeVisible();
+  await expect(heading(page, 'Net worth')).toBeVisible();
   await expect.poll(async () => (await profileOf(page)).timeZone).toBe('Europe/London');
   await away.close();
 });

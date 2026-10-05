@@ -1,0 +1,146 @@
+/* Add (PRD J2): one card with every field, Save in the topbar. */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-10) 0 var(--space-8);
+}
+
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: var(--hit);
+  height: var(--hit);
+  flex: none;
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-icon);
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-size: var(--size-amount-symbol);
+  font-weight: var(--weight-amount-symbol);
+  line-height: 1;
+}
+
+.iconButton:hover {
+  background: var(--paper);
+}
+
+.title {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-heading-screen);
+  font-weight: var(--weight-heading-screen);
+  letter-spacing: var(--tracking-heading-screen);
+}
+
+.save {
+  flex: none;
+  min-width: var(--hit);
+  min-height: var(--hit);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-8);
+  max-width: var(--measure-phone);
+  padding-bottom: var(--inset-page-end);
+}
+
+/* Asset or liability: an outlined tray, the chosen side filled tomato. */
+.seg {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-control);
+}
+
+.seg button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit);
+  min-width: var(--hit);
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--ink-2);
+  font-size: var(--size-button);
+  font-weight: var(--weight-button);
+  letter-spacing: var(--tracking-button);
+  cursor: pointer;
+}
+
+.seg button.on {
+  background: var(--brand);
+  color: var(--brand-on);
+  box-shadow: inset 0 0 0 var(--border-edge) var(--edge);
+}
+
+.two {
+  display: flex;
+  gap: var(--space-7);
+}
+
+.two > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.privacy {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  line-height: var(--leading-body-sm);
+}
+
+.duplicate {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-7);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--warn-bg);
+}
+
+.duplicateText {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.duplicateList {
+  margin: 0;
+  padding-left: var(--space-8);
+  color: var(--ink);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body-sm);
+}
+
+.duplicateList a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  color: var(--brand-text);
+}
+
+.duplicateActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  align-items: center;
+}

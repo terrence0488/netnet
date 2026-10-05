@@ -70,7 +70,7 @@ test.describe('on a phone', () => {
     );
     await tabs(page).getByRole('link', { name: 'Home' }).click();
     await expect(page).toHaveURL(/\/app$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Net worth' })).toBeVisible();
     await expect(tabs(page).getByRole('link', { name: 'Home' })).toHaveAttribute(
       'aria-current',
       'page',
