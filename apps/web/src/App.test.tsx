@@ -1,4 +1,4 @@
-import type { Countries, ProfileView } from '@netnet/contracts';
+import type { Countries, ProfileView, Snapshot } from '@netnet/contracts';
 import { QueryClient } from '@tanstack/react-query';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createMemoryRouter, type RouteObject } from 'react-router';
@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { App } from './App';
 import { ME_KEY, geoQuery } from './api/account';
 import { countriesQuery } from './api/content';
+import { snapshotKey } from './api/snapshot';
 import { BASENAME, routes } from './app/routes';
 import { Shell } from './app/Shell';
 
@@ -26,12 +27,25 @@ const COUNTRIES: Countries = {
   DE: { currency: 'EUR' },
 };
 
+/** An empty ledger, as `GET /api/snapshot` answers for an account with nothing tracked. */
+const EMPTY_SNAPSHOT: Snapshot = {
+  dataVersion: 1,
+  baseCurrency: 'SGD',
+  packRef: [{ key: 'generic', version: 1 }],
+  prefs: {},
+  types: [],
+  tags: [],
+  holdings: [],
+  values: {},
+};
+
 /** Renders a path with who is signed in already known, as the app knows it after one request. */
 function render(path: string, me: ProfileView | null = PERSON, table: RouteObject[] = routes) {
   const client = new QueryClient();
   client.setQueryData(ME_KEY, me);
   client.setQueryData(geoQuery.queryKey, { country: 'SG' });
   client.setQueryData(countriesQuery.queryKey, COUNTRIES);
+  client.setQueryData(snapshotKey(null), EMPTY_SNAPSHOT);
   const router = createMemoryRouter(table, { basename: BASENAME, initialEntries: [path] });
   return renderToStaticMarkup(<App client={client} router={router} />);
 }
@@ -41,7 +55,7 @@ const current = (html: string) => html.match(/<a[^>]*aria-current="page"[^>]*>.*
 describe('the app shell', () => {
   it('frames Home with the sidebar and the tab bar, Home marked as the current page', () => {
     const html = render('/app/');
-    expect(html).toContain('<h1>Home</h1>');
+    expect(html).toContain('>Net worth</h1>');
     expect(html).toMatch(/<main[^>]*>/);
     expect(html).toContain('aria-label="Main"');
     expect(html).toContain('aria-label="Tabs"');
@@ -79,7 +93,7 @@ describe('the app shell', () => {
     const client = new QueryClient();
     const router = createMemoryRouter(routes, { basename: BASENAME, initialEntries: ['/app/'] });
     const html = renderToStaticMarkup(<App client={client} router={router} />);
-    expect(html).not.toContain('<h1>Home</h1>');
+    expect(html).not.toContain('Net worth');
     expect(html).toContain('Loading');
   });
 });

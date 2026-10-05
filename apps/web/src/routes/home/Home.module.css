@@ -1,3 +1,314 @@
-.top {
+/* Home (design-system §6, §7): a topbar, the tomato hero, then position and holdings. */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
   padding: var(--space-10) 0 var(--space-8);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* An outlined disc, like the reference's menu and settings buttons; the disc is the target. */
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: var(--hit);
+  height: var(--hit);
+  flex: none;
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-icon);
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-size: var(--size-amount-symbol);
+  font-weight: var(--weight-amount-symbol);
+  line-height: 1;
+}
+
+.iconButton:hover {
+  background: var(--paper);
+}
+
+/* The hero figure: a tomato card with two sparkles in its corner. */
+.hero {
+  position: relative;
+  padding: var(--space-10) var(--space-9) var(--space-7);
+  margin: 0 0 var(--space-3);
+  background: var(--brand);
+  color: var(--brand-on);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  top: var(--space-7);
+  right: var(--space-8);
+  width: var(--space-16);
+  aspect-ratio: 34 / 26;
+  pointer-events: none;
+  background: var(--brand-on);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 26'%3E%3Cpath d='M24 4l2.2 7.8L34 14l-7.8 2.2L24 24l-2.2-7.8L14 14l7.8-2.2zM7 0l1.3 4.7L13 6 8.3 7.3 7 12 5.7 7.3 1 6l4.7-1.3z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 26'%3E%3Cpath d='M24 4l2.2 7.8L34 14l-7.8 2.2L24 24l-2.2-7.8L14 14l7.8-2.2zM7 0l1.3 4.7L13 6 8.3 7.3 7 12 5.7 7.3 1 6l4.7-1.3z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+
+.heroTitle {
+  margin: 0 0 var(--space-4);
+  color: var(--brand-on);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.lead {
+  margin: var(--space-5) 0 0;
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+}
+
+.grid {
+  display: block;
+  padding-bottom: var(--inset-page-end);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  margin: var(--space-11) 0 var(--space-3);
+  padding-bottom: var(--space-1);
+}
+
+.sectionHead h2 {
+  flex: 1;
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-heading-section);
+  font-weight: var(--weight-heading-section);
+  letter-spacing: var(--tracking-heading-section);
+}
+
+/* The position ledger: bucket in body, what is in it in meta beneath, the amount right. */
+.ledgerRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-7);
+  padding: var(--inset-row) var(--inset-card);
+  border-bottom: var(--border-rule) solid var(--rule);
+}
+
+.ledgerRow:last-child {
+  border-bottom: none;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.ledgerTitle {
+  display: block;
+  color: var(--ink);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+}
+
+.ledgerSub {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  line-height: var(--leading-body-sm);
+}
+
+/* A dashed rule above what you owe. */
+.owe {
+  border-top: var(--border-edge) dashed var(--edge);
+  margin-top: calc(var(--border-rule) * -1);
+}
+
+.owe:last-child {
+  border-bottom: none;
+}
+
+/* A holding row: name and metadata left, the amount right. */
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--inset-row);
+  position: relative;
+  padding: var(--inset-row) var(--inset-card);
+  border-bottom: var(--border-rule) solid var(--rule);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:hover .name {
+  color: var(--brand-text);
+  text-decoration: underline;
+  text-decoration-thickness: var(--border-rule);
+  text-underline-offset: var(--space-1);
+}
+
+.name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  letter-spacing: var(--tracking-body);
+}
+
+.sub {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+}
+
+.amt {
+  text-align: right;
+  white-space: nowrap;
+  flex: none;
+}
+
+/* The provenance device: the agent's blue on the card's inner left edge, quiet on purpose. */
+.byAgent::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--inset-row);
+  bottom: var(--inset-row);
+  width: var(--border-mark);
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  background: var(--agent);
+  opacity: var(--opacity-agent-mark);
+}
+
+/* An outlined sticker: "not decided" is a state, never shouting. */
+.chip {
+  color: var(--attention);
+  background: var(--warn-bg);
+  border: var(--border-rule) solid currentColor;
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-3);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* The empty Home's way on: one primary action, then the agent below a rule. */
+.emptyNext {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+  max-width: var(--field-max);
+  padding: var(--space-13) 0 var(--inset-page-end);
+}
+
+.emptyHint {
+  margin: 0 0 var(--space-2);
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+}
+
+.alt {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-9);
+}
+
+.altTitle {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  letter-spacing: var(--tracking-body);
+}
+
+.altSub {
+  margin: 0 0 var(--space-4);
+  color: var(--ink-3);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.plainLink {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: var(--hit);
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+}
+
+.plainLink:hover {
+  color: var(--ink);
+}
+
+.failed {
+  margin: 0;
+  color: var(--attention);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+}
+
+.center {
+  display: grid;
+  justify-items: center;
+  padding: var(--space-8) 0;
+}
+
+@media (min-width: 900px) {
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0 var(--space-16);
+    align-items: start;
+    padding-bottom: var(--inset-page-end-computer);
+  }
+
+  .grid > * {
+    grid-column: span 12;
+  }
+
+  .pos {
+    grid-column: span 5;
+  }
+
+  .list {
+    grid-column: span 7;
+  }
+
+  .emptyNext {
+    padding-bottom: var(--inset-page-end-computer);
+  }
 }

@@ -80,7 +80,7 @@ test('the looked-up country is confirmed with one tap, the segment skipped, then
   await expectSoundScreen(page, testInfo);
   await page.getByRole('button', { name: 'Skip' }).click();
 
-  await expect(heading(page, 'Home')).toBeVisible();
+  await expect(heading(page, 'Net worth')).toBeVisible();
   await expect(page).toHaveURL(/\/app$/);
   expect(await profileOf(page)).toMatchObject({
     country: 'SG',
@@ -90,7 +90,7 @@ test('the looked-up country is confirmed with one tap, the segment skipped, then
 
   // Done is done: onboarding is behind them.
   await page.goto('/app/onboarding/country');
-  await expect(heading(page, 'Home')).toBeVisible();
+  await expect(heading(page, 'Net worth')).toBeVisible();
   expect(problems).toStrictEqual([]);
 });
 
@@ -141,7 +141,7 @@ test('Somewhere else lists every other country alphabetically; Back keeps the an
   await building.click();
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  await expect(heading(page, 'Home')).toBeVisible();
+  await expect(heading(page, 'Net worth')).toBeVisible();
   expect(await profileOf(page)).toMatchObject({
     country: 'MY',
     segment: 'accumulating',

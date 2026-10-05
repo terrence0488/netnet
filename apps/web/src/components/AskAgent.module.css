@@ -1,0 +1,61 @@
+/* Ask your agent (design-system §6, Prompt card): a message to take to another app. */
+
+.center {
+  display: grid;
+  justify-items: center;
+  padding: var(--space-8) 0;
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.explain {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.promptCard {
+  position: relative;
+  padding: var(--space-6) var(--space-6) var(--space-3);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.promptCard::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--border-edge) * -1);
+  left: var(--space-7);
+  width: var(--space-11);
+  height: var(--space-4);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--sun);
+}
+
+.promptText {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+}
+
+.promptFoot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.failed {
+  margin: var(--space-3) 0 0;
+  color: var(--attention);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+}

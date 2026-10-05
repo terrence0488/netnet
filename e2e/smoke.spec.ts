@@ -17,7 +17,7 @@ test('the built app answers health, serves the web app at /app and its deep link
 
   await asSignedIn(page);
   await page.goto('/app');
-  await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Net worth' })).toBeVisible();
   await expect(page).toHaveTitle('Home · NetNet');
 
   await page.goto('/app/anything/deeper');

@@ -5,6 +5,7 @@
  */
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, type TestInfo } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 /** The widths every screen is checked at: the narrowest phone, a common phone, a computer. */
 export const VIEWPORTS = {
@@ -176,13 +177,73 @@ export const SIGNED_IN = {
 } as const;
 
 /**
+ * An empty ledger, as `GET /api/snapshot` answers for an account with nothing tracked. Specs with
+ * data of their own serve it through `mockSnapshot` instead.
+ */
+export const EMPTY_SNAPSHOT = {
+  dataVersion: 1,
+  baseCurrency: 'SGD',
+  packRef: [{ key: 'generic', version: 1 }],
+  prefs: {},
+  types: [],
+  tags: [],
+  holdings: [],
+  values: {},
+};
+
+/** The snapshot's ETag for a data version and pack chain, as the API shapes it. */
+export function snapshotEtag(dataVersion: number, packRef: { key: string; version: number }[]) {
+  return `"${[String(dataVersion), ...packRef.map((p) => `${p.key}@${p.version}`)].join(':')}"`;
+}
+
+/**
+ * Serves the real pack documents (`content/packs/*.json`) by key, whatever version is asked for:
+ * the screens read labels, questions and reasons from content, never from fixtures.
+ */
+export async function mockPacks(page: Page): Promise<void> {
+  const packs = new Map<string, unknown>();
+  await page.route('**/api/content/pack/*', (route) => {
+    const ref = new URL(route.request().url()).pathname.split('/').at(-1) ?? '';
+    const key = ref.split('@')[0] ?? '';
+    if (!packs.has(key)) {
+      try {
+        const url = new URL(`../content/packs/${key}.json`, import.meta.url);
+        packs.set(key, JSON.parse(readFileSync(url, 'utf8')) as unknown);
+      } catch {
+        void route.fulfill({ status: 404 });
+        return;
+      }
+    }
+    void route.fulfill({ json: packs.get(key) });
+  });
+}
+
+/** Answers `GET /api/snapshot` with the given ledger, under its ETag. */
+export async function mockSnapshot(page: Page, snapshot: Record<string, unknown>): Promise<void> {
+  const packRef = snapshot.packRef as { key: string; version: number }[];
+  await page.route('**/api/snapshot', (route) =>
+    route.fulfill({
+      json: snapshot,
+      headers: { ETag: snapshotEtag(snapshot.dataVersion as number, packRef) },
+    }),
+  );
+}
+
+/** Answers `GET /api/agent/connections` with the given connections. */
+export async function mockConnections(page: Page, connections: unknown[]): Promise<void> {
+  await page.route('**/api/agent/connections', (route) => route.fulfill({ json: connections }));
+}
+
+/**
  * For specs about the screens rather than accounts: the page is answered as if SIGNED_IN were
- * signed in, so it needs no database and runs against a deployment too. The account specs
- * (auth, onboarding) sign in for real.
+ * signed in with an empty ledger, so it needs no database and runs against a deployment too. The
+ * account specs (auth, onboarding) sign in for real. A spec with data of its own registers its
+ * snapshot after this, and its routes win.
  */
 export async function asSignedIn(page: Page): Promise<void> {
   await page.route('**/api/me', (route) => route.fulfill({ json: SIGNED_IN }));
   await page.route('**/api/events', (route) => route.fulfill({ status: 204 }));
-  // The Agent tab's reads, as a signed-in person with no connections sees them (P1-T17).
-  await page.route('**/api/agent/connections', (route) => route.fulfill({ json: [] }));
+  await mockSnapshot(page, EMPTY_SNAPSHOT);
+  await mockConnections(page, []);
+  await mockPacks(page);
 }

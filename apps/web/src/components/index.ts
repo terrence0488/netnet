@@ -1,5 +1,21 @@
 /** The base components every screen composes, on tokens (CONVENTIONS §13). */
 export {
+  AccessBlock,
+  ConsequenceLine,
+  type AccessBlockProps,
+  type UsablePreview,
+} from './AccessBlock';
+export {
+  AskAgentDialog,
+  PromptCard,
+  agentConnectionsQuery,
+  newHoldingPrompt,
+  savedHoldingPrompt,
+  useAgentConnections,
+  useCopy,
+  type CopyState,
+} from './AskAgent';
+export {
   AuthFoot,
   AuthForm,
   AuthFrame,
@@ -24,6 +40,8 @@ export { Spinner } from './Spinner';
 export { TextField, type TextFieldProps } from './TextField';
 export { ToastProvider, ToastViewport, useToast, type ToastApi, type ToastInput } from './Toast';
 export { Wordmark } from './Wordmark';
+export { ageOf, formatDate, since, todayIn } from './dates';
+export { fetchPackChain, packDocQuery, usePackChain } from './packs';
 export {
   amountHint,
   currencySymbol,

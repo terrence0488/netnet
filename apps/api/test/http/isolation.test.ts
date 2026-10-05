@@ -52,6 +52,7 @@ const COVERED_ELSEWHERE: Record<string, string> = {
   'DELETE /api/agent/connections/:id': 'test/isolation/agent.test.ts',
   'GET /api/agent/approval': 'test/isolation/agent.test.ts',
   'POST /api/agent/approval': 'test/isolation/agent.test.ts',
+  'POST /mcp': 'test/mcp/isolation.test.ts',
 };
 
 /** Routes that reach no one's ledger and take no ids of anyone's, so B has nothing of A's to name. */
@@ -82,6 +83,8 @@ const NO_USER_DATA: Record<string, string> = {
   'POST /api/auth/oauth2/token':
     'Better Auth: answers only the holder of the code or token; no cookie',
   'POST /api/auth/oauth2/revoke': 'Better Auth: answers only the holder of the token; no cookie',
+  'GET /mcp': 'stateless MCP: the SDK answers 405 without touching the ledger',
+  'DELETE /mcp': 'stateless MCP: the SDK answers 405 without touching the ledger',
 };
 
 /** Every route the app serves, as `METHOD /path`, middleware aside. */

@@ -1,0 +1,61 @@
+/* The accessibility block (PRD J2): a fact question or a stated default, then the consequence in
+   money with the pack's reason, then asking the agent as the alternative to deciding. */
+
+.block {
+  display: grid;
+  /* Room for the Change target, which keeps its 44px height inside the prose line above. */
+  gap: var(--space-8);
+}
+
+.block > button {
+  justify-self: start;
+}
+
+.conseq {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.conseq b {
+  color: var(--ink);
+  font-weight: var(--weight-body);
+}
+
+.hint {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  line-height: var(--leading-body-sm);
+}
+
+/* Links in the block's sentences keep their target without breaking the prose apart
+   (design-system §6.1 rule 4); each gets its own row so targets never overlap. */
+.inlineLink,
+.askLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  margin-block: calc((var(--hit) - 1lh) / -2);
+  padding: 0 var(--space-2);
+  border: none;
+  background: none;
+  color: var(--brand-text);
+  font-size: var(--size-link);
+  font-weight: var(--weight-link);
+  letter-spacing: var(--tracking-link);
+  text-decoration: underline;
+  text-decoration-thickness: var(--border-rule);
+  text-underline-offset: var(--space-1);
+  cursor: pointer;
+}
+
+.askLink {
+  /* Its own row, not mid-prose: a full-height row, so its target never crosses the grid gap into
+     the Change target above it. */
+  margin-block: 0;
+  margin-left: calc(var(--space-2) * -1);
+}
