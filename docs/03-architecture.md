@@ -282,7 +282,7 @@ $1 FOR UPDATE`. That lock serialises one user's writes, exactly as a single-thre
 
 | Table | Columns (all have `user_id`) | Notes |
 |---|---|---|
-| `ledger_state` | `user_id` PK, `base_currency`, `data_version`, `created_at` | `data_version` goes up by one on every write, and is the snapshot's ETag. The row is the per-user write lock. (Reminder timing lives in `core.reminder_state`) |
+| `ledger_state` | `user_id` PK, `base_currency`, `data_version`, `created_at` | `data_version` goes up by one on every write; with the pack chain's versions it makes the snapshot's ETag. The row is the per-user write lock. (Reminder timing lives in `core.reminder_state`) |
 | `user_type` | `id`, `universal` (§7.8), `pack_type_key` (nullable, e.g. `car_loan`), `custom_name` (nullable), `sort`, `archived` | **No name is stored until the user renames one**, so labels follow the current pack |
 | `tag` | `id`, `name` (unique per user, case-insensitive), `sort` | |
 | `holding` | `id`, `name`, `kind` (`asset`/`liability`), `type_id`, `currency`, `cadence_days`, `archived_at`, `created_at`, `row_version`, **`access`** (`accessible`/`illiquid`/`locked`/`undecided`, null for liabilities), **`access_basis`** jsonb `{via, pack, pack_version, question, answer}`, **`access_reason`**, **`access_until`** | The applied accessibility outcome **and its reason** are kept as applied, with the pack version. A pack edit never moves them (§6.7) |
@@ -383,13 +383,13 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 | Method & path | Body / query → response | Jobs |
 |---|---|---|
 | `GET /api/geo` | → `{country: "SG" \| null}` from `x-vercel-ip-country` | §2.3 r2 |
-| `GET /api/me` · `PATCH /api/me` | profile: `email, emailVerified, country, baseCurrency, segment, timeZone, onboardingState` | J1 |
-| `GET /api/snapshot` | `If-None-Match: <dataVersion>` → 304, or `{dataVersion, baseCurrency, packRef, prefs, types, tags, holdings, values}`. Values compact per holding: `[date, amountMinor, currency, baseMinor, source, clientName, id]` | J4, J11 |
-| `POST /api/holdings` | `{name, kind, typeId, currency, tagIds?, access?: AccessInput, opening?: {amount, date, fxRate?}, via: "guided"\|"form", allowDuplicate?}` → `Holding`, or `409 LIKELY_DUPLICATE {candidates}` | J1, J2, J6 |
+| `GET /api/me` · `PATCH /api/me` | profile: `email, emailVerified, country, baseCurrency, segment, timeZone, onboardingState`. The first `country` confirmed makes the ledger (`init`); another one moves it (`changeCountry`) | J1, J2 |
+| `GET /api/snapshot` | `If-None-Match:` its `ETag`, sent back as it came → 304, or `{dataVersion, baseCurrency, packRef, prefs, types, tags, holdings, values}`. Values compact per holding: `[date, amountMinor, currency, baseMinor, source, clientName, id]`. The `ETag` is the data version with each pack's version (`"12:sg@3:generic@2"`), so a write and a content publish each change it | J4, J11 |
+| `POST /api/holdings` | `{name, kind, typeId or universal, currency, tagIds?, access?: AccessInput, opening?: {amount, date?, fxRate?}, via: "guided"\|"form", allowDuplicate?}`, `universal` meaning the person's type of it → `Holding`, or `409 LIKELY_DUPLICATE {candidates}` | J1, J2, J6 |
 | `PATCH /api/holdings/:id` | `{name?, typeId?, tagIds?, access?, cadenceDays?, archived?}` | J2 |
 | `DELETE /api/holdings/:id` | — | J2 |
 | `GET /api/holdings/:id/values` | `?cursor&limit≤200` → `{items, nextCursor}`, newest first | J4 |
-| `POST /api/holdings/:id/values` | `{amount, date, currency?, fxRate?}` → warning `SAME_DATE_REPLACED` when it replaces | J3 |
+| `POST /api/holdings/:id/values` | `{amount, date?, currency?, fxRate?}`, `date` the person's today when left out → the `Value` as stored, with the warning `SAME_DATE_REPLACED` when it replaces | J3 |
 | `PATCH /api/values/:id` · `DELETE /api/values/:id` | `{amount?, date?, currency?, fxRate?}` | J3 |
 | `POST /api/types` · `PATCH /api/types/:id` · `DELETE /api/types/:id?moveTo=` | create / rename / delete or merge; holdings follow, nothing orphaned | J2 |
 | `POST /api/tags` · `PATCH /api/tags/:id` · `DELETE /api/tags/:id?mergeInto=` | same for tags | J2 |
@@ -453,6 +453,8 @@ interface Ledger {
   setPrefs(p: PrefsPatch): Promise<Write<Prefs>>;
   changeBaseCurrency(ccy: string): Promise<Write<void>>;
   applyPackTypes(pack: PackRef): Promise<Write<UserType[]>>;
+  // Another country: with no holding yet, over again in its currency and types; else adds its types
+  changeCountry(i: { baseCurrency: string; pack: PackRef }): Promise<Write<void>>;
   exportAll(): Promise<ExportBundle>;
   destroy(): Promise<void>;                       // deletes every ledger row for this user
 }
@@ -919,7 +921,7 @@ paid plans.
 
 | What | How |
 |---|---|
-| Logs | Vercel runtime logs (short retention on Hobby); JSON through `log(event, fields)`, whitelisted fields only (request id, route, tool, status, latency, user id, connection id, error code). **Never** amounts, names, emails or bodies |
+| Logs | Vercel runtime logs (short retention on Hobby); JSON through `log(event, fields)`, whitelisted fields only (request id, route, tool, status, latency, user id, connection id, error code, and a response's size and value count for §7.2's snapshot trigger). **Never** amounts, names, emails or bodies |
 | Notification delivery | Per channel: reminders sent, fallen back to email, released unsent; endpoints revoked; security emails pending past 10 minutes (counts only), from `reminder_sent {channel}`, `push_disabled {by: browser}` and the run's log line. The health check emails the Founder if a security email is still unsent after 24 hours |
 | Errors | Sentry (`@sentry/node` in the function, `@sentry/react` in the web app); `sendDefaultPii: false`; `beforeSend` drops bodies, query strings and breadcrumb text; **no session replay** |
 | Product analytics | `analytics.event` + `ops/metrics/*.sql` → `pnpm metrics --env production` prints M1–M11 and M13 per segment (M13 per channel) |

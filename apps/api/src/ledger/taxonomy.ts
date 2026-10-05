@@ -28,7 +28,7 @@ import {
 } from './rows';
 import { ledgerState, tag, userType } from './schema';
 import type { Scope } from './scope';
-import { requireWrite, runWrite } from './write';
+import { requireWrite, runWrite, type WriteScope } from './write';
 
 /**
  * The user's own taxonomy (PRD J2, architecture §6.3): types and tags. A type stores no name until
@@ -49,15 +49,14 @@ function newTypeRow(
   return { userId: s.userId, id: s.id('typ'), archived: false, ...fields };
 }
 
-/**
- * `init`: the ledger, in `baseCurrency`, with one type per universal type and the pack chain's own
- * types. Run once, at the end of onboarding; once the ledger exists it does nothing.
- */
-export async function init(
-  s: Scope,
-  input: { baseCurrency: string; pack: PackRef },
-): Promise<void> {
-  requireWrite(s, 'init');
+/** A ledger's country: its base currency and its pack chain (`init`, `changeCountry`). */
+export interface CountryInput {
+  baseCurrency: string;
+  pack: PackRef;
+}
+
+/** The input checked: CURRENCY_UNSUPPORTED or VALIDATION_FAILED naming the field. */
+function parseCountry(input: CountryInput): CountryInput {
   const pack = parseInput(packRefSchema, input.pack, 'pack');
   const baseCurrency = typeof input.baseCurrency === 'string' ? input.baseCurrency : '';
   if (currencyExponent(baseCurrency) === undefined) {
@@ -69,6 +68,33 @@ export async function init(
     );
     errors.throwIfAny();
   }
+  return { baseCurrency, pack };
+}
+
+/** One type per universal type, then the pack chain's own types, in that order. */
+function startingTypes(s: Scope, packs: readonly VersionedPack[]): TypeRow[] {
+  return [
+    ...UNIVERSALS.map((universal, sort) =>
+      newTypeRow(s, { universal, packTypeKey: null, customName: null, sort }),
+    ),
+    ...packTypes(packs).map((t, i) =>
+      newTypeRow(s, {
+        universal: t.u,
+        packTypeKey: t.key,
+        customName: null,
+        sort: UNIVERSALS.length + i,
+      }),
+    ),
+  ];
+}
+
+/**
+ * `init`: the ledger, in `baseCurrency`, with one type per universal type and the pack chain's own
+ * types. Run once, on the first country confirmation; once the ledger exists it does nothing.
+ */
+export async function init(s: Scope, input: CountryInput): Promise<void> {
+  requireWrite(s, 'init');
+  const { baseCurrency, pack } = parseCountry(input);
   const packs = await s.options.content.packs(pack);
   const createdAt = s.now();
   const [created] = await s.db
@@ -86,19 +112,7 @@ export async function init(
         baseCurrency,
         createdAt: createdAt.toISOString(),
       });
-      const rows = [
-        ...UNIVERSALS.map((universal, sort) =>
-          newTypeRow(s, { universal, packTypeKey: null, customName: null, sort }),
-        ),
-        ...packTypes(packs).map((t, i) =>
-          newTypeRow(s, {
-            universal: t.u,
-            packTypeKey: t.key,
-            customName: null,
-            sort: UNIVERSALS.length + i,
-          }),
-        ),
-      ];
+      const rows = startingTypes(s, packs);
       await s.db.insert(userType).values(rows);
       for (const row of rows) await w.audit('type', row.id, 'create', null, toUserType(row));
     },
@@ -106,22 +120,58 @@ export async function init(
   );
 }
 
+/** Adds the types of `packs` the user lacks, after theirs, and removes none. */
+async function addPackTypes(w: WriteScope, packs: readonly VersionedPack[]): Promise<UserType[]> {
+  const { s } = w;
+  const have = new Set((await loadTypes(s)).map((t) => t.packTypeKey));
+  const missing = packTypes(packs).filter((t) => !have.has(t.key));
+  if (missing.length === 0) return [];
+  const sort = await nextTypeSort(s);
+  const rows = missing.map((t, i) =>
+    newTypeRow(s, { universal: t.u, packTypeKey: t.key, customName: null, sort: sort + i }),
+  );
+  await s.db.insert(userType).values(rows);
+  const added = rows.map(toUserType);
+  for (const t of added) await w.audit('type', t.id, 'create', null, t);
+  return added;
+}
+
 /** `applyPackTypes`: adds the pack types the user lacks, and removes none (PRD J2). */
 export function applyPackTypes(s: Scope, ref: PackRef): Promise<Write<UserType[]>> {
   const pack = parseInput(packRefSchema, ref, 'pack');
-  return runWrite(s, 'applyPackTypes', async (w) => {
+  return runWrite(s, 'applyPackTypes', async (w) =>
+    addPackTypes(w, await s.options.content.packs(pack)),
+  );
+}
+
+/**
+ * `changeCountry`: the person confirmed another country (PRD J2). While the ledger has no holding
+ * it starts over: `baseCurrency`, and the universal types with the new pack chain's types in place
+ * of the old ones, so a country corrected in onboarding leaves nothing of the first. Once it has a
+ * holding, the currency stays (changing it is P3's) and the new pack's types are added beside the
+ * old ones, none removed, as `applyPackTypes` does.
+ */
+export function changeCountry(s: Scope, input: CountryInput): Promise<Write<void>> {
+  const { baseCurrency, pack } = parseCountry(input);
+  return runWrite(s, 'changeCountry', async (w) => {
     const packs = await s.options.content.packs(pack);
-    const have = new Set((await loadTypes(s)).map((t) => t.packTypeKey));
-    const missing = packTypes(packs).filter((t) => !have.has(t.key));
-    if (missing.length === 0) return [];
-    const sort = await nextTypeSort(s);
-    const rows = missing.map((t, i) =>
-      newTypeRow(s, { universal: t.u, packTypeKey: t.key, customName: null, sort: sort + i }),
-    );
+    if ((await loadHoldings(s)).length > 0) {
+      await addPackTypes(w, packs);
+      return;
+    }
+    for (const t of await loadTypes(s)) {
+      await scrubPrefs(w, 'type', t.id);
+      await w.audit('type', t.id, 'delete', toUserType(t), null);
+    }
+    await s.db.delete(userType).where(eq(userType.userId, s.userId));
+    const rows = startingTypes(s, packs);
     await s.db.insert(userType).values(rows);
-    const added = rows.map(toUserType);
-    for (const t of added) await w.audit('type', t.id, 'create', null, t);
-    return added;
+    for (const row of rows) await w.audit('type', row.id, 'create', null, toUserType(row));
+    const before = w.state.baseCurrency;
+    if (before !== baseCurrency) {
+      await s.db.update(ledgerState).set({ baseCurrency }).where(eq(ledgerState.userId, s.userId));
+      await w.audit('ledger', s.userId, 'update', { baseCurrency: before }, { baseCurrency });
+    }
   });
 }
 

@@ -24,6 +24,9 @@ describe('log', () => {
       latencyMs: 12,
       userId: 'usr_1',
       connectionId: 'con_1',
+      bytes: 2048,
+      gzipBytes: 512,
+      valueCount: 40,
     });
     expect(out).toHaveBeenCalledOnce();
     expect(JSON.parse(String(out.mock.calls[0]?.[0]))).toStrictEqual({
@@ -35,6 +38,9 @@ describe('log', () => {
       latencyMs: 12,
       userId: 'usr_1',
       connectionId: 'con_1',
+      bytes: 2048,
+      gzipBytes: 512,
+      valueCount: 40,
     });
   });
 
