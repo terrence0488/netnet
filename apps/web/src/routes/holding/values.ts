@@ -34,12 +34,13 @@ export function useHoldingValues(holdingId: string) {
   return useInfiniteQuery(holdingValuesQuery(holdingId));
 }
 
-/** "Added 3 days ago", naming the agent only when one wrote it (design-system §2.1, J6). */
+/** "Added 3 days ago by you", or the agent's name when one wrote it (§2.1 rule 5, J6). */
 export function valueFooter(
   value: Pick<Value, 'source' | 'clientName' | 'enteredAt'>,
   now?: number,
 ): string {
   const when = since(value.enteredAt, now);
   if (value.source === 'agent') return `Added ${when} by ${value.clientName ?? 'your agent'}`;
+  if (value.source === 'web') return `Added ${when} by you`;
   return `Added ${when}`;
 }

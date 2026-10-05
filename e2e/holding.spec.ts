@@ -218,7 +218,7 @@ test('opening a value names its writer, once, with no rate and no repeated amoun
   expect(body).not.toContain('(agent)');
 
   await page.getByRole('button', { expanded: false }).filter({ hasText: /\$/ }).first().click();
-  await expect(page.getByText('Added just now')).toBeVisible();
+  await expect(page.getByText('Added just now by you')).toBeVisible();
 });
 
 test('adds a value from the floating Update, warning when it replaces the same date', async ({

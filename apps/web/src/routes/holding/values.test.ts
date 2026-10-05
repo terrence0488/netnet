@@ -15,10 +15,10 @@ afterEach(() => {
 
 describe('valueFooter', () => {
   const now = new Date('2026-09-23T12:00:00Z').getTime();
-  it('says when, naming nobody for a value entered here', () => {
+  it('names you for a value entered here', () => {
     expect(
       valueFooter({ source: 'web', clientName: null, enteredAt: '2026-09-23T11:59:40Z' }, now),
-    ).toBe('Added just now');
+    ).toBe('Added just now by you');
   });
 
   it('names the agent that wrote it', () => {
