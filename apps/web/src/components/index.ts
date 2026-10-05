@@ -11,6 +11,7 @@ export {
 export { Button, buttonClass, type ButtonProps, type ButtonVariant } from './Button';
 export { Card, type CardProps } from './Card';
 export { Choice, type ChoiceOption, type ChoiceProps } from './Choice';
+export { AlternativeRoute, ConnectButton, type ConnectEntry } from './ConnectButton';
 export { ErrorState, errorCopy, type ErrorStateProps } from './ErrorState';
 export { Figure, type FigureProps, type FigureSize } from './Figure';
 export { MoneyField, type MoneyFieldProps } from './MoneyField';

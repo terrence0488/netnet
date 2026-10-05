@@ -164,6 +164,7 @@
   --duration-sheet: 220ms;
   --duration-toast: 220ms;
   --duration-spin: 900ms;
+  --duration-roll: 550ms;
   --easing-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   --opacity-disabled: 0.45;
   --opacity-agent-mark: 0.75;
@@ -244,5 +245,6 @@
     --duration-sheet: 0ms;
     --duration-toast: 0ms;
     --duration-spin: 0ms;
+    --duration-roll: 0ms;
   }
 }

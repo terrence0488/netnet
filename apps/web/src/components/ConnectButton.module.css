@@ -1,0 +1,94 @@
+/* "Connect to agent" (design-system §6, Agent roll and Alternative route). */
+
+/* The 18px icon slot beside the label; each face rises in and out of it (design-system §6). */
+.roll {
+  position: relative;
+  display: inline-block;
+  width: var(--icon-ui);
+  height: var(--icon-ui);
+  overflow: hidden;
+  flex: none;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  opacity: 0;
+  transform: translateY(90%) scale(0.7);
+  transition:
+    transform var(--duration-roll) ease-out,
+    opacity var(--duration-roll) ease;
+}
+
+.face.on {
+  opacity: 1;
+  transform: none;
+}
+
+.face.was {
+  opacity: 0;
+  transform: translateY(-90%) scale(0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .face {
+    transition: none;
+  }
+}
+
+/* An agent's logo, drawn as a silhouette in the ink around it (the files are currentColor). */
+.logo {
+  display: inline-grid;
+  place-items: center;
+  width: var(--icon-ui);
+  height: var(--icon-ui);
+  flex: none;
+}
+
+.logo svg {
+  width: 100%;
+  height: 100%;
+}
+
+img.logo {
+  object-fit: contain;
+}
+
+/* A missing logo file: the agent's initial in a circle (design-system §6). */
+.initial {
+  border: var(--border-hair) solid var(--edge);
+  border-radius: var(--radius-pill);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-label);
+  line-height: 1;
+}
+
+/* Below a rule: a subtitle naming the agents, then the outlined button. */
+.alt {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-4);
+}
+
+.altTitle {
+  margin-top: var(--space-6);
+  font-family: var(--font-display);
+  font-size: var(--size-heading-card);
+  font-weight: var(--weight-heading-card);
+  letter-spacing: var(--tracking-heading-card);
+  color: var(--ink);
+}
+
+.altSub {
+  margin-bottom: var(--space-4);
+  color: var(--ink-3);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.button {
+  gap: var(--space-5);
+}

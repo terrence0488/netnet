@@ -1,3 +1,98 @@
+/* The Agent tab (PRD J5): connections with their times, and the way to connect another. */
+
 .top {
   padding: var(--space-10) 0 var(--space-8);
+}
+
+.stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-9);
+  max-width: var(--field-max);
+  padding-bottom: var(--inset-page-end);
+}
+
+/* One connection: a live dot, its logo, the name it registered with, and its times. */
+.conn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.dot {
+  display: block;
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--radius-pill);
+  background: var(--gain);
+  flex: none;
+}
+
+.name {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: var(--size-heading-card);
+  font-weight: var(--weight-heading-card);
+  letter-spacing: var(--tracking-heading-card);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: var(--space-2) 0 0 var(--space-9);
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  line-height: var(--leading-body-sm);
+}
+
+.acts {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-7);
+}
+
+.revoke {
+  color: var(--loss);
+}
+
+.sectionTitle {
+  margin-bottom: var(--space-5);
+  font-family: var(--font-display);
+  font-size: var(--size-heading-section);
+  font-weight: var(--weight-heading-section);
+  letter-spacing: var(--tracking-heading-section);
+}
+
+/* Connect another: rows reach the card's edges and split themselves with soft rules. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-height: var(--hit);
+  padding: var(--inset-row) var(--inset-card);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.row + .row {
+  border-top: var(--border-rule) solid var(--rule);
+}
+
+.row:hover {
+  background: var(--paper);
+}
+
+.rowName {
+  flex: 1;
+  font-weight: var(--weight-button);
+}
+
+.chev {
+  color: var(--ink-3);
+}
+
+.sheetBody {
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+  overflow-wrap: anywhere;
 }

@@ -1,0 +1,184 @@
+/* The connect flow (PRD J5): the choice, the platform switch, the setup steps and the wait. */
+
+/* Which agent: full-width rows with the logo, the name and a chevron. */
+.choose {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-height: var(--hit);
+  padding: var(--space-5) var(--space-7);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+}
+
+.row:hover {
+  background: var(--paper);
+}
+
+.rowName {
+  flex: 1;
+}
+
+.chev {
+  color: var(--ink-3);
+  font-size: var(--size-body);
+}
+
+/* The platform switch: an outlined tray; the chosen segment fills tomato (design-system §6). */
+.platform {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-11);
+  padding: var(--space-2);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  box-shadow: var(--shadow-control);
+}
+
+.platformButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit);
+  min-width: var(--hit);
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-size: var(--size-link);
+  font-weight: var(--weight-link);
+  letter-spacing: var(--tracking-link);
+}
+
+.platformOn {
+  background: var(--brand);
+  color: var(--brand-on);
+  box-shadow: inset 0 0 0 var(--border-edge) var(--edge);
+}
+
+/* The setup steps: numbered on mustard discs, the client's words, then its screenshot. */
+.steps {
+  counter-reset: step;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.step {
+  counter-increment: step;
+  position: relative;
+  margin-bottom: var(--space-11);
+  padding-left: var(--space-16);
+}
+
+.step::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: var(--space-12);
+  height: var(--space-12);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--sun);
+  color: var(--sun-on);
+  font-family: var(--font-display);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-heading-card);
+}
+
+.step:last-child {
+  margin-bottom: var(--space-8);
+}
+
+.stepText {
+  color: var(--ink);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+}
+
+/* A step's screenshot in its outlined frame, at most 420px tall (design-system §6). */
+.shot {
+  max-width: var(--field-max);
+  margin: var(--space-6) 0 0;
+}
+
+.shot img {
+  display: block;
+  max-width: 100%;
+  max-height: var(--field-max);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+}
+
+.shot.missing figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--space-20) * 3);
+  padding: var(--space-6);
+  border: var(--border-edge) dashed var(--rule-strong);
+  border-radius: var(--radius-control);
+  color: var(--ink-3);
+  font-size: var(--size-body-sm);
+  text-align: center;
+}
+
+/* The connector address: a setting in a dashed mono box, with Copy (design-system §6). */
+.urlbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+  padding: var(--space-5) var(--space-6);
+  border: var(--border-edge) dashed var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--card);
+}
+
+.url {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--size-body-sm);
+  overflow-wrap: anywhere;
+}
+
+/* What the attempt is doing: waiting, failed with a retry, or connected by itself. */
+.status {
+  margin-top: var(--space-11);
+}
+
+.waiting {
+  color: var(--ink-3);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.doneTitle {
+  font-family: var(--font-display);
+  font-size: var(--size-heading-screen);
+  font-weight: var(--weight-heading-screen);
+  letter-spacing: var(--tracking-heading-screen);
+  color: var(--ink);
+}
+
+.doneBody {
+  margin: var(--space-4) 0 var(--space-8);
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+}
