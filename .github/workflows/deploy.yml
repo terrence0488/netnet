@@ -109,13 +109,15 @@ jobs:
       - name: Build
         run: pnpm exec vercel build --prod --token="$VERCEL_TOKEN"
       # The rollback's target, recorded before the deploy. Empty on the first deploy ever, when
-      # there is nothing to roll back to.
+      # there is nothing to roll back to. The production filter is client-side: the list endpoint
+      # cannot be trusted to honor target/state, and recording a preview as the target silently
+      # neuters the rollback.
       - name: Record the current production deployment
         id: previous
         run: |
           uid=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&target=production&state=READY&limit=1" \
-            | jq -r '.deployments[0].uid // empty')
+            "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&limit=10" \
+            | jq -r '[.deployments[] | select(.target == "production" and .state == "READY")][0].uid // empty')
           echo "uid=$uid" >> "$GITHUB_OUTPUT"
           if [ -n "$uid" ]; then echo "Rollback target: $uid."; else echo "No production deployment yet: nothing to roll back to."; fi
       - name: Deploy to production
@@ -156,8 +158,8 @@ jobs:
           set -euo pipefail
           list_production() {
             curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
-              "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&target=production&state=READY&limit=1" \
-              | jq -r '.deployments[0].uid // empty'
+              "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&limit=10" \
+              | jq -r '[.deployments[] | select(.target == "production" and .state == "READY")][0].uid // empty'
           }
           bad=$(list_production)
           code=$(curl -sS -o /tmp/rollback.json -w '%{http_code}' -X POST \
@@ -170,14 +172,14 @@ jobs:
           fi
           # A rollback may re-point at the recorded deployment or mint a restored copy of it;
           # either way production must move off the just-deployed one.
-          for _ in 1 2 3 4 5 6; do
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
             current=$(list_production)
             if [ -n "$current" ] && [ "$current" != "$bad" ]; then
               echo "Production moved off $bad onto $current (rollback target was $PREVIOUS_UID)."
               echo "The smoke tests failed, so production was rolled back to $PREVIOUS_UID (now serving $current)." >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
-            sleep 10
+            sleep 15
           done
           echo "::error::Rollback accepted but production never moved off $bad."
           exit 1
