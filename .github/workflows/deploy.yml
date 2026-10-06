@@ -4,11 +4,11 @@ name: Deploy to production
 # commit. The Founder runs it by hand (Actions → Deploy to production → Run workflow). It runs
 # `db:bootstrap` (idempotent) → `db:migrate` as owner → `content:publish --env production
 # --strict` → `vercel deploy --prod --prebuilt` → the smoke tests, and on a smoke failure the
-# previous production deployment is promoted back, failing the run. That step is `vercel
-# promote`, not `vercel rollback`: rollback answers every target with `User not found (404)`
-# here (twice seen, including against a minutes-old deployment), while promote is Vercel's
-# documented manual rollback. Migrations are expand-only, so rolling back code never needs a
-# schema rollback.
+# previous production deployment is rolled back to, failing the run. That step calls the
+# rollback endpoint directly: both `vercel rollback` and `vercel promote` answer every target
+# with `User not found (404)` here (their shared deployment lookup, with and without
+# VERCEL_ORG_ID), while the same token drives every other step. Migrations are expand-only,
+# so rolling back code never needs a schema rollback.
 #
 # The gate is that only a human runs this workflow: it is `workflow_dispatch` only, so nothing
 # reaches production unless the Founder runs it. The `Production` environment (exact case) carries
@@ -148,12 +148,36 @@ jobs:
           echo "::add-mask::${{ steps.smoke.outputs.refresh_token }}"
           gh secret set PROBE_REFRESH_TOKEN --body "${{ steps.smoke.outputs.refresh_token }}"
           echo "Stored the rotated probe token." >> "$GITHUB_STEP_SUMMARY"
-      # The org is unset for this step only: rollback and promote resolve the deployment
-      # through a team lookup on VERCEL_ORG_ID that 404s here (thrice seen, both commands).
-      # Without it the CLI scopes from the token, which is all a personal-scope project needs;
-      # if the project is team-owned this fails differently and says so.
       - name: Roll back to the previous production deployment
         if: failure() && steps.smoke.outcome == 'failure' && steps.previous.outputs.uid != ''
+        env:
+          PREVIOUS_UID: ${{ steps.previous.outputs.uid }}
         run: |
-          VERCEL_ORG_ID= pnpm exec vercel promote "${{ steps.previous.outputs.uid }}" --yes --token="$VERCEL_TOKEN"
-          echo "The smoke tests failed, so production was rolled back to ${{ steps.previous.outputs.uid }}." >> "$GITHUB_STEP_SUMMARY"
+          set -euo pipefail
+          list_production() {
+            curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&target=production&state=READY&limit=1" \
+              | jq -r '.deployments[0].uid // empty'
+          }
+          bad=$(list_production)
+          code=$(curl -sS -o /tmp/rollback.json -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $VERCEL_TOKEN" -H 'Content-Type: application/json' \
+            --data '{}' \
+            "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID/rollback/$PREVIOUS_UID")
+          if [[ "$code" != 2* ]]; then
+            echo "::error::Rollback failed with HTTP $code: $(cat /tmp/rollback.json)"
+            exit 1
+          fi
+          # A rollback may re-point at the recorded deployment or mint a restored copy of it;
+          # either way production must move off the just-deployed one.
+          for _ in 1 2 3 4 5 6; do
+            current=$(list_production)
+            if [ -n "$current" ] && [ "$current" != "$bad" ]; then
+              echo "Production moved off $bad onto $current (rollback target was $PREVIOUS_UID)."
+              echo "The smoke tests failed, so production was rolled back to $PREVIOUS_UID (now serving $current)." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Rollback accepted but production never moved off $bad."
+          exit 1
