@@ -4,7 +4,7 @@
 Stage: Build (Stage 5)
 Phase: P1
 Status: in-progress
-Next action: `continue` in a **new session** → `stage: build P1`, wave 7 (P1-T18).
+Next action: Founder setup first (F12, F15, F16; still F11, F9 `CRON_SECRET`) → `continue` in a **new session** → finish T18 (first deploy + proofs), then `stage: test P1`.
 Inputs: `docs/04-plan.md` §3, `CONVENTIONS.md`, `docs/phases/P1/tasks/`.
 **Branch:** one branch per task, from `main` (CONVENTIONS §15).
 
@@ -16,21 +16,22 @@ Inputs: `docs/04-plan.md` §3, `CONVENTIONS.md`, `docs/phases/P1/tasks/`.
 | Prototype | **approved** | 2026-09-27 | `docs/02-prototype/`, design system "Poster" |
 | Architecture | **approved** | 2026-09-29 | `docs/03-architecture.md`, `CONVENTIONS.md` |
 | Plan | **approved** | 2026-10-01 | `docs/04-plan.md`, `docs/phases/P1/tasks/` |
-| P1 | in-progress | | Waves 1–6 done (T1–T17) |
+| P1 | in-progress | | Waves 1–7 code merged (T1–T18); T18 proofs need production |
 | P2 | not-started | | |
 | P3 | not-started | | |
 | P4 | not-started | | |
 | P5 | not-started | | |
 
 ## Handoff note (last session)
-Wave 6 done, green and merged: #29 T15 (MCP; N1 warm p95 98 ms, post-idle 114 ms, budget
-1.5 s), #30 T16 (Home/Add/holding), #31 T17 (Agent tab/connect); reports in the briefs. Merged in
-order with PR CI green throughout; #31 needed a one-hunk `e2e/support.ts` resolution (main's helper
-side — identical behavior) with CI re-run green before merge. F10 done on Preview (Resend test
-sender; full domain setup still waits for production). Never dashboard-redeploy a preview (it drops
-`DATABASE_URL`) — re-run its Preview job (plan §3.5). Finishers salvaged all three first attempts
-(T15 silence, T16 crash, T17 no commit). F13/F14 done. Founder setup still: F11, `CRON_SECRET`,
-the real Codex connection. Carried: FX backfill (preview seeding needed explicit `fx_rate`); deletion vs
-insert-only analytics (P3); purge of unused DCR clients and sweeps of expired OAuth rows. Renovate's
-#25 and #26 are open.
+Wave 7 code merged: #33 T18 (deploy/sentry/CSP/backup/probe; Checks + Preview green). Manager
+fixed two real issues: schedules use repo-level secrets (a `production`-env reviewer would hold
+every scheduled run), and `VERCEL_PREVIEW_FEEDBACK_ENABLED=0` (strict CSP blocked Vercel's
+preview-only feedback.js, 16 Preview E2E red; allowlisting it would break arch §8). T18 stays
+in-progress: first deploy, rollback proof, Sentry receipt, restore proof, 2 green probes and the
+cron log all need F12 (domain/`PUBLIC_ORIGIN`/prod DB) + F15 (probe account/`PROBE_SECRETS_TOKEN`);
+procedures and log tables are in `ops/probe.md`/`ops/backup.md`. Pre-existing flakes seen (out of
+T18 scope, left for triage): `mcp/events` order (after-response inserts race; same-ms `at` ties)
+and one E2E 401 on `/api/snapshot`. Founder still owes: F9 `CRON_SECRET`, F11 screenshots, F12,
+F15, F16 monitor. Carried: FX backfill; deletion vs insert-only analytics (P3); DCR/expired-row
+sweeps. Renovate #25 merged to main; #26 open.
 Plan tracker: https://claude.ai/artifact/UkJfDYaAAi8gJV1aBbk3nB (`tasks/<id>`, `meta/state`).
