@@ -46,5 +46,10 @@
     "typescript-eslint": "8.71.1",
     "vercel": "62.4.0",
     "vitest": "5.0.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "better-call": "1.4.0"
+    }
   }
 }
