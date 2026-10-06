@@ -22,7 +22,9 @@
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:seed": "tsx scripts/db-seed.ts",
     "db:generate": "tsx scripts/db-generate.ts",
-    "fx:backfill": "tsx scripts/fx-backfill.ts"
+    "fx:backfill": "tsx scripts/fx-backfill.ts",
+    "smoke": "tsx scripts/smoke.ts",
+    "probe": "tsx scripts/probe.ts"
   },
   "dependencies": {
     "@netnet/api": "workspace:*"

@@ -1,0 +1,157 @@
+name: Deploy to production
+
+# The production release (architecture §9.1, §9.2): manual and gated, from a green `main`
+# commit. The Founder runs it by hand (Actions → Deploy to production → Run workflow). It runs
+# `db:bootstrap` (idempotent) → `db:migrate` as owner → `content:publish --env production
+# --strict` → `vercel deploy --prod --prebuilt` → the smoke tests, and on a smoke failure
+# `vercel rollback` to the previous production deployment, failing the run. Migrations are
+# expand-only, so rolling back code never needs a schema rollback.
+#
+# The gate is the `production` environment: the Founder is its required reviewer, so a run waits
+# for approval before touching production. It holds no secrets — it is purely the approval gate.
+# The repository holds DATABASE_OWNER_URL (owner, direct), DATABASE_URL (netnet_app, pooled —
+# the same value Vercel's Production holds), NETNET_APP_DB_PASSWORD, PROBE_CLIENT_ID,
+# PROBE_REFRESH_TOKEN, VERCEL_TOKEN, VERCEL_PROJECT_ID and PROBE_SECRETS_TOKEN, and the
+# PUBLIC_ORIGIN variable (F7, F12, F15). Repository-level, because the backup and probe
+# schedules must run unattended: an environment's required reviewer would hold every
+# scheduled run for approval.
+#
+# Proving the rollback once: run with `prove_rollback` on. The smoke tests fail on purpose after
+# the deploy, the workflow rolls back, and the run fails as designed. Re-run with it off to ship.
+on:
+  workflow_dispatch:
+    inputs:
+      prove_rollback:
+        description: 'Fail the smoke tests on purpose, to prove the rollback once'
+        required: false
+        default: false
+        type: boolean
+
+# The smoke tests rotate the probe's token, as the probe does; this group serialises the two
+# workflows, so a deploy never stores its token over the probe's newer one (or the reverse).
+concurrency:
+  group: probe-refresh-token
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  checks: read
+
+env:
+  VERCEL_TELEMETRY_DISABLED: '1'
+
+jobs:
+  deploy:
+    name: Migrate, deploy, smoke-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22.23.3
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      # Only from a green `main` commit: CI's Checks must have concluded success on it.
+      - name: The commit is green and production is configured
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PUBLIC_ORIGIN" ]; then
+            echo "::error::Set the PUBLIC_ORIGIN variable to https://‹domain› (F12)."
+            exit 1
+          fi
+          conclusion=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?check_name=Checks" \
+            --jq '.check_runs[0].conclusion // empty')
+          if [ "$conclusion" != success ]; then
+            echo "::error::$GITHUB_SHA is not green (Checks: ${conclusion:-missing}). Deploy only a green main commit."
+            exit 1
+          fi
+          echo "Deploying green $GITHUB_SHA to $PUBLIC_ORIGIN."
+      - name: Bootstrap, migrate and publish content to production
+        env:
+          DATABASE_OWNER_URL: ${{ secrets.DATABASE_OWNER_URL }}
+          NETNET_APP_DB_PASSWORD: ${{ secrets.NETNET_APP_DB_PASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          pnpm --silent db:bootstrap
+          pnpm --silent db:migrate
+          DATABASE_URL="$DATABASE_URL" pnpm --silent content:publish --env production --strict
+      # The CLI needs the project's owner (a team id for a Hobby team), so it is read from the
+      # project itself rather than trusted from a secret.
+      - name: Find the project's owner
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          owner=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID" | jq -r '.accountId')
+          echo "::add-mask::$owner"
+          echo "VERCEL_ORG_ID=$owner" >> "$GITHUB_ENV"
+      - name: Pull the production settings
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: pnpm exec vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Build
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: pnpm exec vercel build --token="$VERCEL_TOKEN"
+      # The rollback's target, recorded before the deploy. Empty on the first deploy ever, when
+      # there is nothing to roll back to.
+      - name: Record the current production deployment
+        id: previous
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          uid=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&target=production&state=READY&limit=1" \
+            | jq -r '.deployments[0].uid // empty')
+          echo "uid=$uid" >> "$GITHUB_OUTPUT"
+          if [ -n "$uid" ]; then echo "Rollback target: $uid."; else echo "No production deployment yet: nothing to roll back to."; fi
+      - name: Deploy to production
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          url=$(pnpm exec vercel deploy --prod --prebuilt --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed: $url" >> "$GITHUB_STEP_SUMMARY"
+      # With the probe's secrets this also runs the authenticated path, rotating the token exactly
+      # as the probe does; without them (F15 pending) it skips that part, loudly.
+      - name: Smoke-test production
+        id: smoke
+        env:
+          PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
+          PROBE_CLIENT_ID: ${{ secrets.PROBE_CLIENT_ID }}
+          PROBE_REFRESH_TOKEN: ${{ secrets.PROBE_REFRESH_TOKEN }}
+          SMOKE_FORCE_FAIL: ${{ inputs.prove_rollback && '1' || '' }}
+        run: pnpm --silent smoke --origin "$PUBLIC_ORIGIN"
+      # Even a failed smoke run rotated the token (the scripts emit it right after refresh), so
+      # this stores it whenever one was emitted — else the probe's family is bricked.
+      - name: Store the rotated probe token
+        if: steps.smoke.outputs.refresh_token != ''
+        env:
+          GH_TOKEN: ${{ secrets.PROBE_SECRETS_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::The probe token rotated, but PROBE_SECRETS_TOKEN is not set: the next probe would fail. Set it (ops/probe.md) and re-run the one-time setup."
+            exit 1
+          fi
+          echo "::add-mask::${{ steps.smoke.outputs.refresh_token }}"
+          gh secret set PROBE_REFRESH_TOKEN --body "${{ steps.smoke.outputs.refresh_token }}"
+          echo "Stored the rotated probe token." >> "$GITHUB_STEP_SUMMARY"
+      - name: Roll back to the previous production deployment
+        if: failure() && steps.smoke.outcome == 'failure' && steps.previous.outputs.uid != ''
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          pnpm exec vercel rollback "${{ steps.previous.outputs.uid }}" --yes --token="$VERCEL_TOKEN"
+          echo "The smoke tests failed, so production was rolled back to ${{ steps.previous.outputs.uid }}." >> "$GITHUB_STEP_SUMMARY"

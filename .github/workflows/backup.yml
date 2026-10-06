@@ -1,0 +1,51 @@
+name: Daily backup
+
+# Production's own backup (architecture §9.3, §12 risk 4: Neon Free keeps 6 hours of restore
+# history, we keep 30 days). `pg_dump` of `netnet-prod` — every schema — as owner, encrypted
+# with `age` to BACKUP_PUBLIC_KEY, kept 30 days as an artifact. Restoring is `ops/backup.md`.
+# The repository holds DATABASE_OWNER_URL (owner, direct, F7) and BACKUP_PUBLIC_KEY (F14).
+# Dispatch by hand for a backup on demand (and the restore proof's source).
+on:
+  schedule:
+    # Daily at 02:30 UTC, clear of the 01:00 and 17:00 cron wakes.
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Dump, encrypt, keep
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # No `environment:` here on purpose: the `production` environment's required reviewer
+    # would hold every scheduled run for approval. The backup's secrets are repository
+    # secrets, so the schedule runs unattended.
+    steps:
+      - name: Install pg_dump and age
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client age
+      - name: Dump every schema and encrypt to the Founder's key
+        id: dump
+        env:
+          DATABASE_OWNER_URL: ${{ secrets.DATABASE_OWNER_URL }}
+          BACKUP_PUBLIC_KEY: ${{ secrets.BACKUP_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DATABASE_OWNER_URL" ] || [ -z "$BACKUP_PUBLIC_KEY" ]; then
+            echo "::error::The production environment needs DATABASE_OWNER_URL and BACKUP_PUBLIC_KEY (F12, F14)."
+            exit 1
+          fi
+          file="netnet-prod-$(date -u +%F).sql.age"
+          # The runner's pg_dump may trail the server's Postgres by a major version; the schema is
+          # plain tables, policies and indexes, and the restore proof covers the skew.
+          pg_dump "$DATABASE_OWNER_URL" --no-owner --no-privileges | age -r "$BACKUP_PUBLIC_KEY" -o "$file"
+          ls -la "$file"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+          echo "Backup: $file ($(du -h "$file" | cut -f1))." >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep the backup 30 days
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: netnet-prod-backup
+          path: ${{ steps.dump.outputs.file }}
+          retention-days: 30

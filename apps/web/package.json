@@ -12,6 +12,7 @@
     "@netnet/contracts": "workspace:*",
     "@netnet/core": "workspace:*",
     "@netnet/tokens": "workspace:*",
+    "@sentry/react": "11.4.0",
     "@tanstack/react-query": "5.104.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
