@@ -50,8 +50,8 @@ fictional; type nothing real into it.
      --data-urlencode client_id=… --data-urlencode code_verifier=… \
      --data-urlencode resource=https://‹domain›/mcp
    ```
-   The `refresh_token` becomes the `PROBE_REFRESH_TOKEN` secret, in the `production`
-   environment next to `PROBE_CLIENT_ID`.
+   The `refresh_token` becomes the repository secret `PROBE_REFRESH_TOKEN`, next to
+   `PROBE_CLIENT_ID` (repository-level, so the schedule runs without approval).
 7. **The writer.** Make a fine-grained personal access token with the Secrets permission
    (read and write) on this repository only, and store it as the repository secret
    `PROBE_SECRETS_TOKEN`. The probe and deploy workflows use it to write the rotated token

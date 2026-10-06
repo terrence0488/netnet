@@ -3,8 +3,8 @@ name: Daily backup
 # Production's own backup (architecture §9.3, §12 risk 4: Neon Free keeps 6 hours of restore
 # history, we keep 30 days). `pg_dump` of `netnet-prod` — every schema — as owner, encrypted
 # with `age` to BACKUP_PUBLIC_KEY, kept 30 days as an artifact. Restoring is `ops/backup.md`.
-# The `production` environment holds DATABASE_OWNER_URL (owner, direct) and BACKUP_PUBLIC_KEY
-# (F12, F14). Dispatch by hand for a backup on demand (and the restore proof's source).
+# The repository holds DATABASE_OWNER_URL (owner, direct, F7) and BACKUP_PUBLIC_KEY (F14).
+# Dispatch by hand for a backup on demand (and the restore proof's source).
 on:
   schedule:
     # Daily at 02:30 UTC, clear of the 01:00 and 17:00 cron wakes.
@@ -19,7 +19,9 @@ jobs:
     name: Dump, encrypt, keep
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: production
+    # No `environment:` here on purpose: the `production` environment's required reviewer
+    # would hold every scheduled run for approval. The backup's secrets are repository
+    # secrets, so the schedule runs unattended.
     steps:
       - name: Install pg_dump and age
         run: sudo apt-get update && sudo apt-get install -y postgresql-client age

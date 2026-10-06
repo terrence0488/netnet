@@ -8,10 +8,13 @@ name: Deploy to production
 # expand-only, so rolling back code never needs a schema rollback.
 #
 # The gate is the `production` environment: the Founder is its required reviewer, so a run waits
-# for approval before touching production. The environment holds DATABASE_OWNER_URL (owner,
-# direct), DATABASE_URL (netnet_app, pooled — the same value Vercel's Production holds),
-# NETNET_APP_DB_PASSWORD, PROBE_CLIENT_ID and PROBE_REFRESH_TOKEN; the repo holds VERCEL_TOKEN,
-# VERCEL_PROJECT_ID and PROBE_SECRETS_TOKEN, and the PUBLIC_ORIGIN variable (F12, F15).
+# for approval before touching production. It holds no secrets — it is purely the approval gate.
+# The repository holds DATABASE_OWNER_URL (owner, direct), DATABASE_URL (netnet_app, pooled —
+# the same value Vercel's Production holds), NETNET_APP_DB_PASSWORD, PROBE_CLIENT_ID,
+# PROBE_REFRESH_TOKEN, VERCEL_TOKEN, VERCEL_PROJECT_ID and PROBE_SECRETS_TOKEN, and the
+# PUBLIC_ORIGIN variable (F7, F12, F15). Repository-level, because the backup and probe
+# schedules must run unattended: an environment's required reviewer would hold every
+# scheduled run for approval.
 #
 # Proving the rollback once: run with `prove_rollback` on. The smoke tests fail on purpose after
 # the deploy, the workflow rolls back, and the run fails as designed. Re-run with it off to ship.
@@ -143,7 +146,7 @@ jobs:
             exit 1
           fi
           echo "::add-mask::${{ steps.smoke.outputs.refresh_token }}"
-          gh secret set PROBE_REFRESH_TOKEN --env production --body "${{ steps.smoke.outputs.refresh_token }}"
+          gh secret set PROBE_REFRESH_TOKEN --body "${{ steps.smoke.outputs.refresh_token }}"
           echo "Stored the rotated probe token." >> "$GITHUB_STEP_SUMMARY"
       - name: Roll back to the previous production deployment
         if: failure() && steps.smoke.outcome == 'failure' && steps.previous.outputs.uid != ''
