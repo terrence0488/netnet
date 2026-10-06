@@ -7,10 +7,10 @@ name: Deploy to production
 # `vercel rollback` to the previous production deployment, failing the run. Migrations are
 # expand-only, so rolling back code never needs a schema rollback.
 #
-# The gate is the `production` environment: the Founder is its required reviewer, so a run waits
-# for approval before touching production. It holds no secrets — it is purely the approval gate.
-# The repository holds DATABASE_OWNER_URL (owner, direct), DATABASE_URL (netnet_app, pooled —
-# the same value Vercel's Production holds), NETNET_APP_DB_PASSWORD, PROBE_CLIENT_ID,
+# The gate is the `Production` environment (exact case): the Founder is its required reviewer,
+# so a run waits for approval before touching production. It holds no secrets — it is purely the
+# approval gate. The repository holds DATABASE_OWNER_URL (owner, direct), DATABASE_URL (netnet_app,
+# pooled — the same value Vercel's Production holds), NETNET_APP_DB_PASSWORD_PROD, PROBE_CLIENT_ID,
 # PROBE_REFRESH_TOKEN, VERCEL_TOKEN, VERCEL_PROJECT_ID and PROBE_SECRETS_TOKEN, and the
 # PUBLIC_ORIGIN variable (F7, F12, F15). Repository-level, because the backup and probe
 # schedules must run unattended: an environment's required reviewer would hold every
@@ -46,7 +46,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production
+    environment: Production
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
@@ -77,7 +77,7 @@ jobs:
       - name: Bootstrap, migrate and publish content to production
         env:
           DATABASE_OWNER_URL: ${{ secrets.DATABASE_OWNER_URL }}
-          NETNET_APP_DB_PASSWORD: ${{ secrets.NETNET_APP_DB_PASSWORD }}
+          NETNET_APP_DB_PASSWORD: ${{ secrets.NETNET_APP_DB_PASSWORD_PROD }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           set -euo pipefail
