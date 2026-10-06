@@ -5,6 +5,9 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { createQueryClient } from './api/query';
 import { createRouter } from './app/routes';
+import { initSentry } from './sentry';
+
+initSentry();
 
 // The shell decides where a screen starts (the top, design-system §7), so the browser's own
 // restoring of an old position on Back never lands a reader halfway down a new screen.

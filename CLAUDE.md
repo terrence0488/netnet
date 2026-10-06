@@ -73,3 +73,5 @@ Node 22 and pnpm. A SessionStart hook runs `pnpm install --frozen-lockfile`.
 | `pnpm db:migrate` | Applies `apps/api/migrations/`, as `netnet_owner` |
 | `pnpm db:seed` | Fictional data, as `netnet_app` (`DATABASE_URL`) |
 | `pnpm db:generate` | A new migration from the Drizzle schema (drizzle-kit, then Prettier) |
+| `pnpm smoke --origin <url>` | Post-deploy checks against any origin: health, OAuth metadata, the `/mcp` 401, security headers, and the probe's authenticated path when the probe secrets are set |
+| `pnpm probe --origin <url>` | The MCP probe (`PROBE_CLIENT_ID`, `PROBE_REFRESH_TOKEN`): refresh, `tools/list`, `get_financial_context`, timed; rotates the token into `$GITHUB_OUTPUT` |

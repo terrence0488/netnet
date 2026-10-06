@@ -5,6 +5,7 @@ import type { AppEnv } from './context';
 import { AppError } from './errors';
 import { log } from './log';
 import { routeOf } from './request-context';
+import { reportError } from './sentry';
 
 /** Statuses Hono itself raises (a malformed JSON body, say) that have a code of their own. */
 const CODE_FOR_HTTP_STATUS: Partial<Record<number, ErrorCode>> = {
@@ -17,14 +18,16 @@ function respond(c: Context<AppEnv>, body: ErrorBody) {
   return c.json(body, ERROR_STATUS[body.error.code]);
 }
 
-function internal(c: Context<AppEnv>) {
+function internal(c: Context<AppEnv>, err: unknown) {
   const requestId = c.get('requestId');
+  const route = routeOf(c);
   log('request_failed', {
     requestId,
-    route: routeOf(c),
+    route,
     status: ERROR_STATUS.INTERNAL,
     errorCode: 'INTERNAL',
   });
+  reportError(err, { requestId, route });
   return respond(c, {
     error: {
       code: 'INTERNAL',
@@ -48,7 +51,7 @@ export const handleError: ErrorHandler<AppEnv> = (err, c) => {
     if (code) return respond(c, { error: { code, message: err.message || 'Check the request.' } });
     if (err.status < 500) return err.getResponse();
   }
-  return internal(c);
+  return internal(c, err);
 };
 
 export const handleNotFound: NotFoundHandler<AppEnv> = (c) =>

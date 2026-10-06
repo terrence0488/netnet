@@ -1,5 +1,8 @@
 import { handle } from 'hono/vercel';
 import { app } from './app';
+import { initSentry } from './lib/sentry';
+
+initSentry();
 
 /**
  * The app as Vercel's Node function exports it: one handler per method. `pnpm build` bundles this

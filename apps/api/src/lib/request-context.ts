@@ -18,7 +18,8 @@ export function newRequestId(): string {
 
 /**
  * Gives every request an id (on `c` and in `X-Request-Id`), and writes one `request` log line
- * with the matched route, the status and the latency when it finishes.
+ * with the matched route, the status and the latency when it finishes. The latency also goes in
+ * `Server-Timing`, so the MCP probe can log the function's time next to its own (P1-T18).
  */
 export function requestContext(): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
@@ -26,12 +27,14 @@ export function requestContext(): MiddlewareHandler<AppEnv> {
     const requestId = newRequestId();
     c.set('requestId', requestId);
     await next();
+    const latencyMs = Math.round(performance.now() - started);
     c.header('X-Request-Id', requestId);
+    c.header('Server-Timing', `netnet;dur=${latencyMs}`);
     log('request', {
       requestId,
       route: routeOf(c),
       status: c.res.status,
-      latencyMs: Math.round(performance.now() - started),
+      latencyMs,
     });
   };
 }
