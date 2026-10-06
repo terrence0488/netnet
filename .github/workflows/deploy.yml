@@ -101,8 +101,10 @@ jobs:
           echo "VERCEL_ORG_ID=$owner" >> "$GITHUB_ENV"
       - name: Pull the production settings
         run: pnpm exec vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      # `--prod`: without it the build targets preview, which `deploy --prod --prebuilt`
+      # refuses (prebuilt-environment mismatch).
       - name: Build
-        run: pnpm exec vercel build --token="$VERCEL_TOKEN"
+        run: pnpm exec vercel build --prod --token="$VERCEL_TOKEN"
       # The rollback's target, recorded before the deploy. Empty on the first deploy ever, when
       # there is nothing to roll back to.
       - name: Record the current production deployment
