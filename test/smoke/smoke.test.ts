@@ -144,20 +144,28 @@ describe('scripts/smoke', () => {
     expect(rotated).toBe('rotated-here');
   });
 
-  it('runs as a CLI against any origin, skipping auth without secrets', async () => {
-    const stub = await startSmokeOrigin();
-    const { stdout } = await run(
-      join(REPO_ROOT, 'node_modules', '.bin', 'tsx'),
-      ['scripts/smoke.ts', '--origin', stub.url],
-      {
-        cwd: REPO_ROOT,
-        env: { ...process.env, PROBE_CLIENT_ID: undefined, PROBE_REFRESH_TOKEN: undefined },
-        timeout: 60_000,
-      },
-    );
-    expect(stdout).toContain('smoke: passed');
-    expect(stdout).toContain('SKIPPED');
-  }, 90_000);
+  it.each([
+    ['unset', { PROBE_CLIENT_ID: undefined, PROBE_REFRESH_TOKEN: undefined }],
+    // A missing GitHub secret reaches the step as '', not unset (first deploy).
+    ['empty', { PROBE_CLIENT_ID: '', PROBE_REFRESH_TOKEN: '' }],
+  ])(
+    'runs as a CLI against any origin, skipping auth when secrets are %s',
+    async (_label, probeEnv: Record<string, string | undefined>) => {
+      const stub = await startSmokeOrigin();
+      const { stdout } = await run(
+        join(REPO_ROOT, 'node_modules', '.bin', 'tsx'),
+        ['scripts/smoke.ts', '--origin', stub.url],
+        {
+          cwd: REPO_ROOT,
+          env: { ...process.env, ...probeEnv },
+          timeout: 60_000,
+        },
+      );
+      expect(stdout).toContain('smoke: passed');
+      expect(stdout).toContain('SKIPPED');
+    },
+    90_000,
+  );
 
   it('force-fails for the rollback proof, and the CLI reports failures', async () => {
     const stub = await startSmokeOrigin();

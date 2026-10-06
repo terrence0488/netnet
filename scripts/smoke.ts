@@ -150,7 +150,13 @@ export async function checkAuthenticated(
 }
 
 function hasProbeSecrets(env: NodeJS.ProcessEnv): boolean {
-  return env.PROBE_CLIENT_ID !== undefined && env.PROBE_REFRESH_TOKEN !== undefined;
+  // Non-empty, not merely set: a missing GitHub secret reaches the step as ''.
+  return (
+    env.PROBE_CLIENT_ID !== undefined &&
+    env.PROBE_CLIENT_ID !== '' &&
+    env.PROBE_REFRESH_TOKEN !== undefined &&
+    env.PROBE_REFRESH_TOKEN !== ''
+  );
 }
 
 function originFromArgs(argv: string[], env: NodeJS.ProcessEnv): string | undefined {
