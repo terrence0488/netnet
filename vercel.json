@@ -3,6 +3,11 @@
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build",
+  "build": {
+    "env": {
+      "VERCEL_PREVIEW_FEEDBACK_ENABLED": "0"
+    }
+  },
   "outputDirectory": "dist",
   "regions": ["sin1"],
   "git": { "deploymentEnabled": false },
