@@ -13,6 +13,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Documents state the current decision only; changes are rewritten in place, never appended as amendments | Keeps each session's context small and unambiguous; git history holds the past |
 | Each approved stage lands on `main`; work happens on a branch from `main` | `main` always reflects the last Founder-approved state |
 | `main` has no branch protection while the repository is private on GitHub's free plan; the Founder merges a pull request only when its Checks job is green | Protection for a private repository needs a paid plan. One person merges, and CI on `main` shows a slip at once |
+| Production deploys are gated by manual dispatch only; the `Production` environment has no required reviewer | Required reviewers also need a paid plan for a private repository. Nothing deploys unless the Founder runs the workflow; revisit if the plan changes |
 | Mockup images and any material with real personal data are never committed (`.gitignore` blocks them) | They hold the Founder's real name, email and finances; git history is permanent and the repo may go public |
 | No user interviews and no waitlist: launch, then promote | Founder decision. Live usage is the only test, so P1 instrumentation is the experiment and distribution is planned work (A9) |
 
