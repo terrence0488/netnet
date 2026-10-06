@@ -148,7 +148,9 @@ its deviations are in `decisions.md`, and T11, T13, T15 and T18 build on them.
   engineer subagent per task, and hands off to a new session between waves when its context runs
   heavy (STATE names the next wave). `stage: build P1-Tn` runs a single task.
 - One branch and one pull request per task (CONVENTIONS §15). Every pull request gets its own
-  preview, with its own Neon branch, from T1 and T4 onward.
+  preview, with its own Neon branch, from T1 and T4 onward. A preview's `DATABASE_URL` is injected
+  per-deployment by its Preview job: never redeploy from the Vercel dashboard (the new deployment
+  comes up without a database); re-run the Preview job instead.
 - After T18, `stage: test P1` in a fresh session (WORKFLOW Stage 6), against §3.2.
 
 ## 4. Later phases (outlines)
