@@ -4,7 +4,7 @@
 Stage: Build (Stage 5)
 Phase: P1
 Status: in-progress
-Next action: Founder setup first (F12, F15, F16; still F11, F9 `CRON_SECRET`) → `continue` in a **new session** → finish T18 (first deploy + proofs), then `stage: test P1`.
+Next action: Founder: 6 Claude screenshots (or say placeholders) → `continue` → first deploy + F15 walkthrough, then `stage: test P1`.
 Inputs: `docs/04-plan.md` §3, `CONVENTIONS.md`, `docs/phases/P1/tasks/`.
 **Branch:** one branch per task, from `main` (CONVENTIONS §15).
 
@@ -23,15 +23,13 @@ Inputs: `docs/04-plan.md` §3, `CONVENTIONS.md`, `docs/phases/P1/tasks/`.
 | P5 | not-started | | |
 
 ## Handoff note (last session)
-Wave 7 code merged: #33 T18 (deploy/sentry/CSP/backup/probe; Checks + Preview green). Manager
-fixed two real issues: schedules use repo-level secrets (a `production`-env reviewer would hold
-every scheduled run), and `VERCEL_PREVIEW_FEEDBACK_ENABLED=0` (strict CSP blocked Vercel's
-preview-only feedback.js, 16 Preview E2E red; allowlisting it would break arch §8). T18 stays
-in-progress: first deploy, rollback proof, Sentry receipt, restore proof, 2 green probes and the
-cron log all need F12 (domain/`PUBLIC_ORIGIN`/prod DB) + F15 (probe account/`PROBE_SECRETS_TOKEN`);
-procedures and log tables are in `ops/probe.md`/`ops/backup.md`. Pre-existing flakes seen (out of
-T18 scope, left for triage): `mcp/events` order (after-response inserts race; same-ms `at` ties)
-and one E2E 401 on `/api/snapshot`. Founder still owes: F9 `CRON_SECRET`, F11 screenshots, F12,
-F15, F16 monitor. Carried: FX backfill; deletion vs insert-only analytics (P3); DCR/expired-row
-sweeps. Renovate #25 merged to main; #26 open.
+Domain is netnetapp.io (apex canonical, `PUBLIC_ORIGIN` set, `DATABASE_URL` repo secret moved).
+Deploy prep fixes merged green: #34 (prod secret name, `Production` env case), #35 (strict image
+check skips unlisted guides + test), #36 (deploy gate is manual dispatch — required reviewers need
+a paid plan for a private repo; recorded in decisions.md). T18 in-progress: first deploy blocked
+only on F11 Claude screenshots (6 exact names in `content/images/connect/`) or a Founder call for
+1px placeholders; then F15's 8 steps from `ops/probe.md` (probe account + `PROBE_*` secrets).
+Pre-existing flakes left for triage: `mcp/events` order race, one E2E 401 on `/api/snapshot`.
+Founder still owes: F11 (or placeholders call), F15 walkthrough, F16 monitor. Carried: FX
+backfill; deletion vs insert-only analytics (P3); DCR/expired-row sweeps. Renovate #26 open.
 Plan tracker: https://claude.ai/artifact/UkJfDYaAAi8gJV1aBbk3nB (`tasks/<id>`, `meta/state`).
