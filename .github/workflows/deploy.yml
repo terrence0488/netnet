@@ -49,6 +49,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: Production
+    # The CLI needs both of these in the environment (as ci.yml's Preview job sets them): with
+    # only VERCEL_ORG_ID set, it refuses to run.
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
@@ -89,29 +94,19 @@ jobs:
       # The CLI needs the project's owner (a team id for a Hobby team), so it is read from the
       # project itself rather than trusted from a secret.
       - name: Find the project's owner
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           owner=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
             "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID" | jq -r '.accountId')
           echo "::add-mask::$owner"
           echo "VERCEL_ORG_ID=$owner" >> "$GITHUB_ENV"
       - name: Pull the production settings
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: pnpm exec vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
       - name: Build
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: pnpm exec vercel build --token="$VERCEL_TOKEN"
       # The rollback's target, recorded before the deploy. Empty on the first deploy ever, when
       # there is nothing to roll back to.
       - name: Record the current production deployment
         id: previous
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           uid=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
             "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&target=production&state=READY&limit=1" \
@@ -120,8 +115,6 @@ jobs:
           if [ -n "$uid" ]; then echo "Rollback target: $uid."; else echo "No production deployment yet: nothing to roll back to."; fi
       - name: Deploy to production
         id: deploy
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           url=$(pnpm exec vercel deploy --prod --prebuilt --token="$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
@@ -152,8 +145,6 @@ jobs:
           echo "Stored the rotated probe token." >> "$GITHUB_STEP_SUMMARY"
       - name: Roll back to the previous production deployment
         if: failure() && steps.smoke.outcome == 'failure' && steps.previous.outputs.uid != ''
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           pnpm exec vercel rollback "${{ steps.previous.outputs.uid }}" --yes --token="$VERCEL_TOKEN"
           echo "The smoke tests failed, so production was rolled back to ${{ steps.previous.outputs.uid }}." >> "$GITHUB_STEP_SUMMARY"
