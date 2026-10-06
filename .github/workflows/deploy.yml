@@ -3,12 +3,18 @@ name: Deploy to production
 # The production release (architecture §9.1, §9.2): manual and gated, from a green `main`
 # commit. The Founder runs it by hand (Actions → Deploy to production → Run workflow). It runs
 # `db:bootstrap` (idempotent) → `db:migrate` as owner → `content:publish --env production
-# --strict` → `vercel deploy --prod --prebuilt` → the smoke tests, and on a smoke failure the
-# previous production deployment is rolled back to, failing the run. That step calls the
-# rollback endpoint directly: both `vercel rollback` and `vercel promote` answer every target
-# with `User not found (404)` here (their shared deployment lookup, with and without
-# VERCEL_ORG_ID), while the same token drives every other step. Migrations are expand-only,
-# so rolling back code never needs a schema rollback.
+# --strict` → `vercel deploy --prod --prebuilt` → a check that production actually moved →
+# the smoke tests, and on a smoke failure the previous production deployment is rolled back
+# to, failing the run. The rollback step calls the rollback endpoint directly: both `vercel
+# rollback` and `vercel promote` answer every target with `User not found (404)` here (their
+# shared deployment lookup, with and without VERCEL_ORG_ID), while the same token drives
+# every other step. Migrations are expand-only, so rolling back code never needs a schema
+# rollback.
+#
+# A rollback pins production: Vercel turns auto-assignment off, and later deploys then
+# succeed without going live. The moved check below fails loudly in that state (it is how the
+# pin was found); recovery is Vercel → project → Settings → Environments → Auto-assign
+# Custom Production Domains ON, then re-run.
 #
 # The gate is that only a human runs this workflow: it is `workflow_dispatch` only, so nothing
 # reaches production unless the Founder runs it. The `Production` environment (exact case) carries
@@ -138,6 +144,31 @@ jobs:
           url=$(pnpm exec vercel deploy --prod --prebuilt --token="$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Deployed: $url" >> "$GITHUB_STEP_SUMMARY"
+      # `vercel deploy` exits 0 even when production stays pinned elsewhere (a rollback turns
+      # auto-assignment off), so confirm the alias moved before believing the deploy.
+      - name: Confirm production moved
+        env:
+          PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
+          PREVIOUS_UID: ${{ steps.previous.outputs.uid }}
+        run: |
+          set -euo pipefail
+          domain=$(echo "$PUBLIC_ORIGIN" | sed -e 's|https\?://||' -e 's|/.*||')
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
+            current=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v2/aliases/$domain" \
+              | jq -r '.deploymentId // .deployment.id // empty' || true)
+            if [ -z "$PREVIOUS_UID" ] && [ -n "$current" ]; then
+              echo "Production is live on $current (first deploy)."
+              exit 0
+            fi
+            if [ -n "$PREVIOUS_UID" ] && [ -n "$current" ] && [ "$current" != "$PREVIOUS_UID" ]; then
+              echo "Production moved off $PREVIOUS_UID onto $current."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::The deploy succeeded but $domain still serves ${current:-nothing} — auto-assignment may be off (a rollback turns it off: Vercel → project → Settings → Environments → Auto-assign Custom Production Domains ON, then re-run)."
+          exit 1
       # With the probe's secrets this also runs the authenticated path, rotating the token exactly
       # as the probe does; without them (F15 pending) it skips that part, loudly.
       - name: Smoke-test production
