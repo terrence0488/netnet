@@ -72,12 +72,16 @@ export interface ImageRef {
   image: string;
 }
 
-/** Every image a valid guide names (logos and screenshots) that is not in `dir`. */
+/**
+ * Every image a valid guide names (logos and screenshots) that is not in `dir`. Guides that are
+ * not listed name no checkable image: the connect flow never shows them, and their screenshots
+ * land with their listing (plan F11 stages ChatGPT's after its directory listing).
+ */
 export function missingImages(docs: readonly ContentDoc[], dir: string = CONTENT_DIR): ImageRef[] {
   const refs: ImageRef[] = [];
   for (const { kind, doc, body } of docs) {
     const parsed = kind === 'agent' ? agentGuideSchema.safeParse(body) : null;
-    if (!parsed?.success) continue;
+    if (!parsed?.success || !parsed.data.listed) continue;
     const guide = parsed.data;
     if (guide.logo !== undefined) refs.push({ doc, path: 'logo', image: guide.logo });
     for (const [platform, { steps }] of Object.entries(guide.platforms)) {
