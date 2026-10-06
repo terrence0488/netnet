@@ -17,3 +17,6 @@ personal: your name, email, avatar, and any chat titles in the sidebar.
 
 `pnpm content:check` passes while a screenshot is missing (the app shows a neutral placeholder);
 `pnpm content:check --strict`, which a production publish runs, fails on one.
+
+Claude's six files are currently 1px stand-ins so the first deploy is not blocked (F11 still owes
+the real screenshots); ChatGPT's six land with its listing.
