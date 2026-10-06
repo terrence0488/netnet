@@ -148,8 +148,12 @@ jobs:
           echo "::add-mask::${{ steps.smoke.outputs.refresh_token }}"
           gh secret set PROBE_REFRESH_TOKEN --body "${{ steps.smoke.outputs.refresh_token }}"
           echo "Stored the rotated probe token." >> "$GITHUB_STEP_SUMMARY"
+      # The org is unset for this step only: rollback and promote resolve the deployment
+      # through a team lookup on VERCEL_ORG_ID that 404s here (thrice seen, both commands).
+      # Without it the CLI scopes from the token, which is all a personal-scope project needs;
+      # if the project is team-owned this fails differently and says so.
       - name: Roll back to the previous production deployment
         if: failure() && steps.smoke.outcome == 'failure' && steps.previous.outputs.uid != ''
         run: |
-          pnpm exec vercel promote "${{ steps.previous.outputs.uid }}" --yes --token="$VERCEL_TOKEN"
+          VERCEL_ORG_ID= pnpm exec vercel promote "${{ steps.previous.outputs.uid }}" --yes --token="$VERCEL_TOKEN"
           echo "The smoke tests failed, so production was rolled back to ${{ steps.previous.outputs.uid }}." >> "$GITHUB_STEP_SUMMARY"
