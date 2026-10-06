@@ -109,15 +109,27 @@ jobs:
       - name: Build
         run: pnpm exec vercel build --prod --token="$VERCEL_TOKEN"
       # The rollback's target, recorded before the deploy. Empty on the first deploy ever, when
-      # there is nothing to roll back to. The production filter is client-side: the list endpoint
-      # cannot be trusted to honor target/state, and recording a preview as the target silently
-      # neuters the rollback.
+      # there is nothing to roll back to. The truth is the apex alias, not the deployments list:
+      # a deployment keeps target=production after being superseded, so "newest production" can
+      # name a deployment production no longer serves.
       - name: Record the current production deployment
         id: previous
+        env:
+          PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
         run: |
-          uid=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&limit=10" \
-            | jq -r '[.deployments[] | select(.target == "production" and .state == "READY")][0].uid // empty')
+          set -euo pipefail
+          domain=$(echo "$PUBLIC_ORIGIN" | sed -e 's|https\?://||' -e 's|/.*||')
+          code=$(curl -sS -o /tmp/alias.json -w '%{http_code}' -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v2/aliases/$domain")
+          uid=""
+          if [ "$code" = "404" ]; then
+            uid=""
+          elif [[ "$code" != 2* ]]; then
+            echo "::error::Alias lookup failed with HTTP $code: $(cat /tmp/alias.json)"
+            exit 1
+          else
+            uid=$(jq -r '.deploymentId // .deployment.id // empty' /tmp/alias.json)
+          fi
           echo "uid=$uid" >> "$GITHUB_OUTPUT"
           if [ -n "$uid" ]; then echo "Rollback target: $uid."; else echo "No production deployment yet: nothing to roll back to."; fi
       - name: Deploy to production
@@ -154,14 +166,16 @@ jobs:
         if: failure() && steps.smoke.outcome == 'failure' && steps.previous.outputs.uid != ''
         env:
           PREVIOUS_UID: ${{ steps.previous.outputs.uid }}
+          PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
         run: |
           set -euo pipefail
-          list_production() {
+          domain=$(echo "$PUBLIC_ORIGIN" | sed -e 's|https\?://||' -e 's|/.*||')
+          serving() {
             curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" \
-              "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&limit=10" \
-              | jq -r '[.deployments[] | select(.target == "production" and .state == "READY")][0].uid // empty'
+              "https://api.vercel.com/v2/aliases/$domain" \
+              | jq -r '.deploymentId // .deployment.id // empty'
           }
-          bad=$(list_production)
+          bad=$(serving)
           code=$(curl -sS -o /tmp/rollback.json -w '%{http_code}' -X POST \
             -H "Authorization: Bearer $VERCEL_TOKEN" -H 'Content-Type: application/json' \
             --data '{}' \
@@ -171,9 +185,9 @@ jobs:
             exit 1
           fi
           # A rollback may re-point at the recorded deployment or mint a restored copy of it;
-          # either way production must move off the just-deployed one.
+          # either way the alias must move off the just-deployed one.
           for _ in 1 2 3 4 5 6 7 8 9 10; do
-            current=$(list_production)
+            current=$(serving || true)
             if [ -n "$current" ] && [ "$current" != "$bad" ]; then
               echo "Production moved off $bad onto $current (rollback target was $PREVIOUS_UID)."
               echo "The smoke tests failed, so production was rolled back to $PREVIOUS_UID (now serving $current)." >> "$GITHUB_STEP_SUMMARY"
@@ -181,5 +195,5 @@ jobs:
             fi
             sleep 15
           done
-          echo "::error::Rollback accepted but production never moved off $bad."
+          echo "::error::Rollback accepted but $domain still serves $bad."
           exit 1
