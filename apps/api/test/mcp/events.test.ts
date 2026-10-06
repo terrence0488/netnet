@@ -67,16 +67,23 @@ describe('agent_tool_called', () => {
     await target.settle();
     const events = await eventsOf(target, userId);
     const called = events.filter((e) => e.name === 'agent_tool_called');
-    expect(called.map((e) => (e.props as { tool: string }).tool)).toStrictEqual([
-      'get_taxonomy',
+    // The calls' events are written after their responses, so calls landing in the same
+    // millisecond can insert in either order: the set is asserted, never the row order.
+    expect(called.map((e) => (e.props as { tool: string }).tool).sort()).toStrictEqual([
       'create_holding',
+      'get_taxonomy',
       'record_values',
     ]);
-    const write = called[1]?.props as Record<string, unknown>;
+    const byTool = (tool: string) =>
+      called.find((e) => (e.props as { tool: string }).tool === tool)?.props as Record<
+        string,
+        unknown
+      >;
+    const write = byTool('create_holding');
     expect(write.kind).toBe('write');
     expect(write.outcome).toBe('ok');
     expect(write.client).toBe('chatgpt');
-    const failed = called[2]?.props as Record<string, unknown>;
+    const failed = byTool('record_values');
     expect(failed.outcome).toBe('NOT_FOUND');
     const created = events.find((e) => e.name === 'holding_created');
     expect((created?.props as { source: string } | undefined)?.source).toBe('agent');
