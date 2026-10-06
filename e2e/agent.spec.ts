@@ -17,7 +17,7 @@ import {
   exchangeCode,
   registerFakeAgent,
 } from './agent';
-import { SIGNED_IN } from './support';
+import { EMPTY_SNAPSHOT, mockSnapshot, SIGNED_IN } from './support';
 
 /**
  * The Agent tab and the connect flow (PRD J5), at 390 and 1280px: choosing the agent, the steps
@@ -134,6 +134,9 @@ async function asConnectable(
     events.push(route.request().postDataJSON() as { name: string; props: unknown });
     return route.fulfill({ status: 204 });
   });
+  // Home fetches this unstubbed and sessionless (401) whenever a test lands on /app; the console
+  // error then races the problems assertion. Serve the empty ledger like asSignedIn does.
+  await mockSnapshot(page, EMPTY_SNAPSHOT);
   await page.route('**/api/content/current', (route) =>
     route.fulfill({ json: { agent: { claude: 1, chatgpt: 1, other: 1 } } }),
   );
