@@ -3,9 +3,12 @@ name: Deploy to production
 # The production release (architecture §9.1, §9.2): manual and gated, from a green `main`
 # commit. The Founder runs it by hand (Actions → Deploy to production → Run workflow). It runs
 # `db:bootstrap` (idempotent) → `db:migrate` as owner → `content:publish --env production
-# --strict` → `vercel deploy --prod --prebuilt` → the smoke tests, and on a smoke failure
-# `vercel rollback` to the previous production deployment, failing the run. Migrations are
-# expand-only, so rolling back code never needs a schema rollback.
+# --strict` → `vercel deploy --prod --prebuilt` → the smoke tests, and on a smoke failure the
+# previous production deployment is promoted back, failing the run. That step is `vercel
+# promote`, not `vercel rollback`: rollback answers every target with `User not found (404)`
+# here (twice seen, including against a minutes-old deployment), while promote is Vercel's
+# documented manual rollback. Migrations are expand-only, so rolling back code never needs a
+# schema rollback.
 #
 # The gate is that only a human runs this workflow: it is `workflow_dispatch` only, so nothing
 # reaches production unless the Founder runs it. The `Production` environment (exact case) carries
@@ -148,5 +151,5 @@ jobs:
       - name: Roll back to the previous production deployment
         if: failure() && steps.smoke.outcome == 'failure' && steps.previous.outputs.uid != ''
         run: |
-          pnpm exec vercel rollback "${{ steps.previous.outputs.uid }}" --yes --token="$VERCEL_TOKEN"
+          pnpm exec vercel promote "${{ steps.previous.outputs.uid }}" --yes --token="$VERCEL_TOKEN"
           echo "The smoke tests failed, so production was rolled back to ${{ steps.previous.outputs.uid }}." >> "$GITHUB_STEP_SUMMARY"
