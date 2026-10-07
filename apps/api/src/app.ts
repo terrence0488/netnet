@@ -76,6 +76,10 @@ app.route('/api/content', contentRoutes(contentStore));
 app.use('/api/cron/*', cronAuth(cronSecret));
 app.get('/api/cron/fx', defaultFxJob());
 app.get('/api/cron/daily', dailyJob());
+/** TEMPORARY (P1-T18 proof): throws the function-side Sentry test error. Removed next. */
+app.get('/api/cron/sentry-test', () => {
+  throw new Error('netnet-sentry-test function');
+});
 
 app.notFound(handleNotFound);
 app.onError(handleError);

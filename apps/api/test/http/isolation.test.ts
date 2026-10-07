@@ -73,6 +73,8 @@ const NO_USER_DATA: Record<string, string> = {
   'GET /api/content/:kind/:ref': 'published content, the same for everyone',
   'GET /api/cron/fx': 'the cron secret, and exchange rates only',
   'GET /api/cron/daily': 'the cron secret; answers counts only',
+  // TEMPORARY (P1-T18 proof): goes with the route it names.
+  'GET /api/cron/sentry-test': 'the cron secret; throws before touching anything',
   'GET /.well-known/oauth-authorization-server': 'OAuth metadata, the same for everyone',
   'GET /.well-known/oauth-protected-resource': 'OAuth metadata, the same for everyone',
   'GET /.well-known/oauth-protected-resource/mcp': 'OAuth metadata, the same for everyone',
