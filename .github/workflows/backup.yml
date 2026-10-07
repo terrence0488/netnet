@@ -24,7 +24,24 @@ jobs:
     # secrets, so the schedule runs unattended.
     steps:
       - name: Install pg_dump and age
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client age
+        env:
+          DATABASE_OWNER_URL: ${{ secrets.DATABASE_OWNER_URL }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client age curl ca-certificates gnupg
+          # pg_dump refuses a server newer than itself (Neon runs 18, the runner's default
+          # client is 16): install the client matching the server's major, from PGDG.
+          major=$(psql "$DATABASE_OWNER_URL" -tAc \
+            "select split_part(current_setting('server_version'), '.', 1)" | grep -o '^[0-9]\+')
+          . /etc/os-release
+          echo "deb http://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" |
+            sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc |
+            sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+          sudo apt-get update
+          sudo apt-get install -y "postgresql-client-$major"
+          echo "PGDUMP=/usr/lib/postgresql/$major/bin/pg_dump" >> "$GITHUB_ENV"
       - name: Dump every schema and encrypt to the Founder's key
         id: dump
         env:
@@ -37,9 +54,7 @@ jobs:
             exit 1
           fi
           file="netnet-prod-$(date -u +%F).sql.age"
-          # The runner's pg_dump may trail the server's Postgres by a major version; the schema is
-          # plain tables, policies and indexes, and the restore proof covers the skew.
-          pg_dump "$DATABASE_OWNER_URL" --no-owner --no-privileges | age -r "$BACKUP_PUBLIC_KEY" -o "$file"
+          "$PGDUMP" "$DATABASE_OWNER_URL" --no-owner --no-privileges | age -r "$BACKUP_PUBLIC_KEY" -o "$file"
           ls -la "$file"
           echo "file=$file" >> "$GITHUB_OUTPUT"
           echo "Backup: $file ($(du -h "$file" | cut -f1))." >> "$GITHUB_STEP_SUMMARY"
