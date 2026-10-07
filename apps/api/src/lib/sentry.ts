@@ -89,9 +89,14 @@ export function initSentry(): void {
 
 /**
  * Reports an unexpected error with the request id and route only. A no-op until `initSentry`
- * has run with a DSN.
+ * has run with a DSN. The flush is awaited: a serverless function can freeze the moment its
+ * response goes out, stranding an error that was only captured.
  */
-export function reportError(error: unknown, tags: { requestId: string; route: string }): void {
+export async function reportError(
+  error: unknown,
+  tags: { requestId: string; route: string },
+): Promise<void> {
   if (!enabled) return;
   Sentry.captureException(error, { tags });
+  await Sentry.flush(2000);
 }

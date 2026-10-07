@@ -1,5 +1,12 @@
+import { captureException, flush } from '@sentry/node';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { reportError, scrubSentryEvent, sentryInitOptions } from './sentry';
+import { initSentry, reportError, scrubSentryEvent, sentryInitOptions } from './sentry';
+
+vi.mock('@sentry/node', () => ({
+  init: vi.fn(),
+  captureException: vi.fn(),
+  flush: vi.fn(),
+}));
 
 /** Fictional PII the scrub must never let through, in every shape Sentry carries. */
 const AMOUNT = '23841.17';
@@ -30,6 +37,7 @@ function tainted() {
 describe('Sentry scrubbing', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.clearAllMocks();
   });
 
   it('lets neither a body amount, a holding name nor an email reach the transport', () => {
@@ -78,10 +86,38 @@ describe('Sentry scrubbing', () => {
     expect(options.integrations).toBeUndefined();
   });
 
-  it('reports nothing until Sentry is initialized with a DSN', () => {
-    expect(() =>
+  it('reports nothing until Sentry is initialized with a DSN', async () => {
+    await expect(
       reportError(new Error('boom'), { requestId: 'req_x', route: 'GET /' }),
-    ).not.toThrow();
+    ).resolves.toBeUndefined();
+    expect(captureException).not.toHaveBeenCalled();
+    expect(flush).not.toHaveBeenCalled();
+  });
+
+  // Last: it enables the module's Sentry for the rest of the file.
+  it('flushes the captured error before its promise resolves', async () => {
+    let release!: (sent: boolean) => void;
+    vi.mocked(flush).mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          release = resolve;
+        }),
+    );
+    vi.stubEnv('SENTRY_DSN', 'https://public@example.com/1');
+    initSentry();
+    const pending = reportError(new Error('boom'), { requestId: 'req_x', route: 'GET /' });
+    expect(captureException).toHaveBeenCalledTimes(1);
+    expect(flush).toHaveBeenCalledTimes(1);
+    let settled = false;
+    const observed = pending.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    release(true);
+    await observed;
+    expect(settled).toBe(true);
   });
 
   it('tolerates a bare event with nothing to scrub', () => {
