@@ -76,8 +76,12 @@ app.route('/api/content', contentRoutes(contentStore));
 app.use('/api/cron/*', cronAuth(cronSecret));
 app.get('/api/cron/fx', defaultFxJob());
 app.get('/api/cron/daily', dailyJob());
-/** TEMPORARY (P1-T18 proof): throws the function-side Sentry test error. Removed next. */
-app.get('/api/cron/sentry-test', () => {
+/**
+ * TEMPORARY (P1-T18 proof): throws the function-side Sentry test error. Public, because the
+ * cron secret cannot be read back out of Vercel; it throws an inert message, and it is removed
+ * in the very next deploy after Sentry receipt is confirmed.
+ */
+app.get('/api/debug/sentry-test', () => {
   throw new Error('netnet-sentry-test function');
 });
 
