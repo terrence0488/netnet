@@ -18,7 +18,7 @@ function respond(c: Context<AppEnv>, body: ErrorBody) {
   return c.json(body, ERROR_STATUS[body.error.code]);
 }
 
-function internal(c: Context<AppEnv>, err: unknown) {
+async function internal(c: Context<AppEnv>, err: unknown) {
   const requestId = c.get('requestId');
   const route = routeOf(c);
   log('request_failed', {
@@ -27,7 +27,7 @@ function internal(c: Context<AppEnv>, err: unknown) {
     status: ERROR_STATUS.INTERNAL,
     errorCode: 'INTERNAL',
   });
-  reportError(err, { requestId, route });
+  await reportError(err, { requestId, route });
   return respond(c, {
     error: {
       code: 'INTERNAL',
