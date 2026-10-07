@@ -24,9 +24,11 @@ fictional; type nothing real into it.
    curl -s -X POST https://‹domain›/api/auth/oauth2/register \
      -H 'Content-Type: application/json' \
      -d '{"client_name":"NetNet probe","redirect_uris":["http://127.0.0.1/callback"],
+          "application_type":"native",
           "grant_types":["authorization_code","refresh_token"],"response_types":["code"],
           "token_endpoint_auth_method":"none"}'
    ```
+   (`native`: a web client may not use a loopback redirect.)
    Keep the `client_id`: it becomes the `PROBE_CLIENT_ID` secret.
 4. **A PKCE pair.** In node:
    ```sh
@@ -50,8 +52,10 @@ fictional; type nothing real into it.
      --data-urlencode client_id=… --data-urlencode code_verifier=… \
      --data-urlencode resource=https://‹domain›/mcp
    ```
-   The `refresh_token` becomes the repository secret `PROBE_REFRESH_TOKEN`, next to
-   `PROBE_CLIENT_ID` (repository-level, so the schedule runs without approval).
+   Run the exchange once: replaying the code withdraws the tokens it issued. Save the
+   `refresh_token` (not the `access_token`, whose `at+jwt` refreshes nothing) as the repository
+   secret `PROBE_REFRESH_TOKEN`, next to `PROBE_CLIENT_ID` (repository-level, so the schedule
+   runs without approval).
 7. **The writer.** Make a fine-grained personal access token with the Secrets permission
    (read and write) on this repository only, and store it as the repository secret
    `PROBE_SECRETS_TOKEN`. The probe and deploy workflows use it to write the rotated token
@@ -81,12 +85,12 @@ A local run rotates the server-side token too: store the printed token as the se
 
 ## Pass log
 
-The brief asks for two green runs in a row, rotating the token. (Blocked: F12, F15.)
+The brief asks for two green runs in a row, rotating the token.
 
 | # | Run (UTC) | Result | Token rotated |
 |---|---|---|---|
-| 1 | — | — | — |
-| 2 | — | — | — |
+| 1 | 2026-10-07 02:45 (37563509343) | success | yes |
+| 2 | 2026-10-07 02:46 (37563563789) | success | yes |
 
 ## Cron timing log
 
