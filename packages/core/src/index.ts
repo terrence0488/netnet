@@ -6,6 +6,20 @@
 
 export { accessBucket, accessRule, resolveAccess } from './access';
 export { baselineChange } from './baseline';
+export { allocation, bars, chart, linePath, nearestPoint, scales, stacked, ticks } from './chart';
+export type {
+  AllocationSegment,
+  AllocationSlice,
+  BarCell,
+  BarLayout,
+  ChartScales,
+  LinePaths,
+  ScalesOptions,
+  StackedColumn,
+  StackedLayout,
+  StackedSegment,
+  StackedValue,
+} from './chart';
 export { DEFAULT_CONTEXT_BASELINE, compileContext } from './context/compile-context';
 export { addDays, addMonths, daysBetween, isCalendarDate } from './dates';
 export {
