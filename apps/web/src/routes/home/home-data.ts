@@ -1,5 +1,6 @@
 import type {
   Holding,
+  HoldingFilter,
   HoldingIn,
   Position,
   Snapshot,
@@ -8,7 +9,7 @@ import type {
   ValueIn,
   ValueTuple,
 } from '@netnet/contracts';
-import { latestValues as latestOf, position } from '@netnet/core';
+import { filterHoldings, latestValues as latestOf, position } from '@netnet/core';
 
 /**
  * Home's figures from the snapshot: holdings and their compact values adapted to core's inputs,
@@ -17,6 +18,7 @@ import { latestValues as latestOf, position } from '@netnet/core';
 
 export interface HomeData {
   readonly holdings: readonly HoldingIn[];
+  readonly values: readonly ValueIn[];
   readonly latest: ReadonlyMap<string, ValueIn>;
   readonly position: Position;
   /** Each holding's universal type, for labels and rules. */
@@ -54,6 +56,7 @@ export function homeData(snapshot: Snapshot, today: string): HomeData {
   const latest = latestOf(values, today);
   return {
     holdings,
+    values,
     latest,
     position: position(holdings, latest),
     universals: new Map(holdings.map((h) => [h.id, h.universal])),
@@ -61,9 +64,9 @@ export function homeData(snapshot: Snapshot, today: string): HomeData {
   };
 }
 
-/** The holdings on screen in P1: everything unarchived, in the snapshot's order. */
-export function visibleHoldings(data: HomeData): HoldingIn[] {
-  return data.holdings.filter((h) => !h.archived);
+/** The holdings on screen: everything unarchived the Home filter keeps, in order. */
+export function visibleHoldings(data: HomeData, filter: HoldingFilter = {}): HoldingIn[] {
+  return filterHoldings(data.holdings, filter);
 }
 
 /** The one `accessUntil` across the locked holdings with a value, when they share it. */

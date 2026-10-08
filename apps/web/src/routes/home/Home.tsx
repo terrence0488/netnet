@@ -1,41 +1,62 @@
-import type { HoldingIn, Snapshot, UserType, ValueIn, VersionedPack } from '@netnet/contracts';
-import { accessBucket, typeLabel } from '@netnet/core';
+import type {
+  Baseline,
+  Change,
+  HoldingIn,
+  Position,
+  Snapshot,
+  UserType,
+  ValueIn,
+  VersionedPack,
+} from '@netnet/contracts';
+import { accessBucket, baselineChange, position, series, staleness, typeLabel } from '@netnet/core';
 import { useQueryClient } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useMe } from '../../api/account';
 import { useSnapshot } from '../../api/snapshot';
 import { Waiting } from '../../app/guards';
 import {
-  Button,
+  AllocationChart,
+  AssetsLiabilitiesChart,
+  TrendChart,
+  formatCompactMoney,
+} from '../../charts';
+import {
+  ageOf,
   Card,
   ErrorState,
   Figure,
-  PromptCard,
-  Rule,
-  Spinner,
-  Wordmark,
-  ageOf,
-  buttonClass,
   formatMoney,
   todayIn,
-  useAgentConnections,
-  useCopy,
   usePackChain,
 } from '../../components';
 import { cx } from '../../components/cx';
+import { useAgentHandoff } from './AgentHandoff';
+import { baselineLabel } from './baselines';
+import { BaselineSheet } from './BaselineSheet';
+import { Carousel } from './Carousel';
+import { formatChangePct, rowChangeShown } from './change';
+import { EmptyHome, HomeTopBar } from './EmptyHome';
+import { asHoldingFilter, describeHomeFilter, isFilterActive } from './filtering';
+import { FilterSheet, type FilterEntry } from './FilterSheet';
 import { homeData, sharedLockedUntil, visibleHoldings, type HomeData } from './home-data';
+import { useHomePrefs } from './prefs';
+import { sortHoldings, sortLabel } from './sort';
+import { SortSheet } from './SortSheet';
+import { StaleCard } from './StaleCard';
 import styles from './Home.module.css';
 
 /**
- * Home (PRD J1, §2.2): net worth with what it means — what could be used, what is locked and
- * until when, what is owed — and the holdings under it. Every figure comes from core, computed
- * from the one snapshot; the type labels follow the snapshot's pack chain.
+ * Home (PRD J4, the J5 handoff, J9): net worth with what it means — the trend and allocation, the
+ * breakdown by type, assets vs liabilities, the position ledger, what needs updating, and the
+ * holdings under it, every change figure against the baseline in force. Every figure comes from
+ * core, computed from the one snapshot; the type labels follow the snapshot's pack chain.
  */
 
-/** The first message to the agent from a blank Home: it carries no financial data. */
-export const START_PROMPT =
-  'Help me set up NetNet. Ask me what I have, one thing at a time — round numbers are fine — and add it for me.';
+const CHART_HEIGHT = 160;
+const TREND_REASON = 'Update a holding next month, or add an earlier value, to see your trend.';
+const LINES_REASON =
+  'Update a holding next month, or add an earlier value, to see assets against liabilities.';
 
 export function Home() {
   const me = useMe().data;
@@ -52,22 +73,15 @@ function HomeLoaded({ snapshot, timeZone }: { snapshot: Snapshot; timeZone: stri
   const chain = usePackChain(snapshot.packRef);
   const today = todayIn(timeZone);
   const data = useMemo(() => homeData(snapshot, today), [snapshot, today]);
-  const shown = useMemo(() => visibleHoldings(data), [data]);
+  const unarchived = useMemo(() => visibleHoldings(data), [data]);
 
-  if (shown.length === 0) {
-    return (
-      <>
-        <TopBar />
-        <Hero minor={0} currency={snapshot.baseCurrency} />
-        <p className={styles.lead}>Nothing here yet.</p>
-        <EmptyNext />
-      </>
-    );
+  if (unarchived.length === 0) {
+    return <EmptyHome baseCurrency={snapshot.baseCurrency} />;
   }
   if (chain.status === 'pending') {
     return (
       <>
-        <TopBar />
+        <HomeTopBar />
         <Waiting />
       </>
     );
@@ -76,54 +90,153 @@ function HomeLoaded({ snapshot, timeZone }: { snapshot: Snapshot; timeZone: stri
     const retry = () => void client.refetchQueries({ queryKey: ['content'] });
     return (
       <>
-        <TopBar />
+        <HomeTopBar />
         <ErrorState error={chain.error} onRetry={retry} />
       </>
     );
   }
-  return (
-    <LoadedHome snapshot={snapshot} data={data} shown={shown} chain={chain.packs} today={today} />
-  );
+  return <LoadedHome snapshot={snapshot} data={data} chain={chain.packs} today={today} />;
 }
 
-function TopBar() {
-  return (
-    <div className={styles.topbar}>
-      <Wordmark />
-      <span className={styles.spacer} />
-      <Link to="/add" className={styles.iconButton} aria-label="Add holding">
-        <span aria-hidden="true">+</span>
-      </Link>
-    </div>
-  );
-}
-
-function Hero({ minor, currency }: { minor: number; currency: string }) {
+function Hero({
+  minor,
+  currency,
+  change,
+  baseline,
+  onBaseline,
+}: {
+  minor: number;
+  currency: string;
+  change: Change;
+  baseline: Baseline;
+  onBaseline: () => void;
+}) {
   return (
     <div className={styles.hero}>
       <h1 className={styles.heroTitle}>Net worth</h1>
       <Figure size="display" minor={minor} currency={currency} total />
+      <ChangeLine change={change} currency={currency} baseline={baseline} onBaseline={onBaseline} />
     </div>
+  );
+}
+
+/**
+ * The change line (design-system §6): signed money · percentage on a cream sticker, then the
+ * baseline control. No figure at all when nothing changed.
+ */
+function ChangeLine({
+  change,
+  currency,
+  baseline,
+  onBaseline,
+}: {
+  change: Change;
+  currency: string;
+  baseline: Baseline;
+  onBaseline: () => void;
+}) {
+  const figure =
+    change.amount !== null && change.amount !== 0 ? (
+      <span className={styles.sticker}>
+        <Figure size="change" minor={change.amount} currency={currency} />
+        {change.pct !== null ? (
+          <>
+            {' · '}
+            <span className={cx(styles.pct, change.pct > 0 ? styles.gain : styles.loss)}>
+              {formatChangePct(change.pct)}
+            </span>
+          </>
+        ) : null}
+      </span>
+    ) : null;
+  return (
+    <p className={styles.changeLine}>
+      {figure}
+      {figure ? ' ' : null}
+      <button type="button" className={styles.vs} onClick={onBaseline}>
+        vs {baselineLabel(baseline)} ▾
+      </button>
+    </p>
   );
 }
 
 function LoadedHome({
   snapshot,
   data,
-  shown,
   chain,
   today,
 }: {
   snapshot: Snapshot;
   data: HomeData;
-  shown: HoldingIn[];
   chain: readonly VersionedPack[];
   today: string;
 }) {
-  const labels = useMemo(() => {
+  const prefs = useHomePrefs(snapshot);
+  const [sheet, setSheet] = useState<'baseline' | 'sort' | 'filter' | null>(null);
+  const closeSheet = () => setSheet(null);
+
+  const coreFilter = useMemo(() => asHoldingFilter(prefs.filter), [prefs.filter]);
+  const shown = useMemo(() => visibleHoldings(data, coreFilter), [data, coreFilter]);
+  const valuesByHolding = useMemo(() => {
+    const grouped = new Map<string, ValueIn[]>();
+    for (const value of data.values) {
+      const track = grouped.get(value.holdingId);
+      if (track) track.push(value);
+      else grouped.set(value.holdingId, [value]);
+    }
+    return grouped;
+  }, [data.values]);
+  const changes = useMemo(() => {
+    const byId = new Map<string, Change>();
+    for (const holding of shown) {
+      byId.set(
+        holding.id,
+        baselineChange(valuesByHolding.get(holding.id) ?? [], [holding], prefs.baseline, today),
+      );
+    }
+    return byId;
+  }, [shown, valuesByHolding, prefs.baseline, today]);
+  const heroChange = useMemo(
+    () => baselineChange(data.values, data.holdings, prefs.baseline, today, coreFilter),
+    [data.values, data.holdings, prefs.baseline, today, coreFilter],
+  );
+  const filtered = useMemo(
+    () => position(data.holdings, data.latest, coreFilter),
+    [data.holdings, data.latest, coreFilter],
+  );
+  const trend = useMemo(
+    () => series(data.values, data.holdings, { to: today }, 'month', coreFilter),
+    [data.values, data.holdings, today, coreFilter],
+  );
+  const byType = useMemo(
+    () => series(data.values, data.holdings, { to: today }, 'month', coreFilter, 'type'),
+    [data.values, data.holdings, today, coreFilter],
+  );
+  const byAccess = useMemo(
+    () => series(data.values, data.holdings, { to: today }, 'month', coreFilter, 'access'),
+    [data.values, data.holdings, today, coreFilter],
+  );
+  // The allocation holds asset totals only: with the filter on liabilities, there is no
+  // allocation and the trend stands alone.
+  const assetsByType = useMemo(
+    () =>
+      prefs.filter.show === 'liabilities'
+        ? []
+        : series(
+            data.values,
+            data.holdings,
+            { to: today },
+            'month',
+            { ...coreFilter, show: 'assets' },
+            'type',
+          ),
+    [data.values, data.holdings, today, coreFilter, prefs.filter.show],
+  );
+
+  const typeLabels = useMemo(() => {
     const types = new Map<string, UserType>(snapshot.types.map((t) => [t.id, t]));
     return new Map(
-      shown.map((holding) => {
+      data.holdings.map((holding) => {
         const type = types.get(holding.typeId);
         return [
           holding.id,
@@ -135,44 +248,280 @@ function LoadedHome({
         ];
       }),
     );
-  }, [snapshot.types, shown, chain]);
+  }, [snapshot.types, data.holdings, chain]);
+  const allTypeLabels = useMemo(
+    () =>
+      new Map(
+        snapshot.types.map((type) => [
+          type.id,
+          typeLabel(chain, {
+            universal: type.universal,
+            packTypeKey: type.packTypeKey,
+            customName: type.customName,
+          }),
+        ]),
+      ),
+    [snapshot.types, chain],
+  );
+  const tagLabels = useMemo(
+    () => new Map(snapshot.tags.map((tag) => [tag.id, tag.name])),
+    [snapshot.tags],
+  );
+  const filterTypes: FilterEntry[] = useMemo(
+    () =>
+      snapshot.types
+        .filter((type) => !type.archived)
+        .map((type) => ({ id: type.id, label: allTypeLabels.get(type.id) ?? 'Other' })),
+    [snapshot.types, allTypeLabels],
+  );
+  const filterTags: FilterEntry[] = useMemo(
+    () => snapshot.tags.map((tag) => ({ id: tag.id, label: tag.name })),
+    [snapshot.tags],
+  );
+
+  const sorted = useMemo(
+    () => sortHoldings(shown, prefs.sort, data.latest, changes),
+    [shown, prefs.sort, data.latest, changes],
+  );
+  const staleIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const holding of shown) {
+      const latest = data.latest.get(holding.id);
+      if (latest && staleness(holding, latest, today, chain).stale) ids.add(holding.id);
+    }
+    return ids;
+  }, [shown, data.latest, today, chain]);
+  const staleNames = useMemo(
+    () => sorted.filter((holding) => staleIds.has(holding.id)).map((holding) => holding.name),
+    [sorted, staleIds],
+  );
+
+  const typeGroups = byType.at(-1)?.groups ?? {};
+  const breakdown = snapshot.types.filter((type) =>
+    shown.some((holding) => holding.typeId === type.id),
+  );
+  const assetGroups = assetsByType.at(-1)?.groups ?? {};
+  const segments = snapshot.types.flatMap((type, slot) => {
+    const minor = assetGroups[type.id] ?? 0;
+    if (minor <= 0) return [];
+    return [{ name: allTypeLabels.get(type.id) ?? 'Other', minor, slot }];
+  });
+
+  const filterActive = isFilterActive(prefs.filter);
+  const filterLeavesNothing = shown.length === 0;
+  const emptyLabel = filterLeavesNothing ? 'Nothing to show' : 'Need more data';
 
   return (
     <>
-      <TopBar />
-      <Hero minor={data.position.netWorth} currency={snapshot.baseCurrency} />
+      <HomeTopBar />
+      <Hero
+        minor={filtered.netWorth}
+        currency={snapshot.baseCurrency}
+        change={heroChange}
+        baseline={prefs.baseline}
+        onBaseline={() => setSheet('baseline')}
+      />
+      {filterActive ? (
+        <div className={styles.banner}>
+          <p className={styles.bannerText}>
+            {describeHomeFilter(prefs.filter, { types: allTypeLabels, tags: tagLabels }) ||
+              'Filtered'}
+          </p>
+          <button type="button" className={styles.bannerButton} onClick={() => setSheet('filter')}>
+            Change
+          </button>
+          <button type="button" className={styles.bannerButton} onClick={() => prefs.setFilter({})}>
+            Clear
+          </button>
+        </div>
+      ) : null}
       <div className={styles.grid}>
+        <div className={styles.carousel}>
+          <Carousel
+            slides={[
+              {
+                key: 'trend',
+                label: 'Trend',
+                node: (
+                  <section aria-labelledby="trend-heading">
+                    <div className={styles.sectionHead}>
+                      <h2 id="trend-heading">Trend</h2>
+                    </div>
+                    <Card>
+                      <TrendChart
+                        points={trend}
+                        currency={snapshot.baseCurrency}
+                        height={CHART_HEIGHT}
+                        emptyLabel={emptyLabel}
+                        {...(filterLeavesNothing ? {} : { reason: TREND_REASON })}
+                      />
+                    </Card>
+                  </section>
+                ),
+              },
+              ...(segments.length >= 2
+                ? [
+                    {
+                      key: 'allocation',
+                      label: 'Allocation',
+                      node: (
+                        <section aria-labelledby="allocation-heading">
+                          <div className={styles.sectionHead}>
+                            <h2 id="allocation-heading">Allocation</h2>
+                          </div>
+                          <Card>
+                            <AllocationChart
+                              segments={segments}
+                              currency={snapshot.baseCurrency}
+                              mode="percent"
+                            />
+                          </Card>
+                        </section>
+                      ),
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        </div>
         <section aria-labelledby="position-heading" className={styles.pos}>
           <div className={styles.sectionHead}>
             <h2 id="position-heading">Position</h2>
           </div>
           <PositionLedger
             data={data}
+            totals={filtered}
             shown={shown}
-            labels={labels}
+            labels={typeLabels}
             baseCurrency={snapshot.baseCurrency}
           />
         </section>
-        <section aria-labelledby="holdings-heading" className={styles.list}>
+        {breakdown.length > 0 ? (
+          <section aria-labelledby="by-type-heading" className={styles.byType}>
+            <div className={styles.sectionHead}>
+              <h2 id="by-type-heading">By type</h2>
+            </div>
+            <Card flush>
+              {breakdown.map((type) => (
+                <div key={type.id} className={styles.ledgerRow}>
+                  <span className={styles.grow}>
+                    <span className={styles.ledgerTitle}>
+                      {allTypeLabels.get(type.id) ?? 'Other'}
+                    </span>
+                  </span>
+                  <Figure minor={typeGroups[type.id] ?? 0} currency={snapshot.baseCurrency} total />
+                </div>
+              ))}
+            </Card>
+          </section>
+        ) : null}
+        <section aria-labelledby="lines-heading" className={styles.lines}>
           <div className={styles.sectionHead}>
-            <h2 id="holdings-heading">Holdings · {shown.length}</h2>
+            <h2 id="lines-heading">Assets vs liabilities</h2>
           </div>
-          <Card flush>
-            {shown.map((holding) => (
-              <HoldingRow
-                key={holding.id}
-                holding={holding}
-                label={labels.get(holding.id) ?? 'Other'}
-                latest={data.latest.get(holding.id)}
-                baseCurrency={snapshot.baseCurrency}
-                today={today}
-              />
-            ))}
+          <Card>
+            <AssetsLiabilitiesChart
+              dates={byAccess.map((point) => point.date)}
+              assets={byAccess.map((point) => point.total - (point.groups?.owed ?? 0))}
+              liabilities={byAccess.map((point) => -(point.groups?.owed ?? 0))}
+              netWorth={byAccess.map((point) => point.total)}
+              currency={snapshot.baseCurrency}
+              height={CHART_HEIGHT}
+              emptyLabel={emptyLabel}
+              {...(filterLeavesNothing ? {} : { reason: LINES_REASON })}
+            />
           </Card>
         </section>
+        {staleNames.length > 0 ? (
+          <div className={styles.stale}>
+            <StaleCard names={staleNames} />
+          </div>
+        ) : null}
+        <section aria-labelledby="holdings-heading" className={styles.list}>
+          <div className={styles.sectionHead}>
+            <h2 id="holdings-heading">Holdings · {sorted.length}</h2>
+            <div className={styles.toolbar}>
+              <button
+                type="button"
+                className={styles.tool}
+                onClick={() => setSheet('sort')}
+                aria-label={`Sort holdings. Now: ${sortLabel(prefs.sort)}`}
+              >
+                Sort: {sortLabel(prefs.sort)} ▾
+              </button>
+              <button
+                type="button"
+                className={styles.tool}
+                onClick={() => setSheet('filter')}
+                aria-label={filterActive ? 'Filter Home. A filter is on' : 'Filter Home'}
+              >
+                Filter{filterActive ? ' · on' : ''} ▾
+              </button>
+            </div>
+          </div>
+          <p className={styles.listMeta}>Change vs {baselineLabel(prefs.baseline).toLowerCase()}</p>
+          {sorted.length === 0 ? (
+            <div className={styles.nothing}>
+              <p>Nothing to show.</p>
+              <button
+                type="button"
+                className={styles.bannerButton}
+                onClick={() => prefs.setFilter({})}
+              >
+                Clear the filter
+              </button>
+            </div>
+          ) : (
+            <Card flush>
+              {sorted.map((holding) => (
+                <HoldingRow
+                  key={holding.id}
+                  holding={holding}
+                  label={typeLabels.get(holding.id) ?? 'Other'}
+                  latest={data.latest.get(holding.id)}
+                  change={changes.get(holding.id)}
+                  byPct={prefs.sort === 'change_pct'}
+                  stale={staleIds.has(holding.id)}
+                  baseCurrency={snapshot.baseCurrency}
+                  today={today}
+                />
+              ))}
+            </Card>
+          )}
+        </section>
       </div>
+      <BaselineSheet
+        open={sheet === 'baseline'}
+        onClose={closeSheet}
+        baseline={prefs.baseline}
+        onBaseline={prefs.setBaseline}
+      />
+      <SortSheet
+        open={sheet === 'sort'}
+        onClose={closeSheet}
+        sort={prefs.sort}
+        onSort={prefs.setSort}
+      />
+      <FilterSheet
+        open={sheet === 'filter'}
+        onClose={closeSheet}
+        filter={prefs.filter}
+        types={filterTypes}
+        tags={filterTags}
+        onFilter={prefs.setFilter}
+      />
+      <PrefetchHandoff />
     </>
   );
+}
+
+/**
+ * The handoff's guides load with Home, so opening the stale card or an empty Home never waits on
+ * them. Nothing rendered.
+ */
+function PrefetchHandoff() {
+  useAgentHandoff();
+  return null;
 }
 
 const bucketNames = (holdings: readonly HoldingIn[]): string => {
@@ -185,18 +534,19 @@ const bucketNames = (holdings: readonly HoldingIn[]): string => {
 /** The position as a ledger: what could be used, what needs selling, locked, undecided, owed. */
 function PositionLedger({
   data,
+  totals,
   shown,
   labels,
   baseCurrency,
 }: {
   data: HomeData;
+  totals: Position;
   shown: readonly HoldingIn[];
   labels: ReadonlyMap<string, string>;
   baseCurrency: string;
 }) {
   const inBucket = (bucket: ReturnType<typeof accessBucket>) =>
     shown.filter((h) => accessBucket(h) === bucket);
-  const { position } = data;
   const lockedTypes = [...new Set(inBucket('locked').map((h) => labels.get(h.id) ?? 'Other'))].join(
     ' · ',
   );
@@ -205,49 +555,49 @@ function PositionLedger({
     {
       key: 'couldUse',
       title: 'You could use this month',
-      minor: position.couldUse,
+      minor: totals.couldUse,
       sub: bucketNames(inBucket('could_use')) || 'Nothing yet',
       owe: false,
     },
-    ...(position.sellFirst
+    ...(totals.sellFirst
       ? [
           {
             key: 'sellFirst',
             title: 'You’d have to sell first',
-            minor: position.sellFirst,
+            minor: totals.sellFirst,
             sub: bucketNames(inBucket('sell_first')),
             owe: false,
           },
         ]
       : []),
-    ...(position.locked
+    ...(totals.locked
       ? [
           {
             key: 'locked',
             title: 'Locked away',
-            minor: position.locked,
+            minor: totals.locked,
             sub: until ? `${lockedTypes} · ${until}` : lockedTypes,
             owe: false,
           },
         ]
       : []),
-    ...(position.undecided
+    ...(totals.undecided
       ? [
           {
             key: 'undecided',
             title: 'Not decided yet',
-            minor: position.undecided,
+            minor: totals.undecided,
             sub: bucketNames(inBucket('undecided')),
             owe: false,
           },
         ]
       : []),
-    ...(position.owed
+    ...(totals.owed
       ? [
           {
             key: 'owed',
             title: 'You owe',
-            minor: -position.owed,
+            minor: -totals.owed,
             sub: bucketNames(inBucket('owed')),
             owe: true,
           },
@@ -269,16 +619,28 @@ function PositionLedger({
   );
 }
 
+/** `+$59K`, `−$1K`: a row's compact change money, signed (design-system §2.1). */
+function signedCompact(minor: number, currency: string): string {
+  const text = formatCompactMoney(minor, currency);
+  return minor > 0 ? `+${text}` : text;
+}
+
 function HoldingRow({
   holding,
   label,
   latest,
+  change,
+  byPct,
+  stale,
   baseCurrency,
   today,
 }: {
   holding: HoldingIn;
   label: string;
   latest: ValueIn | undefined;
+  change: Change | undefined;
+  byPct: boolean;
+  stale: boolean;
   baseCurrency: string;
   today: string;
 }) {
@@ -293,6 +655,7 @@ function HoldingRow({
     .filter((part) => part !== null)
     .join(' · ');
   const minor = latest ? (holding.kind === 'liability' ? -latest.baseMinor : latest.baseMinor) : 0;
+  const rowChange = change ? rowChangeShown(change, byPct) : null;
   return (
     <Link
       to={`/holdings/${holding.id}`}
@@ -309,65 +672,31 @@ function HoldingRow({
               <span className={styles.chip}>Not decided</span>
             </>
           ) : null}
+          {stale ? (
+            <>
+              {' · '}
+              <span className={styles.chip}>Stale</span>
+            </>
+          ) : null}
         </span>
       </span>
       <span className={styles.amt}>
         <Figure minor={minor} currency={baseCurrency} total />
+        {rowChange ? (
+          <span
+            className={cx(
+              styles.pct,
+              (rowChange.kind === 'money' ? rowChange.minor : rowChange.pct) > 0
+                ? styles.gain
+                : styles.loss,
+            )}
+          >
+            {rowChange.kind === 'money'
+              ? signedCompact(rowChange.minor, baseCurrency)
+              : formatChangePct(rowChange.pct)}
+          </span>
+        ) : null}
       </span>
     </Link>
-  );
-}
-
-/** The empty Home (PRD J1): one primary action, and the agent as the genuine second route. */
-function EmptyNext() {
-  const connections = useAgentConnections();
-  const { copied, failed, copy } = useCopy();
-
-  if (connections.isPending) {
-    return (
-      <div className={styles.emptyNext}>
-        <Link to="/add" className={buttonClass('primary', true)}>
-          Add what you have
-        </Link>
-        <div className={styles.center}>
-          <Spinner />
-        </div>
-      </div>
-    );
-  }
-  const [first] = connections.data ?? [];
-  if (connections.isError || !first) {
-    return (
-      <div className={styles.emptyNext}>
-        <Link to="/add" className={buttonClass('primary', true)}>
-          Add what you have
-        </Link>
-        <Rule variant="strong" />
-        <div className={styles.alt}>
-          <p className={styles.altTitle}>Let your AI agent do this</p>
-          <p className={styles.altSub}>Works with Claude, or any agent that supports MCP.</p>
-          <Link to="/agent/connect?entry=home" className={buttonClass('outlined', true)}>
-            Connect to agent
-          </Link>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className={styles.emptyNext}>
-      <p className={styles.emptyHint}>{first.clientName} is connected. Ask it to set things up:</p>
-      <PromptCard text={START_PROMPT} copyInside={false} />
-      <Button block onClick={() => copy(START_PROMPT)}>
-        {copied ? 'Copied' : 'Copy the prompt'}
-      </Button>
-      {failed ? (
-        <p role="status" className={styles.failed}>
-          Copying didn’t work. Select the text to copy it.
-        </p>
-      ) : null}
-      <Link to="/add" className={styles.plainLink}>
-        Or add it yourself ›
-      </Link>
-    </div>
   );
 }
