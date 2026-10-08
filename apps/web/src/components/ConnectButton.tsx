@@ -132,8 +132,35 @@ export function AgentRoll({ guides }: { guides: readonly AgentGuide[] }) {
   );
 }
 
-/** Where the connect flow starts from in P1; P2 adds `onboarding` and `holding`. */
-export type ConnectEntry = 'agent' | 'home';
+/**
+ * Where the connect flow starts from: the Agent tab, the empty Home, and a holding page
+ * (`onboarding` still to come).
+ */
+export type ConnectEntry = 'agent' | 'home' | 'holding';
+
+/** A holding id as the flow carries it: `hld_` and the id's own characters, nothing else. */
+const HOLDING_ID = /^hld_[A-Za-z0-9_-]{1,64}$/;
+
+/** The holding page the flow began from, or null when the id is not a holding id. */
+export function holdingBackPath(holdingId: string | null | undefined): string | null {
+  return holdingId !== null && holdingId !== undefined && HOLDING_ID.test(holdingId)
+    ? `/holdings/${holdingId}`
+    : null;
+}
+
+/** The flow's own address, carrying its entry — and the holding it began from — along. */
+export function connectHref(
+  entry: ConnectEntry,
+  holdingId?: string | null,
+  client?: string,
+): string {
+  const query = new URLSearchParams({ entry });
+  if (entry === 'holding' && holdingBackPath(holdingId) !== null && holdingId) {
+    query.set('holding', holdingId);
+  }
+  const path = client === undefined ? '/agent/connect' : `/agent/connect/${client}`;
+  return `${path}?${query}`;
+}
 
 export function ConnectButton({ entry }: { entry: ConnectEntry }) {
   const guides = useAgentGuides();

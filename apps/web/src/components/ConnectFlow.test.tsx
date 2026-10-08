@@ -91,6 +91,7 @@ function render(
 describe('parseEntry and entryPath', () => {
   it('reads the flow’s entry, defaulting to the Agent tab’s', () => {
     expect(parseEntry('home')).toBe('home');
+    expect(parseEntry('holding')).toBe('holding');
     expect(parseEntry('agent')).toBe('agent');
     expect(parseEntry(null)).toBe('agent');
     expect(parseEntry('onboarding')).toBe('agent');
@@ -99,6 +100,9 @@ describe('parseEntry and entryPath', () => {
   it('returns Back to where the flow began', () => {
     expect(entryPath('home')).toBe('/');
     expect(entryPath('agent')).toBe('/agent');
+    expect(entryPath('holding', 'hld_01JABC')).toBe('/holdings/hld_01JABC');
+    expect(entryPath('holding', null)).toBe('/agent');
+    expect(entryPath('holding', '/agent')).toBe('/agent');
   });
 });
 

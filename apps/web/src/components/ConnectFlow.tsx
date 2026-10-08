@@ -19,25 +19,35 @@ import {
   useStartAttempt,
 } from '../routes/agent/queries';
 import { AuthFrame, Button, ErrorState, ResendLink, authStyles, buttonClass } from './index';
-import { AgentLogo, contentImageUrl, type ConnectEntry } from './ConnectButton';
+import {
+  AgentLogo,
+  connectHref,
+  contentImageUrl,
+  holdingBackPath,
+  type ConnectEntry,
+} from './ConnectButton';
 import { cx } from './cx';
 import styles from './ConnectFlow.module.css';
 
 /**
  * The one connect flow for every entry (PRD J5): choose the agent, verify the email first when it
  * is unverified, follow the steps for this platform, and watch NetNet move on by itself once the
- * agent is approved. P1 uses `agent` (the tab) and `home` (the empty Home); P2 adds `onboarding`
- * and `holding`. Back returns step by step to where it began.
+ * agent is approved. The tab, the empty Home and a holding page start it; `onboarding` still to
+ * come. Back returns step by step to where it began.
  */
 
 /** The flow's `entry` query, as the API takes it; anything else is the Agent tab's. */
 export function parseEntry(value: string | null): ConnectEntry {
-  return value === 'home' ? 'home' : 'agent';
+  if (value === 'home') return 'home';
+  if (value === 'holding') return 'holding';
+  return 'agent';
 }
 
 /** Where the flow began: where Back finally returns, and where Done goes. */
-export function entryPath(entry: ConnectEntry): string {
-  return entry === 'home' ? '/' : '/agent';
+export function entryPath(entry: ConnectEntry, holdingId?: string | null): string {
+  if (entry === 'home') return '/';
+  if (entry === 'holding') return holdingBackPath(holdingId) ?? '/agent';
+  return '/agent';
 }
 
 /** This platform, as the prototype detects it: a coarse pointer on a narrow screen is a phone. */
@@ -140,13 +150,21 @@ function flowTitle(guide: AgentGuide): string {
   return guide.id === OTHER_GUIDE ? 'Connect your agent' : `Connect ${guide.name}`;
 }
 
-function ChooseAgent({ entry, guides }: { entry: ConnectEntry; guides: readonly AgentGuide[] }) {
+function ChooseAgent({
+  entry,
+  holdingId,
+  guides,
+}: {
+  entry: ConnectEntry;
+  holdingId: string | null | undefined;
+  guides: readonly AgentGuide[];
+}) {
   const offered = guides.filter((guide) => parseGuideClient(guide.id) !== null);
   return (
     <AuthFrame
       title="Which AI agent do you use?"
       titleId="choose-agent"
-      back={{ to: entryPath(entry) }}
+      back={{ to: entryPath(entry, holdingId) }}
     >
       {offered.length === 0 ? (
         <p className={authStyles.body}>No agents are available right now. Try again later.</p>
@@ -155,7 +173,7 @@ function ChooseAgent({ entry, guides }: { entry: ConnectEntry; guides: readonly 
           {offered.map((guide) => (
             <Link
               key={guide.id}
-              to={`/agent/connect/${guide.id}?entry=${entry}`}
+              to={connectHref(entry, holdingId, guide.id)}
               className={styles.row}
             >
               <AgentLogo guide={guide} />
@@ -172,10 +190,18 @@ function ChooseAgent({ entry, guides }: { entry: ConnectEntry; guides: readonly 
 }
 
 /** Unverified → verify first, with resend, and the flow carries on by itself once verified (J5). */
-function VerifyGate({ entry, email }: { entry: ConnectEntry; email: string }) {
+function VerifyGate({
+  entry,
+  holdingId,
+  email,
+}: {
+  entry: ConnectEntry;
+  holdingId: string | null | undefined;
+  email: string;
+}) {
   useQuery({ ...meQuery, refetchInterval: 2000 });
   return (
-    <AuthFrame title="Verify your email first" back={{ to: `/agent/connect?entry=${entry}` }}>
+    <AuthFrame title="Verify your email first" back={{ to: connectHref(entry, holdingId) }}>
       <p className={authStyles.body}>
         We sent a link to {email}. Open it on any device, and this page moves on by itself.
       </p>
@@ -224,10 +250,12 @@ function ConnectorAddress() {
 
 function Steps({
   entry,
+  holdingId,
   guide,
   client,
 }: {
   entry: ConnectEntry;
+  holdingId: string | null | undefined;
   guide: AgentGuide;
   client: AgentClient;
 }) {
@@ -236,7 +264,7 @@ function Steps({
   const shown = generic ? 'any' : platform;
   const steps = guide.platforms[shown]?.steps ?? [];
   const addressAt = findAddressStep(steps);
-  const back = { to: `/agent/connect?entry=${entry}` };
+  const back = { to: connectHref(entry, holdingId) };
 
   // The attempt, started once (and once more per Retry): the screen polls it below.
   const start = useStartAttempt();
@@ -335,10 +363,16 @@ function Steps({
             <p className={styles.doneBody}>
               {entry === 'home'
                 ? 'It can see your NetNet now. Head back to add what you have, or ask it to.'
-                : 'It can see your NetNet now. You can revoke it here any time.'}
+                : entry === 'holding'
+                  ? 'It can see your NetNet now. Head back to your holding.'
+                  : 'It can see your NetNet now. You can revoke it here any time.'}
             </p>
-            <Link to={entryPath(entry)} className={buttonClass('primary')}>
-              {entry === 'home' ? 'Back to Home' : 'Back to the Agent tab'}
+            <Link to={entryPath(entry, holdingId)} className={buttonClass('primary')}>
+              {entry === 'home'
+                ? 'Back to Home'
+                : entry === 'holding'
+                  ? 'Back to the holding'
+                  : 'Back to the Agent tab'}
             </Link>
           </section>
         ) : (
@@ -354,15 +388,17 @@ function Steps({
 
 function GuideSteps({
   entry,
+  holdingId,
   guide,
   client,
 }: {
   entry: ConnectEntry;
+  holdingId: string | null | undefined;
   guide: AgentGuide;
   client: AgentClient;
 }) {
   const me = useMe();
-  const back = { to: `/agent/connect?entry=${entry}` };
+  const back = { to: connectHref(entry, holdingId) };
   if (me.data === undefined) {
     if (me.isError) {
       return (
@@ -379,13 +415,22 @@ function GuideSteps({
   }
   // The guard holds signed-out visitors at log-in; this is unreachable, typed honestly.
   if (me.data === null) return <Navigate to="/login" replace />;
-  if (!me.data.emailVerified) return <VerifyGate entry={entry} email={me.data.email} />;
-  return <Steps entry={entry} guide={guide} client={client} />;
+  if (!me.data.emailVerified)
+    return <VerifyGate entry={entry} holdingId={holdingId} email={me.data.email} />;
+  return <Steps entry={entry} holdingId={holdingId} guide={guide} client={client} />;
 }
 
-export function ConnectFlow({ entry, client }: { entry: ConnectEntry; client: string | null }) {
+export function ConnectFlow({
+  entry,
+  client,
+  holdingId,
+}: {
+  entry: ConnectEntry;
+  client: string | null;
+  holdingId?: string | null;
+}) {
   const guides = useAgentGuides();
-  const home = { to: entryPath(entry) };
+  const home = { to: entryPath(entry, holdingId) };
   if (guides.isPending) {
     return (
       <AuthFrame title="Connect your agent" back={home}>
@@ -404,7 +449,7 @@ export function ConnectFlow({ entry, client }: { entry: ConnectEntry; client: st
   const parsed = guide === undefined ? null : parseGuideClient(guide.id);
   // An agent that is not offered, even by its address: the list instead (PRD J5).
   if (guide === undefined || parsed === null) {
-    return <ChooseAgent entry={entry} guides={guides.data} />;
+    return <ChooseAgent entry={entry} holdingId={holdingId} guides={guides.data} />;
   }
-  return <GuideSteps entry={entry} guide={guide} client={parsed} />;
+  return <GuideSteps entry={entry} holdingId={holdingId} guide={guide} client={parsed} />;
 }
