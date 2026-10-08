@@ -7,8 +7,8 @@ import { segmentSchema } from './events';
  * /api/me`, the profile every request needs (§6.2).
  */
 
-/** Where onboarding resumes (PRD J1): P1's steps, in order. P2 adds its own. */
-export const ONBOARDING_STATES = ['country', 'segment', 'done'] as const;
+/** Where onboarding resumes (PRD J1): the steps in order, then Home. */
+export const ONBOARDING_STATES = ['country', 'segment', 'start', 'basics', 'done'] as const;
 export type OnboardingState = (typeof ONBOARDING_STATES)[number];
 export const onboardingStateSchema = z.enum(ONBOARDING_STATES);
 

@@ -45,7 +45,7 @@ describe('profilePatchSchema', () => {
     [{ country: null }, 'country'],
     [{ segment: 'rich' }, 'segment'],
     [{ timeZone: 'Nowhere/Land' }, 'timeZone'],
-    [{ onboardingState: 'basics' }, 'onboardingState'],
+    [{ onboardingState: 'onboard' }, 'onboardingState'],
     [{ email: 'a@example.com' }, 'email'],
     [{ userId: 'usr_01K1G4KX00AAAAAAAAAAAAAAAA' }, 'userId'],
   ])('refuses %j, naming %s', (body, field) => {
@@ -76,7 +76,7 @@ describe('profileSchema and geoSchema', () => {
     expect(geoSchema.safeParse({ country: 'XXX' }).success).toBe(false);
   });
 
-  it('list P1’s onboarding steps in order', () => {
-    expect(ONBOARDING_STATES).toStrictEqual(['country', 'segment', 'done']);
+  it('list the onboarding steps in order', () => {
+    expect(ONBOARDING_STATES).toStrictEqual(['country', 'segment', 'start', 'basics', 'done']);
   });
 });
