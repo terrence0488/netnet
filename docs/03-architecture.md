@@ -691,7 +691,7 @@ baselineChange(values, holdings, baseline, today, filter?): Change;  // per hold
 staleness(holding, latest, today, pack): { stale: boolean; days: number };
 compileContext(data, chain, today, opts): FinancialContext;     // §7.5
 likelyDuplicates(existing, candidate): Candidate[];
-chart: { scales, linePath, bars, stacked, ticks(n, width), nearestPoint(x) };  // web + native
+chart: { scales, linePath, bars, stacked, ticks(n, width), nearestPoint(x), allocation };  // web + native
 ```
 
 No `Date.now()`, no randomness and no I/O in `core`. `today` and ids are passed in (N11).
