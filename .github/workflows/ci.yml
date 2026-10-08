@@ -1,16 +1,18 @@
 name: CI
 
-# Every push runs the checks, and so does opening a pull request: three parallel lanes (quick,
-# integration, E2E) behind one Checks verdict. Pushes touching only docs, ops/ or the
-# deploy/backup/probe workflows skip the browser suite and the preview. A Vercel preview follows
-# for a branch with an open pull request (architecture §9.1), or on a manual run of this workflow,
-# with a Neon branch of the preview project of its own; the preview is smoke-tested, since the
-# full E2E suite already passed against the local build. Closing the pull request deletes that
-# branch.
+# Every push runs the checks: three parallel lanes (quick, integration, E2E) behind one
+# Checks verdict. Pushes touching only docs, ops/ or the deploy/backup/probe workflows skip
+# the browser suite and the preview. A Vercel preview follows for a branch with an open pull
+# request (architecture §9.1), or on a manual run of this workflow, with a Neon branch of the
+# preview project of its own; the preview is smoke-tested, since the full E2E suite already
+# passed against the local build. Closing the pull request deletes that branch.
 on:
   push:
   pull_request:
-    types: [opened, reopened, closed]
+    # No `opened`: the branch push the pull request is created from already ran this workflow
+    # seconds earlier on the same head; a second run only burns minutes. Re-add it if forks
+    # ever contribute (their pushes run on the fork, not here).
+    types: [reopened, closed]
   workflow_dispatch:
 
 concurrency:
@@ -27,7 +29,9 @@ env:
 jobs:
   # Which lanes must run: pushes touching only docs, ops/ or the deploy/backup/probe/cron
   # workflows skip the browser suite and the preview. ci.yml itself always counts as code,
-  # so this file proves its own changes; anything uncertain counts as code.
+  # so this file proves its own changes; anything uncertain counts as code. The first push
+  # of a branch, and pull-request events, carry no usable before, so those diff against
+  # where the branch left main instead; a manual run always proves everything.
   changes:
     name: What changed
     if: github.event.action != 'closed'
@@ -42,23 +46,33 @@ jobs:
       - id: filter
         run: |
           set -euo pipefail
+          decide() { echo "code=$1" >> "$GITHUB_OUTPUT"; echo "changed-files-decision: code=$1 ($2)"; }
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            decide true "manual run always proves everything"
+            exit 0
+          fi
           base='${{ github.event.before }}'
           allzero='0000000000000000000000000000000000000000'
           if [ -z "$base" ] || [ "$base" = "$allzero" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"
+            git fetch --no-tags --quiet origin main || true
+            base=$(git merge-base HEAD origin/main 2>/dev/null || echo "$allzero")
+          fi
+          if [ -z "$base" ] || [ "$base" = "$allzero" ]; then
+            decide true "no base commit; safest to prove everything"
             exit 0
           fi
           files=$(git diff --name-only "$base...$GITHUB_SHA" -- 2>/dev/null) || {
-            echo "code=true" >> "$GITHUB_OUTPUT"
+            decide true "diff failed"
             exit 0
           }
           if [ -z "$files" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"
+            decide true "empty file list; safest to prove everything"
             exit 0
           fi
+          sample=$(echo "$files" | head -5 | tr '\n' ' ')
           code=$(echo "$files" | grep -v -e '^docs/' -e '^ops/' -e '\.md$' \
             -e '^\.github/workflows/\(deploy\|backup\|probe\|cron-.*\)\.yml$' || true)
-          if [ -z "$code" ]; then echo "code=false"; else echo "code=true"; fi >> "$GITHUB_OUTPUT"
+          if [ -z "$code" ]; then decide false "docs/ops-only: $sample"; else decide true "$sample"; fi
 
   quick:
     name: Quick checks
