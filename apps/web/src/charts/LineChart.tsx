@@ -176,6 +176,12 @@ export function LineChart({
     seenLabels.add(text);
     return true;
   });
+  // Date-axis labels are month and year: when neighbouring ticks fall in one month, only
+  // the first names it — the rest keep their slots blank, so the axis never stutters.
+  const axisTicks = ticks(count, width).map((i) => ({
+    index: i,
+    label: formatAxisDate(dates[i] ?? ''),
+  }));
   const zeroInside = s.min < 0 && s.max > 0;
   const x = active === null ? 0 : s.x(active);
   const rows =
@@ -325,8 +331,8 @@ export function LineChart({
         </span>
       </div>
       <div className={styles.axis}>
-        {ticks(count, width).map((i) => (
-          <span key={i}>{formatAxisDate(dates[i] ?? '')}</span>
+        {axisTicks.map(({ index, label }, at) => (
+          <span key={index}>{at > 0 && axisTicks[at - 1]?.label === label ? '' : label}</span>
         ))}
       </div>
     </div>
