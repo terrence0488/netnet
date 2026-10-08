@@ -1,0 +1,171 @@
+/* A line chart read point by point: crosshair, dots and readout (design-system §5). */
+
+.root {
+  --chart-gutter: calc(var(--space-20) + var(--space-1));
+}
+
+.plot {
+  position: relative;
+  padding-left: var(--chart-gutter);
+}
+
+.plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.grid {
+  stroke: var(--rule-strong);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+  fill: none;
+}
+
+.zero {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* Axis ticks in meta, the spec's voice for them; left-aligned, so a long label runs toward the
+   card's padding rather than over the plot. */
+.tick {
+  position: absolute;
+  left: 0;
+  transform: translateY(-50%);
+  font-family: var(--font-text);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  padding-left: var(--chart-gutter);
+  margin-top: var(--space-5);
+  font-family: var(--font-text);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  color: var(--ink-3);
+}
+
+.axis > span {
+  white-space: nowrap;
+}
+
+/* The reading fades in; under reduced motion the duration token is already zero, and the
+   transition is dropped outright. A plain swipe still scrolls: no touch-action here. */
+.layer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--chart-gutter);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-switch);
+}
+
+.layer.reading {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer {
+    transition: none;
+  }
+}
+
+.crosshair {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: var(--border-rule) dashed var(--ink);
+}
+
+.dot {
+  position: absolute;
+  width: var(--space-6);
+  height: var(--space-6);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 var(--border-edge) var(--edge);
+}
+
+/* The ink tag: date in meta, each value in the display face, value before its name. It flips
+   sides past the middle so it never covers the dot it reads. */
+.tip {
+  position: absolute;
+  top: calc(var(--space-3) * -1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--border-hair);
+  padding: var(--space-2) var(--space-4);
+  white-space: nowrap;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--space-4);
+}
+
+.tip.right {
+  transform: translateX(var(--space-5));
+}
+
+.tip.left {
+  transform: translateX(calc(-100% - var(--space-5)));
+  align-items: flex-end;
+}
+
+.date {
+  font-family: var(--font-text);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  color: inherit;
+  opacity: var(--opacity-agent-mark);
+}
+
+.value {
+  font-family: var(--font-display);
+  font-size: var(--size-figure);
+  font-weight: var(--weight-figure);
+  letter-spacing: var(--tracking-figure);
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-text);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  color: inherit;
+}
+
+.row .swatch {
+  width: var(--space-5);
+  height: calc(var(--border-rule) * 2);
+  border-radius: var(--border-hair);
+  flex: none;
+}
+
+.row .amount {
+  font-family: var(--font-display);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-figure);
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
