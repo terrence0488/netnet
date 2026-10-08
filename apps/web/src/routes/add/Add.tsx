@@ -4,13 +4,14 @@ import type {
   Holding,
   HoldingKind,
   Snapshot,
+  Tag,
   Universal,
   VersionedPack,
 } from '@netnet/contracts';
 import { CURRENCY_CODES } from '@netnet/contracts';
 import { chainValue, resolveAccess, toMinor, typeLabel } from '@netnet/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useMe } from '../../api/account';
 import { api, isApiError, type Written } from '../../api/client';
@@ -37,7 +38,7 @@ import styles from './Add.module.css';
 /**
  * Add (PRD J2): an asset or a liability with a value in any currency. Accessibility is settled by
  * a fact, a default or "Not sure", and never blocks saving. The consequence previews in money as
- * the amount is typed.
+ * the amount is typed. The person's tags are offered for either kind.
  */
 
 /** The universals offered as liabilities; every other universal is an asset. */
@@ -99,6 +100,7 @@ function AddForm({
   const [typed, setTyped] = useState('');
   const [check, setCheck] = useState<AmountCheck>({ ok: false, problem: 'empty' });
   const [date, setDate] = useState(today);
+  const [tagIds, setTagIds] = useState<readonly string[]>([]);
   const [answer, setAnswer] = useState<string>();
   const [changing, setChanging] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -165,6 +167,7 @@ function AddForm({
     ...(current ? { typeId: current.id } : { universal }),
     currency,
     ...(kind === 'asset' && answer !== undefined ? { access: answer } : {}),
+    ...(tagIds.length > 0 ? { tagIds: [...tagIds] } : {}),
     ...(check.ok ? { opening: { amount: check.amount, date: date || today } } : {}),
     via: 'form',
     ...(allowDuplicate ? { allowDuplicate: true } : {}),
@@ -251,6 +254,17 @@ function AddForm({
               onAskAgent={() => setAsking(true)}
             />
           ) : null}
+          {snapshot.tags.length > 0 ? (
+            <TagsField
+              tags={snapshot.tags}
+              selected={tagIds}
+              onToggle={(id) =>
+                setTagIds(
+                  tagIds.includes(id) ? tagIds.filter((t) => t !== id) : [...tagIds, id].sort(),
+                )
+              }
+            />
+          ) : null}
           <div className={styles.two}>
             <Picker
               label="Currency"
@@ -298,6 +312,42 @@ function AddForm({
         saved={false}
       />
     </>
+  );
+}
+
+/**
+ * The person's tags as toggle chips, like the Choice row's answers: pressed chips fill tomato.
+ * Optional, and only shown while the person has tags.
+ */
+function TagsField({
+  tags,
+  selected,
+  onToggle,
+}: {
+  readonly tags: readonly Tag[];
+  readonly selected: readonly string[];
+  readonly onToggle: (id: string) => void;
+}) {
+  const labelId = useId();
+  return (
+    <div>
+      <p id={labelId} className={styles.tagsLabel}>
+        Tags
+      </p>
+      <div role="group" aria-labelledby={labelId} className={styles.chips}>
+        {tags.map((tag) => (
+          <button
+            key={tag.id}
+            type="button"
+            className={styles.chip}
+            aria-pressed={selected.includes(tag.id)}
+            onClick={() => onToggle(tag.id)}
+          >
+            {tag.name}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

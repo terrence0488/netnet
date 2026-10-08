@@ -97,6 +97,45 @@
   min-width: 0;
 }
 
+.tagsLabel {
+  margin: 0 0 var(--space-3);
+  color: var(--ink);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+}
+
+.chip {
+  min-height: var(--hit);
+  min-width: var(--hit);
+  padding: var(--space-4) var(--space-8);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-control);
+  font-size: var(--size-button);
+  font-weight: var(--weight-button);
+  line-height: var(--leading-body-sm);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: var(--paper);
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--brand);
+  color: var(--brand-on);
+}
+
 .privacy {
   margin: 0;
   color: var(--ink-3);
