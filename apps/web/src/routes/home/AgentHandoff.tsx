@@ -1,7 +1,8 @@
 import type { AgentConnection, AgentGuide } from '@netnet/contracts';
+import { useQuery } from '@tanstack/react-query';
 import { Button, PromptCard, Spinner, useAgentConnections, useCopy } from '../../components';
 import { buttonClass } from '../../components/Button';
-import { guideFor, useAgentGuides } from '../agent/queries';
+import { agentGuidesQuery, guideFor } from '../agent/queries';
 import { prefillHref } from './prompts';
 import styles from './AgentHandoff.module.css';
 
@@ -23,10 +24,12 @@ export type HandoffAgent =
 
 export function useAgentHandoff(): HandoffAgent {
   const connections = useAgentConnections();
-  const guides = useAgentGuides();
-  if (connections.isPending || guides.isPending) return { status: 'pending' };
   const [first] = connections.data ?? [];
+  // The guides are read only once an agent is connected: without one there is nothing to decide.
+  const guides = useQuery({ ...agentGuidesQuery, enabled: first !== undefined });
+  if (connections.isPending) return { status: 'pending' };
   if (connections.isError || !first) return { status: 'none' };
+  if (guides.isPending) return { status: 'pending' };
   return {
     status: 'ready',
     connection: first,

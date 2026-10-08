@@ -31,7 +31,6 @@ import {
   usePackChain,
 } from '../../components';
 import { cx } from '../../components/cx';
-import { useAgentHandoff } from './AgentHandoff';
 import { baselineLabel } from './baselines';
 import { BaselineSheet } from './BaselineSheet';
 import { Carousel } from './Carousel';
@@ -510,18 +509,8 @@ function LoadedHome({
         tags={filterTags}
         onFilter={prefs.setFilter}
       />
-      <PrefetchHandoff />
     </>
   );
-}
-
-/**
- * The handoff's guides load with Home, so opening the stale card or an empty Home never waits on
- * them. Nothing rendered.
- */
-function PrefetchHandoff() {
-  useAgentHandoff();
-  return null;
 }
 
 const bucketNames = (holdings: readonly HoldingIn[]): string => {
