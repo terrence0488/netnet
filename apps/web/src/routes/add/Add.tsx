@@ -44,7 +44,8 @@ import styles from './Add.module.css';
 /** The universals offered as liabilities; every other universal is an asset. */
 const LIABILITY_UNIVERSALS: ReadonlySet<Universal> = new Set(['mortgage', 'loan', 'card']);
 
-const sideOf = (universal: Universal): HoldingKind =>
+/** Which side of the ledger a universal type sits on: debts are liabilities, all else assets. */
+export const sideOf = (universal: Universal): HoldingKind =>
   LIABILITY_UNIVERSALS.has(universal) ? 'liability' : 'asset';
 
 export function Add() {

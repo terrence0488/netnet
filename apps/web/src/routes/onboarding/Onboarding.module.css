@@ -18,3 +18,10 @@
   color: var(--ink);
   font-weight: var(--weight-button);
 }
+
+/* What the basics already saved for this question (PRD J1). */
+.saved {
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body-sm);
+}
