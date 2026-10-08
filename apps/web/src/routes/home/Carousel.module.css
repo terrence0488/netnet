@@ -1,0 +1,79 @@
+/* Home's carousel (design-system §6, §7): swipe with snap and dots on a phone; 7/5 side by
+   side on a computer, with no dots. */
+
+.track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* Room for the cards' hard shadows, so swiping never clips them. */
+  margin: 0 calc(var(--space-2) * -1);
+  padding: 0 var(--space-2) var(--space-3);
+  scrollbar-width: none;
+}
+
+.track::-webkit-scrollbar {
+  display: none;
+}
+
+.slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  min-width: 0;
+  /* The breathing room between cards lives inside the slide, so every slide starts exactly one
+     width on and the dots' maths holds. */
+  padding-right: var(--space-8);
+}
+
+.slide:last-child {
+  padding-right: 0;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* Dots are outlined circles; the current one is a tomato pill. The button is the 44px target. */
+.dot {
+  display: grid;
+  place-items: center;
+  width: var(--hit);
+  height: var(--hit);
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.pip {
+  width: var(--space-5);
+  height: var(--space-5);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+}
+
+.pip.on {
+  width: var(--space-13);
+  background: var(--brand);
+}
+
+@media (min-width: 900px) {
+  .track {
+    display: grid;
+    grid-template-columns: 7fr 5fr;
+    gap: 0 var(--space-16);
+    overflow: visible;
+    margin: 0;
+    padding: 0 0 var(--space-3);
+  }
+
+  .slide {
+    padding-right: 0;
+  }
+
+  .dots {
+    display: none;
+  }
+}

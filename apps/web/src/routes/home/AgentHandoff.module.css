@@ -1,0 +1,19 @@
+/* The agent handoff (PRD J5): the prompt card with its one way across, prefill or Copy. */
+
+.handoff {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.failed {
+  margin: 0;
+  color: var(--attention);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+}
+
+.center {
+  display: grid;
+  justify-items: center;
+  padding: var(--space-8) 0;
+}

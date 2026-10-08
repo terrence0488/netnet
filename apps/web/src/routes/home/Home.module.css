@@ -1,38 +1,5 @@
-/* Home (design-system §6, §7): a topbar, the tomato hero, then position and holdings. */
-
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-5);
-  padding: var(--space-10) 0 var(--space-8);
-}
-
-.spacer {
-  flex: 1;
-}
-
-/* An outlined disc, like the reference's menu and settings buttons; the disc is the target. */
-.iconButton {
-  display: grid;
-  place-items: center;
-  width: var(--hit);
-  height: var(--hit);
-  flex: none;
-  border: var(--border-edge) solid var(--edge);
-  border-radius: var(--radius-pill);
-  background: var(--card);
-  color: var(--ink);
-  box-shadow: var(--shadow-icon);
-  text-decoration: none;
-  font-family: var(--font-display);
-  font-size: var(--size-amount-symbol);
-  font-weight: var(--weight-amount-symbol);
-  line-height: 1;
-}
-
-.iconButton:hover {
-  background: var(--paper);
-}
+/* Home (design-system §6, §7): the tomato hero, then trend and allocation, position, the
+   breakdown, assets vs liabilities, what needs updating, and the holdings. */
 
 /* The hero figure: a tomato card with two sparkles in its corner. */
 .hero {
@@ -70,12 +37,96 @@
   text-transform: uppercase;
 }
 
-.lead {
-  margin: var(--space-5) 0 0;
+/* The change line: the figure on a cream sticker, then the underlined baseline control. */
+.changeLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+}
+
+.sticker {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-6);
+  background: var(--card);
+  border-radius: var(--radius-pill);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.vs {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--brand-on);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+  white-space: nowrap;
+}
+
+/* A change percentage: a measurement, in the text face, signed as well as coloured. */
+.pct {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: var(--size-pct);
+  font-weight: var(--weight-pct);
+}
+
+.gain {
+  color: var(--gain);
+}
+
+.loss {
+  color: var(--loss);
+}
+
+/* The active filter, named under the hero: what is shown, and what is hidden. */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  margin-top: var(--space-7);
+  padding: var(--space-4) var(--space-7);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--card);
+}
+
+.bannerText {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.bannerButton {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  padding: 0;
+  border: none;
+  background: none;
   color: var(--ink-2);
   font-size: var(--size-body);
   font-weight: var(--weight-body);
-  line-height: var(--leading-body);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+}
+
+.bannerButton:hover {
+  color: var(--ink);
 }
 
 .grid {
@@ -99,6 +150,41 @@
   font-size: var(--size-heading-section);
   font-weight: var(--weight-heading-section);
   letter-spacing: var(--tracking-heading-section);
+}
+
+/* The holdings toolbar: sort and filter, wrapping under the heading on narrow phones. */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.tool {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  padding: 0 var(--space-7);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-control);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+  white-space: nowrap;
+}
+
+.tool:hover {
+  background: var(--paper);
+}
+
+/* What the rows' change figures are measured against. */
+.listMeta {
+  margin: 0 0 var(--space-3);
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
 }
 
 /* The position ledger: bucket in body, what is in it in meta beneath, the amount right. */
@@ -145,7 +231,7 @@
   border-bottom: none;
 }
 
-/* A holding row: name and metadata left, the amount right. */
+/* A holding row: name and metadata left, the amount over its one change figure right. */
 .row {
   display: flex;
   align-items: baseline;
@@ -187,6 +273,10 @@
 }
 
 .amt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
   text-align: right;
   white-space: nowrap;
   flex: none;
@@ -205,7 +295,7 @@
   opacity: var(--opacity-agent-mark);
 }
 
-/* An outlined sticker: "not decided" is a state, never shouting. */
+/* An outlined sticker: "not decided" and "stale" are states, never shouting. */
 .chip {
   color: var(--attention);
   background: var(--warn-bg);
@@ -219,72 +309,17 @@
   white-space: nowrap;
 }
 
-/* The empty Home's way on: one primary action, then the agent below a rule. */
-.emptyNext {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--space-3);
-  max-width: var(--field-max);
-  padding: var(--space-13) 0 var(--inset-page-end);
-}
-
-.emptyHint {
-  margin: 0 0 var(--space-2);
+/* Where the list would be when the filter leaves nothing. */
+.nothing {
+  padding: var(--space-8) 0;
   color: var(--ink-2);
   font-size: var(--size-body);
   font-weight: var(--weight-body);
   line-height: var(--leading-body);
 }
 
-.alt {
-  display: grid;
-  gap: var(--space-2);
-  margin-top: var(--space-9);
-}
-
-.altTitle {
-  margin: 0;
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--size-body);
-  font-weight: var(--weight-body);
-  letter-spacing: var(--tracking-body);
-}
-
-.altSub {
-  margin: 0 0 var(--space-4);
-  color: var(--ink-3);
-  font-size: var(--size-body-sm);
-  font-weight: var(--weight-body-sm);
-  line-height: var(--leading-body-sm);
-}
-
-.plainLink {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  min-height: var(--hit);
-  color: var(--ink-2);
-  font-size: var(--size-body);
-  font-weight: var(--weight-body);
-}
-
-.plainLink:hover {
-  color: var(--ink);
-}
-
-.failed {
-  margin: 0;
-  color: var(--attention);
-  font-size: var(--size-meta);
-  font-weight: var(--weight-meta);
-}
-
-.center {
-  display: grid;
-  justify-items: center;
-  padding: var(--space-8) 0;
+.nothing p {
+  margin: 0 0 var(--space-2);
 }
 
 @media (min-width: 900px) {
@@ -304,11 +339,15 @@
     grid-column: span 5;
   }
 
-  .list {
+  .byType {
     grid-column: span 7;
   }
 
-  .emptyNext {
-    padding-bottom: var(--inset-page-end-computer);
+  .lines {
+    grid-column: span 7;
+  }
+
+  .stale {
+    grid-column: span 5;
   }
 }

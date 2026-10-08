@@ -1,0 +1,140 @@
+/* The empty Home (design-system §6): a topbar, the $0 tomato hero, one sentence, one action. */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-10) 0 var(--space-8);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* An outlined disc, like the reference's menu and settings buttons; the disc is the target. */
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: var(--hit);
+  height: var(--hit);
+  flex: none;
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-icon);
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-size: var(--size-amount-symbol);
+  font-weight: var(--weight-amount-symbol);
+  line-height: 1;
+}
+
+.iconButton:hover {
+  background: var(--paper);
+}
+
+/* The hero figure: a tomato card with two sparkles in its corner. */
+.hero {
+  position: relative;
+  padding: var(--space-10) var(--space-9) var(--space-7);
+  margin: 0 0 var(--space-3);
+  background: var(--brand);
+  color: var(--brand-on);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  top: var(--space-7);
+  right: var(--space-8);
+  width: var(--space-16);
+  aspect-ratio: 34 / 26;
+  pointer-events: none;
+  background: var(--brand-on);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 26'%3E%3Cpath d='M24 4l2.2 7.8L34 14l-7.8 2.2L24 24l-2.2-7.8L14 14l7.8-2.2zM7 0l1.3 4.7L13 6 8.3 7.3 7 12 5.7 7.3 1 6l4.7-1.3z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 26'%3E%3Cpath d='M24 4l2.2 7.8L34 14l-7.8 2.2L24 24l-2.2-7.8L14 14l7.8-2.2zM7 0l1.3 4.7L13 6 8.3 7.3 7 12 5.7 7.3 1 6l4.7-1.3z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+
+.heroTitle {
+  margin: 0 0 var(--space-4);
+  color: var(--brand-on);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.lead {
+  margin: var(--space-5) 0 0;
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+}
+
+/* The empty Home's way on: one primary action, then the agent below a rule. */
+.emptyNext {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+  max-width: var(--field-max);
+  padding: var(--space-13) 0 var(--inset-page-end);
+}
+
+.emptyHint {
+  margin: 0 0 var(--space-2);
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+}
+
+.alt {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-9);
+}
+
+.altTitle {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  letter-spacing: var(--tracking-body);
+}
+
+.altSub {
+  margin: 0 0 var(--space-4);
+  color: var(--ink-3);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.plainLink {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: var(--hit);
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+}
+
+.plainLink:hover {
+  color: var(--ink);
+}
+
+@media (min-width: 900px) {
+  .emptyNext {
+    padding-bottom: var(--inset-page-end-computer);
+  }
+}
