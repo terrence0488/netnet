@@ -11,6 +11,7 @@ restore.sql
 
 # Dependencies
 node_modules/
+.pnpm-store/
 .venv/
 __pycache__/
 
@@ -28,6 +29,9 @@ npm-debug.log*
 # Editor
 .idea/
 .vscode/
+
+# Local agent settings (shared .claude/ project files still commit)
+.claude/settings.local.json
 
 # Mockups contain the Founder's real financial data — keep them local, never commit
 docs/reference/mockups/*.png

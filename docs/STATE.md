@@ -1,11 +1,10 @@
 # Project State
 
 ## Current
-Stage: Build (Stage 5)
+Stage: P1 approved (Stage 6 gate passed)
 Phase: P1
-Status: T18 done; P1 build complete
-Next action: `stage: test P1` (fresh session; QA tests the live product against the PRD, writes `docs/phases/P1/test-report.md`).
-Inputs: `docs/04-plan.md` §3, `CONVENTIONS.md`, `docs/phases/P1/tasks/`.
+Status: approved
+Next action: `stage: plan` (P2 task briefs; later phases stay outlines).
 **Branch:** one branch per task, from `main` (CONVENTIONS §15).
 
 ## Approvals
@@ -16,28 +15,25 @@ Inputs: `docs/04-plan.md` §3, `CONVENTIONS.md`, `docs/phases/P1/tasks/`.
 | Prototype | **approved** | 2026-09-27 | `docs/02-prototype/`, design system "Poster" |
 | Architecture | **approved** | 2026-09-29 | `docs/03-architecture.md`, `CONVENTIONS.md` |
 | Plan | **approved** | 2026-10-01 | `docs/04-plan.md`, `docs/phases/P1/tasks/` |
-| P1 | in-progress | | Waves 1–7 merged, T18 proofs done; awaiting test stage |
+| P1 | **approved** | 2026-10-08 | Test report reviewed; Claude computer shots shipped (#61) |
 | P2 | not-started | | |
 | P3 | not-started | | |
 | P4 | not-started | | |
 | P5 | not-started | | |
 
 ## Handoff note (last session)
-Production is LIVE at netnetapp.io (first deploy green, verified: health/metadata/MCP-401/app/
-holding page/headers). Rollback proved via API (dpl_2HsY → dpl_128z, ~26s, alias-observed);
-CLI rollback+promote both 404 here; a rollback pins production (auto-assign off) — #48 makes
-deploys verify the alias moved. Merged green since: #37 placeholders, #38 Vercel env, #39 events-order flake, #40 prod build
-target, #41 smoke empty-secrets, #42–43 promote/scope probes, #44 agent snapshot stub, #45 API
-rollback, #46 client-side filter, #47 alias truth, #48 moved-check. F15 done: probe setup
-walked through with Founder (DCR needs `application_type: native` for loopback; the saved secret
-must be the `refresh_token`, not the `at+jwt` access token — both now in `ops/probe.md`), two
-green runs in a row with rotation (37563509343, 37563563789). T18 done since: Sentry both
-sides seen (netnet-api + netnet-web) after two real fixes — awaited flush (#54), CSP US ingest
-(#55); backup manual + scheduled green, restore proven Oct 8 (30 tables, 1 holding, 1 user);
-Vercel scheduler never fired → cron fallback to GH Actions (#57), dispatch proofs green after
-CRON_SECRET rotation (daily 37739399053, fx 37755850416); fx NDJSON parse fix (#58). CI
-reworked (#56: parallel lanes, preview smoke, PR-green gate). GitHub blocked Actions on
-billing mid-session; Founder settled it. Still open: real F11 screenshots, F16 monitor,
-me-init concurrency flake (seen once, passed on re-run), first scheduled GH cron starts (fill
-into `ops/probe.md` when observed).
+P1 tested green: unit 1098, integration 562 (RLS/isolation), e2e 170 (4 intentional
+skips), typecheck, content, prod smoke, 6 straight green probes; live prod pass
+(signup→holdings→snapshot + negatives) per PRD. Report: `docs/phases/P1/test-report.md`.
+QA account in prod: `qa-p1-20261008@example.com`, 2 fictional holdings (S$5,328) —
+exclude from metrics, deletable only in P3. Triage candidates: test:int rotates the
+shared cluster's app password (run it last); lint ignores miss `.pnpm-store/` +
+`.claude/settings.local.json`. Oct 8 scheduled backup failed on the billing block
+(external, settled; manual backup same day exists). F11 half shipped: 3 Claude computer
+shots live via PR #61; deploy initially failed on a dead probe token family (cause
+unknown — no runs in between), recovered per ops/probe.md (new client + secrets, probe
+green), Vercel auto-assign re-enabled after the rollback pin, redeploy green with shots
+verified live. Still open: 3 Claude phone shots, F16 monitor, inbox delivery of both
+emails, Ubuntu 26 runner migration Oct 19 (CI floats on `ubuntu-latest`). Founder approved P1 Oct 8 with no
+triage items; phone shots and F16 ride along as follow-ups.
 Plan tracker: https://claude.ai/artifact/UkJfDYaAAi8gJV1aBbk3nB (`tasks/<id>`, `meta/state`).
