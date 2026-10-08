@@ -107,6 +107,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Agent is a fourth tab; desktop gets a sidebar and a 12-column grid | J5 and J8 are the point of the product; v1 is a responsive web app |
 | Charts use the validated categorical palette in fixed order; brand and chart hues never share a role; a chart with too little data is a frosted placeholder | Colour-blind safety; a chart that vanishes makes a new account look emptier than it is |
 | We own everything that displays data and all colour and type; the platform owns input by gesture | Brand chrome, native controls, decided once rather than case by case |
+| Google's and Apple's sign-in buttons wear the brands' own colours, outside the token system | An official button cannot be drawn from another palette (architecture §8); everything else about them stays on tokens |
 
 ## Delivery
 

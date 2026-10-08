@@ -1,24 +1,41 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
-import { looksLikeEmail } from '../../api/auth';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { isSocialProvider, looksLikeEmail, PROVIDER_NAMES } from '../../api/auth';
 import { trackClient } from '../../api/events';
 import { handoffOf } from '../../app/handoff';
-import { AuthFoot, AuthForm, AuthFrame, Button, TextField, authStyles } from '../../components';
-import { COPY } from '../../components/auth-copy';
+import {
+  AuthFoot,
+  AuthForm,
+  AuthFrame,
+  Button,
+  FormProblem,
+  ProviderButtons,
+  TextField,
+  authStyles,
+} from '../../components';
+import { COPY, providerUnfinished } from '../../components/auth-copy';
 
 /**
  * Create your account (PRD J1): a way in and nothing else. Every question before the account
- * exists costs sign-ups, so this asks for an email, then a password on the next screen. Google
- * and Apple (P2) join this screen above the email.
+ * exists costs sign-ups, so this asks for a provider, or an email and then a password on the
+ * next screen.
  */
 export function SignUp() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const handoff = handoffOf(location.state);
   const [email, setEmail] = useState(handoff.email ?? '');
   const [problem, setProblem] = useState(handoff.problem);
+  // A provider round trip that came back with `?error=`: cancelled, refused or failed midway.
+  const [failed, setFailed] = useState<string | undefined>(() => {
+    if (params.get('error') === null) return undefined;
+    const provider = params.get('provider');
+    return providerUnfinished(isSocialProvider(provider) ? PROVIDER_NAMES[provider] : undefined);
+  });
 
   const submit = () => {
+    setFailed(undefined);
     const address = email.trim();
     if (!looksLikeEmail(address)) {
       setProblem(COPY.emailMissing);
@@ -31,6 +48,12 @@ export function SignUp() {
 
   return (
     <AuthFrame title="Create your account">
+      <ProviderButtons
+        mode="signup"
+        screen="/signup"
+        search={location.search}
+        onProblem={setFailed}
+      />
       <AuthForm onSubmit={submit}>
         <TextField
           label="Email"
@@ -47,6 +70,7 @@ export function SignUp() {
             setProblem(undefined);
           }}
         />
+        {failed ? <FormProblem>{failed}</FormProblem> : null}
         <Button type="submit" block>
           Continue with email
         </Button>

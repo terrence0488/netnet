@@ -176,6 +176,11 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
       - name: Build
+        env:
+          # The provider suite's buttons (P2-T1): the built app shows them, and the E2E server
+          # below answers their starts with the fake secrets.
+          VITE_AUTH_GOOGLE: '1'
+          VITE_AUTH_APPLE: '1'
         run: pnpm build
       # What CI runs against a preview's Neon branch, on an empty database, twice: every step must
       # be safe to repeat (the second publish changes nothing). The owner here is the service's
@@ -198,6 +203,21 @@ jobs:
           done
       - name: Install Chromium for Playwright
         run: pnpm exec playwright install --with-deps chromium
+      # The provider suite's fake secrets (P2-T1): what the E2E server reads when the buttons
+      # start their flows. The Apple key is a throwaway P-256 key, generated for one run and
+      # never stored.
+      - name: Fake provider secrets for the sign-in suite
+        run: |
+          {
+            echo 'GOOGLE_CLIENT_ID=e2e-google-client-id'
+            echo 'GOOGLE_CLIENT_SECRET=e2e-google-secret'
+            echo 'APPLE_CLIENT_ID=com.netnet.e2e'
+            echo 'APPLE_TEAM_ID=E2ETEAM01'
+            echo 'APPLE_KEY_ID=E2EKEY001'
+            echo 'APPLE_PRIVATE_KEY<<EOF'
+            openssl ecparam -name prime256v1 -genkey -noout | openssl pkcs8 -topk8 -nocrypt
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
       - name: E2E against the built app
         run: pnpm test:e2e
       - name: Keep the Playwright report
