@@ -3,8 +3,8 @@
 ## Current
 Stage: Build (Stage 5)
 Phase: P1
-Status: in-progress
-Next action: F15 done (probe twice green, pass log in `ops/probe.md`) → Sentry receipt both sides, first backup (02:30 UTC) + restore proof, cron timing log → mark T18 done → `stage: test P1`.
+Status: T18 done; P1 build complete
+Next action: `stage: test P1` (fresh session; QA tests the live product against the PRD, writes `docs/phases/P1/test-report.md`).
 Inputs: `docs/04-plan.md` §3, `CONVENTIONS.md`, `docs/phases/P1/tasks/`.
 **Branch:** one branch per task, from `main` (CONVENTIONS §15).
 
@@ -16,7 +16,7 @@ Inputs: `docs/04-plan.md` §3, `CONVENTIONS.md`, `docs/phases/P1/tasks/`.
 | Prototype | **approved** | 2026-09-27 | `docs/02-prototype/`, design system "Poster" |
 | Architecture | **approved** | 2026-09-29 | `docs/03-architecture.md`, `CONVENTIONS.md` |
 | Plan | **approved** | 2026-10-01 | `docs/04-plan.md`, `docs/phases/P1/tasks/` |
-| P1 | in-progress | | Waves 1–7 code merged (T1–T18); T18 proofs need production |
+| P1 | in-progress | | Waves 1–7 merged, T18 proofs done; awaiting test stage |
 | P2 | not-started | | |
 | P3 | not-started | | |
 | P4 | not-started | | |
@@ -31,7 +31,13 @@ target, #41 smoke empty-secrets, #42–43 promote/scope probes, #44 agent snapsh
 rollback, #46 client-side filter, #47 alias truth, #48 moved-check. F15 done: probe setup
 walked through with Founder (DCR needs `application_type: native` for loopback; the saved secret
 must be the `refresh_token`, not the `at+jwt` access token — both now in `ops/probe.md`), two
-green runs in a row with rotation (37563509343, 37563563789). Still open: Sentry receipt both
-sides, first backup (02:30 UTC) + restore proof, cron timing log, real F11 screenshots, F16
-monitor, me-init concurrency flake (seen once, passed on re-run).
+green runs in a row with rotation (37563509343, 37563563789). T18 done since: Sentry both
+sides seen (netnet-api + netnet-web) after two real fixes — awaited flush (#54), CSP US ingest
+(#55); backup manual + scheduled green, restore proven Oct 8 (30 tables, 1 holding, 1 user);
+Vercel scheduler never fired → cron fallback to GH Actions (#57), dispatch proofs green after
+CRON_SECRET rotation (daily 37739399053, fx 37755850416); fx NDJSON parse fix (#58). CI
+reworked (#56: parallel lanes, preview smoke, PR-green gate). GitHub blocked Actions on
+billing mid-session; Founder settled it. Still open: real F11 screenshots, F16 monitor,
+me-init concurrency flake (seen once, passed on re-run), first scheduled GH cron starts (fill
+into `ops/probe.md` when observed).
 Plan tracker: https://claude.ai/artifact/UkJfDYaAAi8gJV1aBbk3nB (`tasks/<id>`, `meta/state`).
