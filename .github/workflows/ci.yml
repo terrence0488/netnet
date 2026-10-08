@@ -1,8 +1,12 @@
 name: CI
 
-# Every push runs the checks, and so does opening a pull request. A Vercel preview follows for a
-# branch with an open pull request (architecture §9.1), or on a manual run of this workflow, with a
-# Neon branch of the preview project of its own. Closing the pull request deletes that branch.
+# Every push runs the checks, and so does opening a pull request: three parallel lanes (quick,
+# integration, E2E) behind one Checks verdict. Pushes touching only docs, ops/ or the
+# deploy/backup/probe workflows skip the browser suite and the preview. A Vercel preview follows
+# for a branch with an open pull request (architecture §9.1), or on a manual run of this workflow,
+# with a Neon branch of the preview project of its own; the preview is smoke-tested, since the
+# full E2E suite already passed against the local build. Closing the pull request deletes that
+# branch.
 on:
   push:
   pull_request:
@@ -21,11 +25,81 @@ env:
   NEON_API: https://console.neon.tech/api/v2
 
 jobs:
-  checks:
-    name: Checks
+  # Which lanes must run: pushes touching only docs, ops/ or the deploy/backup/probe
+  # workflows skip the browser suite and the preview. ci.yml itself always counts as code,
+  # so this file proves its own changes; anything uncertain counts as code.
+  changes:
+    name: What changed
     if: github.event.action != 'closed'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: filter
+        run: |
+          set -euo pipefail
+          base='${{ github.event.before }}'
+          allzero='0000000000000000000000000000000000000000'
+          if [ -z "$base" ] || [ "$base" = "$allzero" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "$base...$GITHUB_SHA" -- 2>/dev/null) || {
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          if [ -z "$files" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          code=$(echo "$files" | grep -v -e '^docs/' -e '^ops/' -e '\.md$' \
+            -e '^\.github/workflows/\(deploy\|backup\|probe\)\.yml$' || true)
+          if [ -z "$code" ]; then echo "code=false"; else echo "code=true"; fi >> "$GITHUB_OUTPUT"
+
+  quick:
+    name: Quick checks
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22.23.3
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      # A schema change without its migration would deploy code the database does not match.
+      - name: Migrations match the schema
+        timeout-minutes: 2
+        run: |
+          pnpm db:generate
+          if [ -n "$(git status --porcelain -- apps/api/migrations)" ]; then
+            git status --short -- apps/api/migrations
+            echo "::error::The schema has changed without a migration. Run pnpm db:generate and commit what it writes."
+            exit 1
+          fi
+      - name: Unit tests
+        run: pnpm test
+      - name: Content check
+        run: pnpm content:check
+      - name: Audit production dependencies (fails on high or critical)
+        run: pnpm audit --prod --audit-level high
+
+  integration:
+    name: Integration tests
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         # The same major version as Neon (F7).
@@ -52,27 +126,46 @@ jobs:
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
-      - name: Lint
-        run: pnpm lint
-      - name: Typecheck
-        run: pnpm typecheck
-      # A schema change without its migration would deploy code the database does not match.
-      - name: Migrations match the schema
-        timeout-minutes: 2
-        run: |
-          pnpm db:generate
-          if [ -n "$(git status --porcelain -- apps/api/migrations)" ]; then
-            git status --short -- apps/api/migrations
-            echo "::error::The schema has changed without a migration. Run pnpm db:generate and commit what it writes."
-            exit 1
-          fi
-      - name: Unit tests
-        run: pnpm test
       - name: Integration tests (Postgres 18)
         run: pnpm test:int
+
+  e2e:
+    name: E2E tests
+    if: github.event.action != 'closed' && needs.changes.outputs.code == 'true'
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        # The same major version as Neon (F7).
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: netnet_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/netnet_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22.23.3
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm build
       # What CI runs against a preview's Neon branch, on an empty database, twice: every step must
       # be safe to repeat (the second publish changes nothing). The owner here is the service's
-      # superuser.
+      # superuser. It also prepares the database the E2E server below runs on.
       - name: Bootstrap, migrate, seed and publish content to an empty database, twice
         env:
           DATABASE_OWNER_URL: ${{ env.DATABASE_URL }}
@@ -89,16 +182,10 @@ jobs:
             DATABASE_URL="$app_url" pnpm --silent db:seed
             DATABASE_URL="$app_url" pnpm --silent content:publish --env local
           done
-      - name: Build
-        run: pnpm build
       - name: Install Chromium for Playwright
         run: pnpm exec playwright install --with-deps chromium
       - name: E2E against the built app
         run: pnpm test:e2e
-      - name: Content check
-        run: pnpm content:check
-      - name: Audit production dependencies (fails on high or critical)
-        run: pnpm audit --prod --audit-level high
       - name: Keep the Playwright report
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -107,10 +194,23 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+  checks:
+    name: Checks
+    if: always() && github.event.action != 'closed'
+    needs: [quick, integration, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every lane green
+        run: |
+          # Skipped lanes (the browser suite on a docs-only push) and cancelled ones (a newer
+          # push superseded this run) pass; every other lane must have succeeded.
+          echo '${{ toJSON(needs) }}' | jq -e 'all(.[]; .result == "success" or .result == "skipped" or .result == "cancelled")'
+
   preview:
     name: Preview
-    needs: checks
-    if: github.ref != 'refs/heads/main' && github.event.action != 'closed'
+    needs: [checks, changes]
+    if: github.ref != 'refs/heads/main' && github.event.action != 'closed' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -333,14 +433,12 @@ jobs:
           url=$(pnpm exec vercel deploy "${args[@]}")
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"
-      - name: Install Chromium for Playwright
-        if: steps.vercel.outputs.ready == 'true'
-        run: pnpm exec playwright install --with-deps chromium
+      # The full E2E suite already passed against the local build; the preview only needs to
+      # prove this deployment answers. No probe secrets here on purpose: they would rotate
+      # production's token against the wrong database.
       - name: Smoke-test the preview
         if: steps.vercel.outputs.ready == 'true'
-        run: pnpm test:e2e
-        env:
-          E2E_BASE_URL: ${{ steps.deploy.outputs.url }}
+        run: pnpm --silent smoke --origin "${{ steps.deploy.outputs.url }}"
 
   # Deletes the closed pull request's Neon branch, and any other pull request branch whose pull
   # request is closed (a run that raced a close). It does nothing else.

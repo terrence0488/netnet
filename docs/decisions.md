@@ -118,6 +118,8 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | A throwaway spike proved OAuth and MCP with real Claude before the auth and MCP work; its verdict (`docs/phases/P1/spike.md`) sets the library and its settings | The newest parts (the OAuth provider with CIMD, MCP 2026-07-28) are proven with a real client before anything depends on them |
 | The build adds endpoints, fields, parameters and message kinds that the architecture implies, and reports them; any other interface change is stop-and-raise | Keeps architecture §7 current without a Founder gate for every implied detail |
 | CI checks every push and the opening of every pull request. Previews deploy from CI with the Vercel CLI, only for a branch with an open pull request (or a manual run); Vercel's own Git deployments are off | Production comes only from the manual workflow, and previews stay one per pull request, within Neon's branch limit |
+| CI runs in parallel lanes (quick, integration, E2E) behind one `Checks` verdict; pushes touching only docs, `ops/` or the deploy/backup/probe workflows skip the browser suite and the preview; previews smoke-test instead of re-running E2E | One sequential job spent ~14 minutes per PR, most of it re-proving the browser; nothing skipped can break what the lanes still prove |
+| Production deploys trust the merged pull request's green Checks instead of waiting for main CI; when all phases are delivered, revisit: re-enable the main-green gate or take GitHub's merge queue | One PR lands at a time, so the merged tree is the tested tree; main CI still runs as the backstop |
 
 ## Architecture
 
