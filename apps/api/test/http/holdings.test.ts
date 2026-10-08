@@ -325,9 +325,10 @@ describe('guided basics (P2-T2)', () => {
     });
     await target.settle();
     const { rows: fired } = await db.owner.query<{ name: string; props: unknown }>(
-      'select name, props from analytics.event order by id',
+      'select name, props from analytics.event',
     );
-    expect(fired).toStrictEqual([
+    // One write's events land on separate connections, so their row order is not theirs.
+    expect(fired.sort((x, y) => x.name.localeCompare(y.name))).toStrictEqual([
       { name: 'holding_created', props: { source: 'web', via: 'guided' } },
       { name: 'value_recorded', props: { source: 'web' } },
     ]);
