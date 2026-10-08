@@ -89,6 +89,18 @@ export const routes: RouteObject[] = [
                 Component: Approve,
                 handle: bare('Approve the connection'),
               },
+              // The connect flow opens mid-onboarding too (entry=onboarding, from the start
+              // screen), so it asks only for a signed-in person, like the approval page.
+              {
+                path: 'agent/connect',
+                Component: Connect,
+                handle: { title: 'Connect your agent', chrome: false } satisfies RouteHandle,
+              },
+              {
+                path: 'agent/connect/:client',
+                Component: Connect,
+                handle: { title: 'Connect your agent', chrome: false } satisfies RouteHandle,
+              },
             ],
           },
           {
@@ -102,16 +114,6 @@ export const routes: RouteObject[] = [
                 handle: { title: 'Holding' } satisfies RouteHandle,
               },
               { path: 'agent', Component: Agent, handle: { title: 'Agent' } satisfies RouteHandle },
-              {
-                path: 'agent/connect',
-                Component: Connect,
-                handle: { title: 'Connect your agent', chrome: false } satisfies RouteHandle,
-              },
-              {
-                path: 'agent/connect/:client',
-                Component: Connect,
-                handle: { title: 'Connect your agent', chrome: false } satisfies RouteHandle,
-              },
               {
                 path: 'account',
                 Component: Account,

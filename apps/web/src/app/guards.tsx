@@ -66,7 +66,7 @@ export function useKnownMe(): { me: ProfileView | null } | { wait: ReactElement 
   return { wait: <Waiting /> };
 }
 
-/** Signed in, whatever onboarding's state: a screen any account may open (the approval page). */
+/** Signed in, whatever onboarding's state: a screen any account may open (the approval page and the connect flow, which onboarding starts). */
 export function RequireSignedIn() {
   const location = useLocation();
   const known = useKnownMe();
