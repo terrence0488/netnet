@@ -56,9 +56,9 @@ content/
   packs/ countries.json agents/ images/   administered content (§8)
 ops/
   metrics/                SQL for M1–M11 and M13, per segment (run as netnet_metrics)
-.github/workflows/        CI, production deploy, daily backup, MCP probe
+.github/workflows/        CI, production deploy, daily backup, MCP probe, cron schedules
 e2e/                      Playwright specs
-vercel.json               rewrites, headers, cron, function region (sin1)
+vercel.json               rewrites, headers, function region (sin1)
 docs/                     the workflow's documents; docs/02-prototype is the design reference
 ```
 

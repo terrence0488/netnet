@@ -882,16 +882,18 @@ separate once-a-day jobs on one handler. Jobs at the same hour share one databas
 | Job | Where | When (UTC) | Wakes the database |
 |---|---|---|---|
 | **Comeback reminders** (J12) + security-email retries | Vercel Cron `/api/cron/reminders`, **three entries** | daily at **01:00, 09:00 and 17:00** (09:00, 17:00 and 01:00 in Singapore). Each run sends only to people for whom it is 08:00–21:00 (§7.10) | ~5 min each |
-| Connection-attempt timeout sweep | Vercel Cron `/api/cron/daily` | daily at 01:00, in the reminders' wake | — |
+| Connection-attempt timeout sweep | GitHub Actions → `/api/cron/daily` | daily at 01:00 | — |
 | Usage and SLO check | Vercel Cron `/api/cron/health` | daily at 01:00, in the same wake. Reads Neon's consumption API, N1 from events and the day's email count; emails the Founder only on a trigger (§9.4) | — |
-| FX rates | Vercel Cron `/api/cron/fx` | daily at 17:00, after the ECB publishes (~16:00 CET), in the reminders' wake | — |
+| FX rates | GitHub Actions → `/api/cron/fx` | daily at 17:00, after the ECB publishes (~16:00 CET) | — |
 | Backup | GitHub Actions | daily. `pg_dump` → encrypted to a key only the Founder holds → stored 30 days (Actions artifact; R2 free tier if it outgrows 500 MB) | ~5 min |
 | MCP probe | GitHub Actions | **every 6 hours on Free**, hourly after Neon Launch | ~5 min each |
 
-That is eight wakes a day: about 6 CU-hours a month of the 100. Six Vercel cron entries
-in all. The P1 spike confirms Hobby's cron count and timing; if either falls short, the reminder
-runs move to GitHub Actions schedules calling the same handler with `CRON_SECRET`, which works
-because each run checks the time itself.
+That is eight wakes a day: about 6 CU-hours a month of the 100. Four Vercel cron entries
+in all (P3's reminders and health check); the daily sweep and fx moved to GitHub Actions
+schedules after Vercel's scheduler never fired them (decisions.md). The P1 spike confirms
+Hobby's cron count and timing; if either falls short, the reminder runs move to GitHub Actions
+schedules calling the same handler with `CRON_SECRET`, which works because each run checks
+the time itself.
 
 ### 9.4 Running cost and upgrade triggers
 

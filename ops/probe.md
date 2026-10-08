@@ -92,15 +92,17 @@ The brief asks for two green runs in a row, rotating the token.
 | 1 | 2026-10-07 02:45 (37563509343) | success | yes |
 | 2 | 2026-10-07 02:46 (37563563789) | success | yes |
 
-## Cron timing log
+## Cron schedule log
 
-Vercel runs crons only on production, and Hobby starts each "within its hour" (spike Q5).
-After production exists, read each cron's first start in the dashboard (the project → Cron
-Jobs → the run's start time) and record it here. If any starts outside its hour, the reminder
-runs move to GitHub Actions schedules calling the same handler with `CRON_SECRET` (architecture
-§9.3), and the fallback is recorded in `docs/decisions.md`.
+Vercel's scheduler never fired the production crons: the jobs registered and manual triggers
+answered 200, but two days showed zero scheduled executions ("No data found"). So the daily
+and fx runs moved to GitHub Actions schedules calling the same handlers with `CRON_SECRET`
+(architecture §9.3; `cron-daily.yml`, `cron-fx.yml`), and `vercel.json` carries no crons.
+GitHub starts schedules late (minutes to hours, as the probe and backup runs show); both
+jobs tolerate delay — the fx sync fills gaps, the daily retries span days — so lateness
+needs no action. First scheduled starts, read from each workflow's runs:
 
-| Cron (`vercel.json`) | Scheduled (UTC) | First start observed (UTC) | Within its hour? |
-|---|---|---|---|
-| `GET /api/cron/daily` | daily 01:00 | — | — |
-| `GET /api/cron/fx` | daily 17:00 | — | — |
+| Job (workflow) | Scheduled (UTC) | First start observed (UTC) |
+|---|---|---|
+| daily (`cron-daily.yml`) | daily 01:00 | — |
+| fx (`cron-fx.yml`) | daily 17:00 | — |
