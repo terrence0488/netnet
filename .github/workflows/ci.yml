@@ -1,16 +1,18 @@
 name: CI
 
-# Every push runs the checks, and so does opening a pull request: three parallel lanes (quick,
-# integration, E2E) behind one Checks verdict. Pushes touching only docs, ops/ or the
-# deploy/backup/probe workflows skip the browser suite and the preview. A Vercel preview follows
-# for a branch with an open pull request (architecture §9.1), or on a manual run of this workflow,
-# with a Neon branch of the preview project of its own; the preview is smoke-tested, since the
-# full E2E suite already passed against the local build. Closing the pull request deletes that
-# branch.
+# Every push runs the checks: three parallel lanes (quick, integration, E2E) behind one
+# Checks verdict. Pushes touching only docs, ops/ or the deploy/backup/probe workflows skip
+# the browser suite and the preview. A Vercel preview follows for a branch with an open pull
+# request (architecture §9.1), or on a manual run of this workflow, with a Neon branch of the
+# preview project of its own; the preview is smoke-tested, since the full E2E suite already
+# passed against the local build. Closing the pull request deletes that branch.
 on:
   push:
   pull_request:
-    types: [opened, reopened, closed]
+    # No `opened`: the branch push the pull request is created from already ran this workflow
+    # seconds earlier on the same head; a second run only burns minutes. Re-add it if forks
+    # ever contribute (their pushes run on the fork, not here).
+    types: [reopened, closed]
   workflow_dispatch:
 
 concurrency:
