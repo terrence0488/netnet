@@ -309,3 +309,66 @@ describe('DELETE /api/holdings/:id', () => {
     });
   });
 });
+
+describe('guided basics (P2-T2)', () => {
+  it('a yes saves guided, a correction lands in place, and a flipped answer removes it audited', async () => {
+    await target.settle();
+    await db.owner.query('truncate analytics.event');
+    // As the basics save a yes: the universal, an opening value, `via: 'guided'`.
+    const { result: made } = await create({
+      name: 'Bank accounts',
+      kind: 'asset',
+      universal: 'cash',
+      currency: 'EUR',
+      opening: { amount: '5000', date: '2026-08-01' },
+      via: 'guided',
+    });
+    await target.settle();
+    const { rows: fired } = await db.owner.query<{ name: string; props: unknown }>(
+      'select name, props from analytics.event order by id',
+    );
+    expect(fired).toStrictEqual([
+      { name: 'holding_created', props: { source: 'web', via: 'guided' } },
+      { name: 'value_recorded', props: { source: 'web' } },
+    ]);
+
+    // Correcting the amount in place, as Back does: the value is patched, not remade.
+    const listed = await json<{ items: { id: string }[] }>(
+      await p.get(`/api/holdings/${made.id}/values?limit=1`),
+    );
+    expect(listed.items).toHaveLength(1);
+    await json(await p.patch(`/api/values/${listed.items[0]?.id}`, { amount: '6000' }));
+    const corrected = await json<{ items: { id: string; amountMinor: number }[] }>(
+      await p.get(`/api/holdings/${made.id}/values?limit=1`),
+    );
+    expect(corrected.items).toStrictEqual([
+      expect.objectContaining({ id: listed.items[0]?.id, amountMinor: 600000 }),
+    ]);
+
+    // Flipping the answer to no removes what the yes added; the removals are audited like any
+    // delete, keeping the values for undo.
+    await json<WriteBody<null>>(await p.delete(`/api/holdings/${made.id}`));
+    const snapshot = await snapshotOf(p);
+    expect(snapshot.values).not.toHaveProperty([made.id]);
+    const { rows: audits } = await db.owner.query<{
+      action: string;
+      entity: string;
+      before: unknown;
+      after: unknown;
+    }>(
+      `select action, entity, before, after from ledger.audit
+        where user_id = $1 and entity_id = $2 order by at, id`,
+      [p.userId, made.id],
+    );
+    expect(audits.map((row) => [row.entity, row.action])).toStrictEqual([
+      ['holding', 'create'],
+      ['holding', 'delete'],
+    ]);
+    expect(audits[0]?.after).toMatchObject({ name: 'Bank accounts' });
+    expect(audits[1]?.before).toMatchObject({
+      name: 'Bank accounts',
+      values: [expect.objectContaining({ amountMinor: 600000 })],
+    });
+    expect(audits[1]?.after).toBeNull();
+  });
+});
