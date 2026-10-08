@@ -4,8 +4,8 @@ Status: **approved** · Stage owner: Software engineering manager
 Inputs: `docs/01-prd.md` (§6 acceptance criteria), `docs/03-architecture.md`, `CONVENTIONS.md`
 
 > Phases are vertical slices, each ending in a checkpoint deployed to production that the Founder
-> can use. Only P1 has task briefs (`docs/phases/P1/tasks/`). Later phases stay outlines until they
-> are reached, and are planned then (WORKFLOW Stage 4).
+> can use. P1 and P2 have task briefs (`docs/phases/P1/tasks/`, `docs/phases/P2/tasks/`). Later
+> phases stay outlines until they are reached, and are planned then (WORKFLOW Stage 4).
 
 ---
 
@@ -153,36 +153,105 @@ its deviations are in `decisions.md`, and T11, T13, T15 and T18 build on them.
   comes up without a database); re-run the Preview job instead.
 - After T18, `stage: test P1` in a fresh session (WORKFLOW Stage 6), against §3.2.
 
-## 4. Later phases (outlines)
+## 4. P2 and later phases
 
-Each is planned in detail, with task briefs, when it is reached.
+P2 is planned in detail below, with task briefs. P3–P5 stay outlines until they are reached.
 
 ### P2 — Worth using on its own
 
-**Checkpoint:** someone who never connects an agent gets a complete, useful app. Sign-up by Google,
-Apple or email. Onboarding's "Let's start…" screen opens the basics, with the agent as the second
-route. Home shows the whole picture, and hands stale or missing numbers to a connected agent.
+Status: briefed. Briefs: `docs/phases/P2/tasks/P2-T1.md` … `P2-T8.md`.
 
-**Criteria:** the rest of J1, J2, J3 and J5 (see §3.2 "Waits"), all of J4 and J9.
+#### Checkpoint
 
-**Tasks (outline):**
-- Google and Apple sign-in with the official buttons; `method` on the sign-up events.
-- Onboarding's start screen and the basics: the pack's checklist, follow-ups only after a yes, each
-  answer saved at once, Skip, Back (a no removes what the yes added, logged), "Done for now",
-  `via: guided`, resume. The agent route from onboarding.
-- Chart geometry in `core.chart` and the SVG components: the trend read by hover, tap, drag and
-  arrow keys; the frosted "Need more data" placeholder; allocation; assets vs liabilities.
-- Home complete: trend and allocation (carousel on a phone), breakdown by type, assets vs
-  liabilities, baseline selector, sort, filter and Don't Show, the stale count, the agent handoff
-  (starting prompt, update prompt, prefill or Copy), the empty-Home rule with and without an agent.
-- The holding page complete: trend, change over the baseline, paged history, edit and delete a
-  value, archive and unarchive, delete, tags. The connect entry from a holding.
-- Types and tags: add, rename, merge, delete; tags in the Add form.
-- Staleness labels on list and detail (J9).
-- A sweep of every J1–J4 and J9 happy path at 390 and 1280 px, 320 px without sideways scrolling,
-  axe, tap targets and minimum text size.
+On `https://‹domain›`, deployed by the production workflow:
 
-**Founder items:** F17 Google, F18 Apple.
+1. A visitor signs up or signs in with Google, Apple or email. Provider accounts are verified.
+2. Onboarding's "Let's start…" screen offers the basics or the agent route. The basics walk the
+   pack's checklist one question per screen, saving each answer at once, with Skip, Back and "Done
+   for now". The agent route ends on a blank Home with the starting prompt.
+3. Home shows the whole picture: net worth, trend and allocation, breakdown by type, assets vs
+   liabilities, change against the chosen baseline, sort, filter and Don't Show, and the stale
+   count with the agent handoff. An empty Home offers one action and one alternative, with or
+   without an agent.
+4. A holding opens its own trend, change over the baseline and paged history; values edit and
+   delete; holdings archive and delete; tags assign.
+5. Types and tags add, rename, merge and delete from the web; the Add form takes tags.
+6. Stale holdings are labelled on list and detail. Every step fires its §3.5 event. The phone
+   screenshots render in the connect guides.
+
+#### Acceptance criteria in P2
+
+Stage 6 tests P2 against these criteria (PRD §6), and re-checks the P1 criteria (§3.2) for
+regressions.
+
+| Job | In P2 |
+|---|---|
+| **J1** | Sign-up and sign-in by Google and Apple, verified, with the official buttons, `method` on the sign-up events · the "Let's start" screen and the basics (the pack's checklist, follow-ups only after a yes, each answer saved at once, Skip, Back with removal logged, "Done for now", `via: guided`, resume, the P-A walk-through) · the agent route from onboarding and the blank Home after it · the empty Home's full rule, with and without an agent |
+| **J2** | Tags in the Add form · add, rename, merge and delete types and tags, holdings follow, nothing orphaned · archive and unarchive · delete from the web (audited in the rows; the log screen is P3) |
+| **J3** | Edit a value on the web (amount, date, currency): history, totals and charts recompute, the edit is audited (shown in P3), `value_corrected` fires |
+| **J4** | All: total, trend, breakdown by type, assets vs liabilities · the six baselines, every figure relative to the one in force and labelled · a holding's trend, change and newest-first history · the trend read by hover, tap, drag and arrow keys, a plain swipe still scrolling · the "Need more data" placeholder · sort, filter and Don't Show with the active filter visible · usable on a phone without sideways scrolling |
+| **J5** | The same connect flow from onboarding and from a holding, `entry` carried · the prompt handoff for an empty or stale Home (the starting and update prompts, prefill where the client supports it, Copy where not, no financial data in prompts) |
+| **J9** | All: staleness labels on list and detail · the stale count on Home, handed to a connected agent or offering to connect one · no scheduled stale-holding message of any kind |
+
+Non-functional requirements in P2: N7 (the sweep), N9 (every new event prop an enum; the message
+tests still pass), N10 (the deny-list scan covers the new code), N11 (every new figure from a pure
+`core` function), N1 (the new tools carry `outcome` and `latency_ms` like the rest).
+
+Carry-over from P1 (STATE, 2026-10-08): the 3 Claude phone screenshots ship as P2-T8; the F16
+external monitor and inbox delivery of the verification and security emails are Founder and Stage 6
+checks at the P2 checkpoint, not build tasks.
+
+#### Tasks
+
+| Task | Title | Depends on | Parallel-safe | Founder items first |
+|---|---|---|---|---|
+| P2-T1 | Google and Apple sign-in | — | yes | F17, F18 |
+| P2-T2 | Onboarding basics and the agent route | T6 (mechanical: both extend `POST /api/holdings`) | yes | — |
+| P2-T3 | Chart geometry and SVG components | — | yes | — |
+| P2-T4 | Home complete | T3 | yes | — |
+| P2-T5 | Holding page complete | T3 | yes | — |
+| P2-T6 | Types and tags | — | yes | — |
+| P2-T7 | Responsive sweep and the P2 checkpoint | T1, T2, T4, T5, T6 | no | — |
+| P2-T8 | P1 follow-up: phone screenshots in the guides | — | yes | F11 (remainder) |
+
+"Parallel-safe" means the task can run beside the others in its wave once its dependencies are
+done; tasks in one wave touch different files. T2's feature needs nothing from T6; the dependency
+is ordering only, so T6's `tagIds` and T2's `via` land on `POST /api/holdings` in separate waves.
+T8 runs whenever the Founder supplies the files; it is content-only and never blocks T7.
+
+#### Order
+
+```mermaid
+flowchart LR
+  T1[T1 providers] --> T7[T7 sweep + checkpoint]
+  T3[T3 charts] --> T4[T4 Home] & T5[T5 holding]
+  T4 & T5 --> T7
+  T6[T6 taxonomy] --> T2[T2 basics + agent route] & T7
+  T2 --> T7
+  F11[F11 phone shots] --> T8[T8 guides]
+```
+
+| Wave | Tasks |
+|---|---|
+| 1 | T1, T3, T6 |
+| 2 | T2, T4, T5 |
+| 3 | T7 |
+| alongside | T8, once the Founder supplies the files |
+
+#### Running the build
+
+- `stage: build P2` in a new session. The build session works wave by wave, dispatching one
+  engineer subagent per task, and hands off to a new session between waves when its context runs
+  heavy (STATE names the next wave). `stage: build P2-Tn` runs a single task.
+- One branch and one pull request per task (`p2-tn`, CONVENTIONS §15), each with its own preview
+  and Neon branch. A preview's `DATABASE_URL` is injected per-deployment by its Preview job: never
+  redeploy from the Vercel dashboard; re-run the Preview job instead.
+- After T7, `stage: test P2` in a fresh session (WORKFLOW Stage 6), against the criteria above plus
+  the P1 criteria. Suggested manual checks for Stage 6: inbox delivery of the verification and
+  security emails; the F16 monitor watching `/api/health` and the OAuth metadata; a real Google
+  and Apple sign-in on production.
+
+**Founder items:** F17 Google, F18 Apple, F11 remainder (phone shots for T8).
 
 ### P3 — Trust, ownership and the comeback
 
@@ -282,12 +351,12 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 |---|---|---|
 | F9 | Vercel env `CRON_SECRET` (generated) | T8 |
 | F10 | **Resend:** an account; add the domain and set the DNS records it shows (SPF, DKIM, DMARC). Vercel env: `RESEND_API_KEY`, `EMAIL_FROM` (e.g. `NetNet <hello@‹domain›>`), `BETTER_AUTH_SECRET` (generated), and on Preview only `EMAIL_PREVIEW_ALLOW` (the addresses previews may email) | T11 |
-| F11 | After the spike: the 6 setup screenshots for Claude, computer and phone (ChatGPT's 6 once it is listed), named as in `docs/02-prototype/connect/README.md`, cropped, with name, email, avatar and chat titles removed. Put them in `content/images/connect/` | T17 (tested), P1 checkpoint |
+| F11 | The 3 remaining Claude phone setup screenshots (the 3 computer shots shipped in P1; ChatGPT's 6 once it is listed), named as in `docs/02-prototype/connect/README.md`, cropped, with name, email, avatar and chat titles removed. Put them in `content/images/connect/` | P2-T8 |
 | F12 | Point the domain at the Vercel project. Vercel env (Production): `PUBLIC_ORIGIN` (`https://‹domain›`) and `DATABASE_URL` (the pooled `netnet_app` connection string; T4's report gives its exact form) | T18 |
 | F13 | **Sentry** (Developer plan, free): one project for the function, one for the web app. Vercel env: `SENTRY_DSN`, `VITE_SENTRY_DSN` | T18 |
 | F14 | **Backup key**, on your own computer: install `age`, run `age-keygen -o netnet-backup.key`. The public key (`age1…`) → GitHub secret `BACKUP_PUBLIC_KEY`. Keep the key file offline, in two places. It is the only way to read a backup | T18 |
 | F15 | **Probe:** once production is up, create the probe account (fictional data) and approve the probe's connection as T18 describes; create a fine-grained GitHub token for this repository only, with "Secrets: read and write", as GitHub secret `PROBE_SECRETS_TOKEN` (the probe stores its rotated refresh token with it) | T18 |
-| F16 | A free external uptime monitor (e.g. UptimeRobot) on `https://‹domain›/api/health` and `https://‹domain›/.well-known/oauth-authorization-server`, alerting your email | P1 checkpoint |
+| F16 | A free external uptime monitor (e.g. UptimeRobot) on `https://‹domain›/api/health` and `https://‹domain›/.well-known/oauth-authorization-server`, alerting your email | P1 checkpoint (open; rechecked at P2's) |
 
 **Later phases**
 
@@ -338,3 +407,5 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | Previews are public so agents can reach them | Previews hold fictional seed data only and their own Neon project |
 | Pack reviewers are the long pole for launch | F3 starts now; packs are content, so they can be written from P1-T3 onward, beside the build |
 | Directory listings need legal pages that belong to Stage 8 | P4 prepares the materials; submission follows the legal basics |
+| Provider setup (F17, F18; F1's Apple enrolment has a lead time) holds up P2-T1 | T1 is wave 1 but standalone: the email flow is unaffected and the other wave-1 tasks proceed; the providers land when the Founder's setup does |
+| The phone shots arrive late | P2-T8 is content-only and off the critical path: the sweep and checkpoint (T7) never wait for it |
