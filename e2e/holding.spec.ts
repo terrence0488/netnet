@@ -4,8 +4,9 @@ import { expectSoundScreen } from './accounts';
 import { asSignedIn, mockSnapshot } from './support';
 
 /**
- * The holding page (PRD J3, J4): the latest value, the history newest first, a new value, changed
- * accessibility, and who wrote each value. All data is fictional.
+ * The holding page (PRD J2, J3, J4): the latest value, the trend with the change over the
+ * baseline, the history newest first, a new value, changed accessibility, corrected and deleted
+ * values, archive and delete, tags, and the connect flow. All data is fictional.
  */
 test.use({ timezoneId: 'UTC' });
 
@@ -100,7 +101,7 @@ const LEDGER = {
   packRef: [{ key: 'generic', version: 1 }],
   prefs: {},
   types: TYPES,
-  tags: [],
+  tags: [{ id: 'tag_1', name: 'Retirement', sort: 0 }],
   holdings: [BROKER, FLAT],
   values: {
     hld_broker: [
@@ -145,6 +146,38 @@ const BROKER_VALUES = {
   ],
   nextCursor: null,
 };
+
+const CLAUDE_GUIDE = {
+  id: 'claude',
+  name: 'Claude',
+  listed: true,
+  order: 1,
+  platforms: {
+    phone: { steps: [{ text: 'In the Claude app, open **Settings → Connectors**.' }] },
+    computer: { steps: [{ text: 'In Claude, open **Settings → Connectors**.' }] },
+  },
+};
+
+const OTHER_GUIDE = {
+  id: 'other',
+  name: 'Other agent',
+  listed: true,
+  order: 3,
+  platforms: {
+    any: { steps: [{ text: 'In your agent’s settings, add a **custom connector**.' }] },
+  },
+};
+
+/** The setup guides as administered content, so the connect flow can start. */
+async function mockGuides(page: Page) {
+  await page.route('**/api/content/current', (route) =>
+    route.fulfill({ json: { agent: { claude: 1, other: 1 } } }),
+  );
+  await page.route('**/api/content/agent/*', (route) => {
+    const key = new URL(route.request().url()).pathname.split('/').pop()?.split('@')[0];
+    return route.fulfill({ json: key === 'claude' ? CLAUDE_GUIDE : OTHER_GUIDE });
+  });
+}
 
 async function mockHolding(page: Page) {
   await asSignedIn(page);
@@ -364,6 +397,175 @@ test('pages older values on', async ({ page }) => {
   await expect(rows).toHaveCount(3);
 });
 
+test('the trend, the change over the baseline, and the staleness', async ({ page }) => {
+  await page.goto('/app/holdings/hld_broker');
+  await expect(page.getByRole('heading', { level: 2, name: 'Trend' })).toBeVisible();
+  await expect(page.getByTestId('trend-chart')).toBeVisible();
+  await expect(page.getByText('Last month')).toBeVisible();
+  await expect(page.getByText('+$3,500')).toBeVisible();
+  await expect(page.getByText('(+5.5%)')).toBeVisible();
+  await expect(page.getByText('Updated yesterday')).toBeVisible();
+});
+
+test('edits a value’s amount, date and currency', async ({ page }) => {
+  let patch: Record<string, unknown> | undefined;
+  await page.route('**/api/values/val_new', async (route) => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    patch = route.request().postDataJSON() as Record<string, unknown>;
+    return route.fulfill({
+      json: {
+        result: valueRow({ id: 'val_new', holdingId: 'hld_broker', date: day(1) }),
+        dataVersion: 5,
+        warnings: [],
+      },
+    });
+  });
+
+  await page.goto('/app/holdings/hld_broker');
+  const rows = page.getByRole('button', { expanded: false }).filter({ hasText: /\$/ });
+  await rows.nth(0).click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Edit Value' });
+  await expect(dialog.getByLabel('Asset Value')).toHaveValue('50000.00');
+  await expect(dialog.getByLabel('Currency')).toHaveValue('USD');
+  await expect(dialog.getByLabel('As of')).toHaveValue(day(1));
+  await dialog.getByLabel('Asset Value').fill('51000');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText('Saved.')).toBeVisible();
+  expect(patch).toStrictEqual({ amount: '51000', date: day(1), currency: 'USD' });
+});
+
+test('deletes a value only after it asks', async ({ page }) => {
+  let deletes = 0;
+  await page.route('**/api/values/val_old', async (route) => {
+    if (route.request().method() !== 'DELETE') return route.fallback();
+    deletes += 1;
+    return route.fulfill({ json: { result: null, dataVersion: 5, warnings: [] } });
+  });
+
+  await page.goto('/app/holdings/hld_broker');
+  const rows = page.getByRole('button', { expanded: false }).filter({ hasText: /\$/ });
+  await rows.nth(1).click();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(page.getByText('Delete this value?')).toBeVisible();
+  await page.getByRole('button', { name: 'Keep' }).click();
+  await expect(page.getByText('Delete this value?')).toBeHidden();
+  expect(deletes).toBe(0);
+
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  await page.getByRole('button', { name: 'Delete value' }).click();
+  await expect(page.getByText('Deleted.')).toBeVisible();
+  expect(deletes).toBe(1);
+});
+
+test('archives and unarchives the holding', async ({ page }) => {
+  const patches: unknown[] = [];
+  await page.route('**/api/holdings/hld_broker', async (route) => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    const body = route.request().postDataJSON() as { archived: boolean };
+    patches.push(body);
+    const row = {
+      ...BROKER,
+      archived: body.archived,
+      archivedAt: body.archived ? '2026-10-01T00:00:00.000Z' : null,
+    };
+    await mockSnapshot(page, { ...LEDGER, dataVersion: 5, holdings: [row, FLAT] });
+    return route.fulfill({ json: { result: row, dataVersion: 5, warnings: [] } });
+  });
+
+  await page.goto('/app/holdings/hld_broker');
+  await page.getByRole('button', { name: 'Archive holding' }).click();
+  await expect(page.getByText('Archived.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Archived · Investments · USD')).toBeVisible();
+  await page.getByRole('button', { name: 'Unarchive holding' }).click();
+  await expect(page.getByText('Unarchived.', { exact: true })).toBeVisible();
+  expect(patches).toStrictEqual([{ archived: true }, { archived: false }]);
+});
+
+test('deletes the holding only after it asks, then leaves for Home', async ({ page }) => {
+  let deletes = 0;
+  await page.route('**/api/holdings/hld_broker', async (route) => {
+    if (route.request().method() !== 'DELETE') return route.fallback();
+    deletes += 1;
+    return route.fulfill({ json: { result: null, dataVersion: 5, warnings: [] } });
+  });
+
+  await page.goto('/app/holdings/hld_broker');
+  await page.getByRole('button', { name: 'Delete holding' }).click();
+  await expect(page.getByText(/Brokerage account” and its 2 values go/)).toBeVisible();
+  await page.getByRole('button', { name: 'Keep' }).click();
+  await expect(page.getByText(/and its 2 values go/)).toBeHidden();
+  expect(deletes).toBe(0);
+
+  await page.getByRole('button', { name: 'Delete holding' }).click();
+  await page.getByRole('button', { name: 'Delete holding' }).click();
+  await expect(page.getByText('Deleted.')).toBeVisible();
+  await expect(page).toHaveURL(/\/app$/);
+  expect(deletes).toBe(1);
+});
+
+test('assigns tags to the holding', async ({ page }) => {
+  let patch: Record<string, unknown> | undefined;
+  await page.route('**/api/holdings/hld_broker', async (route) => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    patch = route.request().postDataJSON() as Record<string, unknown>;
+    const row = { ...BROKER, tagIds: ['tag_1'] };
+    await mockSnapshot(page, { ...LEDGER, dataVersion: 5, holdings: [row, FLAT] });
+    return route.fulfill({ json: { result: row, dataVersion: 5, warnings: [] } });
+  });
+
+  await page.goto('/app/holdings/hld_broker');
+  await expect(page.getByText('No tags')).toBeVisible();
+  await page.getByRole('button', { name: 'Edit tags' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Tags' });
+  const chip = dialog.getByRole('button', { name: 'Retirement' });
+  await expect(chip).toHaveAttribute('aria-pressed', 'false');
+  await chip.click();
+  await expect(chip).toHaveAttribute('aria-pressed', 'true');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText('Saved.')).toBeVisible();
+  expect(patch).toStrictEqual({ tagIds: ['tag_1'] });
+  await expect(page.getByText('No tags')).toBeHidden();
+  await expect(page.locator('main').getByText('Retirement')).toBeVisible();
+});
+
+test('the connect flow starts here with the holding entry', async ({ page }) => {
+  await mockGuides(page);
+  let post: Record<string, unknown> | undefined;
+  await page.route('**/api/agent/attempts', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    post = route.request().postDataJSON() as Record<string, unknown>;
+    return route.fulfill({ status: 201, json: { id: 'att_1', state: 'started' } });
+  });
+  await page.route('**/api/agent/attempts/*', (route) =>
+    route.fulfill({ json: { id: 'att_1', state: 'started' } }),
+  );
+
+  await page.goto('/app/holdings/hld_flat');
+  await page.getByRole('button', { name: 'Ask your agent' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Ask your agent' });
+  const connect = dialog.getByRole('link', { name: 'Connect your agent' });
+  await expect(connect).toHaveAttribute(
+    'href',
+    '/app/agent/connect?entry=holding&holding=hld_flat',
+  );
+  await connect.click();
+
+  await expect(page).toHaveURL(/\/agent\/connect\?entry=holding&holding=hld_flat/);
+  await expect(page.getByRole('link', { name: 'Back' })).toHaveAttribute(
+    'href',
+    '/app/holdings/hld_flat',
+  );
+  await page.getByRole('link', { name: 'Claude' }).click();
+  await expect(page.getByText(/Waiting for Claude/)).toBeVisible();
+  expect(post).toMatchObject({ client: 'claude', entry: 'holding' });
+});
+
 test('an unknown holding says so, with the way back', async ({ page }) => {
   await page.goto('/app/holdings/hld_nope');
   await expect(page.getByText('This holding isn’t here any more.')).toBeVisible();
@@ -378,5 +580,17 @@ test('a sound screen at phone and computer widths', async ({ page }, testInfo) =
 
   await page.getByRole('button', { name: 'Update' }).click();
   await expect(page.getByRole('dialog', { name: 'Add Value' })).toBeVisible();
+  await expectSoundScreen(page, testInfo);
+  await page.keyboard.press('Escape');
+
+  await page.getByRole('button', { name: 'Edit tags' }).click();
+  await expect(page.getByRole('dialog', { name: 'Tags' })).toBeVisible();
+  await expectSoundScreen(page, testInfo);
+  await page.keyboard.press('Escape');
+
+  const rows = page.getByRole('button', { expanded: false }).filter({ hasText: /\$/ });
+  await rows.nth(0).click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Edit Value' })).toBeVisible();
   await expectSoundScreen(page, testInfo);
 });
