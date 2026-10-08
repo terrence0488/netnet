@@ -13,8 +13,10 @@ import { oauthRoutes } from './oauth-routes';
  * `/api/auth/*` (architecture §7.1, §7.2): Better Auth's email and password endpoints, with
  * `core.rate_limit`'s limits in front (§8), and the agents' OAuth server (`oauthRoutes`). Only the
  * endpoints listed here are served; Better Auth's others (updating a name, linking accounts, the
- * OAuth provider's consent and admin endpoints…) answer `NOT_FOUND`. Google and Apple (P2) add
- * `/sign-in/social` and `/callback/:id`.
+ * OAuth provider's consent and admin endpoints…) answer `NOT_FOUND`. Google and Apple add
+ * `/sign-in/social` (limited like a sign-up: starting one is a way in) and `/callback/:id`, which
+ * the providers answer to (Apple by form POST); the callback carries no limit of its own, because
+ * only a state this server minted completes it.
  */
 
 /** Sign-up: per IP address, in a fixed one-minute window (§8). */
@@ -116,6 +118,15 @@ export function authRoutes(deps: AuthRoutesDeps = defaultDeps): Hono<AppEnv> {
     await deps.rateLimit(`signin:${clientIp(c)}:${email}`, SIGN_INS_PER_MINUTE, 60);
     return pass(c);
   });
+
+  routes.post('/sign-in/social', smallBody, async (c) => {
+    await perIp(c, 'social', SIGN_UPS_PER_MINUTE);
+    return pass(c);
+  });
+
+  // The providers' answer, not ours: no body limit of ours applies to their POST.
+  routes.get('/callback/:id', pass);
+  routes.post('/callback/:id', pass);
 
   routes.post('/request-password-reset', smallBody, async (c) => {
     await perIp(c, 'reset', EMAIL_REQUESTS_PER_MINUTE);

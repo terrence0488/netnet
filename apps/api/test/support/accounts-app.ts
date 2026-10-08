@@ -5,6 +5,7 @@ import { Hono } from 'hono';
 import { createAgent, type Agent } from '../../src/auth/agent';
 import { createAuth, type Auth } from '../../src/auth/auth';
 import type { GuideHosts, LoadGuideHosts } from '../../src/auth/classify';
+import type { SocialConfig } from '../../src/auth/social';
 import { wellKnownRoutes } from '../../src/auth/oauth-routes';
 import { originCheck } from '../../src/auth/origin-check';
 import { authRoutes } from '../../src/auth/routes';
@@ -85,7 +86,7 @@ export interface AccountsApp {
 
 export function accountsApp(
   db: TestDatabase,
-  options: { guides?: LoadGuideHosts } = {},
+  options: { guides?: LoadGuideHosts; social?: SocialConfig } = {},
 ): AccountsApp {
   const emails = captureChannel();
   const emailDown = { value: false };
@@ -120,6 +121,7 @@ export function accountsApp(
     appVersion: () => 'test123',
     background,
     fetchClientMetadata: cimd.fetch,
+    ...(options.social ? { social: options.social } : {}),
   });
   const agent = createAgent({
     db: () => db.appDb,
