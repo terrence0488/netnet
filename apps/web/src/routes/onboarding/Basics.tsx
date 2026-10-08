@@ -293,7 +293,7 @@ function AskScreen({ item, data }: { item: ChecklistItem; data: BasicsData }) {
         </Button>
       )}
       {(problem ?? doneProblem) ? <FormProblem>{problem ?? doneProblem}</FormProblem> : null}
-      <DoneForNow onDone={finish} disabled={waiting} />
+      <DoneForNow onDone={finish} waiting={waiting} />
     </AuthFrame>
   );
 }
@@ -412,15 +412,15 @@ function AmountScreen({ item, data }: { item: ChecklistItem; data: BasicsData })
           Continue
         </Button>
       </AuthForm>
-      <DoneForNow onDone={finish} disabled={saving || finishing} />
+      <DoneForNow onDone={finish} waiting={saving || finishing} />
     </AuthFrame>
   );
 }
 
 /** "Done for now": one tap away on every basics screen, keeping what was entered. */
-function DoneForNow({ onDone, disabled }: { onDone: () => void; disabled: boolean }) {
+function DoneForNow({ onDone, waiting }: { onDone: () => void; waiting: boolean }) {
   return (
-    <Button variant="quiet" block onClick={onDone} aria-disabled={disabled ? true : undefined}>
+    <Button variant="quiet" block onClick={onDone} aria-disabled={waiting ? true : undefined}>
       Done for now
     </Button>
   );

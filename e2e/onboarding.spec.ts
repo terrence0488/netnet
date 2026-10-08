@@ -80,6 +80,13 @@ test('the looked-up country is confirmed with one tap, the segment skipped, then
   await expectSoundScreen(page, testInfo);
   await page.getByRole('button', { name: 'Skip' }).click();
 
+  // The start screen, then the basics; Done for now finishes with nothing saved.
+  await expect(heading(page, /getting to know a little about your finances/)).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/onboarding\/start$/);
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(heading(page, 'Do you have money in a bank account?')).toBeVisible();
+  await page.getByRole('button', { name: 'Done for now' }).click();
+
   await expect(heading(page, 'Net worth')).toBeVisible();
   await expect(page).toHaveURL(/\/app$/);
   expect(await profileOf(page)).toMatchObject({
@@ -140,6 +147,11 @@ test('Somewhere else lists every other country alphabetically; Back keeps the an
   await expect(page.getByRole('button', { name: 'Skip' })).toBeVisible();
   await building.click();
   await page.getByRole('button', { name: 'Continue' }).click();
+
+  await expect(heading(page, /getting to know a little about your finances/)).toBeVisible();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(heading(page, 'Do you have money in a bank account?')).toBeVisible();
+  await page.getByRole('button', { name: 'Done for now' }).click();
 
   await expect(heading(page, 'Net worth')).toBeVisible();
   expect(await profileOf(page)).toMatchObject({
