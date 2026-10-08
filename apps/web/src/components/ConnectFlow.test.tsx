@@ -93,8 +93,9 @@ describe('parseEntry and entryPath', () => {
     expect(parseEntry('home')).toBe('home');
     expect(parseEntry('holding')).toBe('holding');
     expect(parseEntry('agent')).toBe('agent');
+    expect(parseEntry('onboarding')).toBe('onboarding');
     expect(parseEntry(null)).toBe('agent');
-    expect(parseEntry('onboarding')).toBe('agent');
+    expect(parseEntry('something-else')).toBe('agent');
   });
 
   it('returns Back to where the flow began', () => {
@@ -103,6 +104,7 @@ describe('parseEntry and entryPath', () => {
     expect(entryPath('holding', 'hld_01JABC')).toBe('/holdings/hld_01JABC');
     expect(entryPath('holding', null)).toBe('/agent');
     expect(entryPath('holding', '/agent')).toBe('/agent');
+    expect(entryPath('onboarding')).toBe('/onboarding/start');
   });
 });
 
@@ -181,6 +183,13 @@ describe('the choice', () => {
     const markup = render('/app/agent/connect/chatgpt?entry=agent');
     expect(markup).toContain('Which AI agent do you use?');
     expect(markup).toContain('/agent/connect/claude?entry=agent');
+  });
+
+  it('returns the onboarding entry to the start screen', () => {
+    const markup = render('/app/agent/connect?entry=onboarding');
+    expect(markup).toContain('Which AI agent do you use?');
+    expect(markup).toContain('/agent/connect/claude?entry=onboarding');
+    expect(markup).toContain('href="/app/onboarding/start"');
   });
 });
 

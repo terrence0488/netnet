@@ -19,6 +19,8 @@ export type AuthProblem =
   | 'INVALID_EMAIL'
   /** Reset: the link's token has expired or was used. */
   | 'INVALID_TOKEN'
+  /** A provider whose secrets are not set up (F17/F18 pending, or a flag without them). */
+  | 'UNAVAILABLE'
   | 'RATE_LIMITED'
   /** No response arrived. */
   | 'NETWORK'
@@ -132,3 +134,61 @@ export function looksLikeEmail(value: string): boolean {
 /** At least 8 characters, no composition rules (architecture §8); at most Better Auth's 128. */
 export const MIN_PASSWORD_LENGTH = 8;
 export const MAX_PASSWORD_LENGTH = 128;
+
+/* ---------------------------------------------------------------- providers */
+
+/** The ways in besides email (architecture §8 "Providers"). */
+export type SocialProvider = 'google' | 'apple';
+
+/** The providers' names as the screens say them. */
+export const PROVIDER_NAMES: Record<SocialProvider, string> = {
+  google: 'Google',
+  apple: 'Apple',
+};
+
+export function isSocialProvider(value: unknown): value is SocialProvider {
+  return value === 'google' || value === 'apple';
+}
+
+/**
+ * The providers whose buttons show, baked in at build time (`VITE_AUTH_GOOGLE`, `VITE_AUTH_APPLE`).
+ * The flags travel with the secrets: a button without its secrets answers UNAVAILABLE when tapped.
+ */
+export function enabledProviders(): SocialProvider[] {
+  const env = import.meta.env;
+  return (['google', 'apple'] as const).filter((provider) =>
+    provider === 'google' ? env.VITE_AUTH_GOOGLE === '1' : env.VITE_AUTH_APPLE === '1',
+  );
+}
+
+/**
+ * Starts sign-in with a provider: asks our server for the provider's authorization URL and hands
+ * it back for the screen to go to. `callbackURL` is where the provider sends the person back to
+ * (inside the app); `errorCallbackURL` is where a failure returns instead, with `?error=`.
+ */
+export async function startSocialSignIn(
+  provider: SocialProvider,
+  callbackURL: string,
+  errorCallbackURL: string,
+): Promise<string> {
+  let response: Response;
+  try {
+    response = await fetch(`${AUTH_BASE}/sign-in/social`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, callbackURL, errorCallbackURL }),
+    });
+  } catch {
+    throw new AuthError('NETWORK', 0);
+  }
+  const parsed: unknown = await response.json().catch(() => undefined);
+  if (!response.ok) {
+    // The path is fixed, so a 404 is the provider answering "not set up".
+    if (response.status === 404) throw new AuthError('UNAVAILABLE', 404);
+    throw new AuthError(problemOf(response.status, parsed), response.status);
+  }
+  const { url } = (parsed ?? {}) as { url?: unknown };
+  if (typeof url !== 'string' || url === '') throw new AuthError('SERVER', response.status);
+  return url;
+}

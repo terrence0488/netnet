@@ -4,25 +4,36 @@ import { countryOptions, localeCountry } from './countries';
 import { nextState, pathOf, previousStep, reachable, stepLabel } from './steps';
 
 describe('the onboarding steps', () => {
-  it('run country, then segment, then Home', () => {
+  it('run country, segment, start and basics, then Home', () => {
     expect(pathOf('country')).toBe('/onboarding/country');
     expect(pathOf('segment')).toBe('/onboarding/segment');
+    expect(pathOf('start')).toBe('/onboarding/start');
+    expect(pathOf('basics')).toBe('/onboarding/basics');
     expect(pathOf('done')).toBe('/');
     expect(nextState('country')).toBe('segment');
-    expect(nextState('segment')).toBe('done');
+    expect(nextState('segment')).toBe('start');
+    expect(nextState('start')).toBe('basics');
+    expect(nextState('basics')).toBe('done');
   });
 
   it('count the questions and know the one before', () => {
     expect(stepLabel('country')).toBe('1 of 2');
     expect(stepLabel('segment')).toBe('2 of 2');
+    expect(stepLabel('start')).toBeUndefined();
+    expect(stepLabel('basics')).toBeUndefined();
     expect(previousStep('country')).toBeUndefined();
     expect(previousStep('segment')?.state).toBe('country');
+    expect(previousStep('start')?.state).toBe('segment');
+    expect(previousStep('basics')?.state).toBe('start');
   });
 
   it('open any step up to the saved one, none ahead of it, none once done', () => {
     expect(reachable('country', 'segment')).toBe(true);
     expect(reachable('segment', 'segment')).toBe(true);
     expect(reachable('segment', 'country')).toBe(false);
+    expect(reachable('start', 'basics')).toBe(true);
+    expect(reachable('basics', 'start')).toBe(false);
+    expect(reachable('basics', 'basics')).toBe(true);
     expect(reachable('country', 'done')).toBe(false);
   });
 });

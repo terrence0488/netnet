@@ -1,0 +1,114 @@
+/* Home's filter sheet: show, per-type and per-tag show-only and Don't Show. */
+
+.stack {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.groupTitle {
+  margin: 0 0 var(--space-4);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-heading-card);
+  font-weight: var(--weight-heading-card);
+  letter-spacing: var(--tracking-heading-card);
+}
+
+.entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--border-rule) solid var(--rule);
+}
+
+.entry:last-child {
+  border-bottom: none;
+}
+
+.entryName {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+}
+
+.toggles {
+  display: flex;
+  flex: none;
+  gap: var(--space-3);
+}
+
+/* Filter chips (design-system §6): outlined pills that fill tomato, or loss for Don't Show.
+   The button is the 44px target; the pill is drawn tight around its label inside it. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-5);
+  border: var(--border-rule) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink-2);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.chip[aria-pressed='true'] .pill {
+  background: var(--brand);
+  border-color: var(--edge);
+  color: var(--brand-on);
+}
+
+.chip[aria-pressed='true'] .pill[data-hide='true'] {
+  background: var(--loss);
+  color: var(--card);
+}
+
+.clear {
+  justify-self: start;
+  min-height: var(--hit);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+}
+
+.clear:hover {
+  color: var(--ink);
+}
+
+.separate {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  line-height: var(--leading-body-sm);
+}

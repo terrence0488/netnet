@@ -51,6 +51,9 @@ describe('authRoutes()', () => {
   it.each([
     ['POST', '/api/auth/sign-up/email'],
     ['POST', '/api/auth/sign-in/email'],
+    ['POST', '/api/auth/sign-in/social'],
+    ['GET', '/api/auth/callback/google'],
+    ['POST', '/api/auth/callback/apple'],
     ['POST', '/api/auth/sign-out'],
     ['GET', '/api/auth/verify-email'],
     ['POST', '/api/auth/send-verification-email'],
@@ -140,12 +143,15 @@ describe('authRoutes()', () => {
     const { app, counted } = harness();
     await post(app, '/api/auth/sign-up/email', { email: 'a@example.com', password: 'x' });
     await post(app, '/api/auth/sign-in/email', { email: ' Person@Example.com ', password: 'x' });
+    await post(app, '/api/auth/sign-in/social', { provider: 'google' });
     await post(app, '/api/auth/request-password-reset', { email: 'a@example.com' });
     await post(app, '/api/auth/send-verification-email', { email: 'a@example.com' });
     await app.request('/api/auth/sign-out', { method: 'POST' });
+    await app.request('/api/auth/callback/google?code=x&state=y', { method: 'GET' });
     expect(counted).toEqual([
       'signup:ip:192.0.2.1',
       'signin:192.0.2.1:person@example.com',
+      'social:ip:192.0.2.1',
       'reset:ip:192.0.2.1',
       'verify:ip:192.0.2.1',
     ]);

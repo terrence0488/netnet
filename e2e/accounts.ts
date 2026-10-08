@@ -67,7 +67,7 @@ export async function arriveAs(page: Page, person: Person, country?: string): Pr
 export async function signedUp(
   page: Page,
   person: Person,
-  profile: { country?: string; onboardingState?: 'segment' | 'done' } = {},
+  profile: { country?: string; onboardingState?: 'segment' | 'start' | 'basics' | 'done' } = {},
 ): Promise<void> {
   // No Origin: a request no browser sent passes the Origin check, and carries no cookie to abuse.
   const headers = { 'x-forwarded-for': person.ip };

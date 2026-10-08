@@ -1,0 +1,9 @@
+/* The baseline sheet's question: what the choices answer. */
+
+.question {
+  margin: 0 0 var(--space-5);
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+  line-height: var(--leading-body-sm);
+}

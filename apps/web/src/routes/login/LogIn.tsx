@@ -1,8 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useSearchParams } from 'react-router';
 import { refreshMe } from '../../api/account';
-import { isAuthError, looksLikeEmail, signIn } from '../../api/auth';
+import {
+  isAuthError,
+  isSocialProvider,
+  looksLikeEmail,
+  PROVIDER_NAMES,
+  signIn,
+} from '../../api/auth';
 import { handoffOf } from '../../app/handoff';
 import {
   AuthFoot,
@@ -11,10 +17,11 @@ import {
   Button,
   FormProblem,
   PasswordField,
+  ProviderButtons,
   TextField,
   authStyles,
 } from '../../components';
-import { COPY, failureSentence } from '../../components/auth-copy';
+import { COPY, failureSentence, providerUnfinished } from '../../components/auth-copy';
 
 const NOTICES = {
   existing: 'You already have an account. Log in instead.',
@@ -29,11 +36,17 @@ const NOTICES = {
 export function LogIn() {
   const location = useLocation();
   const client = useQueryClient();
+  const [params] = useSearchParams();
   const handoff = handoffOf(location.state);
   const [email, setEmail] = useState(handoff.email ?? '');
   const [password, setPassword] = useState('');
   const [emailProblem, setEmailProblem] = useState<string>();
-  const [problem, setProblem] = useState<string>();
+  // A provider round trip that came back with `?error=`: cancelled, refused or failed midway.
+  const [problem, setProblem] = useState<string | undefined>(() => {
+    if (params.get('error') === null) return undefined;
+    const provider = params.get('provider');
+    return providerUnfinished(isSocialProvider(provider) ? PROVIDER_NAMES[provider] : undefined);
+  });
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
@@ -65,6 +78,12 @@ export function LogIn() {
 
   return (
     <AuthFrame title="Log in" sub={handoff.notice ? NOTICES[handoff.notice] : undefined}>
+      <ProviderButtons
+        mode="login"
+        screen="/login"
+        search={location.search}
+        onProblem={setProblem}
+      />
       <AuthForm onSubmit={() => void submit()}>
         <TextField
           label="Email"

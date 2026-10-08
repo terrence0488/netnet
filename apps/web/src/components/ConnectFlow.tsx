@@ -8,8 +8,8 @@ import {
 } from '@netnet/contracts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link, Navigate } from 'react-router';
-import { meQuery, useMe } from '../api/account';
+import { Link, Navigate, useNavigate } from 'react-router';
+import { meQuery, useMe, useUpdateMe } from '../api/account';
 import { trackClient } from '../api/events';
 import { Waiting } from '../app/guards';
 import {
@@ -18,7 +18,16 @@ import {
   useAgentGuides,
   useStartAttempt,
 } from '../routes/agent/queries';
-import { AuthFrame, Button, ErrorState, ResendLink, authStyles, buttonClass } from './index';
+import { failureSentence } from './auth-copy';
+import {
+  AuthFrame,
+  Button,
+  ErrorState,
+  FormProblem,
+  ResendLink,
+  authStyles,
+  buttonClass,
+} from './index';
 import {
   AgentLogo,
   connectHref,
@@ -32,20 +41,21 @@ import styles from './ConnectFlow.module.css';
 /**
  * The one connect flow for every entry (PRD J5): choose the agent, verify the email first when it
  * is unverified, follow the steps for this platform, and watch NetNet move on by itself once the
- * agent is approved. The tab, the empty Home and a holding page start it; `onboarding` still to
- * come. Back returns step by step to where it began.
+ * agent is approved. Entries are `agent` (the tab), `home` (the empty Home), `onboarding`
+ * (the start screen, whose route ends on Home) and `holding` (a holding page). Back returns step
+ * by step to where it began.
  */
 
 /** The flow's `entry` query, as the API takes it; anything else is the Agent tab's. */
 export function parseEntry(value: string | null): ConnectEntry {
-  if (value === 'home') return 'home';
-  if (value === 'holding') return 'holding';
+  if (value === 'home' || value === 'onboarding' || value === 'holding') return value;
   return 'agent';
 }
 
-/** Where the flow began: where Back finally returns, and where Done goes. */
+/** Where the flow began: where Back finally returns (Done goes onward, not back). */
 export function entryPath(entry: ConnectEntry, holdingId?: string | null): string {
   if (entry === 'home') return '/';
+  if (entry === 'onboarding') return '/onboarding/start';
   if (entry === 'holding') return holdingBackPath(holdingId) ?? '/agent';
   return '/agent';
 }
@@ -360,20 +370,26 @@ function Steps({
             <h2 className={styles.doneTitle}>
               {generic ? 'Your agent is connected.' : `${guide.name} is connected.`}
             </h2>
-            <p className={styles.doneBody}>
-              {entry === 'home'
-                ? 'It can see your NetNet now. Head back to add what you have, or ask it to.'
-                : entry === 'holding'
-                  ? 'It can see your NetNet now. Head back to your holding.'
-                  : 'It can see your NetNet now. You can revoke it here any time.'}
-            </p>
-            <Link to={entryPath(entry, holdingId)} className={buttonClass('primary')}>
-              {entry === 'home'
-                ? 'Back to Home'
-                : entry === 'holding'
-                  ? 'Back to the holding'
-                  : 'Back to the Agent tab'}
-            </Link>
+            {entry === 'onboarding' ? (
+              <OnboardingDone />
+            ) : (
+              <>
+                <p className={styles.doneBody}>
+                  {entry === 'home'
+                    ? 'It can see your NetNet now. Head back to add what you have, or ask it to.'
+                    : entry === 'holding'
+                      ? 'It can see your NetNet now. Head back to your holding.'
+                      : 'It can see your NetNet now. You can revoke it here any time.'}
+                </p>
+                <Link to={entryPath(entry, holdingId)} className={buttonClass('primary')}>
+                  {entry === 'home'
+                    ? 'Back to Home'
+                    : entry === 'holding'
+                      ? 'Back to the holding'
+                      : 'Back to the Agent tab'}
+                </Link>
+              </>
+            )}
           </section>
         ) : (
           <p role="status" className={styles.waiting}>
@@ -383,6 +399,36 @@ function Steps({
         )}
       </div>
     </AuthFrame>
+  );
+}
+
+/**
+ * The onboarding route's end: once connected, onboarding is done and Home — blank — is next,
+ * with no waiting state. The button marks it done before going, so the guards let Home open.
+ */
+function OnboardingDone() {
+  const navigate = useNavigate();
+  const { mutate, isPending } = useUpdateMe();
+  const [problem, setProblem] = useState<string>();
+  const goHome = () => {
+    if (isPending) return;
+    setProblem(undefined);
+    mutate(
+      { onboardingState: 'done' },
+      {
+        onSuccess: () => void navigate('/', { replace: true }),
+        onError: (error) => setProblem(failureSentence(error)),
+      },
+    );
+  };
+  return (
+    <>
+      <p className={styles.doneBody}>It can see your NetNet now.</p>
+      {problem ? <FormProblem>{problem}</FormProblem> : null}
+      <Button onClick={goHome} aria-disabled={isPending ? true : undefined}>
+        Continue to Home
+      </Button>
+    </>
   );
 }
 

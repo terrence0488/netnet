@@ -7,6 +7,7 @@ import { createAuthMiddleware, createEmailVerificationToken } from 'better-auth/
 import { authAdapter } from '../db/auth-adapter';
 import { database, type Database } from '../db/client';
 import { createProfile } from '../db/profiles';
+import { socialProvidersFromEnv, type SocialConfig } from './social';
 import { appVersion } from '../events/app-version';
 import { track, type Track } from '../events/track';
 import { inBackground } from '../lib/after-response';
@@ -20,8 +21,9 @@ import { oauthPlugins } from './oauth';
 /**
  * Accounts (architecture §4, §8): Better Auth 1.7.7 with email and password, its tables in `core`.
  * Sign-up asks for an email and a password and nothing else, signs the person in at once and sends
- * the verification email through `notify()`; the person carries on unverified (PRD J1). Google and
- * Apple (P2) are `socialProviders` entries. The agents' OAuth server is its plugins (`./oauth`).
+ * the verification email through `notify()`; the person carries on unverified (PRD J1). Google
+ * and Apple are `socialProviders` entries (`./social`); their accounts arrive verified and skip
+ * the email. The agents' OAuth server is its plugins (`./oauth`).
  */
 
 const HOUR_S = 60 * 60;
@@ -51,14 +53,25 @@ export interface AuthDeps {
   background: (task: Promise<unknown>) => void;
   /** Fetches agents' CIMD documents (see `OAuthPluginOptions`). */
   fetchClientMetadata: ClientMetadataResourceFetch;
+  /**
+   * Google and Apple (`./social`). Left out, no provider is served: the sign-in and callback
+   * endpoints answer "provider not found", and the email flow is untouched.
+   */
+  social?: SocialConfig;
 }
 
 /**
  * The endpoints whose JSON answer carries the session token beside the cookie: sign-up and sign-in
  * as `token`, get-session as `session.token`. The web app reads neither, and the cookie is HttpOnly
  * so that page script never holds the token; `withoutSessionToken` takes it out of the bodies.
+ * Social sign-in answers a redirect URL, but its id-token branch answers a token too.
  */
-const TOKEN_IN_BODY = new Set(['/sign-up/email', '/sign-in/email', '/get-session']);
+const TOKEN_IN_BODY = new Set([
+  '/sign-up/email',
+  '/sign-in/email',
+  '/sign-in/social',
+  '/get-session',
+]);
 
 /** `body` without the session token, wherever these endpoints put it. */
 export function withoutSessionToken(body: unknown): unknown {
@@ -74,7 +87,7 @@ export function withoutSessionToken(body: unknown): unknown {
   return rest;
 }
 
-/** How the account was made: by the path that made it (`/callback/:id` for Google and Apple, P2). */
+/** How the account was made: by the path that made it (`/callback/:id` for Google and Apple). */
 function signUpMethod(params: unknown): 'email' | 'google' | 'apple' {
   const provider = (params as { id?: unknown } | undefined)?.id;
   return provider === 'google' || provider === 'apple' ? provider : 'email';
@@ -108,6 +121,24 @@ export function createAuth(deps: AuthDeps) {
       log: (level) => {
         if (level === 'error') log('auth_error', { errorCode: 'INTERNAL' });
       },
+    },
+    socialProviders: {
+      ...(deps.social?.google
+        ? {
+            google: {
+              clientId: deps.social.google.clientId,
+              clientSecret: deps.social.google.clientSecret,
+            },
+          }
+        : {}),
+      ...(deps.social?.apple
+        ? {
+            apple: {
+              clientId: deps.social.apple.clientId,
+              clientSecret: deps.social.apple.clientSecret,
+            },
+          }
+        : {}),
     },
     emailAndPassword: {
       enabled: true,
@@ -227,6 +258,7 @@ export function auth(): Auth {
     background: (task) =>
       inBackground(task, () => log('auth_task_failed', { errorCode: 'INTERNAL' })),
     fetchClientMetadata: fetchClientMetadataResource,
+    social: socialProvidersFromEnv(),
   });
   return shared;
 }

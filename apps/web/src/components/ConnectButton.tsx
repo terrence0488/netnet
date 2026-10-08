@@ -133,10 +133,10 @@ export function AgentRoll({ guides }: { guides: readonly AgentGuide[] }) {
 }
 
 /**
- * Where the connect flow starts from: the Agent tab, the empty Home, and a holding page
- * (`onboarding` still to come).
+ * Where the connect flow starts from: the Agent tab, the empty Home, the start screen
+ * (`onboarding`), and a holding page.
  */
-export type ConnectEntry = 'agent' | 'home' | 'holding';
+export type ConnectEntry = 'agent' | 'home' | 'onboarding' | 'holding';
 
 /** A holding id as the flow carries it: `hld_` and the id's own characters, nothing else. */
 const HOLDING_ID = /^hld_[A-Za-z0-9_-]{1,64}$/;
