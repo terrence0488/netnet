@@ -43,6 +43,7 @@ describe('vercel.json security headers', () => {
       "font-src 'self'",
       "frame-ancestors 'none'",
       'https://*.ingest.sentry.io',
+      'https://*.ingest.us.sentry.io',
       'https://*.ingest.de.sentry.io',
     ]) {
       expect(csp).toContain(part);
