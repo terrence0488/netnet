@@ -160,4 +160,5 @@ test('a provider failure returns to the screen it started from, told plainly', a
 
   await page.goto('/app/login?error=access_denied');
   await expect(page.getByText('Sign-in didn’t finish. Try again.')).toBeVisible();
+  await expectSoundScreen(page, testInfo);
 });
