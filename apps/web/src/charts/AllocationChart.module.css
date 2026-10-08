@@ -1,0 +1,50 @@
+/* The allocation ranked list: 12px outlined pills beside every name and figure. */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-4) 0;
+  border-bottom: var(--border-rule) solid var(--rule);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.bar {
+  height: var(--space-6);
+  min-width: var(--space-2);
+  max-width: 100%;
+  flex: none;
+  background: currentColor;
+  border: var(--border-rule) solid var(--edge);
+  border-radius: var(--radius-pill);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body);
+}
+
+.amount {
+  font-family: var(--font-text);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-pct);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
