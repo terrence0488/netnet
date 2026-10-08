@@ -25,3 +25,10 @@
   font-size: var(--size-body-sm);
   line-height: var(--leading-body-sm);
 }
+
+/* A screen's answers and actions where there is no form: the form's own rhythm. */
+.stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-8);
+}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useUpdateMe } from '../../api/account';
 import { AlternativeRoute, AuthFrame, Button, FormProblem } from '../../components';
 import { failureSentence } from '../../components/auth-copy';
+import styles from './Onboarding.module.css';
 import { useOnboarding } from './context';
 import { nextState, pathOf, previousStep } from './steps';
 
@@ -41,11 +42,13 @@ export function Start() {
       title="Let’s start by getting to know a little about your finances"
       back={back ? { to: pathOf(back.state) } : undefined}
     >
-      <Button block onClick={begin} aria-disabled={update.isPending ? true : undefined}>
-        Start
-      </Button>
-      {problem ? <FormProblem>{problem}</FormProblem> : null}
-      <AlternativeRoute entry="onboarding" />
+      <div className={styles.stack}>
+        <Button block onClick={begin} aria-disabled={update.isPending ? true : undefined}>
+          Start
+        </Button>
+        {problem ? <FormProblem>{problem}</FormProblem> : null}
+        <AlternativeRoute entry="onboarding" />
+      </div>
     </AuthFrame>
   );
 }

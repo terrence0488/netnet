@@ -270,30 +270,37 @@ function AskScreen({ item, data }: { item: ChecklistItem; data: BasicsData }) {
   const waiting = busy || finishing;
   return (
     <AuthFrame title={item.ask} titleId={questionId} back={{ to: backTo }}>
-      {saved ? <p className={styles.saved}>Saved {saved}</p> : null}
-      {busy ? (
-        <Waiting />
-      ) : (
-        <Choice
-          labelledBy={questionId}
-          options={[
-            { value: 'yes', label: 'Yes' },
-            { value: 'no', label: 'No' },
-          ]}
-          value={answer?.decision ?? null}
-          onChange={(value) => {
-            if (value === 'yes') sayYes();
-            else void sayNo();
-          }}
-        />
-      )}
-      {isAnswered(data.answers, item.id) ? null : (
-        <Button variant="outlined" block onClick={skip} aria-disabled={waiting ? true : undefined}>
-          Skip
-        </Button>
-      )}
-      {(problem ?? doneProblem) ? <FormProblem>{problem ?? doneProblem}</FormProblem> : null}
-      <DoneForNow onDone={finish} waiting={waiting} />
+      <div className={styles.stack}>
+        {saved ? <p className={styles.saved}>Saved {saved}</p> : null}
+        {busy ? (
+          <Waiting />
+        ) : (
+          <Choice
+            labelledBy={questionId}
+            options={[
+              { value: 'yes', label: 'Yes' },
+              { value: 'no', label: 'No' },
+            ]}
+            value={answer?.decision ?? null}
+            onChange={(value) => {
+              if (value === 'yes') sayYes();
+              else void sayNo();
+            }}
+          />
+        )}
+        {isAnswered(data.answers, item.id) ? null : (
+          <Button
+            variant="outlined"
+            block
+            onClick={skip}
+            aria-disabled={waiting ? true : undefined}
+          >
+            Skip
+          </Button>
+        )}
+        {(problem ?? doneProblem) ? <FormProblem>{problem ?? doneProblem}</FormProblem> : null}
+        <DoneForNow onDone={finish} waiting={waiting} />
+      </div>
     </AuthFrame>
   );
 }
@@ -411,8 +418,8 @@ function AmountScreen({ item, data }: { item: ChecklistItem; data: BasicsData })
         <Button type="submit" block aria-disabled={saving || finishing ? true : undefined}>
           Continue
         </Button>
+        <DoneForNow onDone={finish} waiting={saving || finishing} />
       </AuthForm>
-      <DoneForNow onDone={finish} waiting={saving || finishing} />
     </AuthFrame>
   );
 }
