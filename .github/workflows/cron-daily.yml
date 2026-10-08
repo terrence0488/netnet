@@ -1,0 +1,40 @@
+name: Daily housekeeping
+
+# The 01:00 UTC run (architecture §9.3): Vercel's scheduler never fired the production crons
+# (jobs registered, manual triggers 200, zero scheduled executions in two days), so GitHub
+# Actions calls the handler directly with CRON_SECRET. Dispatch by hand to run it on demand.
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    name: Call the daily handler
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # No `environment:` here on purpose: the `production` environment's required reviewer
+    # would hold every scheduled run for approval. CRON_SECRET is a repository secret, so
+    # the schedule runs unattended.
+    steps:
+      - name: Sweep attempts, retry security emails
+        env:
+          PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Set the CRON_SECRET repository secret to the value in Vercel's Production env."
+            exit 1
+          fi
+          code=$(curl -sS -o /tmp/daily.json -w '%{http_code}' \
+            -H "Authorization: Bearer $CRON_SECRET" "$PUBLIC_ORIGIN/api/cron/daily")
+          cat /tmp/daily.json
+          echo
+          if [ "$code" != 200 ]; then
+            echo "::error::The daily handler answered HTTP $code."
+            exit 1
+          fi

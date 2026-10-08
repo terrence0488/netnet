@@ -5,6 +5,10 @@
 *.pem
 *.key
 
+# Database backups, encrypted or not — never commit
+*.age
+restore.sql
+
 # Dependencies
 node_modules/
 .venv/

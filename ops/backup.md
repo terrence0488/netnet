@@ -12,16 +12,22 @@ the old key.
 
 ## Restoring to a scratch branch (a check, or the start of a recovery)
 
-1. Download the artifact (`netnet-prod-‹date›.sql.age`) from the backup run.
-2. Decrypt it with the private key:
+1. Download the artifact (`netnet-prod-‹date›.sql.age`) from the backup run, outside the
+   repository: backup files are never committed.
+2. Decrypt it with the private key (the input comes last):
    ```sh
-   age -d -i /path/to/netnet-backup-key.txt netnet-prod-‹date›.sql.age -o restore.sql
+   age -d -i /path/to/netnet-backup-key.txt -o restore.sql netnet-prod-‹date›.sql.age
    ```
-3. Make a scratch branch of the `netnet-prod` project (Neon's Branches → New Branch) and take
-   its owner connection string.
-4. Restore into it:
+3. Make a scratch branch of the `netnet-prod` project (Neon's Branches → New Branch). A
+   branch is a copy: it already holds production's schema and data, so restore into a new
+   empty database on it (the owner connection string: the branch → Connect → `netnet_owner`,
+   direct):
    ```sh
-   psql '‹scratch owner connection string›' -v ON_ERROR_STOP=1 -f restore.sql
+   psql '‹scratch owner connection string›' -c 'CREATE DATABASE restorecheck;'
+   ```
+4. Restore into the empty database (the same string, with the new database name):
+   ```sh
+   psql '‹scratch owner connection string, database restorecheck›' -v ON_ERROR_STOP=1 -f restore.sql
    ```
 5. Verify: the schemas and row counts look like production's, for example
    ```sql
@@ -31,15 +37,13 @@ the old key.
    select count(*) from core.user;
    ```
 6. Delete the scratch branch when done. For a real recovery, keep it: once it is verified,
-   move production to it (point the `DATABASE_URL`s at it, or restore the same file over the
-   main branch the same way), and only then delete the old branch.
+   move production to it (point the `DATABASE_URL`s at it), and only then delete the old
+   branch.
 
 ## Restore proof
 
-The brief asks for one proven restore on fictional data, before any real data exists. (Blocked:
-F12 — there is no production database yet. Run `backup.yml` by hand once production holds only
-fictional data, restore it as above, and record it here.)
+The brief asks for one proven restore on fictional data, before any real data exists.
 
 | Date | Artifact | Scratch branch | Result |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-10-08 | `netnet-prod-2026-10-07.sql.age` (backup run 37573876575) | `restore-proof` / `restorecheck` | success: 30 tables, 1 holding, 1 user, all fictional |

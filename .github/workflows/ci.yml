@@ -25,7 +25,7 @@ env:
   NEON_API: https://console.neon.tech/api/v2
 
 jobs:
-  # Which lanes must run: pushes touching only docs, ops/ or the deploy/backup/probe
+  # Which lanes must run: pushes touching only docs, ops/ or the deploy/backup/probe/cron
   # workflows skip the browser suite and the preview. ci.yml itself always counts as code,
   # so this file proves its own changes; anything uncertain counts as code.
   changes:
@@ -57,7 +57,7 @@ jobs:
             exit 0
           fi
           code=$(echo "$files" | grep -v -e '^docs/' -e '^ops/' -e '\.md$' \
-            -e '^\.github/workflows/\(deploy\|backup\|probe\)\.yml$' || true)
+            -e '^\.github/workflows/\(deploy\|backup\|probe\|cron-.*\)\.yml$' || true)
           if [ -z "$code" ]; then echo "code=false"; else echo "code=true"; fi >> "$GITHUB_OUTPUT"
 
   quick:
