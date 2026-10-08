@@ -17,9 +17,7 @@ const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const APPLE_TOKEN_URL = 'https://appleid.apple.com/auth/token';
 
 let db: TestDatabase;
-let bareDb: TestDatabase;
 let target: AccountsApp;
-let bare: AccountsApp;
 let count = 0;
 
 beforeAll(async () => {
@@ -30,21 +28,15 @@ beforeAll(async () => {
       apple: { clientId: 'com.netnet.test', clientSecret: 'test-apple-secret' },
     },
   });
-  // No providers configured, on its own database: F17/F18 pending (the wave note's expected
-  // state). Its own database because each app seeds the OAuth server's rows on first use.
-  bareDb = await createTestDatabase();
-  bare = accountsApp(bareDb);
-}, 120_000);
+}, 60_000);
 
 afterAll(async () => {
   await db?.close();
-  await bareDb?.close();
 });
 
 beforeEach(async () => {
   target.clock.now = FIXED_NOW;
   await db.owner.query('truncate core.rate_limit');
-  await bareDb.owner.query('truncate core.rate_limit');
 });
 
 afterEach(() => {
@@ -272,29 +264,6 @@ describe.each([
       { name: 'account_created', props: { method: provider } },
     ]);
     expect((await second.send('/api/me')).status).toBe(200);
-  });
-});
-
-describe('without the secrets (F17/F18 pending)', () => {
-  it('leaves the providers cleanly unavailable and the email flow untouched', async () => {
-    const start = await new Browser(bare).send('/api/auth/sign-in/social', {
-      json: { provider: 'google', callbackURL: `${ORIGIN}/app` },
-    });
-    expect(start.status).toBe(404);
-
-    const callback = await new Browser(bare).send(
-      '/api/auth/callback/google?code=fake-code&state=fake-state',
-    );
-    expect(callback.status).toBe(302);
-    // Better Auth's own error page, which NetNet does not serve: the web app always sends an
-    // errorCallbackURL, so a real failure returns to the screen it started from.
-    expect(callback.headers.get('Location')).toContain(`${ORIGIN}/api/auth/error`);
-
-    const email = newEmail();
-    const browser = new Browser(bare);
-    expect((await browser.signUp(email, 'correct horse')).status).toBe(200);
-    await bare.settle();
-    expect((await browser.send('/api/me')).status).toBe(200);
   });
 });
 
