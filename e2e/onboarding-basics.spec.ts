@@ -119,6 +119,12 @@ test('the start screen offers the basics or the agent, with Back to the segment'
   await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect(heading(page, 'Do you have money in a bank account?')).toBeVisible();
   await expect(page).toHaveURL(/\/app\/onboarding\/basics\/bank$/);
+  // The agent is not offered again inside; Back from the first question returns to Start.
+  await expect(page.getByRole('link', { name: 'Connect to agent' })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Back' }).click();
+  await expect(heading(page, /getting to know a little about your finances/)).toBeVisible();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(heading(page, 'Do you have money in a bank account?')).toBeVisible();
   await expectSoundScreen(page, testInfo);
   expect(await profileOf(page)).toMatchObject({ onboardingState: 'basics' });
   expect(problems).toStrictEqual([]);
