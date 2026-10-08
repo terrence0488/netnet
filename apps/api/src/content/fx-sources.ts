@@ -223,11 +223,30 @@ export async function fetchRates(
   if (!response.ok) {
     throw new FxFetchError(source, `The source answered ${response.status}.`, response.status);
   }
-  let body: unknown;
-  try {
-    body = await response.json();
-  } catch {
-    throw new FxFetchError(source, 'The response is not JSON.', response.status);
+  return parseRates(source, await responseBody(source, response));
+}
+
+/**
+ * The response as the value `parseRates` checks. Frankfurter answers small ranges with one
+ * JSON document and large ones as NDJSON (`application/x-ndjson`), one rate per line.
+ */
+async function responseBody(source: FxSource, response: Response): Promise<unknown> {
+  const text = await response.text();
+  const type = response.headers.get('content-type') ?? '';
+  if (!type.includes('ndjson')) {
+    try {
+      return JSON.parse(text) as unknown;
+    } catch {
+      throw new FxFetchError(source, 'The response is not JSON.', response.status);
+    }
   }
-  return parseRates(source, body);
+  try {
+    return text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line !== '')
+      .map((line) => JSON.parse(line) as unknown);
+  } catch {
+    throw new FxFetchError(source, 'The response is not NDJSON.', response.status);
+  }
 }

@@ -153,4 +153,28 @@ describe('fetchRates', () => {
       'not JSON',
     );
   });
+
+  it('reads a large response as NDJSON, one rate per line', async () => {
+    const ndjson = (BLEND as unknown[]).map((record) => JSON.stringify(record)).join('\n');
+    const fake = vi.fn<typeof fetch>(() =>
+      Promise.resolve(
+        new Response(ndjson, { headers: { 'content-type': 'application/x-ndjson' } }),
+      ),
+    );
+    const rows = await fetchRates('fallback', range, { fetch: fake, timeoutMs: 1000 });
+    expect(rows).toHaveLength(10);
+  });
+
+  it('rejects an NDJSON response with a bad line', async () => {
+    const fake = vi.fn<typeof fetch>(() =>
+      Promise.resolve(
+        new Response('{"date":"2026-07-31"}\nnot json\n', {
+          headers: { 'content-type': 'application/x-ndjson' },
+        }),
+      ),
+    );
+    await expect(fetchRates('fallback', range, { fetch: fake, timeoutMs: 1000 })).rejects.toThrow(
+      FxFetchError,
+    );
+  });
 });
