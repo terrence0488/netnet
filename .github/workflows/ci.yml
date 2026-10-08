@@ -29,7 +29,9 @@ env:
 jobs:
   # Which lanes must run: pushes touching only docs, ops/ or the deploy/backup/probe/cron
   # workflows skip the browser suite and the preview. ci.yml itself always counts as code,
-  # so this file proves its own changes; anything uncertain counts as code.
+  # so this file proves its own changes; anything uncertain counts as code. The first push
+  # of a branch, and pull-request events, carry no usable before, so those diff against
+  # where the branch left main instead; a manual run always proves everything.
   changes:
     name: What changed
     if: github.event.action != 'closed'
@@ -44,23 +46,33 @@ jobs:
       - id: filter
         run: |
           set -euo pipefail
+          decide() { echo "code=$1" >> "$GITHUB_OUTPUT"; echo "changed-files-decision: code=$1 ($2)"; }
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            decide true "manual run always proves everything"
+            exit 0
+          fi
           base='${{ github.event.before }}'
           allzero='0000000000000000000000000000000000000000'
           if [ -z "$base" ] || [ "$base" = "$allzero" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"
+            git fetch --no-tags --quiet origin main || true
+            base=$(git merge-base HEAD origin/main 2>/dev/null || echo "$allzero")
+          fi
+          if [ -z "$base" ] || [ "$base" = "$allzero" ]; then
+            decide true "no base commit; safest to prove everything"
             exit 0
           fi
           files=$(git diff --name-only "$base...$GITHUB_SHA" -- 2>/dev/null) || {
-            echo "code=true" >> "$GITHUB_OUTPUT"
+            decide true "diff failed"
             exit 0
           }
           if [ -z "$files" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"
+            decide true "empty file list; safest to prove everything"
             exit 0
           fi
+          sample=$(echo "$files" | head -5 | tr '\n' ' ')
           code=$(echo "$files" | grep -v -e '^docs/' -e '^ops/' -e '\.md$' \
             -e '^\.github/workflows/\(deploy\|backup\|probe\|cron-.*\)\.yml$' || true)
-          if [ -z "$code" ]; then echo "code=false"; else echo "code=true"; fi >> "$GITHUB_OUTPUT"
+          if [ -z "$code" ]; then decide false "docs/ops-only: $sample"; else decide true "$sample"; fi
 
   quick:
     name: Quick checks
