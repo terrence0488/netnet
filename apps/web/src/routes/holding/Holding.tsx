@@ -3,19 +3,22 @@ import type {
   HoldingPatch,
   NewValue,
   Snapshot,
+  Tag,
   Universal,
   Value,
+  ValuePatch,
   VersionedPack,
 } from '@netnet/contracts';
 import { CURRENCY_CODES } from '@netnet/contracts';
-import { typeLabel } from '@netnet/core';
+import { fromMinor, staleness, typeLabel } from '@netnet/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { useEffect, useId, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
 import { useMe } from '../../api/account';
 import { api, isApiError, type Written } from '../../api/client';
 import { useSnapshot } from '../../api/snapshot';
 import { Waiting } from '../../app/guards';
+import { TrendChart } from '../../charts';
 import {
   AccessBlock,
   AskAgentDialog,
@@ -30,9 +33,11 @@ import {
   Sheet,
   Spinner,
   TextField,
+  ageOf,
   buttonClass,
   formatDate,
   formatMoney,
+  parseAmount,
   todayIn,
   usePackChain,
   useToast,
@@ -41,13 +46,22 @@ import {
 import { failureSentence } from '../../components/auth-copy';
 import { cx } from '../../components/cx';
 import { homeData } from '../home/home-data';
+import {
+  BASELINE_LABELS,
+  HOLDING_BASELINE_DEFAULT,
+  formatPct,
+  holdingChange,
+  holdingTrend,
+  stalenessText,
+} from './holding-data';
 import { holdingValuesQuery, useHoldingValues, valueFooter } from './values';
 import styles from './Holding.module.css';
 
 /**
- * The holding page (PRD J3, J4): the latest value with its consequence, the dated history newest
- * first, a way to add a value and to change accessibility, and who wrote each value. Its hero
- * figure comes from core over the snapshot; the history's full values come paged from the API.
+ * The holding page (PRD J2, J3, J4): the latest value with its consequence, its trend and its
+ * change over the selected baseline, the dated history newest first, and ways to correct a value,
+ * retag, archive and delete. Its figures come from core over the snapshot; the history's full
+ * values come paged from the API.
  */
 
 export function Holding() {
@@ -90,13 +104,23 @@ function HoldingLoaded({
   const values = useHoldingValues(holding.id);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [editingValue, setEditingValue] = useState<Value | null>(null);
   const [editingAccess, setEditingAccess] = useState(false);
+  const [tagging, setTagging] = useState(false);
   const [asking, setAsking] = useState(false);
 
   const latest = useMemo(
     () => homeData(snapshot, today).latest.get(holding.id),
     [snapshot, today, holding.id],
   );
+  const data = useMemo(() => {
+    const universal = snapshot.types.find((t) => t.id === holding.typeId)?.universal ?? 'other';
+    return {
+      universal,
+      trend: holdingTrend(snapshot, holding, universal, today),
+      change: holdingChange(snapshot, holding, universal, today),
+    };
+  }, [snapshot, holding, today]);
 
   if (chain.status === 'pending') return <Waiting />;
   if (chain.status === 'error') {
@@ -117,6 +141,17 @@ function HoldingLoaded({
   const total = snapshot.values[holding.id]?.length ?? items.length;
   const universalOf = (row: HoldingRow) =>
     snapshot.types.find((t) => t.id === row.typeId)?.universal ?? 'other';
+  const fresh =
+    latest === undefined
+      ? null
+      : staleness(
+          { cadenceDays: holding.cadenceDays, universal: data.universal },
+          latest,
+          today,
+          packs,
+        );
+  const tags = snapshot.tags.filter((tag) => holding.tagIds.includes(tag.id));
+  const baseline = snapshot.prefs.baseline ?? HOLDING_BASELINE_DEFAULT;
 
   return (
     <>
@@ -133,9 +168,50 @@ function HoldingLoaded({
         latestMinor={
           latest ? (holding.kind === 'liability' ? -latest.baseMinor : latest.baseMinor) : null
         }
+        staleness={
+          fresh === null || latest === undefined
+            ? null
+            : stalenessText(fresh.stale, ageOf(latest.date, today))
+        }
         onDecide={() => setEditingAccess(true)}
         onAsk={() => setAsking(true)}
       />
+      {snapshot.tags.length > 0 ? (
+        <section aria-label="Tags" className={styles.tags}>
+          <div className={styles.tagList}>
+            {tags.map((tag) => (
+              <span key={tag.id} className={styles.tag}>
+                {tag.name}
+              </span>
+            ))}
+            {tags.length === 0 ? <span className={styles.noTags}>No tags</span> : null}
+          </div>
+          <button type="button" className={styles.tagEdit} onClick={() => setTagging(true)}>
+            Edit tags
+          </button>
+        </section>
+      ) : null}
+      <section aria-labelledby="trend-heading">
+        <div className={styles.sectionHead}>
+          <h2 id="trend-heading">Trend</h2>
+          {data.change.amount !== null && data.change.amount !== 0 ? (
+            <p className={styles.change}>
+              <span className={styles.changeBase}>{BASELINE_LABELS[baseline]}</span>{' '}
+              <Figure size="change" minor={data.change.amount} currency={snapshot.baseCurrency} />{' '}
+              {data.change.pct !== null ? (
+                <span className={styles.changePct}>({formatPct(data.change.pct)})</span>
+              ) : null}
+            </p>
+          ) : null}
+        </div>
+        <TrendChart
+          points={data.trend}
+          currency={snapshot.baseCurrency}
+          height={160}
+          label={`${holding.name} trend`}
+          reason="The trend appears with two or more values."
+        />
+      </section>
       <div className={styles.sectionHead}>
         <h2 id="history-heading">History · {total}</h2>
       </div>
@@ -157,6 +233,7 @@ function HoldingLoaded({
               baseCurrency={snapshot.baseCurrency}
               open={expanded === value.id}
               onToggle={() => setExpanded(expanded === value.id ? null : value.id)}
+              onEdit={() => setEditingValue(value)}
             />
           ))}
         </Card>
@@ -172,6 +249,7 @@ function HoldingLoaded({
           )}
         </div>
       ) : null}
+      <ManageSection holding={holding} total={total} />
       <div className={styles.end} aria-hidden="true" />
       <UpdateFab onUpdate={() => setAdding(true)} />
       <ValueSheet
@@ -181,6 +259,20 @@ function HoldingLoaded({
         baseCurrency={snapshot.baseCurrency}
         today={today}
       />
+      {editingValue !== null ? (
+        <ValueSheet
+          key={editingValue.id}
+          open
+          onClose={() => setEditingValue(null)}
+          holding={holding}
+          baseCurrency={snapshot.baseCurrency}
+          today={today}
+          editing={editingValue}
+        />
+      ) : null}
+      {tagging ? (
+        <TagsSheet holding={holding} tags={snapshot.tags} onClose={() => setTagging(false)} />
+      ) : null}
       {editingAccess && holding.kind === 'asset' ? (
         <AccessSheet
           onClose={() => setEditingAccess(false)}
@@ -198,6 +290,8 @@ function HoldingLoaded({
         onClose={() => setAsking(false)}
         holdingName={holding.name}
         saved
+        connectEntry="holding"
+        connectHoldingId={holding.id}
       />
     </>
   );
@@ -208,6 +302,7 @@ function Hero({
   label,
   baseCurrency,
   latestMinor,
+  staleness,
   onDecide,
   onAsk,
 }: {
@@ -216,11 +311,14 @@ function Hero({
   baseCurrency: string;
   /** The latest value in base minor units, signed for a liability, or null without one. */
   latestMinor: number | null;
+  /** How fresh the latest value is (PRD J9), or null without one. */
+  staleness: string | null;
   onDecide: () => void;
   onAsk: () => void;
 }) {
   const foreign = holding.currency !== baseCurrency;
   const meta = [
+    holding.archived ? 'Archived' : null,
     label,
     holding.kind === 'liability' ? 'Liability' : null,
     foreign ? holding.currency : null,
@@ -237,6 +335,7 @@ function Hero({
       ) : (
         <Figure size="display" minor={latestMinor} currency={baseCurrency} />
       )}
+      {staleness !== null ? <p className={styles.heroStale}>{staleness}</p> : null}
       {holding.kind === 'asset' ? (
         <p className={styles.heroConseq}>
           <ConsequenceLine
@@ -266,15 +365,16 @@ function ValueRow({
   baseCurrency,
   open,
   onToggle,
+  onEdit,
 }: {
   value: Value;
   kind: HoldingRow['kind'];
   baseCurrency: string;
   open: boolean;
   onToggle: () => void;
+  onEdit: () => void;
 }) {
   const byAgent = value.source === 'agent';
-  const original = value.currency !== baseCurrency;
   const minor = kind === 'liability' ? -value.baseMinor : value.baseMinor;
   return (
     <>
@@ -292,18 +392,81 @@ function ValueRow({
           <Figure minor={minor} currency={baseCurrency} />
         </span>
       </button>
-      {open ? (
-        <div className={styles.open}>
-          {original ? (
-            <div className={styles.kv}>
-              <span>In {value.currency}</span>
-              <b>{formatMoney(value.amountMinor, value.currency)}</b>
-            </div>
-          ) : null}
-          <p className={styles.footer}>{valueFooter(value)}</p>
+      {open ? <ValueDetail value={value} baseCurrency={baseCurrency} onEdit={onEdit} /> : null}
+    </>
+  );
+}
+
+/**
+ * An opened value: only what the row omits — the original currency, who wrote it — with Edit and
+ * Delete. Deleting asks first, in place. Closing the row unmounts this, so the question never
+ * lingers.
+ */
+function ValueDetail({
+  value,
+  baseCurrency,
+  onEdit,
+}: {
+  value: Value;
+  baseCurrency: string;
+  onEdit: () => void;
+}) {
+  const toast = useToast();
+  const client = useQueryClient();
+  const [confirming, setConfirming] = useState(false);
+  const [problem, setProblem] = useState<string>();
+  const original = value.currency !== baseCurrency;
+
+  const remove = useMutation({
+    mutationFn: () => api.del<Written<void>>(`/values/${value.id}`),
+    onSuccess: () => {
+      toast.show({ message: 'Deleted.' });
+      void client.invalidateQueries({ queryKey: holdingValuesQuery(value.holdingId).queryKey });
+    },
+    onError: (error: unknown) => {
+      setProblem(failureSentence(error));
+    },
+  });
+
+  return (
+    <div className={styles.open}>
+      {original ? (
+        <div className={styles.kv}>
+          <span>In {value.currency}</span>
+          <b>{formatMoney(value.amountMinor, value.currency)}</b>
         </div>
       ) : null}
-    </>
+      <p className={styles.footer}>{valueFooter(value)}</p>
+      {confirming ? (
+        <div className={styles.confirm}>
+          <p className={styles.confirmText}>Delete this value?</p>
+          <div className={styles.confirmActs}>
+            <Button
+              variant="outlined"
+              aria-disabled={remove.isPending ? true : undefined}
+              onClick={() => {
+                if (!remove.isPending) remove.mutate();
+              }}
+            >
+              Delete value
+            </Button>
+            <Button variant="quiet" onClick={() => setConfirming(false)}>
+              Keep
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className={styles.rowActs}>
+          <button type="button" className={styles.rowLink} onClick={onEdit}>
+            Edit
+          </button>
+          <button type="button" className={styles.rowLink} onClick={() => setConfirming(true)}>
+            Delete
+          </button>
+        </div>
+      )}
+      {problem ? <FormProblem>{problem}</FormProblem> : null}
+    </div>
   );
 }
 
@@ -346,31 +509,45 @@ function UpdateFab({ onUpdate }: { onUpdate: () => void }) {
   );
 }
 
+/**
+ * Add Value, and Edit Value: the same form, since a correction changes the same three things
+ * (amount, date, currency). The edit sheet mounts per value, so its fields start from that value.
+ */
 function ValueSheet({
   open,
   onClose,
   holding,
   baseCurrency,
   today,
+  editing,
 }: {
   open: boolean;
   onClose: () => void;
   holding: HoldingRow;
   baseCurrency: string;
   today: string;
+  editing?: Value;
 }) {
   const toast = useToast();
   const client = useQueryClient();
-  const [currency, setCurrency] = useState(holding.currency);
-  const [typed, setTyped] = useState('');
-  const [check, setCheck] = useState<AmountCheck>({ ok: false, problem: 'empty' });
-  const [date, setDate] = useState(today);
+  const [currency, setCurrency] = useState(editing?.currency ?? holding.currency);
+  const [typed, setTyped] = useState(() =>
+    editing ? fromMinor(editing.amountMinor, editing.currency) : '',
+  );
+  const [check, setCheck] = useState<AmountCheck>(() =>
+    editing
+      ? parseAmount(fromMinor(editing.amountMinor, editing.currency), editing.currency)
+      : { ok: false, problem: 'empty' },
+  );
+  const [date, setDate] = useState(editing?.date ?? today);
   const [submitted, setSubmitted] = useState(false);
   const [problem, setProblem] = useState<string>();
 
-  const record = useMutation({
+  const write = useMutation({
     mutationFn: (item: Omit<NewValue, 'holdingId'>) =>
-      api.post<Written<Value>>(`/holdings/${holding.id}/values`, item),
+      editing === undefined
+        ? api.post<Written<Value>>(`/holdings/${holding.id}/values`, item)
+        : api.patch<Written<Value>>(`/values/${editing.id}`, item as ValuePatch),
     onSuccess: (written) => {
       const replaced = written.warnings.some((w) => w.code === 'SAME_DATE_REPLACED');
       toast.show({
@@ -396,19 +573,19 @@ function ValueSheet({
   });
 
   const save = () => {
-    if (record.isPending) return;
+    if (write.isPending) return;
     setSubmitted(true);
     setProblem(undefined);
     if (!check.ok) return;
-    record.mutate({ amount: check.amount, date: date || today, currency });
+    write.mutate({ amount: check.amount, date: date || today, currency });
   };
 
   return (
     <Sheet
       open={open}
       onClose={onClose}
-      title="Add Value"
-      action={{ label: 'Save', onAction: save, unavailable: record.isPending }}
+      title={editing === undefined ? 'Add Value' : 'Edit Value'}
+      action={{ label: 'Save', onAction: save, unavailable: write.isPending }}
     >
       <div className={styles.sheetForm}>
         <div className={styles.two}>
@@ -444,6 +621,187 @@ function ValueSheet({
         {problem ? <FormProblem>{problem}</FormProblem> : null}
       </div>
     </Sheet>
+  );
+}
+
+/**
+ * The holding's tags as toggle chips, like the Add form's: pressed chips fill tomato. Saving
+ * writes the whole set (`tagIds`).
+ */
+function TagsSheet({
+  holding,
+  tags,
+  onClose,
+}: {
+  holding: HoldingRow;
+  tags: readonly Tag[];
+  onClose: () => void;
+}) {
+  const toast = useToast();
+  const [selected, setSelected] = useState<readonly string[]>(() => [...holding.tagIds].sort());
+  const [problem, setProblem] = useState<string>();
+  const labelId = useId();
+
+  const save = useMutation({
+    mutationFn: (tagIds: readonly string[]) =>
+      api.patch<Written<HoldingRow>>(`/holdings/${holding.id}`, { tagIds: [...tagIds] }),
+    onSuccess: () => {
+      toast.show({ message: 'Saved.' });
+      onClose();
+    },
+    onError: (error: unknown) => {
+      setProblem(
+        isApiError(error, 'VALIDATION_FAILED')
+          ? 'Check what you entered, then try again.'
+          : failureSentence(error),
+      );
+    },
+  });
+
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title="Tags"
+      action={{
+        label: 'Save',
+        unavailable: save.isPending,
+        onAction: () => {
+          if (!save.isPending) save.mutate(selected);
+        },
+      }}
+    >
+      <div className={styles.sheetForm}>
+        <div>
+          <p id={labelId} className={styles.tagsLabel}>
+            Tags
+          </p>
+          <div role="group" aria-labelledby={labelId} className={styles.chips}>
+            {tags.map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                className={styles.chip}
+                aria-pressed={selected.includes(tag.id)}
+                onClick={() =>
+                  setSelected(
+                    selected.includes(tag.id)
+                      ? selected.filter((t) => t !== tag.id)
+                      : [...selected, tag.id].sort(),
+                  )
+                }
+              >
+                {tag.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        {problem ? <FormProblem>{problem}</FormProblem> : null}
+      </div>
+    </Sheet>
+  );
+}
+
+/**
+ * About this holding: archive and unarchive, and delete with a confirm step. Deleting leaves the
+ * page for Home; the totals follow the write's data version, as on every screen.
+ */
+function ManageSection({ holding, total }: { holding: HoldingRow; total: number }) {
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
+  const [problem, setProblem] = useState<string>();
+
+  const archive = useMutation({
+    mutationFn: (patch: HoldingPatch) =>
+      api.patch<Written<HoldingRow>>(`/holdings/${holding.id}`, patch),
+    onSuccess: () => {
+      toast.show({ message: holding.archived ? 'Unarchived.' : 'Archived.' });
+    },
+    onError: (error: unknown) => {
+      setProblem(failureSentence(error));
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: () => api.del<Written<void>>(`/holdings/${holding.id}`),
+    onSuccess: () => {
+      toast.show({ message: 'Deleted.' });
+      void navigate('/');
+    },
+    onError: (error: unknown) => {
+      setProblem(failureSentence(error));
+    },
+  });
+
+  return (
+    <section aria-labelledby="manage-heading">
+      <div className={styles.sectionHead}>
+        <h2 id="manage-heading">About this holding</h2>
+      </div>
+      <Card>
+        <div className={styles.manage}>
+          <div className={styles.manageRow}>
+            <p className={styles.manageText}>
+              {holding.archived
+                ? 'Archived: it leaves the totals and charts but keeps its history.'
+                : 'Archive it to leave the totals and charts; its history stays.'}
+            </p>
+            <Button
+              variant="outlined"
+              aria-disabled={archive.isPending ? true : undefined}
+              onClick={() => {
+                if (!archive.isPending) archive.mutate({ archived: !holding.archived });
+              }}
+            >
+              {holding.archived ? 'Unarchive holding' : 'Archive holding'}
+            </Button>
+          </div>
+          <div className={styles.danger}>
+            <h3 className={styles.dangerTitle}>Delete this holding</h3>
+            {confirming ? (
+              <>
+                <p className={styles.dangerText}>
+                  {total === 0
+                    ? `“${holding.name}” has no values yet. Delete it?`
+                    : total === 1
+                      ? `“${holding.name}” and its one value go. Delete them?`
+                      : `“${holding.name}” and its ${total} values go. Delete them?`}
+                </p>
+                <div className={styles.confirmActs}>
+                  <Button
+                    variant="outlined"
+                    aria-disabled={remove.isPending ? true : undefined}
+                    onClick={() => {
+                      if (!remove.isPending) remove.mutate();
+                    }}
+                  >
+                    Delete holding
+                  </Button>
+                  <Button variant="quiet" onClick={() => setConfirming(false)}>
+                    Keep
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className={styles.dangerText}>
+                  {total === 0
+                    ? 'It has no values yet.'
+                    : total === 1
+                      ? 'Its one value goes with it.'
+                      : `Its ${total} values go with it.`}
+                </p>
+                <Button variant="outlined" onClick={() => setConfirming(true)}>
+                  Delete holding
+                </Button>
+              </>
+            )}
+          </div>
+          {problem ? <FormProblem>{problem}</FormProblem> : null}
+        </div>
+      </Card>
+    </section>
   );
 }
 
