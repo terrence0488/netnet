@@ -52,6 +52,9 @@
 .axis {
   display: flex;
   justify-content: space-between;
+  /* The tick count follows the measured width a frame behind a resize; while stale, a surplus
+     of nowrap labels must clip here, never widen the page (design-system §7). */
+  overflow: hidden;
   padding-left: var(--chart-gutter);
   margin-top: var(--space-5);
   font-family: var(--font-text);

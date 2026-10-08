@@ -11,7 +11,9 @@ import {
   AgentRoll,
   AlternativeRoute,
   ConnectButton,
+  connectHref,
   contentImageUrl,
+  holdingBackPath,
   listNames,
 } from './ConnectButton';
 
@@ -46,6 +48,27 @@ function render(node: ReactNode, guides: AgentGuide[] = [CLAUDE, OTHER]): string
 describe('contentImageUrl', () => {
   it('serves a content image as the static file at /content/… (architecture §7.1)', () => {
     expect(contentImageUrl('images/agents/claude.svg')).toBe('/content/images/agents/claude.svg');
+  });
+});
+
+describe('holdingBackPath and connectHref', () => {
+  it('returns a holding page to a holding entry, and only to a holding id', () => {
+    expect(holdingBackPath('hld_01JABC')).toBe('/holdings/hld_01JABC');
+    expect(holdingBackPath(null)).toBeNull();
+    expect(holdingBackPath(undefined)).toBeNull();
+    expect(holdingBackPath('/agent')).toBeNull();
+    expect(holdingBackPath('hld_../../me')).toBeNull();
+  });
+
+  it('carries the entry — and the holding — along the flow', () => {
+    expect(connectHref('agent')).toBe('/agent/connect?entry=agent');
+    expect(connectHref('holding', 'hld_01JABC')).toBe(
+      '/agent/connect?entry=holding&holding=hld_01JABC',
+    );
+    expect(connectHref('holding', 'hld_01JABC', 'claude')).toBe(
+      '/agent/connect/claude?entry=holding&holding=hld_01JABC',
+    );
+    expect(connectHref('holding', '/agent')).toBe('/agent/connect?entry=holding');
   });
 });
 

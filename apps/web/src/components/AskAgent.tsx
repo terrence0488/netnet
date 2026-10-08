@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { Link } from 'react-router';
 import { api } from '../api/client';
 import { Button, buttonClass } from './Button';
+import { connectHref, type ConnectEntry } from './ConnectButton';
 import { Sheet } from './Sheet';
 import { Spinner } from './Spinner';
 import styles from './AskAgent.module.css';
@@ -94,13 +95,15 @@ function ClientNames({ connections }: { readonly connections: readonly AgentConn
 
 /**
  * "Ask your agent" (PRD J2): with an agent connected, a copyable prompt with no financial data;
- * without one, the connect flow (P1-T17, `entry: home`).
+ * without one, the connect flow from the given entry (the holding page passes `holding`).
  */
 export function AskAgentDialog({
   open,
   onClose,
   holdingName,
   saved,
+  connectEntry = 'home',
+  connectHoldingId = null,
 }: {
   readonly open: boolean;
   readonly onClose: () => void;
@@ -108,6 +111,10 @@ export function AskAgentDialog({
   readonly holdingName: string | null;
   /** Whether the holding exists (the agent can read it) or is still being added. */
   readonly saved: boolean;
+  /** Where the connect flow starts from when none is connected. */
+  readonly connectEntry?: ConnectEntry;
+  /** The holding the flow returns to, for the `holding` entry. */
+  readonly connectHoldingId?: string | null;
 }) {
   const connections = useAgentConnections();
   const text = saved
@@ -140,7 +147,10 @@ export function AskAgentDialog({
           </p>
           <PromptCard text={text} />
           {connections.data.length === 0 ? (
-            <Link to="/agent/connect?entry=home" className={buttonClass('outlined', true)}>
+            <Link
+              to={connectHref(connectEntry, connectHoldingId)}
+              className={buttonClass('outlined', true)}
+            >
               Connect your agent
             </Link>
           ) : null}
