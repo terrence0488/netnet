@@ -3,9 +3,11 @@ import { Navigate, Outlet, useLocation, type RouteObject } from 'react-router';
 import { loginPath, useKnownMe } from '../../app/guards';
 import type { RouteHandle } from '../../app/handle';
 import type { OnboardingContext, OnboardingDraft } from './context';
+import { BasicsAmount, BasicsAsk, BasicsIndex } from './Basics';
 import { useOnboarding } from './context';
 import { Country } from './Country';
 import { Segment } from './Segment';
+import { Start } from './Start';
 import { ONBOARDING_STEPS, pathOf, reachable, type OnboardingStep } from './steps';
 
 /**
@@ -47,9 +49,22 @@ function Step({ state, Screen }: { state: OnboardingStep; Screen: ComponentType 
 const SCREENS: Record<OnboardingStep, ComponentType> = {
   country: Country,
   segment: Segment,
+  start: Start,
+  basics: BasicsIndex,
 };
 
-/** The routes under /onboarding, one per step, in order. */
+/** A basics question's screens, under the basics' own step, guard and title. */
+function basicsRoute(path: string, Screen: ComponentType): RouteObject {
+  const step = ONBOARDING_STEPS.find((candidate) => candidate.state === 'basics');
+  if (!step) throw new Error('The basics step is missing from ONBOARDING_STEPS.');
+  return {
+    path,
+    handle: { title: step.title } satisfies RouteHandle,
+    element: <Step state="basics" Screen={Screen} />,
+  };
+}
+
+/** The routes under /onboarding, one per step, in order, plus the basics' questions. */
 export const onboardingRoutes: RouteObject[] = [
   { index: true, Component: Resume },
   ...ONBOARDING_STEPS.map((step): RouteObject => ({
@@ -57,5 +72,7 @@ export const onboardingRoutes: RouteObject[] = [
     handle: { title: step.title } satisfies RouteHandle,
     element: <Step state={step.state} Screen={SCREENS[step.state]} />,
   })),
+  basicsRoute('basics/:item', BasicsAsk),
+  basicsRoute('basics/:item/amount', BasicsAmount),
   { path: '*', Component: Resume },
 ];

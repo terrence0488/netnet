@@ -1,0 +1,2 @@
+ALTER TABLE "core"."profile" DROP CONSTRAINT "profile_onboarding_state_check";--> statement-breakpoint
+ALTER TABLE "core"."profile" ADD CONSTRAINT "profile_onboarding_state_check" CHECK ("core"."profile"."onboarding_state" in ('country', 'segment', 'start', 'basics', 'done'));

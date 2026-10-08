@@ -132,8 +132,8 @@ export function AgentRoll({ guides }: { guides: readonly AgentGuide[] }) {
   );
 }
 
-/** Where the connect flow starts from in P1; P2 adds `onboarding` and `holding`. */
-export type ConnectEntry = 'agent' | 'home';
+/** Where the connect flow starts from; `holding` joins with its own task. */
+export type ConnectEntry = 'agent' | 'home' | 'onboarding';
 
 export function ConnectButton({ entry }: { entry: ConnectEntry }) {
   const guides = useAgentGuides();

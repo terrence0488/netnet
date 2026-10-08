@@ -1,5 +1,6 @@
 import type { ProfileView, Segment } from '@netnet/contracts';
 import { useOutletContext } from 'react-router';
+import type { BasicsAnswers } from './basics';
 
 /**
  * Answers given in onboarding but not yet saved, kept while the person moves between its screens,
@@ -12,6 +13,8 @@ export interface OnboardingDraft {
   readonly elsewhere?: boolean;
   /** The segment picked; null when unpicked again; absent until touched. */
   readonly segment?: Exclude<Segment, 'unknown'> | null;
+  /** The basics' answers by checklist id; absent until the basics seed them from what is saved. */
+  readonly basics?: BasicsAnswers;
 }
 
 export interface OnboardingContext {

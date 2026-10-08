@@ -2,8 +2,8 @@ import type { OnboardingState } from '@netnet/contracts';
 
 /**
  * Onboarding as data (PRD J1): one question per screen, in this order, each a value of the
- * profile's `onboardingState`, which is where a returning person resumes. P1 ends at Home after the
- * segment; P2 inserts its "Let's start…" screen and the basics after it, as entries here.
+ * profile's `onboardingState`, which is where a returning person resumes. After the segment comes
+ * the "Let's start…" screen, then the basics walk the pack's checklist, then Home.
  */
 
 export type OnboardingStep = Exclude<OnboardingState, 'done'>;
@@ -21,6 +21,8 @@ export interface StepInfo {
 export const ONBOARDING_STEPS: readonly StepInfo[] = [
   { state: 'country', path: 'country', title: 'Where you live', numbered: true },
   { state: 'segment', path: 'segment', title: 'About you', numbered: true },
+  { state: 'start', path: 'start', title: 'Let’s start', numbered: false },
+  { state: 'basics', path: 'basics', title: 'The basics', numbered: false },
 ];
 
 export const ONBOARDING_BASE = '/onboarding';

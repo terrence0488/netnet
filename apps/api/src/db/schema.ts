@@ -314,8 +314,8 @@ export const oauthClientAssertion = core.table('oauth_client_assertion', {
 export const SEGMENTS = ['starting_out', 'accumulating', 'established', 'unknown'] as const;
 export type Segment = (typeof SEGMENTS)[number];
 
-/** Where onboarding resumes (J1): P1's steps in order. P2 adds its own. */
-export const ONBOARDING_STATES = ['country', 'segment', 'done'] as const;
+/** Where onboarding resumes (J1): the steps in order, then Home. */
+export const ONBOARDING_STATES = ['country', 'segment', 'start', 'basics', 'done'] as const;
 
 /** The guide chosen, or a connection's classification (§3); never a registered name. */
 export const CLIENTS = ['claude', 'chatgpt', 'other'] as const;

@@ -535,10 +535,16 @@ describe('GET /api/me and PATCH /api/me', () => {
     expect(await (await patch({ onboardingState: 'segment' })).json()).toMatchObject({
       onboardingState: 'segment',
     });
+    expect(await (await patch({ onboardingState: 'start' })).json()).toMatchObject({
+      onboardingState: 'start',
+    });
+    expect(await (await patch({ onboardingState: 'basics' })).json()).toMatchObject({
+      onboardingState: 'basics',
+    });
     const cases: [unknown, string][] = [
       [{ timeZone: 'Mars/Olympus_Mons' }, 'timeZone'],
       [{ timeZone: '' }, 'timeZone'],
-      [{ onboardingState: 'basics' }, 'onboardingState'],
+      [{ onboardingState: 'onboard' }, 'onboardingState'],
       [{ segment: 'rich' }, 'segment'],
       [{ email: 'someone@example.com' }, 'email'],
       [{ emailVerified: true }, 'emailVerified'],
@@ -561,7 +567,7 @@ describe('GET /api/me and PATCH /api/me', () => {
     expect(notJson.status).toBe(400);
     expect(await (await browser.send('/api/me')).json()).toMatchObject({
       timeZone: 'America/New_York',
-      onboardingState: 'segment',
+      onboardingState: 'basics',
     });
   });
 
