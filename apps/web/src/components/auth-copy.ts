@@ -35,3 +35,13 @@ export function passwordProblem(password: string): string | undefined {
   if (password.length > MAX_PASSWORD_LENGTH) return COPY.passwordLong;
   return undefined;
 }
+
+/** A provider whose secrets are not set up yet (F17/F18 pending, or a flag without them). */
+export function providerUnavailable(name: string): string {
+  return `${name} sign-in isn’t available right now. Try email instead.`;
+}
+
+/** A provider round trip that came back with `?error=`: cancelled, refused or failed midway. */
+export function providerUnfinished(name?: string): string {
+  return name ? `${name} sign-in didn’t finish. Try again.` : 'Sign-in didn’t finish. Try again.';
+}
