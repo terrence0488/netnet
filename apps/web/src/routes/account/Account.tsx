@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { useMe } from '../../api/account';
 import { signOut } from '../../api/auth';
 import { BASENAME } from '../../app/basename';
@@ -7,8 +8,8 @@ import { failureSentence } from '../../components/auth-copy';
 import styles from './Account.module.css';
 
 /**
- * Account, as far as P1 goes: who is signed in, the unverified line with Resend, and Log out
- * (the prototype's Account tab; P3's settings join it).
+ * Account: who is signed in, the unverified line with Resend, the way into types and tags, and Log
+ * out (the prototype's Account tab; P3's settings join it).
  */
 export function Account() {
   const me = useMe().data;
@@ -45,6 +46,11 @@ export function Account() {
               </span>
             )}
           </div>
+        </Card>
+        <Card flush>
+          <Link to="/account/taxonomy" className={styles.actionLink}>
+            Types and tags
+          </Link>
         </Card>
         <Card flush>
           <button

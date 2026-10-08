@@ -14,6 +14,7 @@ import { Onboarding, onboardingRoutes } from '../routes/onboarding/Onboarding';
 import { Reset } from '../routes/reset/Reset';
 import { SetPassword } from '../routes/signup/SetPassword';
 import { SignUp } from '../routes/signup/SignUp';
+import { Taxonomy } from '../routes/taxonomy/Taxonomy';
 import { Verify } from '../routes/verify/Verify';
 import { BASENAME } from './basename';
 import { RequireAccount, RequireSignedIn, SignedOutOnly } from './guards';
@@ -115,6 +116,11 @@ export const routes: RouteObject[] = [
                 path: 'account',
                 Component: Account,
                 handle: { title: 'Account' } satisfies RouteHandle,
+              },
+              {
+                path: 'account/taxonomy',
+                Component: Taxonomy,
+                handle: { title: 'Types and tags' } satisfies RouteHandle,
               },
               {
                 path: '*',

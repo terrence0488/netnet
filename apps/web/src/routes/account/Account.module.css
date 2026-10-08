@@ -41,6 +41,22 @@
   background: var(--paper);
 }
 
+/* A whole row that goes somewhere, matching the action row above it. */
+.actionLink {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--hit);
+  padding: var(--inset-row) var(--inset-card);
+  color: var(--ink);
+  font-weight: var(--weight-button);
+  text-decoration: none;
+}
+
+.actionLink:hover {
+  background: var(--paper);
+}
+
 .action[aria-disabled='true'] {
   opacity: var(--opacity-disabled);
   cursor: default;
