@@ -2,6 +2,7 @@ import type { Holding, PackRef, Page, Snapshot, Value } from '@netnet/contracts'
 import { toMinor } from '@netnet/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { useUpdateMe } from '../../api/account';
 import { api, isApiError, type Written } from '../../api/client';
@@ -266,7 +267,13 @@ function AskScreen({ item, data }: { item: ChecklistItem; data: BasicsData }) {
 
   const skip = () => {
     if (busy || finishing) return;
-    advance(item.id, data.answers);
+    // A pending yes is cleared, so nothing is asked because of a skip; a saved holding stays.
+    // The ask screen has no guard on the answer, so unlike the amount screen this clears first.
+    const pending =
+      data.answers[item.id] !== undefined && data.answers[item.id]?.holdingId === undefined;
+    const cleared = pending ? omitAnswers(data.answers, [item.id]) : data.answers;
+    if (pending) data.saveAnswers(cleared);
+    advance(item.id, cleared);
   };
 
   const waiting = busy || finishing;
@@ -426,9 +433,13 @@ function AmountScreen({ item, data }: { item: ChecklistItem; data: BasicsData })
   const skip = () => {
     if (saving || finishing) return;
     // A pending yes is cleared, so nothing is asked because of a skip; a saved holding stays.
+    // The clear commits first, synchronously: this screen's guard bounces to its ask screen,
+    // and the move below supersedes that bounce with the next question.
     if (answer?.holdingId === undefined) {
       const cleared = omitAnswers(data.answers, [item.id]);
-      data.saveAnswers(cleared);
+      flushSync(() => {
+        data.saveAnswers(cleared);
+      });
       advance(item.id, cleared);
       return;
     }
