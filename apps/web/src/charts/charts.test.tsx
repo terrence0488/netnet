@@ -5,6 +5,7 @@ import { AllocationChart } from './AllocationChart';
 import { AssetsLiabilitiesChart } from './AssetsLiabilitiesChart';
 import { ChartPlaceholder } from './ChartPlaceholder';
 import { LineChart } from './LineChart';
+import { RangeBar } from './RangeBar';
 import { TrendChart } from './TrendChart';
 
 const html = renderToStaticMarkup;
@@ -268,5 +269,24 @@ describe('ChartPlaceholder', () => {
     expect(markup).toContain(
       'Update a holding next month, or add an earlier value, to see your trend.',
     );
+  });
+});
+
+describe('RangeBar', () => {
+  const options = [
+    { label: 'All', value: 0 },
+    { label: '6M', value: 6 },
+    { label: 'YTD', value: -1 },
+  ] as const;
+
+  it('names its chart and presses the range in force', () => {
+    const markup = html(
+      <RangeBar label="Brokerage account" options={options} value={6} onChange={() => {}} />,
+    );
+    expect(markup).toContain('aria-label="Brokerage account range"');
+    expect(markup).toContain('>All</span>');
+    expect(markup).toContain('>6M</span>');
+    expect(markup).toMatch(/<button[^>]*aria-pressed="true"[^>]*><span[^>]*>6M<\/span>/);
+    expect(markup).toMatch(/<button[^>]*aria-pressed="false"[^>]*><span[^>]*>All<\/span>/);
   });
 });

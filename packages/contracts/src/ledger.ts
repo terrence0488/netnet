@@ -236,6 +236,8 @@ export const holdingFilterSchema = z.strictObject({
   hideTagIds: ids(MAX_FILTER_IDS).optional(),
   hideTagMode: tagMode.optional(),
   hideHoldingIds: ids(MAX_FILTER_IDS).optional(),
+  /** J4's archived inclusion: archived holdings join the figures and the list. */
+  includeArchived: z.boolean().optional(),
 });
 export type SavedFilter = z.output<typeof holdingFilterSchema>;
 

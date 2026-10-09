@@ -134,3 +134,19 @@ export function minorRate(rate: string, from: string, to: string): string {
   const { int, frac } = parseRate(rate);
   return shiftPoint(int, frac, requireExponent(to) - requireExponent(from));
 }
+
+/**
+ * The change between two amounts in minor units: newer minus older, signed. Whole numbers in,
+ * whole number out — exact, never through floating point. Amounts already carry their sign (a
+ * liability reads negative), so a growing debt reads as a negative change.
+ */
+export function deltaMinor(newer: number, older: number): number {
+  if (!Number.isSafeInteger(newer) || !Number.isSafeInteger(older)) {
+    throw new RangeError('Give whole numbers of minor units.');
+  }
+  const delta = newer - older;
+  if (!Number.isSafeInteger(delta)) {
+    throw new RangeError('The change is too large to hold exactly.');
+  }
+  return delta;
+}

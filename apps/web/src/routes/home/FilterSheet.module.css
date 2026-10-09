@@ -1,58 +1,92 @@
-/* Home's filter sheet: show, per-type and per-tag show-only and Don't Show. */
+/* Home's filter sheet: Show Only, show-only chips, Don't Show, archived inclusion. */
 
 .stack {
   display: grid;
-  gap: var(--space-12);
+  gap: var(--space-10);
 }
 
-.groupTitle {
+/* A sheet section label: small caps in ink-3, centred for the sheet's own halves. */
+.subTitle {
   margin: 0 0 var(--space-4);
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--size-heading-card);
-  font-weight: var(--weight-heading-card);
-  letter-spacing: var(--tracking-heading-card);
+  color: var(--ink-3);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
 }
 
-.entries {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border: var(--border-edge) solid var(--edge);
-  border-radius: var(--radius-card);
-  background: var(--card);
-  box-shadow: var(--shadow-card);
+.centerTitle {
+  margin: 0 0 var(--space-4);
+  color: var(--ink-3);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-align: center;
 }
 
-.entry {
+/* A Tags label with its match beside it. */
+.rowHead {
   display: flex;
   align-items: center;
   gap: var(--space-5);
-  padding: var(--space-4) var(--space-5);
-  border-bottom: var(--border-rule) solid var(--rule);
+  margin-bottom: var(--space-4);
 }
 
-.entry:last-child {
-  border-bottom: none;
-}
-
-.entryName {
+.rowHead .subTitle {
   flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-  color: var(--ink);
-  font-size: var(--size-body);
-  font-weight: var(--weight-body);
+  margin: 0;
 }
 
-.toggles {
-  display: flex;
+/* The tag match: OR or AND in one outlined box; the match in force fills tomato. */
+.mode {
+  display: inline-flex;
   flex: none;
-  gap: var(--space-3);
+  padding: var(--space-1);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--card);
+}
+
+.modeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit);
+  min-width: var(--hit);
+  padding: 0 var(--space-5);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--ink-2);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+}
+
+.modeButton[aria-pressed='true'] {
+  background: var(--brand);
+  color: var(--brand-on);
+}
+
+/* The Don't Show half opens under a rule. */
+.dontShow {
+  padding-top: var(--space-8);
+  border-top: var(--border-rule) solid var(--rule);
+}
+
+.dontShow .centerTitle {
+  margin-bottom: 0;
 }
 
 /* Filter chips (design-system §6): outlined pills that fill tomato, or loss for Don't Show.
    The button is the 44px target; the pill is drawn tight around its label inside it. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-5);
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
@@ -70,10 +104,8 @@
   border-radius: var(--radius-pill);
   background: var(--card);
   color: var(--ink-2);
-  font-size: var(--size-label);
-  font-weight: var(--weight-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
   white-space: nowrap;
 }
 
@@ -88,24 +120,7 @@
   color: var(--card);
 }
 
-.clear {
-  justify-self: start;
-  min-height: var(--hit);
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--ink-2);
-  font-size: var(--size-body);
-  font-weight: var(--weight-body);
-  text-decoration: underline;
-  text-underline-offset: var(--space-1);
-}
-
-.clear:hover {
-  color: var(--ink);
-}
-
-.separate {
+.hint {
   margin: 0;
   color: var(--ink-3);
   font-size: var(--size-meta);

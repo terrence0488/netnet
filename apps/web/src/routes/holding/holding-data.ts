@@ -9,7 +9,7 @@ import type {
   ValueIn,
   ValueTuple,
 } from '@netnet/contracts';
-import { baselineChange, series } from '@netnet/core';
+import { baselineChange, series, trendRangeStart } from '@netnet/core';
 
 /**
  * The holding page's figures from the snapshot: its trend, its change over the selected baseline,
@@ -48,20 +48,45 @@ export function valueInputs(holdingId: string, tuples: readonly ValueTuple[]): V
 }
 
 /**
- * The holding's own trend: one point per day from its first value to today, from the stored
- * conversions. An archived holding keeps its own trend — leaving the totals and the aggregate
- * charts (PRD J2) is `filterHoldings`' rule, and it does not apply to the holding's own page —
- * so the figure is computed with the archive flag off.
+ * The trend's range bar (PRD J4): All, the last 6 months, the year to date, or the last 1, 2, 4
+ * or 8 years. Each value is the months back `core.trendRangeStart` reads: 0 is everything, -1
+ * the year to date.
+ */
+export const HOLDING_RANGES: readonly { readonly label: string; readonly value: number }[] = [
+  { label: 'All', value: 0 },
+  { label: '6M', value: 6 },
+  { label: 'YTD', value: -1 },
+  { label: '1Y', value: 12 },
+  { label: '2Y', value: 24 },
+  { label: '4Y', value: 48 },
+  { label: '8Y', value: 96 },
+];
+
+/**
+ * The holding's own trend: one point per day from the range's first day (by default its first
+ * value) to today, from the stored conversions. The range never starts before the first value —
+ * no data is not $0. An archived holding keeps its own trend — leaving the totals and the
+ * aggregate charts (PRD J2) is `filterHoldings`' rule, and it does not apply to the holding's
+ * own page — so the figure is computed with the archive flag off.
  */
 export function holdingTrend(
   snapshot: Snapshot,
   holding: Holding,
   universal: Universal,
   today: string,
+  rangeMonths = 0,
 ): Point[] {
   const input = { ...holdingInput(holding, universal), archived: false };
   const values = valueInputs(holding.id, snapshot.values[holding.id] ?? []);
-  return series(values, [input], { to: today }, 'day');
+  const start = trendRangeStart(rangeMonths, today);
+  if (start === undefined) return series(values, [input], { to: today }, 'day');
+  const earliest = values.reduce<string | undefined>(
+    (min, value) => (min === undefined || value.date < min ? value.date : min),
+    undefined,
+  );
+  if (earliest === undefined) return [];
+  const from = start > earliest ? start : earliest;
+  return series(values, [input], { from, to: today }, 'day');
 }
 
 /** The change baseline when none is selected: the agent's default context baseline. */

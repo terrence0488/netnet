@@ -5,9 +5,8 @@ import { asSignedIn, isPhone, mockConnections, mockSnapshot, snapshotEtag } from
 
 /**
  * Home (PRD J1, J4, the J5 handoff, J9): the whole picture — net worth against the baseline in
- * force, the trend and allocation, the breakdown by type, assets vs liabilities, sort, filter
- * and Don't Show, staleness on every row and the stale count handed to the agent. All data is
- * fictional.
+ * force, the trend and allocation, the position ledger, sort, filter and Don't Show, staleness
+ * on every row and the stale count handed to the agent. All data is fictional.
  */
 test.use({ timezoneId: 'UTC' });
 
@@ -546,46 +545,84 @@ test.describe('complete', () => {
     await expect(first).not.toContainText('+$250');
   });
 
-  test('filter by type or tag, and Don’t Show, naming what is hidden', async ({ page }) => {
+  test('filter drafts Show Only, chips and archived, applying together', async ({ page }) => {
     await page.goto('/app/');
     await expect(page.getByText('$328,750').first()).toBeVisible();
 
     await page.getByRole('button', { name: /Filter Home/ }).click();
     const sheet = page.getByRole('dialog', { name: 'Filter Home' });
-    await expect(
-      sheet.getByText('Home’s filter only — Insights has its own filter.'),
-    ).toBeVisible();
+    await expect(sheet.getByText('Hidden from Home only. Insights is unchanged.')).toBeVisible();
+    // Drafting applies nothing until Apply: no banner, no save.
     await sheet.getByRole('button', { name: 'Assets', exact: true }).click();
+    await expect(page.getByText('Assets only')).toHaveCount(0);
+    await expect.poll(() => patches).toStrictEqual([]);
+    await sheet.getByRole('button', { name: 'Apply', exact: true }).click();
     await expect(page.getByText('Assets only')).toBeVisible();
     await expect(page.getByText('$368,750').first()).toBeVisible();
     await expect(holdingsRegion(page).getByRole('link')).toHaveCount(3);
     await expect.poll(() => patches).toStrictEqual([{ homeFilter: { show: 'assets' } }]);
-    await sheet.getByRole('button', { name: 'Done' }).click();
 
+    // Cancel drops the draft.
     await page.getByRole('button', { name: /Filter Home/ }).click();
-    const reopened = page.getByRole('dialog', { name: 'Filter Home' });
-    const property = reopened.getByRole('listitem').filter({ hasText: 'Property' });
-    // Shown-only and hidden never hold at once: the second press moves it across.
-    await property.getByRole('button', { name: 'Show only' }).click();
-    await expect(property.getByRole('button', { name: 'Show only' })).toHaveAttribute(
+    const cancelled = page.getByRole('dialog', { name: 'Filter Home' });
+    await cancelled.getByRole('button', { name: 'Liabilities', exact: true }).click();
+    await cancelled.getByRole('button', { name: 'Cancel', exact: true }).first().click();
+    await expect(page.getByText('Assets only')).toBeVisible();
+    await expect.poll(() => patches).toStrictEqual([{ homeFilter: { show: 'assets' } }]);
+
+    // Chips: shown-only and hidden never hold at once — the second press moves it across —
+    // and Reset clears the draft.
+    await page.getByRole('button', { name: /Filter Home/ }).click();
+    const redrafted = page.getByRole('dialog', { name: 'Filter Home' });
+    const chips = redrafted.getByRole('button', { name: 'Property' });
+    await expect(chips).toHaveCount(2);
+    await chips.first().click();
+    await expect(chips.first()).toHaveAttribute('aria-pressed', 'true');
+    await chips.nth(1).click();
+    await expect(chips.first()).toHaveAttribute('aria-pressed', 'false');
+    await expect(chips.nth(1)).toHaveAttribute('aria-pressed', 'true');
+    await redrafted.getByRole('button', { name: 'Reset', exact: true }).click();
+    await expect(chips.nth(1)).toHaveAttribute('aria-pressed', 'false');
+    await expect(redrafted.getByRole('button', { name: 'All', exact: true })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    await property.getByRole('button', { name: 'Don’t show' }).click();
-    await expect(property.getByRole('button', { name: 'Show only' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
-    await expect(property.getByRole('button', { name: 'Don’t show' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await expect(page.getByText('Assets only · Hiding Property')).toBeVisible();
-    await expect(holdingsRegion(page).getByRole('link')).toHaveCount(2);
-    await reopened.getByRole('button', { name: 'Done' }).click();
+    await redrafted.getByRole('button', { name: 'Apply', exact: true }).click();
+    await expect(page.getByText('Assets only')).toHaveCount(0);
+    await expect(holdingsRegion(page).getByRole('link')).toHaveCount(4);
+    await expect
+      .poll(() => patches)
+      .toStrictEqual([{ homeFilter: { show: 'assets' } }, { homeFilter: null }]);
   });
 
-  test('the trend, the allocation, the breakdown and assets vs liabilities', async ({
+  test('tag chips match any or all of the tags', async ({ page }) => {
+    await page.goto('/app/');
+    await expect(page.getByText('$328,750').first()).toBeVisible();
+
+    await page.getByRole('button', { name: /Filter Home/ }).click();
+    const sheet = page.getByRole('dialog', { name: 'Filter Home' });
+    await sheet.getByRole('button', { name: 'Rainy day' }).first().click();
+    await sheet.getByRole('button', { name: 'Shared' }).first().click();
+    await sheet.getByRole('button', { name: 'Apply', exact: true }).click();
+    await expect(page.getByText('Rainy day OR Shared')).toBeVisible();
+    await expect(holdingsRegion(page).getByRole('link')).toHaveCount(2);
+
+    await page.getByRole('button', { name: /Filter Home/ }).click();
+    const redrafted = page.getByRole('dialog', { name: 'Filter Home' });
+    await redrafted.getByRole('button', { name: 'AND' }).first().click();
+    await redrafted.getByRole('button', { name: 'Apply', exact: true }).click();
+    // No holding carries both tags.
+    await expect(page.getByText('Rainy day AND Shared')).toBeVisible();
+    await expect(page.getByText('Nothing to show.')).toBeVisible();
+    await expect
+      .poll(() => patches)
+      .toStrictEqual([
+        { homeFilter: { tagIds: ['tag_rainy', 'tag_shared'] } },
+        { homeFilter: { tagIds: ['tag_rainy', 'tag_shared'], tagMode: 'all' } },
+      ]);
+  });
+
+  test('the trend and the allocation, switchable between money and percent', async ({
     page,
   }, testInfo) => {
     await page.goto('/app/');
@@ -598,16 +635,16 @@ test.describe('complete', () => {
     expect(segments[0]).toContain('Property');
     expect(segments[0]).toMatch(/%/);
 
-    const breakdown = page
-      .locator('section')
-      .filter({ has: page.getByRole('heading', { name: 'By type' }) });
-    await expect(breakdown.getByText('Cash & savings')).toBeVisible();
-    await expect(breakdown.getByText('$1,250')).toBeVisible();
-    await expect(breakdown.getByText('−$40,000')).toBeVisible();
+    await page.getByRole('button', { name: 'Show $' }).click();
+    const money = await allocation.getByTestId('allocation-chart-row').allTextContents();
+    expect(money[0]).toContain('$300K');
+    await page.getByRole('button', { name: 'Show %' }).click();
+    const back = await allocation.getByTestId('allocation-chart-row').allTextContents();
+    expect(back[0]).toMatch(/%/);
 
-    await expect(page.getByRole('heading', { name: 'Assets vs liabilities' })).toBeVisible();
-    await expect(page.getByTestId('assets-liabilities-chart')).toBeVisible();
-    await expect(page.getByTestId('assets-liabilities-chart-legend')).toContainText('Net worth');
+    // The revised J4 keeps no By type or assets-vs-liabilities cards on Home.
+    await expect(page.getByRole('heading', { name: 'By type' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Assets vs liabilities' })).toHaveCount(0);
 
     // A carousel on a phone, side by side on a computer.
     if (isPhone(testInfo)) {
@@ -642,7 +679,7 @@ test.describe('complete', () => {
     await page.getByRole('button', { name: /Filter Home/ }).click();
     const sheet = page.getByRole('dialog', { name: 'Filter Home' });
     await sheet.getByRole('button', { name: 'Assets', exact: true }).click();
-    await sheet.getByRole('button', { name: 'Done' }).click();
+    await sheet.getByRole('button', { name: 'Apply', exact: true }).click();
     await expect(page.getByText('Assets only')).toBeVisible();
 
     await page.reload();
@@ -660,6 +697,69 @@ test.describe('complete', () => {
     await page.goto('/app/');
     await expect(page.getByRole('heading', { level: 2, name: 'Holdings · 4' })).toBeVisible();
     await expectSoundScreen(page, testInfo);
+  });
+});
+
+test.describe('archived', () => {
+  // One active holding and one archived: the filter lists both only when asked.
+  const ARCHIVED_LEDGER = {
+    dataVersion: 3,
+    baseCurrency: 'SGD',
+    packRef: [{ key: 'generic', version: 1 }],
+    prefs: {},
+    types: TYPES,
+    tags: [],
+    holdings: [
+      holding({ id: 'hld_cash', name: 'Everyday savings', typeId: 'typ_cash' }),
+      holding({
+        id: 'hld_old',
+        name: 'Old account',
+        typeId: 'typ_cash',
+        archived: true,
+        archivedAt: '2026-09-01T00:00:00.000Z',
+      }),
+    ],
+    values: {
+      hld_cash: [[day(3), 125_000, 'SGD', 125_000, 'web', null, 'val_cash']],
+      hld_old: [[day(3), 500_000, 'SGD', 500_000, 'web', null, 'val_old']],
+    },
+  };
+
+  test.beforeEach(async ({ page }) => {
+    await asSignedIn(page);
+    const saved: Record<string, unknown> = {};
+    const packRef = [{ key: 'generic', version: 1 }];
+    await page.route('**/api/snapshot', (route) =>
+      route.fulfill({
+        json: { ...ARCHIVED_LEDGER, prefs: { ...saved } },
+        headers: { ETag: snapshotEtag(3, packRef) },
+      }),
+    );
+    await page.route('**/api/prefs', (route) => {
+      if (route.request().method() !== 'PATCH') return route.continue();
+      const patch = route.request().postDataJSON() as Record<string, unknown>;
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === null) delete saved[key];
+        else saved[key] = value;
+      }
+      return route.fulfill({ json: { result: { ...saved }, dataVersion: 4, warnings: [] } });
+    });
+  });
+
+  test('including archived lists archived holdings too', async ({ page }) => {
+    await page.goto('/app/');
+    await expect(page.getByText('$1,250').first()).toBeVisible();
+    await expect(holdingsRegion(page).getByRole('link')).toHaveCount(1);
+
+    await page.getByRole('button', { name: /Filter Home/ }).click();
+    const sheet = page.getByRole('dialog', { name: 'Filter Home' });
+    await sheet.getByRole('button', { name: 'Yes', exact: true }).click();
+    await sheet.getByRole('button', { name: 'Apply', exact: true }).click();
+    await expect(page.getByText('including archived')).toBeVisible();
+    await expect(page.getByText('$6,250').first()).toBeVisible();
+    const rows = holdingsRegion(page).getByRole('link');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(1)).toContainText('Old account');
   });
 });
 

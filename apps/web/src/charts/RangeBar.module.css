@@ -1,0 +1,36 @@
+/* A trend's range bar (design-system §5): the chosen range is an ink pill. The button is
+   the 44px target; the pill is drawn tight around its label inside it. */
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-top: var(--space-3);
+}
+
+.cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit);
+  min-width: var(--hit);
+  padding: 0 var(--space-1);
+  border: none;
+  background: none;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  color: var(--ink-2);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+}
+
+.cell.on .pill {
+  background: var(--ink);
+  color: var(--paper);
+}

@@ -1,6 +1,14 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { addDays, addMonths, bucketEnd, bucketStart, daysBetween, isCalendarDate } from './dates';
+import {
+  addDays,
+  addMonths,
+  bucketEnd,
+  bucketStart,
+  daysBetween,
+  isCalendarDate,
+  trendRangeStart,
+} from './dates';
 
 const DAY_MS = 86_400_000;
 
@@ -59,6 +67,16 @@ describe('calendar dates', () => {
   ] as const)('puts %s bucket of %s from %s to %s', (interval, date, start, end) => {
     expect(bucketStart(date, interval)).toBe(start);
     expect(bucketEnd(date, interval)).toBe(end);
+  });
+
+  it('starts a trend range at All, YTD, or that many months back', () => {
+    expect(trendRangeStart(0, '2026-10-09')).toBeUndefined();
+    expect(trendRangeStart(-1, '2026-10-09')).toBe('2026-01-01');
+    expect(trendRangeStart(6, '2026-10-09')).toBe('2026-04-09');
+    expect(trendRangeStart(12, '2026-10-09')).toBe('2025-10-09');
+    expect(trendRangeStart(96, '2026-10-09')).toBe('2018-10-09');
+    expect(trendRangeStart(1, '2026-03-31')).toBe('2026-02-28');
+    expect(() => trendRangeStart(6, 'not-a-date')).toThrow(RangeError);
   });
 
   it('agrees with the platform calendar on any day from 1900 to 2200', () => {

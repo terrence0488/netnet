@@ -15,15 +15,11 @@ import { Link } from 'react-router';
 import { useMe } from '../../api/account';
 import { useSnapshot } from '../../api/snapshot';
 import { Waiting } from '../../app/guards';
-import {
-  AllocationChart,
-  AssetsLiabilitiesChart,
-  TrendChart,
-  formatCompactMoney,
-} from '../../charts';
+import { AllocationChart, TrendChart, formatSignedCompactMoney } from '../../charts';
 import {
   ageOf,
   Card,
+  currencySymbol,
   ErrorState,
   Figure,
   formatMoney,
@@ -46,16 +42,14 @@ import { StaleCard } from './StaleCard';
 import styles from './Home.module.css';
 
 /**
- * Home (PRD J4, the J5 handoff, J9): net worth with what it means — the trend and allocation, the
- * breakdown by type, assets vs liabilities, the position ledger, what needs updating, and the
- * holdings under it, every change figure against the baseline in force. Every figure comes from
- * core, computed from the one snapshot; the type labels follow the snapshot's pack chain.
+ * Home (PRD J4, the J5 handoff, J9): net worth with what it means — the trend and allocation,
+ * the position ledger, what needs updating, and the holdings under it, every change figure
+ * against the baseline in force. Every figure comes from core, computed from the one snapshot;
+ * the type labels follow the snapshot's pack chain.
  */
 
 const CHART_HEIGHT = 160;
 const TREND_REASON = 'Update a holding next month, or add an earlier value, to see your trend.';
-const LINES_REASON =
-  'Update a holding next month, or add an earlier value, to see assets against liabilities.';
 
 export function Home() {
   const me = useMe().data;
@@ -173,6 +167,7 @@ function LoadedHome({
   const prefs = useHomePrefs(snapshot);
   const [sheet, setSheet] = useState<'baseline' | 'sort' | 'filter' | null>(null);
   const closeSheet = () => setSheet(null);
+  const [allocMode, setAllocMode] = useState<'money' | 'percent'>('percent');
 
   const coreFilter = useMemo(() => asHoldingFilter(prefs.filter), [prefs.filter]);
   const shown = useMemo(() => visibleHoldings(data, coreFilter), [data, coreFilter]);
@@ -205,14 +200,6 @@ function LoadedHome({
   );
   const trend = useMemo(
     () => series(data.values, data.holdings, { to: today }, 'month', coreFilter),
-    [data.values, data.holdings, today, coreFilter],
-  );
-  const byType = useMemo(
-    () => series(data.values, data.holdings, { to: today }, 'month', coreFilter, 'type'),
-    [data.values, data.holdings, today, coreFilter],
-  );
-  const byAccess = useMemo(
-    () => series(data.values, data.holdings, { to: today }, 'month', coreFilter, 'access'),
     [data.values, data.holdings, today, coreFilter],
   );
   // The allocation holds asset totals only: with the filter on liabilities, there is no
@@ -295,10 +282,6 @@ function LoadedHome({
     [sorted, staleIds],
   );
 
-  const typeGroups = byType.at(-1)?.groups ?? {};
-  const breakdown = snapshot.types.filter((type) =>
-    shown.some((holding) => holding.typeId === type.id),
-  );
   const assetGroups = assetsByType.at(-1)?.groups ?? {};
   const segments = snapshot.types.flatMap((type, slot) => {
     const minor = assetGroups[type.id] ?? 0;
@@ -367,12 +350,23 @@ function LoadedHome({
                         <section aria-labelledby="allocation-heading">
                           <div className={styles.sectionHead}>
                             <h2 id="allocation-heading">Allocation</h2>
+                            <button
+                              type="button"
+                              className={styles.modeToggle}
+                              onClick={() =>
+                                setAllocMode(allocMode === 'percent' ? 'money' : 'percent')
+                              }
+                            >
+                              {allocMode === 'percent'
+                                ? `Show ${currencySymbol(snapshot.baseCurrency)}`
+                                : 'Show %'}
+                            </button>
                           </div>
                           <Card>
                             <AllocationChart
                               segments={segments}
                               currency={snapshot.baseCurrency}
-                              mode="percent"
+                              mode={allocMode}
                             />
                           </Card>
                         </section>
@@ -394,42 +388,6 @@ function LoadedHome({
             labels={typeLabels}
             baseCurrency={snapshot.baseCurrency}
           />
-        </section>
-        {breakdown.length > 0 ? (
-          <section aria-labelledby="by-type-heading" className={styles.byType}>
-            <div className={styles.sectionHead}>
-              <h2 id="by-type-heading">By type</h2>
-            </div>
-            <Card flush>
-              {breakdown.map((type) => (
-                <div key={type.id} className={styles.ledgerRow}>
-                  <span className={styles.grow}>
-                    <span className={styles.ledgerTitle}>
-                      {allTypeLabels.get(type.id) ?? 'Other'}
-                    </span>
-                  </span>
-                  <Figure minor={typeGroups[type.id] ?? 0} currency={snapshot.baseCurrency} total />
-                </div>
-              ))}
-            </Card>
-          </section>
-        ) : null}
-        <section aria-labelledby="lines-heading" className={styles.lines}>
-          <div className={styles.sectionHead}>
-            <h2 id="lines-heading">Assets vs liabilities</h2>
-          </div>
-          <Card>
-            <AssetsLiabilitiesChart
-              dates={byAccess.map((point) => point.date)}
-              assets={byAccess.map((point) => point.total - (point.groups?.owed ?? 0))}
-              liabilities={byAccess.map((point) => -(point.groups?.owed ?? 0))}
-              netWorth={byAccess.map((point) => point.total)}
-              currency={snapshot.baseCurrency}
-              height={CHART_HEIGHT}
-              emptyLabel={emptyLabel}
-              {...(filterLeavesNothing ? {} : { reason: LINES_REASON })}
-            />
-          </Card>
         </section>
         {staleNames.length > 0 ? (
           <div className={styles.stale}>
@@ -501,14 +459,16 @@ function LoadedHome({
         sort={prefs.sort}
         onSort={prefs.setSort}
       />
-      <FilterSheet
-        open={sheet === 'filter'}
-        onClose={closeSheet}
-        filter={prefs.filter}
-        types={filterTypes}
-        tags={filterTags}
-        onFilter={prefs.setFilter}
-      />
+      {sheet === 'filter' ? (
+        <FilterSheet
+          open
+          onClose={closeSheet}
+          filter={prefs.filter}
+          types={filterTypes}
+          tags={filterTags}
+          onFilter={prefs.setFilter}
+        />
+      ) : null}
     </>
   );
 }
@@ -608,12 +568,6 @@ function PositionLedger({
   );
 }
 
-/** `+$59K`, `−$1K`: a row's compact change money, signed (design-system §2.1). */
-function signedCompact(minor: number, currency: string): string {
-  const text = formatCompactMoney(minor, currency);
-  return minor > 0 ? `+${text}` : text;
-}
-
 function HoldingRow({
   holding,
   label,
@@ -681,7 +635,7 @@ function HoldingRow({
             )}
           >
             {rowChange.kind === 'money'
-              ? signedCompact(rowChange.minor, baseCurrency)
+              ? formatSignedCompactMoney(rowChange.minor, baseCurrency)
               : formatChangePct(rowChange.pct)}
           </span>
         ) : null}

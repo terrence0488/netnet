@@ -21,7 +21,7 @@ export type {
   StackedValue,
 } from './chart';
 export { DEFAULT_CONTEXT_BASELINE, compileContext } from './context/compile-context';
-export { addDays, addMonths, daysBetween, isCalendarDate } from './dates';
+export { addDays, addMonths, daysBetween, isCalendarDate, trendRangeStart } from './dates';
 export {
   DUPLICATE_SIMILARITY,
   MAX_CANDIDATES,
@@ -30,7 +30,7 @@ export {
   normaliseName,
 } from './duplicates';
 export { filterHoldings } from './filter';
-export { MAX_MINOR, convert, fromMinor, minorRate, toMinor } from './money';
+export { MAX_MINOR, convert, deltaMinor, fromMinor, minorRate, toMinor } from './money';
 export { chainValue, packChain, typeLabel } from './pack-chain';
 export { compareValues, latestValues, position } from './position';
 export { series } from './series';

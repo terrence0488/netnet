@@ -99,6 +99,28 @@ describe('holdingTrend', () => {
     const row = holding({ id: 'hld_1' });
     expect(holdingTrend(snapshot([row], {}), row, 'cash', '2026-09-21')).toStrictEqual([]);
   });
+
+  it('covers only the range bar’s span', () => {
+    const row = holding({ id: 'hld_1' });
+    const snap = snapshot([row], {
+      hld_1: [value('2025-09-20', 100_000), value('2026-09-22', 120_000)],
+    });
+    const all = holdingTrend(snap, row, 'cash', '2026-09-23', 0);
+    expect(all[0]?.date).toBe('2025-09-20');
+    expect(all.at(-1)?.date).toBe('2026-09-23');
+    // Six months back from 2026-09-23, then daily to today.
+    const half = holdingTrend(snap, row, 'cash', '2026-09-23', 6);
+    expect(half[0]?.date).toBe('2026-03-23');
+    expect(half.at(-1)).toMatchObject({ date: '2026-09-23', total: 120_000 });
+    expect(half).toHaveLength(185);
+    // The year to date starts on 1 January.
+    const ytd = holdingTrend(snap, row, 'cash', '2026-09-23', -1);
+    expect(ytd[0]).toMatchObject({ date: '2026-01-01', total: 100_000 });
+    // A range starting before the first value starts at the value: no $0 run-up.
+    const wide = holdingTrend(snap, row, 'cash', '2026-09-23', 96);
+    expect(wide[0]).toMatchObject({ date: '2025-09-20', total: 100_000 });
+    expect(holdingTrend(snapshot([row], {}), row, 'cash', '2026-09-23', 6)).toStrictEqual([]);
+  });
 });
 
 describe('holdingChange', () => {

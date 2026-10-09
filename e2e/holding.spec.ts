@@ -225,7 +225,9 @@ test('the latest value with its consequence, and the history newest first', asyn
   const rows = page.getByRole('button', { expanded: false }).filter({ hasText: /\$/ });
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(0)).toContainText('$67,500');
+  await expect(rows.nth(0)).toContainText('+$4K');
   await expect(rows.nth(1)).toContainText('$64,000');
+  await expect(rows.nth(1)).not.toContainText('+');
   await expect(rows.nth(0)).toHaveAttribute('data-agent-written', 'true');
   await expect(rows.nth(1)).not.toHaveAttribute('data-agent-written', 'true');
 });
@@ -407,6 +409,24 @@ test('the trend, the change over the baseline, and the staleness', async ({ page
   await expect(page.getByText('Updated yesterday')).toBeVisible();
 });
 
+test('the trend covers the range bar’s span, and waits for a second value', async ({ page }) => {
+  await page.goto('/app/holdings/hld_broker');
+  const range = page.getByRole('group', { name: 'Brokerage account range' });
+  await expect(range.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+  await range.getByRole('button', { name: '6M' }).click();
+  await expect(range.getByRole('button', { name: '6M' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('trend-chart')).toBeVisible();
+
+  // One value is a placeholder saying what makes the trend appear, with no range bar.
+  await page.goto('/app/holdings/hld_flat');
+  await expect(page.getByTestId('trend-chart-placeholder')).toBeVisible();
+  await expect(page.getByText('Need more data')).toBeVisible();
+  await expect(
+    page.getByText('Update this next month, or add an earlier value, to see how it moves.'),
+  ).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Riverside flat range' })).toHaveCount(0);
+});
+
 test('edits a value’s amount, date and currency', async ({ page }) => {
   let patch: Record<string, unknown> | undefined;
   await page.route('**/api/values/val_new', async (route) => {
@@ -477,10 +497,16 @@ test('archives and unarchives the holding', async ({ page }) => {
   });
 
   await page.goto('/app/holdings/hld_broker');
-  await page.getByRole('button', { name: 'Archive holding' }).click();
+  await page.getByRole('button', { name: 'Holding menu' }).click();
+  const menu = page.getByRole('dialog', { name: 'Brokerage account' });
+  await menu.getByRole('button', { name: 'Archive', exact: true }).click();
+  await expect(menu).toBeHidden();
   await expect(page.getByText('Archived.', { exact: true })).toBeVisible();
   await expect(page.getByText('Archived · Investments · USD')).toBeVisible();
-  await page.getByRole('button', { name: 'Unarchive holding' }).click();
+  await page.getByRole('button', { name: 'Holding menu' }).click();
+  const reopened = page.getByRole('dialog', { name: 'Brokerage account' });
+  await reopened.getByRole('button', { name: 'Unarchive', exact: true }).click();
+  await expect(reopened).toBeHidden();
   await expect(page.getByText('Unarchived.', { exact: true })).toBeVisible();
   expect(patches).toStrictEqual([{ archived: true }, { archived: false }]);
 });
@@ -494,14 +520,16 @@ test('deletes the holding only after it asks, then leaves for Home', async ({ pa
   });
 
   await page.goto('/app/holdings/hld_broker');
-  await page.getByRole('button', { name: 'Delete holding' }).click();
+  await page.getByRole('button', { name: 'Holding menu' }).click();
+  const menu = page.getByRole('dialog', { name: 'Brokerage account' });
+  await menu.getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(page.getByText(/Brokerage account” and its 2 values go/)).toBeVisible();
-  await page.getByRole('button', { name: 'Keep' }).click();
+  await menu.getByRole('button', { name: 'Keep' }).click();
   await expect(page.getByText(/and its 2 values go/)).toBeHidden();
   expect(deletes).toBe(0);
 
-  await page.getByRole('button', { name: 'Delete holding' }).click();
-  await page.getByRole('button', { name: 'Delete holding' }).click();
+  await menu.getByRole('button', { name: 'Delete', exact: true }).click();
+  await menu.getByRole('button', { name: 'Delete holding' }).click();
   await expect(page.getByText('Deleted.')).toBeVisible();
   await expect(page).toHaveURL(/\/app$/);
   expect(deletes).toBe(1);
@@ -592,5 +620,10 @@ test('a sound screen at phone and computer widths', async ({ page }, testInfo) =
   await rows.nth(0).click();
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Edit Value' })).toBeVisible();
+  await expectSoundScreen(page, testInfo);
+  await page.keyboard.press('Escape');
+
+  await page.getByRole('button', { name: 'Holding menu' }).click();
+  await expect(page.getByRole('dialog', { name: 'Brokerage account' })).toBeVisible();
   await expectSoundScreen(page, testInfo);
 });

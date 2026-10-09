@@ -13,9 +13,12 @@ const ids = (filter?: Parameters<typeof filterHoldings>[1]) =>
   filterHoldings(holdings, filter).map((h) => h.id);
 
 describe('filterHoldings', () => {
-  it('always leaves archived holdings out', () => {
+  it('leaves archived holdings out unless the filter includes them', () => {
     expect(ids()).toStrictEqual(['a', 'b', 'c', 'e']);
     expect(ids({ typeIds: ['typ_cash'] })).toStrictEqual(['a']);
+    expect(ids({ includeArchived: true })).toStrictEqual(['a', 'b', 'c', 'd', 'e']);
+    expect(ids({ typeIds: ['typ_cash'], includeArchived: true })).toStrictEqual(['a', 'd']);
+    expect(ids({ includeArchived: false })).toStrictEqual(['a', 'b', 'c', 'e']);
   });
 
   it('shows only assets or only liabilities', () => {

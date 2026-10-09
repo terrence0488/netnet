@@ -5,7 +5,7 @@ import type { HoldingFilter, SavedFilter } from '@netnet/contracts';
  * A type or tag is shown-only or hidden, never both; what is hidden is always named on screen.
  */
 
-/** Whether the filter hides anything at all. Empty lists restrict nothing. */
+/** Whether the filter changes anything at all. Empty lists restrict nothing. */
 export function isFilterActive(filter: SavedFilter): boolean {
   return (
     (filter.show ?? 'all') !== 'all' ||
@@ -13,7 +13,8 @@ export function isFilterActive(filter: SavedFilter): boolean {
     (filter.tagIds?.length ?? 0) > 0 ||
     (filter.hideTypeIds?.length ?? 0) > 0 ||
     (filter.hideTagIds?.length ?? 0) > 0 ||
-    (filter.hideHoldingIds?.length ?? 0) > 0
+    (filter.hideHoldingIds?.length ?? 0) > 0 ||
+    (filter.includeArchived ?? false)
   );
 }
 
@@ -32,6 +33,7 @@ export function normalizeFilter(filter: SavedFilter): SavedFilter {
     if (filter.hideTagMode !== undefined) out.hideTagMode = filter.hideTagMode;
   }
   if (filter.hideHoldingIds?.length) out.hideHoldingIds = [...filter.hideHoldingIds];
+  if (filter.includeArchived === true) out.includeArchived = true;
   return out;
 }
 
@@ -46,6 +48,7 @@ export function asHoldingFilter(filter: SavedFilter): HoldingFilter {
   if (filter.hideTagIds !== undefined) out.hideTagIds = filter.hideTagIds;
   if (filter.hideTagMode !== undefined) out.hideTagMode = filter.hideTagMode;
   if (filter.hideHoldingIds !== undefined) out.hideHoldingIds = filter.hideHoldingIds;
+  if (filter.includeArchived !== undefined) out.includeArchived = filter.includeArchived;
   return out;
 }
 
@@ -87,24 +90,29 @@ export interface FilterLabels {
 }
 
 /**
- * The active filter in one line, naming what is hidden ("Assets only · Hiding Property,
- * Groceries"). What the filter names but Home no longer knows (a type since deleted) is left out.
+ * The active filter in one line, naming what is hidden ("Assets only · hiding Property,
+ * Groceries"). Tags read with their match ("Rainy day OR Shared"). What the filter names but
+ * Home no longer knows (a type since deleted) is left out.
  */
 export function describeHomeFilter(filter: SavedFilter, labels: FilterLabels): string {
   const parts: string[] = [];
   if (filter.show === 'assets') parts.push('Assets only');
   if (filter.show === 'liabilities') parts.push('Liabilities only');
   const onlyTypes = namesOf(filter.typeIds ?? [], labels.types);
-  if (onlyTypes.length > 0) parts.push(`Only ${onlyTypes.join(', ')}`);
+  if (onlyTypes.length > 0) parts.push(onlyTypes.join(', '));
   const onlyTags = namesOf(filter.tagIds ?? [], labels.tags);
-  if (onlyTags.length > 0) parts.push(`Tagged ${onlyTags.join(', ')}`);
-  const hidden = [
-    ...namesOf(filter.hideTypeIds ?? [], labels.types),
-    ...namesOf(filter.hideTagIds ?? [], labels.tags),
-  ];
-  if (hidden.length > 0) parts.push(`Hiding ${hidden.join(', ')}`);
+  if (onlyTags.length > 0) {
+    parts.push(onlyTags.join(filter.tagMode === 'all' ? ' AND ' : ' OR '));
+  }
+  const hiddenTypes = namesOf(filter.hideTypeIds ?? [], labels.types);
+  if (hiddenTypes.length > 0) parts.push(`hiding ${hiddenTypes.join(', ')}`);
+  const hiddenTags = namesOf(filter.hideTagIds ?? [], labels.tags);
+  if (hiddenTags.length > 0) {
+    parts.push(`hiding ${hiddenTags.join(filter.hideTagMode === 'all' ? ' AND ' : ' OR ')}`);
+  }
   const hiddenHoldings = filter.hideHoldingIds?.length ?? 0;
   if (hiddenHoldings > 0)
-    parts.push(`Hiding ${hiddenHoldings} holding${hiddenHoldings === 1 ? '' : 's'}`);
+    parts.push(`hiding ${hiddenHoldings} holding${hiddenHoldings === 1 ? '' : 's'}`);
+  if (filter.includeArchived === true) parts.push('including archived');
   return parts.join(' · ');
 }

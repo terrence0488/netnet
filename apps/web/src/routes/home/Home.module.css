@@ -1,5 +1,5 @@
-/* Home (design-system §6, §7): the tomato hero, then trend and allocation, position, the
-   breakdown, assets vs liabilities, what needs updating, and the holdings. */
+/* Home (design-system §6, §7): the tomato hero, then trend and allocation, position,
+   what needs updating, and the holdings. */
 
 /* The hero figure: a tomato card with two sparkles in its corner. */
 .hero {
@@ -152,6 +152,22 @@
   font-size: var(--size-heading-section);
   font-weight: var(--weight-heading-section);
   letter-spacing: var(--tracking-heading-section);
+}
+
+/* The allocation's Show $ / Show %: a link beside the heading. */
+.modeToggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  margin-left: auto;
+  padding: 0 var(--space-2);
+  border: none;
+  background: none;
+  color: var(--brand-text);
+  font-size: var(--size-link);
+  font-weight: var(--weight-link);
+  letter-spacing: var(--tracking-link);
+  white-space: nowrap;
 }
 
 /* The holdings toolbar: sort and filter, wrapping under the heading on narrow phones. */
@@ -338,19 +354,17 @@
     grid-column: span 12;
   }
 
+  /* The holdings left, the position right with what needs updating beneath it. */
+  .list {
+    grid-column: 1 / span 7;
+    grid-row: span 2;
+  }
+
   .pos {
-    grid-column: span 5;
-  }
-
-  .byType {
-    grid-column: span 7;
-  }
-
-  .lines {
-    grid-column: span 7;
+    grid-column: 8 / span 5;
   }
 
   .stale {
-    grid-column: span 5;
+    grid-column: 8 / span 5;
   }
 }

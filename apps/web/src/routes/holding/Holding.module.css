@@ -33,6 +33,46 @@
   background: var(--paper);
 }
 
+/* The menu's three dots, drawn in the disc's own ink. */
+.dots {
+  width: var(--space-10);
+  height: var(--space-10);
+}
+
+/* The holding menu's rows: plain rows with rules, Delete in loss. */
+.menuOpt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-7);
+  width: 100%;
+  min-height: var(--hit);
+  padding: var(--space-4) 0;
+  border: none;
+  border-bottom: var(--border-rule) solid var(--rule);
+  background: none;
+  color: var(--ink);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuOpt:last-of-type {
+  border-bottom: none;
+}
+
+.menuOpt:hover {
+  color: var(--brand-text);
+}
+
+.destructive {
+  color: var(--loss);
+}
+
+.destructive:hover {
+  color: var(--loss);
+}
+
 .hero {
   position: relative;
   padding: var(--space-10) var(--space-9) var(--space-7);
@@ -266,9 +306,29 @@
 }
 
 .amt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
   text-align: right;
   white-space: nowrap;
   flex: none;
+}
+
+/* A row's change since the value before it: a measurement, signed as well as coloured. */
+.chg {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: var(--size-pct);
+  font-weight: var(--weight-pct);
+}
+
+.gain {
+  color: var(--gain);
+}
+
+.loss {
+  color: var(--loss);
 }
 
 .byAgent::before {
@@ -453,49 +513,6 @@
   color: var(--ink-3);
   font-size: var(--size-meta);
   font-weight: var(--weight-meta);
-  line-height: var(--leading-body-sm);
-}
-
-/* About this holding: the archive row, then the delete zone (as on taxonomy). */
-.manage {
-  display: grid;
-  gap: var(--space-8);
-}
-
-.manageRow {
-  display: grid;
-  gap: var(--space-5);
-  justify-items: start;
-}
-
-.manageText {
-  margin: 0;
-  color: var(--ink-2);
-  font-size: var(--size-body-sm);
-  font-weight: var(--weight-body-sm);
-  line-height: var(--leading-body-sm);
-}
-
-.danger {
-  display: grid;
-  gap: var(--space-5);
-  justify-items: start;
-  padding-top: var(--space-5);
-  border-top: var(--border-rule) solid var(--rule);
-}
-
-.dangerTitle {
-  margin: 0;
-  color: var(--ink);
-  font-size: var(--size-body-sm);
-  font-weight: var(--weight-button);
-}
-
-.dangerText {
-  margin: 0;
-  color: var(--ink-2);
-  font-size: var(--size-body-sm);
-  font-weight: var(--weight-body-sm);
   line-height: var(--leading-body-sm);
 }
 
