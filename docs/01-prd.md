@@ -1,7 +1,8 @@
 # 01 — Product Requirements (PRD)
 
-Status: **approved** · Stage owner: Product manager
-Inputs: `docs/00-discovery.md`, `docs/reference/mockups/README.md`
+Status: **awaiting re-approval** · Stage owner: Product manager
+Inputs: `docs/00-discovery.md`, `docs/reference/mockups/README.md`, `docs/02-prototype/` and
+`origin/claude/design-c-soft` / `origin/claude/design-a-two-inks` (behavioural reference for J4)
 
 > Longer than the workflow's "~2 pages" because the acceptance criteria (§6) are the contract
 > Stage 4 plans against and Stage 6 tests against, one set per job. §§1–5 and 7–9 are the lean
@@ -337,9 +338,10 @@ is a security incident, not a trade-off.
 ### 4.1 In scope for v1
 
 Assemble and maintain a financial position: any asset or liability, user-defined types and tags,
-any currency, dated value history, archive · net worth total with trend, breakdown by type,
-assets-vs-liabilities, and a user-chosen comparison baseline · **an Insights view of change by
-calendar period (monthly, quarterly, yearly) with its own filters and exclusions** · staleness
+any currency, dated value history, archive · net worth total with trend, allocation and the
+position ledger, a user-chosen comparison baseline and trend range · **an Insights view of change
+by calendar period (monthly, quarterly, yearly) with its own filters and exclusions, including
+assets-vs-liabilities** · staleness
 labels · **a gentle comeback reminder after a month away, by web push where the user has turned it
 on and by email otherwise** (J12) · **a comprehensive MCP layer with full CRUD, plus read tools shaped for advice, reached
 by OAuth from Claude, and ChatGPT once listed** · audit log and undo for every agent write · export and account
@@ -541,12 +543,22 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 
 ### J4 — See the picture
 - **Given** holdings with history, **when** the user opens Home, **then** they see total net worth
-  in their default currency, a trend line, a breakdown by type, and an assets-vs-liabilities split.
+  in their default currency with its change against the baseline in force; a trend and an
+  allocation sharing one place — a swipeable carousel on a phone, side by side on a computer;
+  the allocation as a by-type list switchable between money and percent; the position ledger
+  (what could be used, what needs selling, what is locked, what is undecided, what is owed);
+  and the holdings list.
 - **Given** a comparison baseline (Initial value / Last update / Last month / Last quarter / Jan 1 /
   Last year), **when** selected, **then** every change figure and percentage on screen is relative
-  to it and the baseline in force is labelled.
-- **Given** a holding, **when** opened, **then** the user sees its own trend, its change over the
-  selected period, and its full history newest-first.
+  to it and the baseline in force is labelled. The baseline's name is the control that changes
+  it — there is no separate comparison button.
+- **Given** the Home or holding trend, **when** the user picks a range (All / 6M / YTD / 1Y / 2Y /
+  4Y / 8Y), **then** the trend covers that span.
+- **Given** a holding, **when** opened, **then** the user sees its own trend with a range bar; a bar
+  chart of its period changes with a monthly / quarterly / yearly switch and paging; and its
+  full history newest-first. Each history row opens to show the original-currency amount, who
+  added it and when, with Edit and Delete. Edit, Archive / Unarchive and Delete live in the
+  top-right menu; values are added from the Update entry.
 - **Given** a trend chart (Home, a holding, Insights' assets vs. liabilities), **when** the user
   hovers, taps, drags or uses the arrow keys along it, **then** they read the date and value at
   that point (every series, for a chart with several). A trend is a history of real figures, and
@@ -560,15 +572,21 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
   the user's own trend. A chart that vanishes teaches a new user the product has less in it than
   it does. A chart that shows a line through one point, or a flat line at their only value, reads
   as a fact about their money.
-- **Given** sort and filter controls, **when** the user sorts by value, name, change or last
-  updated, filters by type or tag, or hides types or tags ("Don't Show"), **then** list and totals
-  reflect the filtered set and the active filter is visible, naming what is hidden. Hiding is often
+- **Given** sort and filter controls, **when** the user sorts by value (high to low or low to
+  high), name, type, change (money or percent) or last updated, **then** each row carries one
+  change figure — money, or percent when the list is sorted by change percent. **When** the user
+  opens the filter, **then** a sheet drafts Show Only (assets / all / liabilities), type chips,
+  tag chips with an AND / OR match, a Don't Show section for types and tags, and archived
+  inclusion, applied or cancelled together; list and totals reflect the applied set and the
+  active filter is visible, naming what is hidden. Hiding is often
   the easier question: "everything except the car" is one tap, where Show Only takes a tap for
   every other type.
   A type or tag is either shown only or hidden, never both. Home's filter and Insights' are separate,
   and each says so.
 - **Given** a phone-width viewport, **when** any of the above is used, **then** it is fully usable
   without horizontal scrolling — mobile-first is the primary case, not a fallback.
+- **Given** a computer-width viewport, **when** Home opens, **then** the trend and allocation sit
+  side by side above, and the position ledger sits beside the holdings list below.
 
 ### J5 — Connect the agent (A1)
 - **Given** a verified account, **when** the user opens Connect your agent, **then** they get

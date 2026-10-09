@@ -169,12 +169,13 @@ On `https://‹domain›`, deployed by the production workflow:
 2. Onboarding's "Let's start…" screen offers the basics or the agent route. The basics walk the
    pack's checklist one question per screen, saving each answer at once, with Skip, Back and "Done
    for now". The agent route ends on a blank Home with the starting prompt.
-3. Home shows the whole picture: net worth, trend and allocation, breakdown by type, assets vs
-   liabilities, change against the chosen baseline, sort, filter and Don't Show, and the stale
-   count with the agent handoff. An empty Home offers one action and one alternative, with or
-   without an agent.
-4. A holding opens its own trend, change over the baseline and paged history; values edit and
-   delete; holdings archive and delete; tags assign.
+3. Home shows the whole picture: net worth, trend and allocation (a carousel on a phone,
+   side by side on a computer), the position ledger, change against the chosen baseline and
+   trend range, sort, the filter sheet and Don't Show, and the stale count with the agent
+   handoff. An empty Home offers one action and one alternative, with or without an agent.
+4. A holding opens its own trend with a range bar, a bar chart of its period changes and paged
+   history with expandable rows; values edit and delete; holdings archive and delete from the
+   top-right menu; tags assign.
 5. Types and tags add, rename, merge and delete from the web; the Add form takes tags.
 6. Stale holdings are labelled on list and detail. Every step fires its §3.5 event. The phone
    screenshots render in the connect guides.
@@ -189,7 +190,7 @@ regressions.
 | **J1** | Sign-up and sign-in by Google and Apple, verified, with the official buttons, `method` on the sign-up events · the "Let's start" screen and the basics (the pack's checklist, follow-ups only after a yes, each answer saved at once, Skip, Back with removal logged, "Done for now", `via: guided`, resume, the P-A walk-through) · the agent route from onboarding and the blank Home after it · the empty Home's full rule, with and without an agent |
 | **J2** | Tags in the Add form · add, rename, merge and delete types and tags, holdings follow, nothing orphaned · archive and unarchive · delete from the web (audited in the rows; the log screen is P3) |
 | **J3** | Edit a value on the web (amount, date, currency): history, totals and charts recompute, the edit is audited (shown in P3), `value_corrected` fires |
-| **J4** | All: total, trend, breakdown by type, assets vs liabilities · the six baselines, every figure relative to the one in force and labelled · a holding's trend, change and newest-first history · the trend read by hover, tap, drag and arrow keys, a plain swipe still scrolling · the "Need more data" placeholder · sort, filter and Don't Show with the active filter visible · usable on a phone without sideways scrolling |
+| **J4** | All: total, trend and allocation (carousel, side by side on a computer), the position ledger · the six baselines, every figure relative to the one in force and labelled, the baseline's name the control · trend ranges · a holding's trend with range bar, period bar chart with monthly/quarterly/yearly switch and paging, newest-first history with expandable rows, top-right menu · the trend read by hover, tap, drag and arrow keys, a plain swipe still scrolling · the "Need more data" placeholder · sort (both value directions, type, money/percent change) and the filter sheet (Show Only, chips, AND/OR, Don't Show, archived, Apply) with the active filter visible · phone usable without sideways scrolling, computer side-by-side layout |
 | **J5** | The same connect flow from onboarding and from a holding, `entry` carried · the prompt handoff for an empty or stale Home (the starting and update prompts, prefill where the client supports it, Copy where not, no financial data in prompts) |
 | **J9** | All: staleness labels on list and detail · the stale count on Home, handed to a connected agent or offering to connect one · no scheduled stale-holding message of any kind |
 

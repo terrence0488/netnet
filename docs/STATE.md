@@ -1,10 +1,10 @@
 # Project State
 
 ## Current
-Stage: Build P2 (pre-QA UI fixes)
+Stage: Requirements (PRD J4 revision to the prototype)
 Phase: P2
-Status: in-progress
-Next action: new session fixes the UI drift in `docs/phases/P2/feedback.md`, then `stage: test P2`.
+Status: awaiting-approval
+Next action: `approve prd`, then a new session fixes `docs/phases/P2/feedback.md`.
 **Branch:** one branch per task, from `main` (CONVENTIONS §15).
 
 ## Approvals
@@ -22,11 +22,11 @@ Next action: new session fixes the UI drift in `docs/phases/P2/feedback.md`, the
 | P5 | not-started | | |
 
 ## Handoff note (last session)
-Build P2 done: T1–T7 merged (#63–#69) and T7 closed — deploy green on `main`,
-smoke + dispatched probe green on prod (see T7 report). Founder then filed
-pre-QA UI drift: production diverges from the high-fidelity prototype (Home
-desktop layout, filter, holding page bar chart and menu placement). Next: a new
-session fixes `docs/phases/P2/feedback.md` first, then `stage: test P2`.
+PRD J4 rewritten to the prototype (awaiting re-approval): Home gets allocation +
+position ledger instead of the breakdown/assets-vs-liabilities cards; holding
+gains the bar chart, range bars and top-right menu; filter sheet, sort and
+desktop layout pinned. Open decision: holding bars in the P2 fix (recommended,
+holding-scoped) or P5. Then: fix session, then `stage: test P2`.
 Open: F17/F18 secrets → real Google/Apple sign-in is a Stage-6 manual check; T8 waits
 for the 3 phone shots; F16 monitor + inbox delivery of both emails ride Stage 6.
 Watch: Ubuntu 26 runner migration Oct 19; test:int rotates the shared app password
