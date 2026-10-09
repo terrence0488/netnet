@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { MAX_MINOR, convert, fromMinor, minorRate, toMinor } from './money';
+import { MAX_MINOR, convert, deltaMinor, fromMinor, minorRate, toMinor } from './money';
 
 /** One currency for each number of decimal places in the table: 0, 2 and 3. */
 const CURRENCIES = { JPY: 0, SGD: 2, KWD: 3 } as const;
@@ -238,5 +238,20 @@ describe('money properties', () => {
         expect(convert(m, minorRate('1', 'USD', 'EUR'))).toBe(m);
       }),
     );
+  });
+});
+
+describe('deltaMinor', () => {
+  it('subtracts signed minor units exactly', () => {
+    expect(deltaMinor(6_750_000, 6_400_000)).toBe(350_000);
+    expect(deltaMinor(6_400_000, 6_750_000)).toBe(-350_000);
+    // A liability reads negative, so a growing debt reads as a negative change.
+    expect(deltaMinor(-4_500_000, -4_000_000)).toBe(-500_000);
+    expect(deltaMinor(1_250_00, 1_250_00)).toBe(0);
+  });
+
+  it('refuses what is not whole minor units', () => {
+    expect(() => deltaMinor(1.5, 0)).toThrow(RangeError);
+    expect(() => deltaMinor(0, Number.NaN)).toThrow(RangeError);
   });
 });

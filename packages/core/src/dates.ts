@@ -84,6 +84,17 @@ export function daysBetween(from: string, to: string): number {
   return toDays(ymd(to)) - toDays(ymd(from));
 }
 
+/**
+ * A trend range bar's first day (PRD J4: All / 6M / YTD / 1Y / 2Y / 4Y / 8Y), from the choice's
+ * months back: 0 is everything (no first day), -1 the year's first day, else that many months
+ * back from today, keeping the day where the month has it.
+ */
+export function trendRangeStart(months: number, today: string): string | undefined {
+  if (months === 0) return undefined;
+  if (months === -1) return bucketStart(today, 'year');
+  return addMonths(today, -months);
+}
+
 /** The first day of the calendar bucket that holds `date`. */
 export function bucketStart(date: string, interval: Interval): string {
   const { y, m, d } = ymd(date);
