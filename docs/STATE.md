@@ -4,7 +4,7 @@
 Stage: Build P2 (full prototype conformance sweep)
 Phase: P2
 Status: in-progress
-Next action: PR #71 green → merge → dispatch production → smoke/probe.
+Next action: Founder reviews the sweep in production, then stage: test P2.
 **Branch:** `p2-feedback-fixes` (from `main`, CONVENTIONS §15).
 
 ## Approvals
@@ -22,17 +22,14 @@ Next action: PR #71 green → merge → dispatch production → smoke/probe.
 | P5 | not-started | | |
 
 ## Handoff note (last session)
-PR #70 merged. Full P1/P2 prototype-conformance sweep is PR #71 on `p2-feedback-fixes`:
-agent tab (direct rows when empty, "What it can do" column, lowercase last
-used), connect flow (tab Back skips the choice, step prompts render), approval
-consent grammar, EmptyHome reuses AlternativeRoute, handoff copy/Copy fixes,
-AskAgent primary connect, StaleCard→compact StaleNote with the no-data prompt,
-Account sections + connected row + note + 2-col, new Archived screen + Home
-list-foot link + empty-Home recovery link. Unit 1249 green; lint/typecheck
-clean; E2E home 56, agent 44, holding/taxonomy/add/gallery green.
-Open: commit+push+CI, then merge #70 → manual prod dispatch → smoke/probe;
-J4 menu "Edit" still has no screen; baseCurrency write API still missing;
+PR #71 merged and deployed to production (deploy + smoke green): the full
+P1/P2 prototype-conformance sweep (agent tab, connect flow, approval, handoffs,
+StaleNote, Account, Archived) plus a basics-skip bounce fix CI caught (the
+amount screen's guard bounced back to its ask screen; the clear now commits
+synchronously first) with a mocked, database-free regression spec. Unit 1249
+green; full CI E2E 272 green.
+Open: J4 menu "Edit" still has no screen; baseCurrency write API still missing;
 P3+ gaps recorded (Insights, Activity, reminders, settings, export, delete);
-test:int rotates app password (last); shell console check + onboarding-basics
-fail locally w/o Postgres (same on base). QA `qa-p1-20261008@example.com`
+test:int rotates app password (last); onboarding-basics/shell need Postgres
+locally (CI is the source of truth). QA `qa-p1-20261008@example.com`
 (S$5,328) excludable, P3-only delete. Tracker: https://claude.ai/artifact/UkJfDYaAAi8gJV1aBbk3nB.
