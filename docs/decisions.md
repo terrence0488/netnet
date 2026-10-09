@@ -108,6 +108,8 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Charts use the validated categorical palette in fixed order; brand and chart hues never share a role; a chart with too little data is a frosted placeholder | Colour-blind safety; a chart that vanishes makes a new account look emptier than it is |
 | We own everything that displays data and all colour and type; the platform owns input by gesture | Brand chrome, native controls, decided once rather than case by case |
 | Google's and Apple's sign-in buttons wear the brands' own colours, outside the token system | An official button cannot be drawn from another palette (architecture §8); everything else about them stays on tokens |
+| A history row's change reads signed, so a growing debt reads negative like the Home rows | Signed amounts are the production convention everywhere else; the prototype's magnitude reading would contradict the row beside it |
+| The trend's range and the allocation's $/% are session-local, not saved prefs | Prefs carry baseline, sort and filters; a fix session does not extend that contract |
 
 ## Delivery
 
