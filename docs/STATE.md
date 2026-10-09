@@ -4,7 +4,7 @@
 Stage: Build P2 (full prototype conformance sweep)
 Phase: P2
 Status: in-progress
-Next action: review the sweep, commit + push to PR #70, merge, dispatch production.
+Next action: PR #71 green → merge → dispatch production → smoke/probe.
 **Branch:** `p2-feedback-fixes` (from `main`, CONVENTIONS §15).
 
 ## Approvals
@@ -22,7 +22,7 @@ Next action: review the sweep, commit + push to PR #70, merge, dispatch producti
 | P5 | not-started | | |
 
 ## Handoff note (last session)
-Full P1/P2 prototype-conformance sweep done on `p2-feedback-fixes`, uncommitted:
+PR #70 merged. Full P1/P2 prototype-conformance sweep is PR #71 on `p2-feedback-fixes`:
 agent tab (direct rows when empty, "What it can do" column, lowercase last
 used), connect flow (tab Back skips the choice, step prompts render), approval
 consent grammar, EmptyHome reuses AlternativeRoute, handoff copy/Copy fixes,
