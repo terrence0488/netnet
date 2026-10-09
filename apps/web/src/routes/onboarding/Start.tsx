@@ -39,7 +39,8 @@ export function Start() {
 
   return (
     <AuthFrame
-      title="Let’s start by getting to know a little about your finances"
+      title="Let’s start by getting to know a little about your finances."
+      sub="A few quick questions. Round numbers are fine, and you can change anything later."
       back={back ? { to: pathOf(back.state) } : undefined}
     >
       <div className={styles.stack}>

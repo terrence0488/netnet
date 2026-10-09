@@ -15,7 +15,13 @@ import { Link } from 'react-router';
 import { useMe } from '../../api/account';
 import { useSnapshot } from '../../api/snapshot';
 import { Waiting } from '../../app/guards';
-import { AllocationChart, TrendChart, formatSignedCompactMoney } from '../../charts';
+import {
+  AllocationChart,
+  RangeBar,
+  TREND_RANGES,
+  TrendChart,
+  formatSignedCompactMoney,
+} from '../../charts';
 import {
   ageOf,
   Card,
@@ -34,11 +40,17 @@ import { formatChangePct, rowChangeShown } from './change';
 import { EmptyHome, HomeTopBar } from './EmptyHome';
 import { asHoldingFilter, describeHomeFilter, isFilterActive } from './filtering';
 import { FilterSheet, type FilterEntry } from './FilterSheet';
-import { homeData, sharedLockedUntil, visibleHoldings, type HomeData } from './home-data';
+import {
+  homeData,
+  homeTrendFrom,
+  sharedLockedUntil,
+  visibleHoldings,
+  type HomeData,
+} from './home-data';
 import { useHomePrefs } from './prefs';
 import { sortHoldings, sortLabel } from './sort';
 import { SortSheet } from './SortSheet';
-import { StaleCard } from './StaleCard';
+import { StaleNote } from './StaleNote';
 import styles from './Home.module.css';
 
 /**
@@ -67,9 +79,13 @@ function HomeLoaded({ snapshot, timeZone }: { snapshot: Snapshot; timeZone: stri
   const today = todayIn(timeZone);
   const data = useMemo(() => homeData(snapshot, today), [snapshot, today]);
   const unarchived = useMemo(() => visibleHoldings(data), [data]);
+  const archived = useMemo(
+    () => data.holdings.filter((holding) => holding.archived).length,
+    [data.holdings],
+  );
 
   if (unarchived.length === 0) {
-    return <EmptyHome baseCurrency={snapshot.baseCurrency} />;
+    return <EmptyHome baseCurrency={snapshot.baseCurrency} archivedCount={archived} />;
   }
   if (chain.status === 'pending') {
     return (
@@ -97,16 +113,18 @@ function Hero({
   change,
   baseline,
   onBaseline,
+  filtered,
 }: {
   minor: number;
   currency: string;
   change: Change;
   baseline: Baseline;
   onBaseline: () => void;
+  filtered: boolean;
 }) {
   return (
     <div className={styles.hero}>
-      <h1 className={styles.heroTitle}>Net worth</h1>
+      <h1 className={styles.heroTitle}>{filtered ? 'Filtered total' : 'Net worth'}</h1>
       <Figure size="display" minor={minor} currency={currency} total />
       <ChangeLine change={change} currency={currency} baseline={baseline} onBaseline={onBaseline} />
     </div>
@@ -168,6 +186,7 @@ function LoadedHome({
   const [sheet, setSheet] = useState<'baseline' | 'sort' | 'filter' | null>(null);
   const closeSheet = () => setSheet(null);
   const [allocMode, setAllocMode] = useState<'money' | 'percent'>('percent');
+  const [range, setRange] = useState(0);
 
   const coreFilter = useMemo(() => asHoldingFilter(prefs.filter), [prefs.filter]);
   const shown = useMemo(() => visibleHoldings(data, coreFilter), [data, coreFilter]);
@@ -198,9 +217,24 @@ function LoadedHome({
     () => position(data.holdings, data.latest, coreFilter),
     [data.holdings, data.latest, coreFilter],
   );
+  const from = useMemo(
+    () => homeTrendFrom(shown, valuesByHolding, today, range),
+    [shown, valuesByHolding, today, range],
+  );
   const trend = useMemo(
-    () => series(data.values, data.holdings, { to: today }, 'month', coreFilter),
-    [data.values, data.holdings, today, coreFilter],
+    () =>
+      series(
+        data.values,
+        data.holdings,
+        from === undefined ? { to: today } : { from, to: today },
+        'month',
+        coreFilter,
+      ),
+    [data.values, data.holdings, from, today, coreFilter],
+  );
+  const hasHistory = useMemo(
+    () => shown.some((holding) => (valuesByHolding.get(holding.id) ?? []).length > 1),
+    [shown, valuesByHolding],
   );
   // The allocation holds asset totals only: with the filter on liabilities, there is no
   // allocation and the trend stands alone.
@@ -266,8 +300,15 @@ function LoadedHome({
   );
 
   const sorted = useMemo(
-    () => sortHoldings(shown, prefs.sort, data.latest, changes),
-    [shown, prefs.sort, data.latest, changes],
+    () =>
+      sortHoldings(
+        shown,
+        prefs.sort,
+        data.latest,
+        changes,
+        (typeId) => allTypeLabels.get(typeId) ?? 'Other',
+      ),
+    [shown, prefs.sort, data.latest, changes, allTypeLabels],
   );
   const staleIds = useMemo(() => {
     const ids = new Set<string>();
@@ -277,9 +318,13 @@ function LoadedHome({
     }
     return ids;
   }, [shown, data.latest, today, chain]);
-  const staleNames = useMemo(
-    () => sorted.filter((holding) => staleIds.has(holding.id)).map((holding) => holding.name),
+  const staleCount = useMemo(
+    () => sorted.filter((holding) => staleIds.has(holding.id)).length,
     [sorted, staleIds],
+  );
+  const archivedCount = useMemo(
+    () => snapshot.holdings.filter((holding) => holding.archived).length,
+    [snapshot.holdings],
   );
 
   const assetGroups = assetsByType.at(-1)?.groups ?? {};
@@ -290,25 +335,30 @@ function LoadedHome({
   });
 
   const filterActive = isFilterActive(prefs.filter);
+  const bannerText = useMemo(() => {
+    const summary = describeHomeFilter(prefs.filter, {
+      types: allTypeLabels,
+      tags: tagLabels,
+    });
+    return summary ? `Filtered: ${summary}` : 'Filtered';
+  }, [prefs.filter, allTypeLabels, tagLabels]);
   const filterLeavesNothing = shown.length === 0;
-  const emptyLabel = filterLeavesNothing ? 'Nothing to show' : 'Need more data';
+  const emptyLabel = filterLeavesNothing ? 'Nothing matches this filter.' : 'Need more data';
 
   return (
     <>
-      <HomeTopBar />
+      <HomeTopBar onFilter={() => setSheet('filter')} filterActive={filterActive} />
       <Hero
         minor={filtered.netWorth}
         currency={snapshot.baseCurrency}
         change={heroChange}
         baseline={prefs.baseline}
         onBaseline={() => setSheet('baseline')}
+        filtered={filterActive}
       />
       {filterActive ? (
         <div className={styles.banner}>
-          <p className={styles.bannerText}>
-            {describeHomeFilter(prefs.filter, { types: allTypeLabels, tags: tagLabels }) ||
-              'Filtered'}
-          </p>
+          <p className={styles.bannerText}>{bannerText}</p>
           <button type="button" className={styles.bannerButton} onClick={() => setSheet('filter')}>
             Change
           </button>
@@ -331,12 +381,20 @@ function LoadedHome({
                     </div>
                     <Card>
                       <TrendChart
-                        points={trend}
+                        points={hasHistory ? trend : []}
                         currency={snapshot.baseCurrency}
                         height={CHART_HEIGHT}
                         emptyLabel={emptyLabel}
                         {...(filterLeavesNothing ? {} : { reason: TREND_REASON })}
                       />
+                      {hasHistory ? (
+                        <RangeBar
+                          label={filterActive ? 'Filtered total' : 'Net worth'}
+                          options={TREND_RANGES}
+                          value={range}
+                          onChange={setRange}
+                        />
+                      ) : null}
                     </Card>
                   </section>
                 ),
@@ -389,9 +447,9 @@ function LoadedHome({
             baseCurrency={snapshot.baseCurrency}
           />
         </section>
-        {staleNames.length > 0 ? (
+        {staleCount > 0 ? (
           <div className={styles.stale}>
-            <StaleCard names={staleNames} />
+            <StaleNote count={staleCount} />
           </div>
         ) : null}
         <section aria-labelledby="holdings-heading" className={styles.list}>
@@ -406,20 +464,12 @@ function LoadedHome({
               >
                 Sort: {sortLabel(prefs.sort)} ▾
               </button>
-              <button
-                type="button"
-                className={styles.tool}
-                onClick={() => setSheet('filter')}
-                aria-label={filterActive ? 'Filter Home. A filter is on' : 'Filter Home'}
-              >
-                Filter{filterActive ? ' · on' : ''} ▾
-              </button>
             </div>
           </div>
           <p className={styles.listMeta}>Change vs {baselineLabel(prefs.baseline).toLowerCase()}</p>
           {sorted.length === 0 ? (
             <div className={styles.nothing}>
-              <p>Nothing to show.</p>
+              <p>Nothing matches this filter.</p>
               <button
                 type="button"
                 className={styles.bannerButton}
@@ -445,6 +495,13 @@ function LoadedHome({
               ))}
             </Card>
           )}
+          {archivedCount > 0 ? (
+            <div className={styles.listFoot}>
+              <Link to="/archived" className={styles.footLink}>
+                {archivedCount} archived ›
+              </Link>
+            </div>
+          ) : null}
         </section>
       </div>
       <BaselineSheet

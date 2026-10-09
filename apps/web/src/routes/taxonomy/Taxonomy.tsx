@@ -112,6 +112,15 @@ function TaxonomyScreen({
           <h2 id="types-heading">Types · {snapshot.types.length}</h2>
         </div>
         <Card flush>
+          <button
+            type="button"
+            className={styles.row}
+            onClick={() => setSheet({ kind: 'addType' })}
+          >
+            <span className={styles.grow}>
+              <span className={styles.addName}>+ Add New Type</span>
+            </span>
+          </button>
           {snapshot.types.map((type) => (
             <button
               key={type.id}
@@ -123,46 +132,41 @@ function TaxonomyScreen({
                 <span className={styles.name}>{typeLabel(chain, type)}</span>
                 <span className={styles.sub}>{usageText(typeUsage.get(type.id) ?? 0)}</span>
               </span>
+              <span aria-hidden="true" className={styles.chev}>
+                ›
+              </span>
             </button>
           ))}
         </Card>
-        <div className={styles.add}>
-          <Button variant="outlined" onClick={() => setSheet({ kind: 'addType' })}>
-            Add type
-          </Button>
-        </div>
       </section>
 
       <section aria-labelledby="tags-heading" className={styles.section}>
         <div className={styles.sectionHead}>
           <h2 id="tags-heading">Tags · {snapshot.tags.length}</h2>
         </div>
-        {snapshot.tags.length === 0 ? (
-          <Card>
-            <p className={styles.empty}>No tags yet. Tags label holdings across types.</p>
-          </Card>
-        ) : (
-          <Card flush>
-            {snapshot.tags.map((tag) => (
-              <button
-                key={tag.id}
-                type="button"
-                className={styles.row}
-                onClick={() => setSheet({ kind: 'editTag', id: tag.id })}
-              >
-                <span className={styles.grow}>
-                  <span className={styles.name}>{tag.name}</span>
-                  <span className={styles.sub}>{usageText(tagUsage.get(tag.id) ?? 0)}</span>
-                </span>
-              </button>
-            ))}
-          </Card>
-        )}
-        <div className={styles.add}>
-          <Button variant="outlined" onClick={() => setSheet({ kind: 'addTag' })}>
-            Add tag
-          </Button>
-        </div>
+        <Card flush>
+          <button type="button" className={styles.row} onClick={() => setSheet({ kind: 'addTag' })}>
+            <span className={styles.grow}>
+              <span className={styles.addName}>+ Add New Tag</span>
+            </span>
+          </button>
+          {snapshot.tags.map((tag) => (
+            <button
+              key={tag.id}
+              type="button"
+              className={styles.row}
+              onClick={() => setSheet({ kind: 'editTag', id: tag.id })}
+            >
+              <span className={styles.grow}>
+                <span className={styles.name}>{tag.name}</span>
+                <span className={styles.sub}>{usageText(tagUsage.get(tag.id) ?? 0)}</span>
+              </span>
+              <span aria-hidden="true" className={styles.chev}>
+                ›
+              </span>
+            </button>
+          ))}
+        </Card>
       </section>
 
       {sheet?.kind === 'addType' ? <AddTypeSheet chain={chain} onClose={close} /> : null}
@@ -199,11 +203,12 @@ function usageText(count: number): string {
  */
 function explain(
   error: unknown,
+  kind: 'type' | 'tag',
   setNameError: (message: string | undefined) => void,
   setProblem: (message: string | undefined) => void,
 ): void {
   if (isApiError(error, 'VALIDATION_FAILED') && typeof error.fields.name === 'string') {
-    setNameError('Another tag already has this name.');
+    setNameError(`Another ${kind} already has this name.`);
     return;
   }
   setProblem(
@@ -234,7 +239,7 @@ function AddTypeSheet({
       toast.show({ message: 'Saved.' });
       onClose();
     },
-    onError: (error: unknown) => explain(error, setNameError, setProblem),
+    onError: (error: unknown) => explain(error, 'type', setNameError, setProblem),
   });
 
   const save = () => {
@@ -308,7 +313,7 @@ function EditTypeSheet({
       toast.show({ message: 'Saved.' });
       onClose();
     },
-    onError: (error: unknown) => explain(error, setNameError, setProblem),
+    onError: (error: unknown) => explain(error, 'type', setNameError, setProblem),
   });
   const remove = useMutation({
     mutationFn: (target: string) =>
@@ -319,7 +324,7 @@ function EditTypeSheet({
       toast.show({ message: 'Deleted.' });
       onClose();
     },
-    onError: (error: unknown) => explain(error, setNameError, setProblem),
+    onError: (error: unknown) => explain(error, 'type', setNameError, setProblem),
   });
 
   const save = () => {
@@ -408,7 +413,7 @@ function AddTagSheet({ onClose }: { onClose: () => void }) {
       toast.show({ message: 'Saved.' });
       onClose();
     },
-    onError: (error: unknown) => explain(error, setNameError, setProblem),
+    onError: (error: unknown) => explain(error, 'tag', setNameError, setProblem),
   });
 
   const save = () => {
@@ -469,7 +474,7 @@ function EditTagSheet({
       toast.show({ message: 'Saved.' });
       onClose();
     },
-    onError: (error: unknown) => explain(error, setNameError, setProblem),
+    onError: (error: unknown) => explain(error, 'tag', setNameError, setProblem),
   });
   const remove = useMutation({
     mutationFn: (target: string) =>
@@ -480,7 +485,7 @@ function EditTagSheet({
       toast.show({ message: 'Deleted.' });
       onClose();
     },
-    onError: (error: unknown) => explain(error, setNameError, setProblem),
+    onError: (error: unknown) => explain(error, 'tag', setNameError, setProblem),
   });
 
   const save = () => {

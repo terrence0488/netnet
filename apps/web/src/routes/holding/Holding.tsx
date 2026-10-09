@@ -18,7 +18,7 @@ import { useMe } from '../../api/account';
 import { api, isApiError, type Written } from '../../api/client';
 import { useSnapshot } from '../../api/snapshot';
 import { Waiting } from '../../app/guards';
-import { RangeBar, TrendChart, formatSignedCompactMoney } from '../../charts';
+import { RangeBar, TREND_RANGES, TrendChart, formatSignedCompactMoney } from '../../charts';
 import {
   AccessBlock,
   AskAgentDialog,
@@ -49,7 +49,6 @@ import { homeData } from '../home/home-data';
 import {
   BASELINE_LABELS,
   HOLDING_BASELINE_DEFAULT,
-  HOLDING_RANGES,
   formatPct,
   holdingChange,
   holdingTrend,
@@ -236,7 +235,7 @@ function HoldingLoaded({
           {total < 2 ? null : (
             <RangeBar
               label={holding.name}
-              options={HOLDING_RANGES}
+              options={TREND_RANGES}
               value={range}
               onChange={setRange}
             />

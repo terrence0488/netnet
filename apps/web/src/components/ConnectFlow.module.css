@@ -111,6 +111,12 @@
   line-height: var(--leading-body);
 }
 
+/* A step's message to send, in its prompt card below the step's text. */
+.stepPrompt {
+  max-width: var(--field-max);
+  margin-top: var(--space-6);
+}
+
 /* A step's screenshot in its outlined frame, at most 420px tall (design-system §6). */
 .shot {
   max-width: var(--field-max);

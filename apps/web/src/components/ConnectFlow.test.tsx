@@ -16,6 +16,7 @@ import {
   parseEntry,
   parseGuideClient,
   stepText,
+  stepsBack,
 } from './ConnectFlow';
 
 const PERSON: ProfileView = {
@@ -105,6 +106,15 @@ describe('parseEntry and entryPath', () => {
     expect(entryPath('holding', null)).toBe('/agent');
     expect(entryPath('holding', '/agent')).toBe('/agent');
     expect(entryPath('onboarding')).toBe('/onboarding/start');
+  });
+
+  it('returns Back from the steps to the choice, but to the tab from the tab’s rows', () => {
+    expect(stepsBack('agent')).toBe('/agent');
+    expect(stepsBack('home')).toBe('/agent/connect?entry=home');
+    expect(stepsBack('onboarding')).toBe('/agent/connect?entry=onboarding');
+    expect(stepsBack('holding', 'hld_01JABC')).toBe(
+      '/agent/connect?entry=holding&holding=hld_01JABC',
+    );
   });
 });
 
@@ -224,5 +234,27 @@ describe('the steps', () => {
     expect(markup).toContain('avery@example.com');
     expect(markup).toContain('Resend the link');
     expect(markup).not.toContain('On a computer');
+  });
+
+  it('returns Back to the tab from the tab’s rows, skipping the choice', () => {
+    const markup = render('/app/agent/connect/claude?entry=agent');
+    expect(markup).toContain('href="/app/agent"');
+    expect(markup).not.toContain('/agent/connect?entry=agent');
+  });
+
+  it('shows a step’s message to send in its prompt card', () => {
+    const asking: AgentGuide = {
+      ...CLAUDE,
+      platforms: {
+        computer: {
+          steps: [
+            { text: 'In the chat, send this message:', prompt: 'Add NetNet as a connector.' },
+          ],
+        },
+      },
+    };
+    const markup = render('/app/agent/connect/claude?entry=agent', PERSON, [asking, OTHER]);
+    expect(markup).toContain('Add NetNet as a connector.');
+    expect(markup).toContain('>Copy<');
   });
 });

@@ -3,16 +3,17 @@ import { Link } from 'react-router';
 import { useMe } from '../../api/account';
 import { signOut } from '../../api/auth';
 import { BASENAME } from '../../app/basename';
-import { Card, FormProblem, ResendLink } from '../../components';
+import { Card, FormProblem, ResendLink, useAgentConnections } from '../../components';
 import { failureSentence } from '../../components/auth-copy';
 import styles from './Account.module.css';
 
 /**
- * Account: who is signed in, the unverified line with Resend, the way into types and tags, and Log
- * out (the prototype's Account tab; P3's settings join it).
+ * Account: who is signed in, the unverified line with Resend, the way into types and tags, the
+ * connected agents, and Log out (the prototype's Account tab; P3's settings join it).
  */
 export function Account() {
   const me = useMe().data;
+  const connections = useAgentConnections();
   const [problem, setProblem] = useState<string>();
   const [leaving, setLeaving] = useState(false);
 
@@ -31,38 +32,72 @@ export function Account() {
   };
 
   if (!me) return null;
+  const clients = connections.data?.map((connection) => connection.clientName).join(', ');
   return (
     <>
       <header className={styles.top}>
         <h1>Account</h1>
       </header>
-      <div className={styles.stack}>
-        <Card flush>
-          <div className={styles.row}>
-            <span className={styles.email}>{me.email}</span>
-            {me.emailVerified ? null : (
-              <span className={styles.meta}>
-                Not verified yet. <ResendLink email={me.email} />
-              </span>
-            )}
-          </div>
-        </Card>
-        <Card flush>
-          <Link to="/account/taxonomy" className={styles.actionLink}>
-            Types and tags
-          </Link>
-        </Card>
-        <Card flush>
-          <button
-            type="button"
-            className={styles.action}
-            aria-disabled={leaving ? true : undefined}
-            onClick={() => void logOut()}
-          >
-            Log out
-          </button>
-        </Card>
-        {problem ? <FormProblem>{problem}</FormProblem> : null}
+      <div className={styles.grid}>
+        <div className={styles.col}>
+          <Card flush>
+            <div className={styles.row}>
+              <span className={styles.email}>{me.email}</span>
+              {me.emailVerified ? null : (
+                <span className={styles.meta}>
+                  Not verified yet. <ResendLink email={me.email} />
+                </span>
+              )}
+            </div>
+          </Card>
+          <section aria-labelledby="settings">
+            <h2 id="settings" className={styles.sectionTitle}>
+              Settings
+            </h2>
+            <Card flush>
+              <Link to="/account/taxonomy" className={styles.actionLink}>
+                <span className={styles.grow}>Types and tags</span>
+                <span aria-hidden="true" className={styles.chev}>
+                  ›
+                </span>
+              </Link>
+            </Card>
+          </section>
+        </div>
+        <div className={styles.col}>
+          {connections.isError && connections.data === undefined ? null : (
+            <section aria-labelledby="your-agent">
+              <h2 id="your-agent" className={styles.sectionTitle}>
+                Your agent
+              </h2>
+              <Card flush>
+                <Link to="/agent" className={styles.actionLink}>
+                  <span className={styles.grow}>
+                    <span className={styles.name}>Connected clients</span>
+                    <span className={styles.meta}>
+                      {clients === undefined ? '…' : clients === '' ? 'none yet' : clients}
+                    </span>
+                  </span>
+                  <span aria-hidden="true" className={styles.chev}>
+                    ›
+                  </span>
+                </Link>
+              </Card>
+            </section>
+          )}
+          <p className={styles.note}>NetNet never sells your data or sees your documents.</p>
+          <Card flush>
+            <button
+              type="button"
+              className={styles.action}
+              aria-disabled={leaving ? true : undefined}
+              onClick={() => void logOut()}
+            >
+              Log out
+            </button>
+          </Card>
+          {problem ? <FormProblem>{problem}</FormProblem> : null}
+        </div>
       </div>
     </>
   );

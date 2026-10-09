@@ -19,8 +19,9 @@ import styles from './Agent.module.css';
 
 /**
  * The Agent tab (PRD J5): each connection's name, client, connected and last-used times, revoked
- * with a confirmation; when empty, it offers the flow. "Connect another agent" is always offered:
- * any standard MCP agent can connect, named or not.
+ * with a confirmation; the agents not yet connected as direct rows ("Connect your agent" when
+ * empty, "Connect another" after). "Connect another agent" is always offered: any standard MCP
+ * agent can connect, named or not. Beside it, what an agent can do.
  */
 
 /** "today", "yesterday", "3 days ago", "2 weeks ago", "4 months ago", "2 years ago". */
@@ -102,7 +103,7 @@ function ConnectionCard({
           <h3 className={styles.name}>{connection.clientName}</h3>
         </div>
         <p className={styles.meta}>
-          Connected {connectedDay(connection.createdAt)} · Last used{' '}
+          Connected {connectedDay(connection.createdAt)} · last used{' '}
           {connection.lastUsedAt === null ? 'not used yet' : timeAgo(connection.lastUsedAt, now)}
         </p>
         <div className={styles.acts}>
@@ -184,36 +185,49 @@ export function Agent() {
       <header className={styles.top}>
         <h1>Your agent</h1>
       </header>
-      <div className={styles.stack}>
-        {list.map((connection) => (
-          <ConnectionCard key={connection.id} connection={connection} guides={guides.data} />
-        ))}
-        {list.length === 0 ? (
-          <AlternativeRoute entry="agent" title="Connect your agent" />
-        ) : unconnected.length > 0 ? (
-          <section aria-labelledby="connect-another">
-            <h2 id="connect-another" className={styles.sectionTitle}>
-              Connect another
+      <div className={styles.grid}>
+        <div className={styles.main}>
+          {list.map((connection) => (
+            <ConnectionCard key={connection.id} connection={connection} guides={guides.data} />
+          ))}
+          {unconnected.length > 0 ? (
+            <section aria-labelledby="connect-rows">
+              <h2 id="connect-rows" className={styles.sectionTitle}>
+                {list.length === 0 ? 'Connect your agent' : 'Connect another'}
+              </h2>
+              <Card flush>
+                {unconnected.map((guide) => (
+                  <Link
+                    key={guide.id}
+                    to={`/agent/connect/${guide.id}?entry=agent`}
+                    className={styles.row}
+                  >
+                    <AgentLogo guide={guide} />
+                    <span className={styles.rowName}>
+                      {guide.id === OTHER_GUIDE ? 'Connect another agent' : `Connect ${guide.name}`}
+                    </span>
+                    <span aria-hidden="true" className={styles.chev}>
+                      ›
+                    </span>
+                  </Link>
+                ))}
+              </Card>
+            </section>
+          ) : list.length === 0 ? (
+            <AlternativeRoute entry="agent" />
+          ) : null}
+        </div>
+        <div className={styles.side}>
+          <section aria-labelledby="can-do">
+            <h2 id="can-do" className={styles.sectionTitle}>
+              What it can do
             </h2>
-            <Card flush>
-              {unconnected.map((guide) => (
-                <Link
-                  key={guide.id}
-                  to={`/agent/connect/${guide.id}?entry=agent`}
-                  className={styles.row}
-                >
-                  <AgentLogo guide={guide} />
-                  <span className={styles.rowName}>
-                    {guide.id === OTHER_GUIDE ? 'Connect another agent' : `Connect ${guide.name}`}
-                  </span>
-                  <span aria-hidden="true" className={styles.chev}>
-                    ›
-                  </span>
-                </Link>
-              ))}
-            </Card>
+            <p className={styles.summary}>
+              Anything you can do here — and you can undo anything it changes. Your statements stay
+              with your agent; NetNet only receives the numbers.
+            </p>
           </section>
-        ) : null}
+        </div>
       </div>
     </>
   );

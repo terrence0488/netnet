@@ -24,6 +24,7 @@ import {
   Button,
   ErrorState,
   FormProblem,
+  PromptCard,
   ResendLink,
   authStyles,
   buttonClass,
@@ -58,6 +59,15 @@ export function entryPath(entry: ConnectEntry, holdingId?: string | null): strin
   if (entry === 'onboarding') return '/onboarding/start';
   if (entry === 'holding') return holdingBackPath(holdingId) ?? '/agent';
   return '/agent';
+}
+
+/**
+ * Back from an agent's steps: the choice of agent for every entry but the tab's — the tab's own
+ * rows start the flow directly, so Back there returns to the tab.
+ */
+export function stepsBack(entry: ConnectEntry, holdingId?: string | null): string {
+  if (entry === 'agent') return entryPath(entry, holdingId);
+  return connectHref(entry, holdingId);
 }
 
 /** This platform, as the prototype detects it: a coarse pointer on a narrow screen is a phone. */
@@ -211,7 +221,7 @@ function VerifyGate({
 }) {
   useQuery({ ...meQuery, refetchInterval: 2000 });
   return (
-    <AuthFrame title="Verify your email first" back={{ to: connectHref(entry, holdingId) }}>
+    <AuthFrame title="Verify your email first" back={{ to: stepsBack(entry, holdingId) }}>
       <p className={authStyles.body}>
         We sent a link to {email}. Open it on any device, and this page moves on by itself.
       </p>
@@ -274,7 +284,7 @@ function Steps({
   const shown = generic ? 'any' : platform;
   const steps = guide.platforms[shown]?.steps ?? [];
   const addressAt = findAddressStep(steps);
-  const back = { to: connectHref(entry, holdingId) };
+  const back = { to: stepsBack(entry, holdingId) };
 
   // The attempt, started once (and once more per Retry): the screen polls it below.
   const start = useStartAttempt();
@@ -347,6 +357,11 @@ function Steps({
           <li key={index} className={styles.step}>
             <p className={styles.stepText}>{stepText(step.text)}</p>
             {index === addressAt ? <ConnectorAddress /> : null}
+            {step.prompt ? (
+              <div className={styles.stepPrompt}>
+                <PromptCard text={step.prompt} />
+              </div>
+            ) : null}
             {generic ? null : <Shot image={step.image} />}
           </li>
         ))}
@@ -444,7 +459,7 @@ function GuideSteps({
   client: AgentClient;
 }) {
   const me = useMe();
-  const back = { to: connectHref(entry, holdingId) };
+  const back = { to: stepsBack(entry, holdingId) };
   if (me.data === undefined) {
     if (me.isError) {
       return (

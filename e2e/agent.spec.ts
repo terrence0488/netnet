@@ -214,28 +214,39 @@ const CONNECTIONS = [
   },
 ];
 
-test('the empty Agent tab offers the flow, its icon turning through the agents’ logos', async ({
-  page,
-}, testInfo) => {
+test('the empty Agent tab offers each agent as a direct row', async ({ page }, testInfo) => {
   await asConnectable(page, { connections: [] });
   const problems = recordProblems(page);
   await page.goto('/app/agent');
 
   await expect(page.getByRole('heading', { level: 1, name: 'Your agent' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Connect your agent' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Connect Claude' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Connect another agent' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'What it can do' })).toBeVisible();
+  await expect(page.getByText(/you can undo anything it changes/)).toBeVisible();
+  await expectSoundScreen(page, testInfo);
+
+  await page.getByRole('link', { name: 'Connect Claude' }).click();
+  await expect(page).toHaveURL(/\/app\/agent\/connect\/claude\?entry=agent$/);
+  await expect(page.getByRole('heading', { name: 'Connect Claude' })).toBeVisible();
+  // Back returns to the tab, skipping the choice the rows never showed.
+  await page.getByRole('link', { name: 'Back' }).click();
+  await expect(page).toHaveURL(/\/app\/agent$/);
+  expect(problems).toStrictEqual([]);
+});
+
+test('the empty Home’s agent button turns through the agents’ logos', async ({ page }) => {
+  await asConnectable(page, { connections: [] });
+  await page.goto('/app/');
+
+  await expect(page.getByText('Nothing here yet.')).toBeVisible();
   await expect(page.getByText('Works with Claude, or any agent that supports MCP.')).toBeVisible();
-  const button = page.getByRole('link', { name: 'Connect to agent', exact: true });
-  await expect(button).toBeVisible();
   const roll = page.getByTestId('agent-roll');
   // The generic icon, then Claude's logo; the unlisted and the logo-less guides add no face.
   await expect(roll.locator(':scope > i')).toHaveCount(2);
   await expect.poll(() => litFace(page), { timeout: 3000 }).toBe(0);
   await expect.poll(() => litFace(page), { timeout: 8000 }).toBe(1);
-
-  await button.click();
-  await expect(page).toHaveURL(/\/app\/agent\/connect\?entry=agent$/);
-  await expect(page.getByRole('heading', { name: 'Which AI agent do you use?' })).toBeVisible();
-  await expectSoundScreen(page, testInfo);
-  expect(problems).toStrictEqual([]);
 });
 
 test('the Agent tab lists connections with their times, and revokes with a confirmation', async ({
@@ -247,7 +258,7 @@ test('the Agent tab lists connections with their times, and revokes with a confi
 
   const first = page.locator('main').getByText('Claude', { exact: true });
   await expect(first).toBeVisible();
-  await expect(page.getByText(/Connected .* · Last used /).first()).toBeVisible();
+  await expect(page.getByText(/Connected .* · last used /).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Fictional helper' })).toBeVisible();
   await expect(page.getByText(/not used yet/)).toBeVisible();
   // Claude is connected, so only another agent is offered.
@@ -539,8 +550,11 @@ test('the approval names who is asking, with the DCR caveat and the ledger scope
   ).toBeVisible();
   await expect(page.getByText('Signed in as avery@example.com')).toBeVisible();
   await expect(page.getByText('NetNet can’t verify this name')).toBeVisible();
-  await expect(page.getByText(/See your holdings and their history/)).toBeVisible();
-  await expect(page.getByText(/Add or update them/)).toBeVisible();
+  await expect(
+    page.getByText(
+      'It will be able to see your holdings and their history, and add or update them.',
+    ),
+  ).toBeVisible();
   await expect(page.getByText('openid')).toHaveCount(0);
   await expect(page.getByText('offline_access')).toHaveCount(0);
   await expect(page.getByRole('navigation')).toHaveCount(0);
@@ -614,7 +628,7 @@ test.describe('reduced motion', () => {
 
   test('the icon holds still, and the flow still works', async ({ page }, testInfo) => {
     await asConnectable(page, { connections: [] });
-    await page.goto('/app/agent');
+    await page.goto('/app/');
 
     const roll = page.getByTestId('agent-roll');
     await expect(roll.locator(':scope > i')).toHaveCount(2);
@@ -648,13 +662,12 @@ test.describe('against the real server', () => {
 
     await page.goto('/app/agent');
     await expect(page.getByRole('heading', { level: 1, name: 'Your agent' })).toBeVisible();
-    await page.getByRole('link', { name: 'Connect to agent', exact: true }).click();
-    // The real guides: Claude and Other agent, with ChatGPT unlisted.
-    await expect(page.getByRole('link', { name: 'Claude' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Other agent' })).toBeVisible();
+    // The real guides: Claude and another agent, with ChatGPT unlisted.
+    await expect(page.getByRole('link', { name: 'Connect Claude' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Connect another agent' })).toBeVisible();
     await expect(page.getByText('ChatGPT')).toHaveCount(0);
 
-    await page.getByRole('link', { name: 'Claude' }).click();
+    await page.getByRole('link', { name: 'Connect Claude' }).click();
     await expect(page.getByRole('heading', { name: 'Connect Claude' })).toBeVisible();
     await expect(page.getByText(`${baseURL}/mcp`, { exact: true })).toBeVisible();
     await expect(page.getByText(/moves on by itself/)).toBeVisible();
@@ -691,7 +704,7 @@ test.describe('against the real server', () => {
     // The Agent tab lists it, and the funnel reads started then completed.
     await page.getByRole('link', { name: 'Back to the Agent tab' }).click();
     await expect(page.getByRole('heading', { name: agent.name })).toBeVisible();
-    await expect(page.getByText(/Connected .* · Last used /)).toBeVisible();
+    await expect(page.getByText(/Connected .* · last used /)).toBeVisible();
     const events = await eventsFor(person.email);
     expect(events.find((event) => event.name === 'agent_connection_started')).toMatchObject({
       props: { client: 'claude', entry: 'agent' },

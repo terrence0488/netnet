@@ -282,7 +282,7 @@ test('a name and an amount are needed; anything else waits for the server', asyn
 
   await page.getByLabel('Asset Name').fill('Everyday savings');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByText('Enter an amount.')).toBeVisible();
+  await expect(page.getByText('Enter a value.')).toBeVisible();
   expect(posts.requests).toHaveLength(0);
 
   await page.getByLabel('Asset Value').fill('12.345');

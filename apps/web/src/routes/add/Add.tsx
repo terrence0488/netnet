@@ -255,17 +255,6 @@ function AddForm({
               onAskAgent={() => setAsking(true)}
             />
           ) : null}
-          {snapshot.tags.length > 0 ? (
-            <TagsField
-              tags={snapshot.tags}
-              selected={tagIds}
-              onToggle={(id) =>
-                setTagIds(
-                  tagIds.includes(id) ? tagIds.filter((t) => t !== id) : [...tagIds, id].sort(),
-                )
-              }
-            />
-          ) : null}
           <div className={styles.two}>
             <Picker
               label="Currency"
@@ -278,7 +267,7 @@ function AddForm({
               currency={currency}
               value={typed}
               error={
-                submitted && !check.ok && check.problem === 'empty' ? 'Enter an amount.' : undefined
+                submitted && !check.ok && check.problem === 'empty' ? 'Enter a value.' : undefined
               }
               onChange={(value, amount) => {
                 setTyped(value);
@@ -293,6 +282,17 @@ function AddForm({
             max={today}
             onChange={(event) => setDate(event.target.value)}
           />
+          {snapshot.tags.length > 0 ? (
+            <TagsField
+              tags={snapshot.tags}
+              selected={tagIds}
+              onToggle={(id) =>
+                setTagIds(
+                  tagIds.includes(id) ? tagIds.filter((t) => t !== id) : [...tagIds, id].sort(),
+                )
+              }
+            />
+          ) : null}
           {duplicate ? (
             <DuplicateNotice
               candidates={duplicate}

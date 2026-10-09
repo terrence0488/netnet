@@ -64,6 +64,26 @@ describe('sortHoldings', () => {
     expect(orderOf('value_desc')).toStrictEqual(['hld_main', 'hld_spare', 'hld_loan', 'hld_empty']);
   });
 
+  it('sorts by value, lowest first, the debt atop, unvalued last', () => {
+    expect(orderOf('value_asc')).toStrictEqual(['hld_loan', 'hld_spare', 'hld_main', 'hld_empty']);
+  });
+
+  it('sorts by type label, ties by name', () => {
+    const labels = new Map([
+      ['typ_cash', 'Cash & savings'],
+      ['typ_prop', 'Property'],
+    ]);
+    const typed = [
+      holding({ id: 'hld_a', name: 'Zebra plot', typeId: 'typ_prop' }),
+      holding({ id: 'hld_b', name: 'Apple savings', typeId: 'typ_cash' }),
+      holding({ id: 'hld_c', name: 'Mango savings', typeId: 'typ_cash' }),
+    ];
+    const ids = sortHoldings(typed, 'type', latest, changes, (id) => labels.get(id) ?? '').map(
+      (h) => h.id,
+    );
+    expect(ids).toStrictEqual(['hld_b', 'hld_c', 'hld_a']);
+  });
+
   it('sorts by name, A to Z', () => {
     expect(orderOf('name')).toStrictEqual(['hld_main', 'hld_loan', 'hld_spare', 'hld_empty']);
   });
@@ -85,9 +105,13 @@ describe('sortHoldings', () => {
     expect(orderOf('updated')).toStrictEqual(['hld_main', 'hld_loan', 'hld_spare', 'hld_empty']);
   });
 
-  it('reads an unoffered sort as added', () => {
-    expect(orderOf('value_asc')).toStrictEqual(['hld_spare', 'hld_main', 'hld_loan', 'hld_empty']);
-    expect(orderOf('type')).toStrictEqual(['hld_spare', 'hld_main', 'hld_loan', 'hld_empty']);
+  it('reads an unknown sort as added', () => {
+    expect(orderOf('later' as never)).toStrictEqual([
+      'hld_spare',
+      'hld_main',
+      'hld_loan',
+      'hld_empty',
+    ]);
   });
 });
 

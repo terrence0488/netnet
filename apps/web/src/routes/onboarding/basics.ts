@@ -84,6 +84,21 @@ export function nextUnanswered(
   return visible.slice(at + 1).find((item) => !isAnswered(answers, item.id));
 }
 
+/**
+ * The question's number, "n of total": a follow-up shares its anchor's number, so the count
+ * never jumps as questions appear.
+ */
+export function positionOf(
+  checklist: readonly ChecklistItem[],
+  id: string,
+): { n: number; total: number } {
+  const base = checklist.filter((item) => item.onlyIf === undefined);
+  const byId = new Map(checklist.map((item) => [item.id, item]));
+  let anchor = byId.get(id);
+  while (anchor?.onlyIf !== undefined) anchor = byId.get(anchor.onlyIf);
+  return { n: anchor === undefined ? 0 : base.indexOf(anchor) + 1, total: base.length };
+}
+
 /** The question before `id`, answered or not, for Back; undefined returns to the start screen. */
 export function previousItem(
   checklist: readonly ChecklistItem[],
