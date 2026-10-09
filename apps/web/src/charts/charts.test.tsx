@@ -160,6 +160,30 @@ describe('LineChart', () => {
     expect(markup.match(/\$1M/g) ?? []).toHaveLength(1);
   });
 
+  it('names a repeated month once on the date axis, keeping the ticks’ slots', () => {
+    const dates = Array.from({ length: 12 }, (_, i) => `2026-09-${String(i + 8).padStart(2, '0')}`);
+    const markup = html(
+      <LineChart
+        dates={dates}
+        series={[
+          {
+            name: 'Net',
+            values: dates.map((_, i) => 100_000_000 + i * 1_000_000),
+            color: 'var(--brand)',
+            fill: true,
+          },
+        ]}
+        currency="USD"
+        height={150}
+        label="Trend"
+        testId="trend-chart"
+      />,
+    );
+    // Three September ticks: the month is named once, the other slots blank.
+    expect(markup.match(/Sep 2026/g) ?? []).toHaveLength(1);
+    expect(markup.match(/<span><\/span>/g) ?? []).toHaveLength(2);
+  });
+
   it('renders its fallback without points', () => {
     const markup = html(
       <LineChart

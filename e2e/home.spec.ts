@@ -282,6 +282,11 @@ test('opening Home sends session_started, accepted', async ({ page }) => {
 test('a sound screen at phone and computer widths', async ({ page }, testInfo) => {
   await page.goto('/app/');
   await expect(page.getByRole('heading', { level: 2, name: 'Holdings · 8' })).toBeVisible();
+  // The holdings heading keeps its count on one line; the toolbar wraps below it instead.
+  const heading = page.getByRole('heading', { level: 2, name: 'Holdings · 8' });
+  const box = await heading.boundingBox();
+  const lineHeight = await heading.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
+  expect(box?.height ?? 0).toBeLessThan(lineHeight * 1.5);
   await expectSoundScreen(page, testInfo);
 });
 
