@@ -10,7 +10,7 @@ import type {
   VersionedPack,
 } from '@netnet/contracts';
 import { CURRENCY_CODES } from '@netnet/contracts';
-import { fromMinor, staleness, typeLabel } from '@netnet/core';
+import { deltaMinor, fromMinor, staleness, typeLabel } from '@netnet/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -18,7 +18,7 @@ import { useMe } from '../../api/account';
 import { api, isApiError, type Written } from '../../api/client';
 import { useSnapshot } from '../../api/snapshot';
 import { Waiting } from '../../app/guards';
-import { TrendChart } from '../../charts';
+import { RangeBar, TrendChart, formatSignedCompactMoney } from '../../charts';
 import {
   AccessBlock,
   AskAgentDialog,
@@ -49,6 +49,7 @@ import { homeData } from '../home/home-data';
 import {
   BASELINE_LABELS,
   HOLDING_BASELINE_DEFAULT,
+  HOLDING_RANGES,
   formatPct,
   holdingChange,
   holdingTrend,
@@ -60,9 +61,12 @@ import styles from './Holding.module.css';
 /**
  * The holding page (PRD J2, J3, J4): the latest value with its consequence, its trend and its
  * change over the selected baseline, the dated history newest first, and ways to correct a value,
- * retag, archive and delete. Its figures come from core over the snapshot; the history's full
- * values come paged from the API.
+ * retag, archive and delete — the last two from the top-right menu. Its figures come from core
+ * over the snapshot; the history's full values come paged from the API.
  */
+
+const ONE_VALUE_REASON = 'Update this next month, or add an earlier value, to see how it moves.';
+const NO_VALUES_REASON = 'Add its first value, then update it as it changes.';
 
 export function Holding() {
   const { id } = useParams();
@@ -108,6 +112,8 @@ function HoldingLoaded({
   const [editingAccess, setEditingAccess] = useState(false);
   const [tagging, setTagging] = useState(false);
   const [asking, setAsking] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const [range, setRange] = useState(0);
 
   const latest = useMemo(
     () => homeData(snapshot, today).latest.get(holding.id),
@@ -117,10 +123,10 @@ function HoldingLoaded({
     const universal = snapshot.types.find((t) => t.id === holding.typeId)?.universal ?? 'other';
     return {
       universal,
-      trend: holdingTrend(snapshot, holding, universal, today),
+      trend: holdingTrend(snapshot, holding, universal, today, range),
       change: holdingChange(snapshot, holding, universal, today),
     };
-  }, [snapshot, holding, today]);
+  }, [snapshot, holding, today, range]);
 
   if (chain.status === 'pending') return <Waiting />;
   if (chain.status === 'error') {
@@ -160,6 +166,18 @@ function HoldingLoaded({
           <span aria-hidden="true">×</span>
         </Link>
         <span className={styles.spacer} />
+        <button
+          type="button"
+          className={styles.iconButton}
+          aria-label="Holding menu"
+          onClick={() => setMenu(true)}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={styles.dots}>
+            <circle cx="12" cy="5" r="1.8" />
+            <circle cx="12" cy="12" r="1.8" />
+            <circle cx="12" cy="19" r="1.8" />
+          </svg>
+        </button>
       </div>
       <Hero
         holding={holding}
@@ -204,13 +222,26 @@ function HoldingLoaded({
             </p>
           ) : null}
         </div>
-        <TrendChart
-          points={data.trend}
-          currency={snapshot.baseCurrency}
-          height={160}
-          label={`${holding.name} trend`}
-          reason="The trend appears with two or more values."
-        />
+        <Card>
+          <TrendChart
+            // One value is a flat carried line that reads as a fact about the money (PRD
+            // J4), so the trend waits for a second value, whatever the buckets hold.
+            points={total < 2 ? [] : data.trend}
+            currency={snapshot.baseCurrency}
+            height={160}
+            label={`${holding.name} trend`}
+            emptyLabel={total < 2 ? 'Need more data' : 'Pick a longer range'}
+            {...(total < 2 ? { reason: total === 0 ? NO_VALUES_REASON : ONE_VALUE_REASON } : {})}
+          />
+          {total < 2 ? null : (
+            <RangeBar
+              label={holding.name}
+              options={HOLDING_RANGES}
+              value={range}
+              onChange={setRange}
+            />
+          )}
+        </Card>
       </section>
       <div className={styles.sectionHead}>
         <h2 id="history-heading">History · {total}</h2>
@@ -225,12 +256,13 @@ function HoldingLoaded({
         </Card>
       ) : (
         <Card flush>
-          {items.map((value) => (
+          {items.map((value, index) => (
             <ValueRow
               key={value.id}
               value={value}
               kind={holding.kind}
               baseCurrency={snapshot.baseCurrency}
+              older={items[index + 1]}
               open={expanded === value.id}
               onToggle={() => setExpanded(expanded === value.id ? null : value.id)}
               onEdit={() => setEditingValue(value)}
@@ -249,7 +281,6 @@ function HoldingLoaded({
           )}
         </div>
       ) : null}
-      <ManageSection holding={holding} total={total} />
       <div className={styles.end} aria-hidden="true" />
       <UpdateFab onUpdate={() => setAdding(true)} />
       <ValueSheet
@@ -273,6 +304,7 @@ function HoldingLoaded({
       {tagging ? (
         <TagsSheet holding={holding} tags={snapshot.tags} onClose={() => setTagging(false)} />
       ) : null}
+      {menu ? <MenuSheet holding={holding} total={total} onClose={() => setMenu(false)} /> : null}
       {editingAccess && holding.kind === 'asset' ? (
         <AccessSheet
           onClose={() => setEditingAccess(false)}
@@ -363,6 +395,7 @@ function ValueRow({
   value,
   kind,
   baseCurrency,
+  older,
   open,
   onToggle,
   onEdit,
@@ -370,12 +403,16 @@ function ValueRow({
   value: Value;
   kind: HoldingRow['kind'];
   baseCurrency: string;
+  /** The next-older loaded value, or none for the oldest one on screen. */
+  older: Value | undefined;
   open: boolean;
   onToggle: () => void;
   onEdit: () => void;
 }) {
   const byAgent = value.source === 'agent';
-  const minor = kind === 'liability' ? -value.baseMinor : value.baseMinor;
+  const signed = (baseMinor: number) => (kind === 'liability' ? -baseMinor : baseMinor);
+  const minor = signed(value.baseMinor);
+  const step = older === undefined ? null : deltaMinor(minor, signed(older.baseMinor));
   return (
     <>
       <button
@@ -390,6 +427,11 @@ function ValueRow({
         </span>
         <span className={styles.amt}>
           <Figure minor={minor} currency={baseCurrency} />
+          {step !== null && step !== 0 ? (
+            <span className={cx(styles.chg, step > 0 ? styles.gain : styles.loss)}>
+              {formatSignedCompactMoney(step, baseCurrency)}
+            </span>
+          ) : null}
         </span>
       </button>
       {open ? <ValueDetail value={value} baseCurrency={baseCurrency} onEdit={onEdit} /> : null}
@@ -703,10 +745,18 @@ function TagsSheet({
 }
 
 /**
- * About this holding: archive and unarchive, and delete with a confirm step. Deleting leaves the
- * page for Home; the totals follow the write's data version, as on every screen.
+ * The holding's menu (PRD J4): archive and unarchive, and delete with a confirm step. Deleting
+ * leaves the page for Home; the totals follow the write's data version, as on every screen.
  */
-function ManageSection({ holding, total }: { holding: HoldingRow; total: number }) {
+function MenuSheet({
+  holding,
+  total,
+  onClose,
+}: {
+  holding: HoldingRow;
+  total: number;
+  onClose: () => void;
+}) {
   const toast = useToast();
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState(false);
@@ -717,6 +767,7 @@ function ManageSection({ holding, total }: { holding: HoldingRow; total: number 
       api.patch<Written<HoldingRow>>(`/holdings/${holding.id}`, patch),
     onSuccess: () => {
       toast.show({ message: holding.archived ? 'Unarchived.' : 'Archived.' });
+      onClose();
     },
     onError: (error: unknown) => {
       setProblem(failureSentence(error));
@@ -727,6 +778,7 @@ function ManageSection({ holding, total }: { holding: HoldingRow; total: number 
     mutationFn: () => api.del<Written<void>>(`/holdings/${holding.id}`),
     onSuccess: () => {
       toast.show({ message: 'Deleted.' });
+      onClose();
       void navigate('/');
     },
     onError: (error: unknown) => {
@@ -735,73 +787,55 @@ function ManageSection({ holding, total }: { holding: HoldingRow; total: number 
   });
 
   return (
-    <section aria-labelledby="manage-heading">
-      <div className={styles.sectionHead}>
-        <h2 id="manage-heading">About this holding</h2>
-      </div>
-      <Card>
-        <div className={styles.manage}>
-          <div className={styles.manageRow}>
-            <p className={styles.manageText}>
-              {holding.archived
-                ? 'Archived: it leaves the totals and charts but keeps its history.'
-                : 'Archive it to leave the totals and charts; its history stays.'}
-            </p>
+    <Sheet open onClose={onClose} title={holding.name}>
+      {confirming ? (
+        <div className={styles.confirm}>
+          <p className={styles.confirmText}>
+            {total === 0
+              ? `“${holding.name}” has no values yet. Delete it?`
+              : total === 1
+                ? `“${holding.name}” and its one value go. Delete them?`
+                : `“${holding.name}” and its ${total} values go. Delete them?`}
+          </p>
+          <div className={styles.confirmActs}>
             <Button
               variant="outlined"
-              aria-disabled={archive.isPending ? true : undefined}
+              aria-disabled={remove.isPending ? true : undefined}
               onClick={() => {
-                if (!archive.isPending) archive.mutate({ archived: !holding.archived });
+                if (!remove.isPending) remove.mutate();
               }}
             >
-              {holding.archived ? 'Unarchive holding' : 'Archive holding'}
+              Delete holding
             </Button>
-          </div>
-          <div className={styles.danger}>
-            <h3 className={styles.dangerTitle}>Delete this holding</h3>
-            {confirming ? (
-              <>
-                <p className={styles.dangerText}>
-                  {total === 0
-                    ? `“${holding.name}” has no values yet. Delete it?`
-                    : total === 1
-                      ? `“${holding.name}” and its one value go. Delete them?`
-                      : `“${holding.name}” and its ${total} values go. Delete them?`}
-                </p>
-                <div className={styles.confirmActs}>
-                  <Button
-                    variant="outlined"
-                    aria-disabled={remove.isPending ? true : undefined}
-                    onClick={() => {
-                      if (!remove.isPending) remove.mutate();
-                    }}
-                  >
-                    Delete holding
-                  </Button>
-                  <Button variant="quiet" onClick={() => setConfirming(false)}>
-                    Keep
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className={styles.dangerText}>
-                  {total === 0
-                    ? 'It has no values yet.'
-                    : total === 1
-                      ? 'Its one value goes with it.'
-                      : `Its ${total} values go with it.`}
-                </p>
-                <Button variant="outlined" onClick={() => setConfirming(true)}>
-                  Delete holding
-                </Button>
-              </>
-            )}
+            <Button variant="quiet" onClick={() => setConfirming(false)}>
+              Keep
+            </Button>
           </div>
           {problem ? <FormProblem>{problem}</FormProblem> : null}
         </div>
-      </Card>
-    </section>
+      ) : (
+        <div>
+          <button
+            type="button"
+            className={styles.menuOpt}
+            aria-disabled={archive.isPending ? true : undefined}
+            onClick={() => {
+              if (!archive.isPending) archive.mutate({ archived: !holding.archived });
+            }}
+          >
+            <span className={styles.grow}>{holding.archived ? 'Unarchive' : 'Archive'}</span>
+          </button>
+          <button
+            type="button"
+            className={cx(styles.menuOpt, styles.destructive)}
+            onClick={() => setConfirming(true)}
+          >
+            <span className={styles.grow}>Delete</span>
+          </button>
+          {problem ? <FormProblem>{problem}</FormProblem> : null}
+        </div>
+      )}
+    </Sheet>
   );
 }
 

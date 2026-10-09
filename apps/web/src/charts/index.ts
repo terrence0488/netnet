@@ -11,5 +11,6 @@ export {
   type PlaceholderKind,
 } from './ChartPlaceholder';
 export { LineChart, type LineChartProps, type LineSeries } from './LineChart';
+export { RangeBar, type RangeBarProps, type RangeOption } from './RangeBar';
 export { TrendChart, type TrendChartProps } from './TrendChart';
-export { formatAxisDate, formatCompactMoney } from './format';
+export { formatAxisDate, formatCompactMoney, formatSignedCompactMoney } from './format';

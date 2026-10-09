@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatAxisDate, formatCompactMoney } from './format';
+import { formatAxisDate, formatCompactMoney, formatSignedCompactMoney } from './format';
 
 describe('formatCompactMoney', () => {
   it('compacts thousands and millions, and leaves small amounts whole', () => {
@@ -23,6 +23,15 @@ describe('formatCompactMoney', () => {
   it('rejects what is not an amount in minor units', () => {
     expect(() => formatCompactMoney(1.5, 'USD')).toThrow(RangeError);
     expect(() => formatCompactMoney(Number.NaN, 'USD')).toThrow(RangeError);
+  });
+});
+
+describe('formatSignedCompactMoney', () => {
+  it('signs a compact change figure, both ways', () => {
+    expect(formatSignedCompactMoney(350_000, 'SGD', 'en-SG')).toBe('+$4K');
+    expect(formatSignedCompactMoney(184_025_000, 'USD', 'en-US')).toBe('+$1.84M');
+    expect(formatSignedCompactMoney(-120_050, 'USD', 'en-US')).toBe('−$1K');
+    expect(formatSignedCompactMoney(0, 'USD', 'en-US')).toBe('$0');
   });
 });
 

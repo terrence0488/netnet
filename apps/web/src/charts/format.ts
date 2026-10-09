@@ -58,6 +58,12 @@ export function formatCompactMoney(minor: number, currency: string, locale?: str
   return text;
 }
 
+/** `+$59K`, `−$1K`: a compact change figure, signed (design-system §2.1). */
+export function formatSignedCompactMoney(minor: number, currency: string, locale?: string): string {
+  const text = formatCompactMoney(minor, currency, locale);
+  return minor > 0 ? `+${text}` : text;
+}
+
 /** `May 2026`: a date-axis label for the point dated `YYYY-MM-DD`. */
 export function formatAxisDate(date: string, locale?: string): string {
   return new Date(`${date}T00:00:00Z`).toLocaleDateString(locale, {
