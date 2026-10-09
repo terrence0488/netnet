@@ -1,11 +1,11 @@
 # Project State
 
 ## Current
-Stage: Build P2 (pre-QA UI fixes)
+Stage: Build P2 (full prototype conformance sweep)
 Phase: P2
 Status: in-progress
-Next action: `stage: test P2` (uncommitted fix on `main` working tree; commit or branch first).
-**Branch:** one branch per task, from `main` (CONVENTIONS §15).
+Next action: review the sweep, commit + push to PR #70, merge, dispatch production.
+**Branch:** `p2-feedback-fixes` (from `main`, CONVENTIONS §15).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -22,12 +22,17 @@ Next action: `stage: test P2` (uncommitted fix on `main` working tree; commit or
 | P5 | not-started | | |
 
 ## Handoff note (last session)
-Pre-QA fixes done, uncommitted: item-3 cards removed; Home desktop list-left/
-position-right; filter is a draft sheet (chips, AND/OR, archived, Apply/Cancel/
-Reset); holding has menu, row deltas, range bar; allocation toggles $/%. Unit
-1233 + home/holding E2E 78 green; lint/typecheck clean.
-Open: J4's menu "Edit" has no P2 screen (route it); Home lacks range bar,
-value-asc/type sorts, one-value-each placeholder (J4, not feedback.md). F17/
-F18, F16, T8 as before; test:int rotates app password (last); shell console
-check fails locally w/o Postgres (same on base). QA `qa-p1-20261008@example.com`
+Full P1/P2 prototype-conformance sweep done on `p2-feedback-fixes`, uncommitted:
+agent tab (direct rows when empty, "What it can do" column, lowercase last
+used), connect flow (tab Back skips the choice, step prompts render), approval
+consent grammar, EmptyHome reuses AlternativeRoute, handoff copy/Copy fixes,
+AskAgent primary connect, StaleCard→compact StaleNote with the no-data prompt,
+Account sections + connected row + note + 2-col, new Archived screen + Home
+list-foot link + empty-Home recovery link. Unit 1249 green; lint/typecheck
+clean; E2E home 56, agent 44, holding/taxonomy/add/gallery green.
+Open: commit+push+CI, then merge #70 → manual prod dispatch → smoke/probe;
+J4 menu "Edit" still has no screen; baseCurrency write API still missing;
+P3+ gaps recorded (Insights, Activity, reminders, settings, export, delete);
+test:int rotates app password (last); shell console check + onboarding-basics
+fail locally w/o Postgres (same on base). QA `qa-p1-20261008@example.com`
 (S$5,328) excludable, P3-only delete. Tracker: https://claude.ai/artifact/UkJfDYaAAi8gJV1aBbk3nB.
