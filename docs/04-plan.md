@@ -173,9 +173,9 @@ On `https://‹domain›`, deployed by the production workflow:
    side by side on a computer), the position ledger, change against the chosen baseline and
    trend range, sort, the filter sheet and Don't Show, and the stale count with the agent
    handoff. An empty Home offers one action and one alternative, with or without an agent.
-4. A holding opens its own trend with a range bar, a bar chart of its period changes and paged
-   history with expandable rows; values edit and delete; holdings archive and delete from the
-   top-right menu; tags assign.
+4. A holding opens its own trend with a range bar and paged history with expandable rows;
+   values edit and delete; holdings archive and delete from the top-right menu; tags assign.
+   Its period bar chart lands in P5 with the period machinery.
 5. Types and tags add, rename, merge and delete from the web; the Add form takes tags.
 6. Stale holdings are labelled on list and detail. Every step fires its §3.5 event. The phone
    screenshots render in the connect guides.
@@ -190,7 +190,7 @@ regressions.
 | **J1** | Sign-up and sign-in by Google and Apple, verified, with the official buttons, `method` on the sign-up events · the "Let's start" screen and the basics (the pack's checklist, follow-ups only after a yes, each answer saved at once, Skip, Back with removal logged, "Done for now", `via: guided`, resume, the P-A walk-through) · the agent route from onboarding and the blank Home after it · the empty Home's full rule, with and without an agent |
 | **J2** | Tags in the Add form · add, rename, merge and delete types and tags, holdings follow, nothing orphaned · archive and unarchive · delete from the web (audited in the rows; the log screen is P3) |
 | **J3** | Edit a value on the web (amount, date, currency): history, totals and charts recompute, the edit is audited (shown in P3), `value_corrected` fires |
-| **J4** | All: total, trend and allocation (carousel, side by side on a computer), the position ledger · the six baselines, every figure relative to the one in force and labelled, the baseline's name the control · trend ranges · a holding's trend with range bar, period bar chart with monthly/quarterly/yearly switch and paging, newest-first history with expandable rows, top-right menu · the trend read by hover, tap, drag and arrow keys, a plain swipe still scrolling · the "Need more data" placeholder · sort (both value directions, type, money/percent change) and the filter sheet (Show Only, chips, AND/OR, Don't Show, archived, Apply) with the active filter visible · phone usable without sideways scrolling, computer side-by-side layout |
+| **J4** | All except the holding bar chart: total, trend and allocation (carousel, side by side on a computer), the position ledger · the six baselines, every figure relative to the one in force and labelled, the baseline's name the control · trend ranges · a holding's trend with range bar, newest-first history with expandable rows, top-right menu (its period bar chart waits for P5) · the trend read by hover, tap, drag and arrow keys, a plain swipe still scrolling · the "Need more data" placeholder · sort (both value directions, type, money/percent change) and the filter sheet (Show Only, chips, AND/OR, Don't Show, archived, Apply) with the active filter visible · phone usable without sideways scrolling, computer side-by-side layout |
 | **J5** | The same connect flow from onboarding and from a holding, `entry` carried · the prompt handoff for an empty or stale Home (the starting and update prompts, prefill where the client supports it, Copy where not, no financial data in prompts) |
 | **J9** | All: staleness labels on list and detail · the stale count on Home, handed to a connected agent or offering to connect one · no scheduled stale-holding message of any kind |
 
@@ -313,11 +313,14 @@ listings and launch note ready to submit and post.
 
 ### P5 — Insights
 
-**Checkpoint:** Insights per J11 on production, on the web and through `get_period_changes`.
+**Checkpoint:** Insights per J11 on production, on the web and through `get_period_changes`,
+plus the holding page's period bar chart.
 
 **Tasks (outline):**
 - `core.periods`: calendar periods from value dates, carried vs observed, each entry's stored
   conversion, drivers ranked by contribution, filters and exclusions; golden tests.
+- The holding page's second card: the bar chart of its period changes with the
+  monthly / quarterly / yearly switch and paging, from the same period machinery.
 - The Insights screen: Monthly, Quarterly and Yearly; a period's drivers; its own filters and Don't
   Show, persisted; placeholders and the single "what's needed" statement; `insights_viewed`.
 - `Ledger.periods` and the MCP tool `get_period_changes`.
@@ -378,7 +381,7 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | J1 | P1, P2 |
 | J2 | P1, P2, P3 |
 | J3 | P1, P2 (edit), P3 (in the log) |
-| J4 | P2 |
+| J4 | P2, P5 (holding bar chart) |
 | J5 | P1, P2 (other entries, handoff) |
 | J6 | P1 (undo in P3) |
 | J7 | P3 |

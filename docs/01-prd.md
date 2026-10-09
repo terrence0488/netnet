@@ -1,6 +1,6 @@
 # 01 — Product Requirements (PRD)
 
-Status: **awaiting re-approval** · Stage owner: Product manager
+Status: **approved** · Stage owner: Product manager
 Inputs: `docs/00-discovery.md`, `docs/reference/mockups/README.md`, `docs/02-prototype/` and
 `origin/claude/design-c-soft` / `origin/claude/design-a-two-inks` (behavioural reference for J4)
 

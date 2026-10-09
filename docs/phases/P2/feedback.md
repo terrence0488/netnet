@@ -18,5 +18,5 @@ branches `origin/claude/design-c-soft`, `origin/claude/design-a-two-inks`.
 | 1 | Home tab desktop card layout differs from the prototype | Requirement gap (drift vs behavioural reference) | Fix task in P2, before Stage 6 |
 | 2 | Filter design and implementation differs from the prototype | Requirement gap | Fix task in P2, before Stage 6 |
 | 3 | Extra "By type" and "Assets vs liabilities" cards with no prototype counterpart | Requirement gap — PRD J4 revised 2026-10-09: allocation (by-type list) and position ledger replace them; assets-vs-liabilities lives in Insights only | Implement the revised J4 in the fix session |
-| 4 | Holding detail page differs; the bar chart is missing | Requirement gap | Fix task in P2, before Stage 6 |
+| 4 | Holding detail page differs (bar chart; top-right menu) | Requirement gap — bar chart deferred to P5 per 2026-10-09 decision; the rest matches the revised J4 | Menu, history rows, range bar and trend in the fix session; bar chart with P5's period machinery |
 | 5 | Holding archive/delete menu at the bottom instead of the prototype's top-right three-dots button | Requirement gap | Fix task in P2, before Stage 6 |
