@@ -61,7 +61,7 @@ export type VersionedPack = Pack & { version: number };
 /** The answer that leaves a holding undecided (architecture §7.4, `access_answer`). */
 export const NOT_SURE = 'not_sure';
 
-/** What Home's and Insights' filters keep (PRD J4, J11). Archived holdings are always left out. */
+/** What Home's and Insights' filters keep (PRD J4, J11). */
 export interface HoldingFilter {
   show?: 'all' | 'assets' | 'liabilities';
   /** Show only these types. */
@@ -76,6 +76,8 @@ export interface HoldingFilter {
   hideTagMode?: TagMode;
   /** Don't show these holdings (Insights' exclusions). */
   hideHoldingIds?: readonly string[];
+  /** Keep archived holdings too (J4's archived inclusion); left out by default. */
+  includeArchived?: boolean;
 }
 
 export type TagMode = 'any' | 'all';

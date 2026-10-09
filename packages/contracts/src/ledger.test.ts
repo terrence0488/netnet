@@ -205,6 +205,7 @@ describe('prefsPatchSchema and holdingFilterSchema', () => {
           hideTypeIds: [],
           hideTagIds: [],
           hideTagMode: 'any',
+          includeArchived: true,
         },
         insightsFilter: { hideHoldingIds: ['hld_1'] },
         baseline: 'last_quarter',
