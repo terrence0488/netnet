@@ -4,12 +4,48 @@
   padding: var(--space-10) 0 var(--space-8);
 }
 
-.stack {
+.grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-9);
-  max-width: var(--field-max);
   padding-bottom: var(--inset-page-end);
+}
+
+.main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-9);
+  align-content: start;
+  min-width: 0;
+}
+
+.side {
+  min-width: 0;
+}
+
+/* What an agent can do: the side column on a computer, below the rows on a phone. */
+.summary {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0 var(--space-16);
+    align-items: start;
+    padding-bottom: var(--inset-page-end-computer);
+  }
+
+  .main {
+    grid-column: 1 / span 7;
+  }
+
+  .side {
+    grid-column: 8 / span 5;
+  }
 }
 
 /* One connection: a live dot, its logo, the name it registered with, and its times. */

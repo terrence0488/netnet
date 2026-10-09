@@ -69,6 +69,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Deleting a tag removes it from the holdings that carry it, or merges it into another; it is never refused | A tag is only a label. Each holding's change is audited, so undo can put the tag back |
 | A change against a baseline is worked out per holding and summed; a holding first valued after the baseline counts from its first value | Adding a holding is not growth, and the total and every row are measured against the same thing |
 | The calendar baselines are month ends: last month is the end of last month, last quarter the end of the month three months back, last year the end of the same month last year; Jan 1 is 1 January | Statements are dated at month ends, so the comparison is like with like, and "since 31 Aug" reads as a fixed point |
+| The empty Home links to Archived whenever anything is archived | Archiving everything would otherwise strand the account: the prototype's empty Home offers no way back |
 
 ## Onboarding and agents
 
@@ -85,6 +86,8 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Agent provenance is quiet: a mark on the row, the client named when a value is opened, full attribution in Activity | Who wrote a number matters when checking it, not while reading the position |
 | Confirming another country moves the ledger: with no holding yet it starts over in the new country's currency and types; once it has one, the currency stays and the new pack's types are added, none removed | A country corrected with Back in onboarding leaves nothing of the first answer; once there is data, changing the totals currency is a deliberate act |
 | In P1, onboarding shows the totals currency without a way to change it; changing it comes with P3's settings | Only someone whose totals currency differs from their country's needs it, and changing it once values exist means converting them all |
+| A connection never used says "not used yet" rather than a time since it connected | The prototype reads the connection time as last use; silence is the honest signal |
+| No in-app "Try it": the agent's demo replay happens inside the agent's own app | The prototype's replay is illustration only, marked as such; the handoff links are the product's way to try |
 
 ## Notifications
 

@@ -104,6 +104,21 @@
   overflow-wrap: anywhere;
 }
 
+/* The add row's label, in brand ink; the chevron, quiet in ink-3. */
+.addName {
+  display: block;
+  color: var(--brand-text);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  letter-spacing: var(--tracking-body);
+  overflow-wrap: anywhere;
+}
+
+.chev {
+  color: var(--ink-3);
+  font-size: var(--size-body);
+}
+
 .sub {
   display: block;
   margin-top: var(--space-1);
@@ -111,19 +126,6 @@
   font-size: var(--size-meta);
   font-weight: var(--weight-meta);
   line-height: var(--leading-body-sm);
-}
-
-.empty {
-  margin: 0;
-  color: var(--ink-2);
-  font-size: var(--size-body-sm);
-  font-weight: var(--weight-body-sm);
-  line-height: var(--leading-body-sm);
-}
-
-.add {
-  display: flex;
-  margin-top: var(--space-5);
 }
 
 .section:last-child {

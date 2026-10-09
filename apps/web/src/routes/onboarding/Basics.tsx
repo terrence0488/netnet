@@ -2,6 +2,7 @@ import type { Holding, PackRef, Page, Snapshot, Value } from '@netnet/contracts'
 import { toMinor } from '@netnet/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import { useUpdateMe } from '../../api/account';
 import { api, isApiError, type Written } from '../../api/client';
@@ -28,10 +29,10 @@ import {
   firstUnanswered,
   followupsOf,
   holdingInput,
-  isAnswered,
   isVisible,
   nextUnanswered,
   omitAnswers,
+  positionOf,
   previousItem,
   seedAnswers,
   type BasicsAnswers,
@@ -211,6 +212,8 @@ function AskScreen({ item, data }: { item: ChecklistItem; data: BasicsData }) {
   const currency = holding?.currency ?? data.snapshot.baseCurrency;
   const minor = answer?.amount === undefined ? undefined : toMinor(answer.amount, currency);
   const saved = typeof minor === 'number' ? formatMoney(minor, currency) : undefined;
+  const added = addedBefore(data, item.id);
+  const position = positionOf(data.checklist, item.id);
 
   const sayYes = () => {
     if (busy || finishing) return;
@@ -264,13 +267,29 @@ function AskScreen({ item, data }: { item: ChecklistItem; data: BasicsData }) {
 
   const skip = () => {
     if (busy || finishing) return;
-    advance(item.id, data.answers);
+    // A pending yes is cleared, so nothing is asked because of a skip; a saved holding stays.
+    // The ask screen has no guard on the answer, so unlike the amount screen this clears first.
+    const pending =
+      data.answers[item.id] !== undefined && data.answers[item.id]?.holdingId === undefined;
+    const cleared = pending ? omitAnswers(data.answers, [item.id]) : data.answers;
+    if (pending) data.saveAnswers(cleared);
+    advance(item.id, cleared);
   };
 
   const waiting = busy || finishing;
   return (
-    <AuthFrame title={item.ask} titleId={questionId} back={{ to: backTo }}>
+    <AuthFrame
+      title={item.ask}
+      titleId={questionId}
+      back={{ to: backTo }}
+      step={`What you have · ${position.n} of ${position.total}`}
+    >
       <div className={styles.stack}>
+        {added ? (
+          <p className={styles.saved}>
+            Added <b>{added.name}</b>, {added.amount}.
+          </p>
+        ) : null}
         {saved ? <p className={styles.saved}>Saved {saved}</p> : null}
         {busy ? (
           <Waiting />
@@ -288,21 +307,33 @@ function AskScreen({ item, data }: { item: ChecklistItem; data: BasicsData }) {
             }}
           />
         )}
-        {isAnswered(data.answers, item.id) ? null : (
-          <Button
-            variant="outlined"
-            block
-            onClick={skip}
-            aria-disabled={waiting ? true : undefined}
-          >
-            Skip
-          </Button>
-        )}
+        <Button variant="outlined" block onClick={skip} aria-disabled={waiting ? true : undefined}>
+          Skip
+        </Button>
         {(problem ?? doneProblem) ? <FormProblem>{problem ?? doneProblem}</FormProblem> : null}
         <DoneForNow onDone={finish} waiting={waiting} />
       </div>
     </AuthFrame>
   );
+}
+
+/**
+ * What the previous question saved, for the "Added …" line: nothing when it saved nothing, so
+ * skips and first questions read clean. The answer's own name and amount carry the line before
+ * the snapshot refetch brings the holding itself.
+ */
+function addedBefore(data: BasicsData, id: string): { name: string; amount: string } | undefined {
+  const prev = previousItem(data.checklist, data.answers, id);
+  const prevAnswer = prev ? data.answers[prev.id] : undefined;
+  if (prevAnswer?.holdingId === undefined || prevAnswer.amount === undefined) return undefined;
+  const prevHolding = data.snapshot.holdings.find((h) => h.id === prevAnswer.holdingId);
+  const currency = prevHolding?.currency ?? data.snapshot.baseCurrency;
+  const prevMinor = toMinor(prevAnswer.amount, currency);
+  if (typeof prevMinor !== 'number') return undefined;
+  return {
+    name: prevHolding?.name ?? prev?.name ?? 'Holding',
+    amount: formatMoney(prevMinor, currency),
+  };
 }
 
 /** `/onboarding/basics/:item/amount`: "roughly how much?" — saving it moves on. */
@@ -398,12 +429,32 @@ function AmountScreen({ item, data }: { item: ChecklistItem; data: BasicsData })
     }
   };
 
+  const position = positionOf(data.checklist, item.id);
+  const skip = () => {
+    if (saving || finishing) return;
+    // A pending yes is cleared, so nothing is asked because of a skip; a saved holding stays.
+    // The clear commits first, synchronously: this screen's guard bounces to its ask screen,
+    // and the move below supersedes that bounce with the next question.
+    if (answer?.holdingId === undefined) {
+      const cleared = omitAnswers(data.answers, [item.id]);
+      flushSync(() => {
+        data.saveAnswers(cleared);
+      });
+      advance(item.id, cleared);
+      return;
+    }
+    advance(item.id, data.answers);
+  };
   return (
-    <AuthFrame title={item.amount} back={{ to: `${BASICS_PATH}/${item.id}` }}>
+    <AuthFrame
+      title={item.amount}
+      back={{ to: `${BASICS_PATH}/${item.id}` }}
+      step={`What you have · ${position.n} of ${position.total}`}
+    >
       <AuthForm onSubmit={() => void save()}>
         <MoneyField
           label={item.name}
-          hint={item.hint}
+          hint={item.hint ?? 'A round number is fine. You can change it any time.'}
           currency={currency}
           value={typed}
           error={
@@ -416,7 +467,15 @@ function AmountScreen({ item, data }: { item: ChecklistItem; data: BasicsData })
         />
         {(problem ?? doneProblem) ? <FormProblem>{problem ?? doneProblem}</FormProblem> : null}
         <Button type="submit" block aria-disabled={saving || finishing ? true : undefined}>
-          Continue
+          {answer?.holdingId === undefined ? 'Add' : 'Save'}
+        </Button>
+        <Button
+          variant="outlined"
+          block
+          onClick={skip}
+          aria-disabled={saving || finishing ? true : undefined}
+        >
+          Skip
         </Button>
         <DoneForNow onDone={finish} waiting={saving || finishing} />
       </AuthForm>

@@ -105,7 +105,7 @@ describe('the Agent tab', () => {
     expect(markup).toContain('Your agent');
     expect(markup).toContain('Claude');
     expect(markup).toContain('Connected');
-    expect(markup).toContain('Last used');
+    expect(markup).toContain('last used');
     expect(markup).toContain('>Revoke<');
   });
 
@@ -127,10 +127,24 @@ describe('the Agent tab', () => {
     expect(markup).toContain('/agent/connect/other?entry=agent');
   });
 
-  it('when empty, offers the flow with the agents it works with', () => {
+  it('when empty, offers each agent as a direct row', () => {
     const markup = render([]);
     expect(markup).toContain('Connect your agent');
-    expect(markup).toContain('Works with Claude, or any agent that supports MCP.');
+    expect(markup).toContain('Connect Claude');
+    expect(markup).toContain('Connect another agent');
+    expect(markup).toContain('/agent/connect/claude?entry=agent');
+    expect(markup).not.toContain('Connect to agent');
+  });
+
+  it('when empty with no guides, falls back to the alternative route', () => {
+    const markup = render([], []);
+    expect(markup).toContain('Let your AI agent do this');
     expect(markup).toContain('Connect to agent');
+  });
+
+  it('says what an agent can do beside the connections', () => {
+    const markup = render([CONNECTION]);
+    expect(markup).toContain('What it can do');
+    expect(markup).toContain('you can undo anything it changes');
   });
 });

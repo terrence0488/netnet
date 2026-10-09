@@ -9,6 +9,7 @@ describe('the nav', () => {
     expect(activeEntry('/')?.label).toBe('Home');
     expect(activeEntry('/add')?.label).toBe('Home');
     expect(activeEntry('/holdings/hld_01')?.label).toBe('Home');
+    expect(activeEntry('/archived')?.label).toBe('Home');
     expect(activeEntry('/agent')?.label).toBe('Agent');
     expect(activeEntry('/connect/claude')?.label).toBe('Agent');
     expect(activeEntry('/agents')).toBeUndefined();

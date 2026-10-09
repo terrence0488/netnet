@@ -52,7 +52,7 @@ export function HandoffPrompt({
   const prefill = guide?.prefillUrl ? prefillHref(guide.prefillUrl, prompt) : null;
   return (
     <div className={styles.handoff}>
-      <PromptCard text={prompt} copyInside={prefill === null} />
+      <PromptCard text={prompt} copyInside={prefill !== null} />
       {prefill !== null && guide !== null ? (
         <a
           className={buttonClass('primary', true)}
@@ -61,7 +61,7 @@ export function HandoffPrompt({
           rel="noreferrer"
           data-testid="handoff-prefill"
         >
-          Open in {guide.name}
+          Let {guide.name} do it
         </a>
       ) : (
         <Button block onClick={() => copy(prompt)} data-testid="handoff-copy">

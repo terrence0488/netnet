@@ -1,6 +1,6 @@
-import type { Holding, Snapshot, UserType, ValueTuple } from '@netnet/contracts';
+import type { Holding, Snapshot, UserType, ValueIn, ValueTuple } from '@netnet/contracts';
 import { describe, expect, it } from 'vitest';
-import { homeData, sharedLockedUntil, visibleHoldings } from './home-data';
+import { homeData, homeTrendFrom, sharedLockedUntil, visibleHoldings } from './home-data';
 
 const TYPES: UserType[] = [
   {
@@ -158,5 +158,41 @@ describe('sharedLockedUntil', () => {
       '2026-09-23',
     );
     expect(sharedLockedUntil(none, visibleHoldings(none))).toBeNull();
+  });
+});
+
+describe('homeTrendFrom', () => {
+  const grouped = (values: readonly ValueIn[]) => {
+    const byHolding = new Map<string, ValueIn[]>();
+    for (const value of values) {
+      const track = byHolding.get(value.holdingId);
+      if (track) track.push(value);
+      else byHolding.set(value.holdingId, [value]);
+    }
+    return byHolding;
+  };
+
+  it('starts at the range, clamped to the shown holdings’ first value', () => {
+    const data = homeData(
+      snapshot([holding({ id: 'hld_1' }), holding({ id: 'hld_2' })], {
+        hld_1: [value('2025-09-20', 100_000), value('2026-09-22', 120_000)],
+        hld_2: [value('2026-09-22', 50_000)],
+      }),
+      '2026-09-23',
+    );
+    const shown = visibleHoldings(data);
+    const byHolding = grouped(data.values);
+    expect(homeTrendFrom(shown, byHolding, '2026-09-23', 0)).toBeUndefined();
+    expect(homeTrendFrom(shown, byHolding, '2026-09-23', 6)).toBe('2026-03-23');
+    expect(homeTrendFrom(shown, byHolding, '2026-09-23', -1)).toBe('2026-01-01');
+    // Eight years back predates the first value: no $0 run-up.
+    expect(homeTrendFrom(shown, byHolding, '2026-09-23', 96)).toBe('2025-09-20');
+  });
+
+  it('is undefined with nothing shown or nothing valued', () => {
+    const data = homeData(snapshot([holding({ id: 'hld_1' })], {}), '2026-09-23');
+    const byHolding = grouped(data.values);
+    expect(homeTrendFrom(visibleHoldings(data), byHolding, '2026-09-23', 6)).toBeUndefined();
+    expect(homeTrendFrom([], byHolding, '2026-09-23', 6)).toBeUndefined();
   });
 });

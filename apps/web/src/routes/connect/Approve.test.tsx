@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { App } from '../../App';
 import { ME_KEY } from '../../api/account';
 import { BASENAME, routes } from '../../app/routes';
-import { ledgerScopes } from './Approve';
+import { consentAbilities, ledgerScopes } from './Approve';
 
 const PERSON: ProfileView = {
   email: 'avery@example.com',
@@ -50,14 +50,26 @@ describe('ledgerScopes', () => {
   });
 });
 
+describe('consentAbilities', () => {
+  it('joins the abilities as a person would say them, read first', () => {
+    expect(consentAbilities(['ledger.write', 'ledger.read'])).toBe(
+      'see your holdings and their history, and add or update them.',
+    );
+    expect(consentAbilities(['ledger.read'])).toBe('see your holdings and their history.');
+    expect(consentAbilities(['ledger.write'])).toBe('add or update them.');
+    expect(consentAbilities([])).toBe('connect to NetNet.');
+  });
+});
+
 describe('the approval page', () => {
   it('names who is asking, with the DCR caveat, and what each ledger scope allows', () => {
     const markup = render(APPROVAL);
     expect(markup).toContain('Fictional agent wants to connect to your NetNet');
     expect(markup).toContain('Signed in as avery@example.com');
     expect(markup).toContain('NetNet can’t verify this name');
-    expect(markup).toContain('See your holdings and their history.');
-    expect(markup).toContain('Add or update them.');
+    expect(markup).toContain(
+      'It will be able to see your holdings and their history, and add or update them.',
+    );
     expect(markup).not.toContain('offline_access');
     expect(markup).toContain('>Allow<');
     expect(markup).toContain('>Cancel<');

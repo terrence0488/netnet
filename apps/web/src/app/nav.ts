@@ -21,7 +21,7 @@ export interface NavEntry {
  * until P3's settings join it (design-system §7).
  */
 export const NAV: readonly NavEntry[] = [
-  { to: '/', label: 'Home', icon: 'home', owns: ['/', '/add', '/holdings'] },
+  { to: '/', label: 'Home', icon: 'home', owns: ['/', '/add', '/holdings', '/archived'] },
   { to: '/agent', label: 'Agent', icon: 'agent', owns: ['/agent', '/connect'] },
   { to: '/account', label: 'Account', icon: 'account', owns: ['/account'] },
 ];

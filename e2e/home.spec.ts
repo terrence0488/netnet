@@ -222,6 +222,16 @@ test('net worth with what it means: could use, locked with until, and owed', asy
   await expect(ledger.getByText('−$45,000')).toBeVisible();
 });
 
+test('with one value each, the trend waits as a placeholder', async ({ page }) => {
+  await page.goto('/app/');
+  await expect(page.getByTestId('trend-chart-placeholder')).toBeVisible();
+  await expect(page.getByText('Need more data')).toBeVisible();
+  await expect(
+    page.getByText('Update a holding next month, or add an earlier value, to see your trend.'),
+  ).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Net worth range' })).toHaveCount(0);
+});
+
 test('the holdings under the total, each opening its page', async ({ page }) => {
   await page.goto('/app/');
   await expect(page.getByRole('heading', { level: 2, name: 'Holdings · 8' })).toBeVisible();
@@ -321,7 +331,7 @@ test.describe('empty', () => {
     await expect(page.getByText(/Help me set up NetNet/)).toBeVisible();
 
     // Claude's guide carries a prefill address, so the prompt opens in Claude.
-    const prefill = page.getByRole('link', { name: 'Open in Claude' });
+    const prefill = page.getByRole('link', { name: 'Let Claude do it' });
     await expect(prefill).toBeVisible();
     const href = await prefill.getAttribute('href');
     const prompt = new URL(href ?? '').searchParams.get('q') ?? '';
@@ -342,7 +352,7 @@ test.describe('empty', () => {
     await page.goto('/app/');
     await expect(page.getByText('Helperbot is connected. Ask it to set things up:')).toBeVisible();
 
-    await expect(page.getByRole('link', { name: /Open in/ })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /Let .* do it/ })).toHaveCount(0);
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.getByRole('button', { name: 'Copy the prompt' }).click();
     await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
@@ -492,7 +502,7 @@ test.describe('complete', () => {
     await expect.poll(() => patches).toStrictEqual([{ baseline: 'initial' }]);
   });
 
-  test('sort by value, name, change or last updated', async ({ page }) => {
+  test('sort by value either way, name, type, change or last updated', async ({ page }) => {
     await page.goto('/app/');
     const rows = holdingsRegion(page).getByRole('link');
     const names = () => rows.allTextContents();
@@ -543,6 +553,32 @@ test.describe('complete', () => {
     await expect(first).toContainText('Everyday savings');
     await expect(first).toContainText('+25%');
     await expect(first).not.toContainText('+$250');
+
+    await sort.click();
+    await page
+      .getByRole('dialog', { name: 'Sort holdings' })
+      .getByRole('button', {
+        name: 'Lowest value',
+      })
+      .click();
+    await expect
+      .poll(() => names().then((all) => all.map((text) => text.slice(0, 20))))
+      .toStrictEqual([
+        expect.stringContaining('Student loan'),
+        expect.stringContaining('Everyday savings'),
+        expect.stringContaining('Brokerage account'),
+        expect.stringContaining('Riverside flat'),
+      ]);
+
+    await sort.click();
+    await page
+      .getByRole('dialog', { name: 'Sort holdings' })
+      .getByRole('button', {
+        name: 'Type, A to Z',
+      })
+      .click();
+    await expect(rows.first()).toContainText('Everyday savings');
+    await expect(rows.last()).toContainText('Riverside flat');
   });
 
   test('filter drafts Show Only, chips and archived, applying together', async ({ page }) => {
@@ -557,7 +593,8 @@ test.describe('complete', () => {
     await expect(page.getByText('Assets only')).toHaveCount(0);
     await expect.poll(() => patches).toStrictEqual([]);
     await sheet.getByRole('button', { name: 'Apply', exact: true }).click();
-    await expect(page.getByText('Assets only')).toBeVisible();
+    await expect(page.getByText('Filtered: Assets only')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Filtered total' })).toBeVisible();
     await expect(page.getByText('$368,750').first()).toBeVisible();
     await expect(holdingsRegion(page).getByRole('link')).toHaveCount(3);
     await expect.poll(() => patches).toStrictEqual([{ homeFilter: { show: 'assets' } }]);
@@ -613,7 +650,7 @@ test.describe('complete', () => {
     await redrafted.getByRole('button', { name: 'Apply', exact: true }).click();
     // No holding carries both tags.
     await expect(page.getByText('Rainy day AND Shared')).toBeVisible();
-    await expect(page.getByText('Nothing to show.')).toBeVisible();
+    await expect(holdingsRegion(page).getByText('Nothing matches this filter.')).toBeVisible();
     await expect
       .poll(() => patches)
       .toStrictEqual([
@@ -658,6 +695,54 @@ test.describe('complete', () => {
     } else {
       await expect(page.getByRole('button', { name: /Show (Trend|Allocation)/ })).toHaveCount(0);
     }
+  });
+
+  test('on a computer, the holdings sit beside the position', async ({ page }, testInfo) => {
+    if (isPhone(testInfo)) return;
+    await page.goto('/app/');
+    const sectionBox = async (name: string | RegExp) => {
+      const section = page.locator('section').filter({ has: page.getByRole('heading', { name }) });
+      const found = await section.boundingBox();
+      if (!found) throw new Error(`no box for ${String(name)}`);
+      return found;
+    };
+    // Trend and allocation share a row, and below them the holdings share one with
+    // the position ledger — the list never stacks under the right column.
+    const trend = await sectionBox('Trend');
+    const allocation = await sectionBox('Allocation');
+    expect(Math.abs(trend.y - allocation.y)).toBeLessThan(2);
+    const holdings = await sectionBox(/^Holdings ·/);
+    const position = await sectionBox('Position');
+    expect(Math.abs(holdings.y - position.y)).toBeLessThan(2);
+    expect(holdings.x).toBeLessThan(position.x);
+  });
+
+  test('the trend covers the range bar’s span', async ({ page }) => {
+    await page.goto('/app/');
+    const range = page.getByRole('group', { name: 'Net worth range' });
+    await expect(range.getByRole('button', { name: 'All' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await range.getByRole('button', { name: '6M' }).click();
+    await expect(range.getByRole('button', { name: '6M' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('trend-chart')).toBeVisible();
+  });
+
+  test('with one card, the trend stands full width', async ({ page }) => {
+    await page.goto('/app/');
+    await page.getByRole('button', { name: /Filter Home/ }).click();
+    const sheet = page.getByRole('dialog', { name: 'Filter Home' });
+    await sheet.getByRole('button', { name: 'Liabilities', exact: true }).click();
+    await sheet.getByRole('button', { name: 'Apply', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Allocation' })).toHaveCount(0);
+    const hero = await page.getByRole('heading', { level: 1 }).locator('..').boundingBox();
+    const trend = await page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'Trend' }) })
+      .boundingBox();
+    if (!hero || !trend) throw new Error('no box for the hero or the trend');
+    expect(Math.abs(hero.width - trend.width)).toBeLessThan(2);
   });
 
   test('baseline, sort and filter choices persist across sessions', async ({ page }) => {
@@ -747,9 +832,10 @@ test.describe('archived', () => {
   });
 
   test('including archived lists archived holdings too', async ({ page }) => {
+    const rows = holdingsRegion(page).locator('a[href^="/app/holdings/"]');
     await page.goto('/app/');
     await expect(page.getByText('$1,250').first()).toBeVisible();
-    await expect(holdingsRegion(page).getByRole('link')).toHaveCount(1);
+    await expect(rows).toHaveCount(1);
 
     await page.getByRole('button', { name: /Filter Home/ }).click();
     const sheet = page.getByRole('dialog', { name: 'Filter Home' });
@@ -757,7 +843,6 @@ test.describe('archived', () => {
     await sheet.getByRole('button', { name: 'Apply', exact: true }).click();
     await expect(page.getByText('including archived')).toBeVisible();
     await expect(page.getByText('$6,250').first()).toBeVisible();
-    const rows = holdingsRegion(page).getByRole('link');
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(1)).toContainText('Old account');
   });
@@ -779,28 +864,24 @@ test.describe('stale', () => {
     const cash = holdingsRegion(page).getByRole('link', { name: /Everyday savings/ });
     await expect(cash.getByText('Stale')).toHaveCount(0);
 
-    await expect(page.getByText('2 holdings need fresh values:')).toBeVisible();
-    await expect(page.getByText('Connect your agent to hand it the update.')).toBeVisible();
-    const connect = page.getByRole('link', { name: 'Connect to agent' });
+    await expect(page.getByText('2 holdings are out of date.')).toBeVisible();
+    const connect = page.getByRole('link', { name: 'Connect your agent to keep it current' });
     await expect(connect).toHaveAttribute('href', '/app/agent/connect?entry=home');
     await expectSoundScreen(page, testInfo);
   });
 
-  test('with an agent, the stale count hands the update prompt across', async ({ page }) => {
+  test('with an agent, the stale count hands the update across in one tap', async ({ page }) => {
     await mockConnections(page, [CLAUDE_CONNECTION]);
     await mockGuides(page, { claude: CLAUDE_GUIDE });
     await page.goto('/app/');
-    await expect(page.getByText('2 holdings need fresh values:')).toBeVisible();
-    await expect(page.getByText('Ask Claude to update them:')).toBeVisible();
-    const prompt = page.getByText(/these need fresh values/);
-    await expect(prompt).toContainText('Riverside flat');
-    await expect(prompt).toContainText('Brokerage account');
-    await expect(prompt).not.toContainText('$');
+    await expect(page.getByText('2 holdings are out of date.')).toBeVisible();
 
-    const prefill = page.getByRole('link', { name: 'Open in Claude' });
-    await expect(prefill).toBeVisible();
-    const href = await prefill.getAttribute('href');
-    expect(href ?? '').toContain('https://claude.ai/new?q=');
+    const ask = page.getByRole('link', { name: 'Ask Claude to update them' });
+    await expect(ask).toBeVisible();
+    const prompt = new URL((await ask.getAttribute('href')) ?? '').searchParams.get('q') ?? '';
+    expect(prompt).toContain('out of date');
+    expect(prompt).not.toContain('Riverside flat');
+    expect(prompt).not.toContain('$');
   });
 
   test('where the client has no prefill address, the update prompt copies instead', async ({
@@ -810,12 +891,86 @@ test.describe('stale', () => {
     await mockConnections(page, [OTHER_CONNECTION]);
     await mockGuides(page, { other: OTHER_GUIDE });
     await page.goto('/app/');
-    await expect(page.getByText('2 holdings need fresh values:')).toBeVisible();
+    await expect(page.getByText('2 holdings are out of date.')).toBeVisible();
 
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-    await page.getByRole('button', { name: 'Copy the prompt' }).click();
+    await page.getByRole('button', { name: 'Copy a prompt for Helperbot' }).click();
+    await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
     const pasted = await page.evaluate(() => navigator.clipboard.readText());
-    expect(pasted).toContain('Riverside flat');
+    expect(pasted).toContain('out of date');
+    expect(pasted).not.toContain('Riverside flat');
     expect(pasted).not.toContain('$');
+  });
+});
+
+test.describe('archived', () => {
+  const OLD = holding({
+    id: 'hld_old',
+    name: 'Old savings',
+    typeId: 'typ_cash',
+    archived: true,
+    archivedAt: '2026-09-10T00:00:00.000Z',
+  });
+  const OLD_VALUES = [[day(3), 50_000, 'SGD', 50_000, 'web', null, 'val_old']];
+
+  test('the list foot reaches Archived, and Unarchive brings one back', async ({ page }) => {
+    await page.unroute('**/api/snapshot');
+    await mockSnapshot(page, {
+      ...LEDGER,
+      holdings: [...LEDGER.holdings, OLD],
+      values: { ...LEDGER.values, hld_old: OLD_VALUES },
+    });
+    let patch: unknown;
+    await page.route('**/api/holdings/hld_old', async (route) => {
+      if (route.request().method() !== 'PATCH') return route.fallback();
+      patch = route.request().postDataJSON();
+      await mockSnapshot(page, {
+        ...LEDGER,
+        dataVersion: 10,
+        holdings: [...LEDGER.holdings, { ...OLD, archived: false }],
+        values: { ...LEDGER.values, hld_old: OLD_VALUES },
+      });
+      return route.fulfill({
+        json: { result: { ...OLD, archived: false }, dataVersion: 10, warnings: [] },
+      });
+    });
+
+    await page.goto('/app/');
+    const foot = page.getByRole('link', { name: '1 archived ›' });
+    await expect(foot).toBeVisible();
+    await foot.click();
+
+    await expect(page).toHaveURL(/\/app\/archived$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Archived' })).toBeVisible();
+    await expect(
+      page.getByText('Archived holdings keep their history but leave every total.'),
+    ).toBeVisible();
+    await expect(page.getByText('Old savings')).toBeVisible();
+    await expect(page.getByText('Cash & savings · 3 days ago')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Unarchive' }).click();
+    await expect(page.getByText('Unarchived.')).toBeVisible();
+    expect(patch).toStrictEqual({ archived: false });
+    await expect(page.getByText('Nothing archived.')).toBeVisible();
+
+    await page.getByRole('link', { name: 'Back to Home' }).click();
+    await expect(page).toHaveURL(/\/app$/);
+    await expect(holdingsRegion(page).getByText('Old savings')).toBeVisible();
+    await expect(page.getByRole('link', { name: /archived ›/ })).toHaveCount(0);
+  });
+
+  test('when everything is archived, the empty Home still reaches it', async ({ page }) => {
+    await page.unroute('**/api/snapshot');
+    await mockSnapshot(page, {
+      ...LEDGER,
+      holdings: [OLD],
+      values: { hld_old: OLD_VALUES },
+    });
+
+    await page.goto('/app/');
+    await expect(page.getByText('Nothing here yet.')).toBeVisible();
+    await page.getByRole('link', { name: '1 archived ›' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Archived' })).toBeVisible();
+    await expect(page.getByText('Old savings')).toBeVisible();
   });
 });

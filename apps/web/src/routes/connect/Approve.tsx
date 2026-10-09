@@ -23,15 +23,26 @@ import styles from './Approve.module.css';
  * verify first. Shown for every new connection: a remembered approval is never used.
  */
 
-/** What each ledger scope lets the agent do, in the consent's words. */
+/** What each ledger scope lets the agent do, in the consent's words after "will be able to". */
 const LEDGER_SCOPES: Readonly<Record<string, string>> = {
-  'ledger.read': 'See your holdings and their history.',
-  'ledger.write': 'Add or update them.',
+  'ledger.read': 'see your holdings and their history',
+  'ledger.write': 'add or update them',
 };
 
 /** The approval's scopes, ledger only: anything else the agent asked for is not shown. */
 export function ledgerScopes(scopes: readonly string[]): string[] {
   return scopes.filter((scope) => scope.startsWith('ledger.'));
+}
+
+/** The consent's abilities: read first, joined as a person would say them. */
+export function consentAbilities(scopes: readonly string[]): string {
+  const abilities = scopes
+    .filter((scope) => LEDGER_SCOPES[scope] !== undefined)
+    .sort()
+    .map((scope) => LEDGER_SCOPES[scope] ?? scope);
+  if (abilities.length === 0) return 'connect to NetNet.';
+  if (abilities.length === 1) return `${abilities[0]}.`;
+  return `${abilities.slice(0, -1).join(', ')}, and ${abilities[abilities.length - 1]}.`;
 }
 
 /** Unverified → verify first, with resend, and the approval loads by itself once verified. */
@@ -79,11 +90,8 @@ function Approval({
         </p>
       )}
       <p className={styles.consent}>
-        It will be able to{' '}
-        {scopes.length > 0
-          ? scopes.map((scope) => LEDGER_SCOPES[scope] ?? scope).join(' ')
-          : 'connect to NetNet.'}{' '}
-        Every change it makes is logged, and you can undo it.
+        It will be able to {consentAbilities(scopes)} Every change it makes is logged, and you can
+        undo it.
       </p>
       {problem ? (
         <FormProblem>

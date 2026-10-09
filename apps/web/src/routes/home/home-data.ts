@@ -9,7 +9,7 @@ import type {
   ValueIn,
   ValueTuple,
 } from '@netnet/contracts';
-import { filterHoldings, latestValues as latestOf, position } from '@netnet/core';
+import { filterHoldings, latestValues as latestOf, position, trendRangeStart } from '@netnet/core';
 
 /**
  * Home's figures from the snapshot: holdings and their compact values adapted to core's inputs,
@@ -67,6 +67,28 @@ export function homeData(snapshot: Snapshot, today: string): HomeData {
 /** The holdings on screen: everything unarchived the Home filter keeps, in order. */
 export function visibleHoldings(data: HomeData, filter: HoldingFilter = {}): HoldingIn[] {
   return filterHoldings(data.holdings, filter);
+}
+
+/**
+ * The Home trend's first day (PRD J4): the range bar's start, clamped to the shown holdings'
+ * first value — no data is not $0. Undefined is everything, or nothing to draw.
+ */
+export function homeTrendFrom(
+  shown: readonly HoldingIn[],
+  valuesByHolding: ReadonlyMap<string, readonly ValueIn[]>,
+  today: string,
+  rangeMonths: number,
+): string | undefined {
+  const start = trendRangeStart(rangeMonths, today);
+  if (start === undefined) return undefined;
+  let earliest: string | undefined;
+  for (const holding of shown) {
+    for (const value of valuesByHolding.get(holding.id) ?? []) {
+      if (earliest === undefined || value.date < earliest) earliest = value.date;
+    }
+  }
+  if (earliest === undefined) return undefined;
+  return start > earliest ? start : earliest;
 }
 
 /** The one `accessUntil` across the locked holdings with a value, when they share it. */

@@ -154,12 +154,14 @@
   letter-spacing: var(--tracking-heading-section);
 }
 
-/* The allocation's Show $ / Show %: a link beside the heading. */
+/* The allocation's Show $ / Show %: a link beside the heading, tall enough to tap
+   without growing the heading row. */
 .modeToggle {
   display: inline-flex;
   align-items: center;
   min-height: var(--hit);
   margin-left: auto;
+  margin-block: calc((var(--hit) - 1lh) / -2);
   padding: 0 var(--space-2);
   border: none;
   background: none;
@@ -328,6 +330,24 @@
   white-space: nowrap;
 }
 
+/* Below the list: the way to what left every total. */
+.listFoot {
+  margin-top: var(--space-5);
+}
+
+.footLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+}
+
+.footLink:hover {
+  color: var(--ink);
+}
+
 /* Where the list would be when the filter leaves nothing. */
 .nothing {
   padding: var(--space-8) 0;
@@ -354,17 +374,25 @@
     grid-column: span 12;
   }
 
-  /* The holdings left, the position right with what needs updating beneath it. */
+  .carousel {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  /* The holdings left, the position right with what needs updating beneath it.
+     Explicit rows: auto-placement would stack the list under the right column. */
   .list {
     grid-column: 1 / span 7;
-    grid-row: span 2;
+    grid-row: 2 / span 2;
   }
 
   .pos {
     grid-column: 8 / span 5;
+    grid-row: 2;
   }
 
   .stale {
     grid-column: 8 / span 5;
+    grid-row: 3;
   }
 }

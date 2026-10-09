@@ -180,19 +180,13 @@ export function ConnectButton({ entry }: { entry: ConnectEntry }) {
  * How a genuine second way to start is offered without competing with the primary. The empty Home
  * (P1-T16) and the empty Agent tab share this one block, so the two can never drift apart.
  */
-export function AlternativeRoute({
-  entry,
-  title = 'Let your AI agent do this',
-}: {
-  entry: ConnectEntry;
-  title?: string;
-}) {
+export function AlternativeRoute({ entry }: { entry: ConnectEntry }) {
   const guides = useAgentGuides();
   const named = (guides.data ?? []).filter((guide) => guide.id !== OTHER_GUIDE);
   return (
     <div className={styles.alt}>
       <Rule variant="strong" />
-      <p className={styles.altTitle}>{title}</p>
+      <p className={styles.altTitle}>Let your AI agent do this</p>
       <p className={styles.altSub}>
         {named.length > 0
           ? `Works with ${listNames(named.map((guide) => guide.name))}, or any agent that supports MCP.`

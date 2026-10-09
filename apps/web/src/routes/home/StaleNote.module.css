@@ -1,0 +1,26 @@
+/* Out-of-date holdings: a warning note with its one action, under the position. */
+.note {
+  margin-top: var(--space-7);
+  padding: var(--space-4) var(--space-7);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--warn-bg);
+}
+
+.head {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.head b {
+  color: var(--ink);
+}
+
+.failed {
+  margin: var(--space-2) 0 0;
+  color: var(--attention);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+}

@@ -85,7 +85,7 @@ async function answerYes(page: Page, item: ChecklistItem, amount: string): Promi
   await page.getByRole('button', { name: 'Yes', exact: true }).click();
   await expect(heading(page, item.amount)).toBeVisible();
   await page.getByRole('textbox', { name: item.name }).fill(amount);
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Add' }).click();
 }
 
 test('the start screen offers the basics or the agent, with Back to the segment', async ({
@@ -154,8 +154,11 @@ test('the full basics: yes, no, skip, back, correction, removal, then Home', asy
   await page.getByRole('button', { name: 'Start', exact: true }).click();
 
   // Yes saves at once; Back shows the answer and corrects it in place.
+  await expect(page.getByText('What you have · 1 of 6')).toBeVisible();
   await answerYes(page, byId('bank'), '5000');
   await expect(heading(page, byId('cpf').ask)).toBeVisible();
+  await expect(page.getByText('What you have · 2 of 6')).toBeVisible();
+  await expect(page.getByText(/Added Bank accounts, \$5,000\./)).toBeVisible();
   await page.getByRole('link', { name: 'Back' }).click();
   await expect(heading(page, byId('bank').ask)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Yes', exact: true })).toHaveAttribute(
@@ -167,7 +170,7 @@ test('the full basics: yes, no, skip, back, correction, removal, then Home', asy
   const amount = page.getByRole('textbox', { name: byId('bank').name });
   await expect(amount).toHaveValue('5000');
   await amount.fill('6000');
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
 
   // No saves nothing; Skip saves nothing and Back can return to it.
   await expect(heading(page, byId('cpf').ask)).toBeVisible();
@@ -242,6 +245,28 @@ test('the full basics: yes, no, skip, back, correction, removal, then Home', asy
     },
   ]);
   expect(problems).toStrictEqual([]);
+});
+
+test('skipping on the amount screen saves nothing and asks nothing because of it', async ({
+  page,
+}, testInfo) => {
+  const person = newPerson(testInfo);
+  await arriveAs(page, person, 'SG');
+  await signedUp(page, person, { country: 'SG', onboardingState: 'basics' });
+  const checklist = await checklistOf(page, 'sg');
+  const bank = nth(checklist, 0);
+  const second = nth(checklist, 1);
+  const third = nth(checklist, 2);
+
+  await page.goto('/app/onboarding/basics');
+  await answerYes(page, bank, '5000');
+  await expect(heading(page, second.ask)).toBeVisible();
+  await page.getByRole('button', { name: 'Yes', exact: true }).click();
+  await expect(heading(page, second.amount)).toBeVisible();
+  await page.getByRole('button', { name: 'Skip' }).click();
+  await expect(heading(page, third.ask)).toBeVisible();
+  const snapshot = await snapshotOf(page);
+  expect(snapshot.holdings.map((holding) => holding.name)).toStrictEqual(['Bank accounts']);
 });
 
 test('Done for now keeps what was entered', async ({ page }, testInfo) => {

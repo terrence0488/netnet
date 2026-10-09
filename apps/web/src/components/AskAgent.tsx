@@ -149,7 +149,7 @@ export function AskAgentDialog({
           {connections.data.length === 0 ? (
             <Link
               to={connectHref(connectEntry, connectHoldingId)}
-              className={buttonClass('outlined', true)}
+              className={buttonClass('primary', true)}
             >
               Connect your agent
             </Link>

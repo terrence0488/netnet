@@ -9,6 +9,7 @@ import {
   isVisible,
   nextUnanswered,
   omitAnswers,
+  positionOf,
   previousItem,
   seedAnswers,
   visibleItems,
@@ -109,6 +110,16 @@ describe('firstUnanswered, nextUnanswered and previousItem', () => {
     const answers: BasicsAnswers = { bank: { decision: 'yes', holdingId: 'hld_bank' } };
     expect(nextUnanswered(CHECKLIST, answers, 'bank')?.id).toBe('home');
     expect(previousItem(CHECKLIST, answers, 'home')?.id).toBe('bank');
+  });
+});
+
+describe('positionOf', () => {
+  it('numbers base questions, follow-ups sharing their anchor’s number', () => {
+    expect(positionOf(CHECKLIST, 'bank')).toStrictEqual({ n: 1, total: 4 });
+    expect(positionOf(CHECKLIST, 'home')).toStrictEqual({ n: 2, total: 4 });
+    expect(positionOf(CHECKLIST, 'home_loan')).toStrictEqual({ n: 2, total: 4 });
+    expect(positionOf(CHECKLIST, 'car_loan')).toStrictEqual({ n: 3, total: 4 });
+    expect(positionOf(CHECKLIST, 'owed')).toStrictEqual({ n: 4, total: 4 });
   });
 });
 

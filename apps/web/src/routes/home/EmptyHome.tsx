@@ -1,19 +1,47 @@
 import { Link } from 'react-router';
-import { Figure, Rule, Wordmark } from '../../components';
+import { AlternativeRoute, Figure, Wordmark } from '../../components';
+import { cx } from '../../components/cx';
 import { buttonClass } from '../../components/Button';
 import { HandoffPrompt, HandoffWaiting, useAgentHandoff } from './AgentHandoff';
 import { START_PROMPT } from './prompts';
 import styles from './EmptyHome.module.css';
 
 /**
- * Home's top bar: the wordmark and the way to add. Shared by the empty and the loaded Home, so
- * the two can never drift apart.
+ * Home's top bar: the wordmark, the filter on the loaded Home only, and the way to add. One
+ * component for the empty and the loaded Home, so the two can never drift apart.
  */
-export function HomeTopBar() {
+export function HomeTopBar({
+  onFilter,
+  filterActive = false,
+}: {
+  readonly onFilter?: () => void;
+  readonly filterActive?: boolean;
+}) {
   return (
     <div className={styles.topbar}>
       <Wordmark />
       <span className={styles.spacer} />
+      {onFilter ? (
+        <button
+          type="button"
+          className={cx(styles.iconButton, filterActive && styles.active)}
+          aria-label="Filter Home"
+          onClick={onFilter}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className={styles.filterIcon}
+          >
+            <path d="M3 5h18l-7 8v6l-4 2v-8z" />
+          </svg>
+        </button>
+      ) : null}
       <Link to="/add" className={styles.iconButton} aria-label="Add holding">
         <span aria-hidden="true">+</span>
       </Link>
@@ -27,7 +55,13 @@ export function HomeTopBar() {
  * connected, the starting prompt with "add it yourself" as the alternative. P2-T2's blank Home
  * reuses this as is: with an agent connected and nothing tracked, it is this screen.
  */
-export function EmptyHome({ baseCurrency }: { readonly baseCurrency: string }) {
+export function EmptyHome({
+  baseCurrency,
+  archivedCount = 0,
+}: {
+  readonly baseCurrency: string;
+  readonly archivedCount?: number;
+}) {
   return (
     <>
       <HomeTopBar />
@@ -37,6 +71,11 @@ export function EmptyHome({ baseCurrency }: { readonly baseCurrency: string }) {
       </div>
       <p className={styles.lead}>Nothing here yet.</p>
       <EmptyNext />
+      {archivedCount > 0 ? (
+        <Link to="/archived" className={styles.plainLink}>
+          {archivedCount} archived ›
+        </Link>
+      ) : null}
     </>
   );
 }
@@ -61,14 +100,7 @@ function EmptyNext() {
         <Link to="/add" className={buttonClass('primary', true)}>
           Add what you have
         </Link>
-        <Rule variant="strong" />
-        <div className={styles.alt}>
-          <p className={styles.altTitle}>Let your AI agent do this</p>
-          <p className={styles.altSub}>Works with Claude, or any agent that supports MCP.</p>
-          <Link to="/agent/connect?entry=home" className={buttonClass('outlined', true)}>
-            Connect to agent
-          </Link>
-        </div>
+        <AlternativeRoute entry="home" />
       </div>
     );
   }

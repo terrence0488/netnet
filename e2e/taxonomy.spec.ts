@@ -231,7 +231,7 @@ test('a type adds from the web, and the Add form offers it', async ({ page }) =>
   );
 
   await page.goto('/app/account/taxonomy');
-  await page.getByRole('button', { name: 'Add type', exact: true }).click();
+  await page.getByRole('button', { name: '+ Add New Type', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'New type' });
   await dialog.getByLabel('Name').fill('Holiday fund');
   await dialog.getByLabel('It means').selectOption({ label: 'Investments' });
@@ -268,7 +268,7 @@ test('a tag adds and renames from the web', async ({ page }) => {
   );
 
   await page.goto('/app/account/taxonomy');
-  await page.getByRole('button', { name: 'Add tag', exact: true }).click();
+  await page.getByRole('button', { name: '+ Add New Tag', exact: true }).click();
   const addDialog = page.getByRole('dialog', { name: 'New tag' });
   await addDialog.getByLabel('Name').fill('Rainy day');
   await addDialog.getByRole('button', { name: 'Save', exact: true }).click();
@@ -337,7 +337,7 @@ test('a tag deletes, or merges into another with mergeInto', async ({ page }) =>
   expect(deletes[1]?.pathname).toBe('/api/tags/tag_joint');
   expect(deletes[1]?.searchParams.get('mergeInto')).toBeNull();
   await expect(plain).toBeHidden();
-  await expect(page.getByText('No tags yet. Tags label holdings across types.')).toBeVisible();
+  await expect(page.getByRole('button', { name: '+ Add New Tag', exact: true })).toBeVisible();
 });
 
 test('a taken tag name is refused in plain language', async ({ page }) => {
@@ -357,7 +357,7 @@ test('a taken tag name is refused in plain language', async ({ page }) => {
   );
 
   await page.goto('/app/account/taxonomy');
-  await page.getByRole('button', { name: 'Add tag', exact: true }).click();
+  await page.getByRole('button', { name: '+ Add New Tag', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'New tag' });
   await dialog.getByLabel('Name').fill('Long term');
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
