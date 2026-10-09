@@ -4,7 +4,7 @@
 Stage: Build P2 (waves 1–3)
 Phase: P2
 Status: in-progress
-Next action: run the production workflow, then `stage: test P2` (fresh session).
+Next action: `stage: test P2` (fresh session).
 **Branch:** one branch per task, from `main` (CONVENTIONS §15).
 
 ## Approvals
@@ -22,10 +22,10 @@ Next action: run the production workflow, then `stage: test P2` (fresh session).
 | P5 | not-started | | |
 
 ## Handoff note (last session)
-Build P2 waves 1–3 ran unattended: 7 PRs merged (#63–#69, T1–T7 code), all CI green;
-T7's preview verified end to end (smoke + deployment-safe E2E). Manager fixes: T5/T2
-ConnectEntry union, chart date-axis clip (333px→contained at 320 narrow). T7 stays
-in-progress: run the production workflow, then smoke + probe on prod, then Stage 6.
+Build P2 done: T1–T7 merged (#63–#69) and T7 closed — deploy green on `main`,
+smoke + dispatched probe green on prod (see T7 report). Next: Stage 6 in a fresh
+session (`stage: test P2`) against the P2 criteria + P1 regressions, then Founder
+uses prod hands-on for the P2 approval gate.
 Open: F17/F18 secrets → real Google/Apple sign-in is a Stage-6 manual check; T8 waits
 for the 3 phone shots; F16 monitor + inbox delivery of both emails ride Stage 6.
 Watch: Ubuntu 26 runner migration Oct 19; test:int rotates the shared app password
