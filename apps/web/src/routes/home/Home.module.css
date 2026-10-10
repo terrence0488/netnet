@@ -134,6 +134,11 @@
   padding-bottom: var(--inset-page-end);
 }
 
+/* Position with what needs updating beneath it: one column on a computer, in flow on a phone. */
+.side {
+  display: contents;
+}
+
 .sectionHead {
   display: flex;
   flex-wrap: wrap;
@@ -380,19 +385,22 @@
   }
 
   /* The holdings left, the position right with what needs updating beneath it.
-     Explicit rows: auto-placement would stack the list under the right column. */
+     Explicit rows: auto-placement would stack the list under the right column.
+     The right side is one item, so a long list cannot drag the note mid-page. */
   .list {
     grid-column: 1 / span 7;
     grid-row: 2 / span 2;
   }
 
-  .pos {
+  .side {
+    display: grid;
     grid-column: 8 / span 5;
-    grid-row: 2;
+    grid-row: 2 / span 2;
+    align-content: start;
+    min-width: 0;
   }
 
-  .stale {
-    grid-column: 8 / span 5;
-    grid-row: 3;
+  .pos {
+    min-width: 0;
   }
 }

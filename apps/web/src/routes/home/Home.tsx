@@ -435,23 +435,21 @@ function LoadedHome({
             ]}
           />
         </div>
-        <section aria-labelledby="position-heading" className={styles.pos}>
-          <div className={styles.sectionHead}>
-            <h2 id="position-heading">Position</h2>
-          </div>
-          <PositionLedger
-            data={data}
-            totals={filtered}
-            shown={shown}
-            labels={typeLabels}
-            baseCurrency={snapshot.baseCurrency}
-          />
-        </section>
-        {staleCount > 0 ? (
-          <div className={styles.stale}>
-            <StaleNote count={staleCount} />
-          </div>
-        ) : null}
+        <div className={styles.side}>
+          <section aria-labelledby="position-heading" className={styles.pos}>
+            <div className={styles.sectionHead}>
+              <h2 id="position-heading">Position</h2>
+            </div>
+            <PositionLedger
+              data={data}
+              totals={filtered}
+              shown={shown}
+              labels={typeLabels}
+              baseCurrency={snapshot.baseCurrency}
+            />
+          </section>
+          {staleCount > 0 ? <StaleNote count={staleCount} /> : null}
+        </div>
         <section aria-labelledby="holdings-heading" className={styles.list}>
           <div className={styles.sectionHead}>
             <h2 id="holdings-heading">Holdings · {sorted.length}</h2>
