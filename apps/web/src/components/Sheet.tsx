@@ -36,13 +36,20 @@ export function Sheet({
   children,
 }: SheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const pressedOutside = useRef(false);
   const titleId = useId();
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // The title takes the initial focus, everywhere: the dialog would otherwise focus its
+      // first control, ringing Cancel on open (iOS Safari shows the ring; Chrome does not,
+      // but the focus lands there all the same).
+      titleRef.current?.focus({ preventScroll: true });
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
@@ -71,7 +78,12 @@ export function Sheet({
           <button type="button" className={styles.headButton} onClick={onClose}>
             {closeLabel}
           </button>
-          <h2 id={titleId} className={styles.title}>
+          {/*
+            Programmatically focusable: the dialog's initial focus lands here (see above).
+            It takes no ring itself; Tab from it reaches the header buttons with the ring
+            intact.
+          */}
+          <h2 id={titleId} ref={titleRef} className={styles.title} tabIndex={-1}>
             {title}
           </h2>
           {action ? (

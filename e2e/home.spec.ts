@@ -581,6 +581,22 @@ test.describe('complete', () => {
     await expect(rows.last()).toContainText('Riverside flat');
   });
 
+  test('opening a sheet focuses its title, not its Cancel button', async ({ page }) => {
+    await page.goto('/app/');
+    await page.getByRole('button', { name: /Filter Home/ }).click();
+    const sheet = page.getByRole('dialog', { name: 'Filter Home' });
+    await expect(sheet).toBeVisible();
+    // No header button takes the focus ring on open (iOS Safari focuses the first
+    // control otherwise); keyboard users still meet it on Tab.
+    await expect(page.locator(':focus')).toHaveText('Filter Home');
+    await page.keyboard.press('Tab');
+    await expect(page.locator(':focus')).toHaveText('Reset');
+    const ringed = await page.evaluate(
+      () => document.activeElement?.matches(':focus-visible') ?? false,
+    );
+    expect(ringed).toBe(true);
+  });
+
   test('filter drafts Show Only, chips and archived, applying together', async ({ page }) => {
     await page.goto('/app/');
     await expect(page.getByText('$328,750').first()).toBeVisible();
@@ -851,6 +867,42 @@ test.describe('archived', () => {
 test.describe('stale', () => {
   test.beforeEach(async ({ page }) => {
     await mockRich(page);
+  });
+
+  test('on a computer, the stale note sits directly beneath the position, however long the list', async ({
+    page,
+  }, testInfo) => {
+    if (isPhone(testInfo)) return;
+    await page.unroute('**/api/snapshot');
+    const base = richLedger();
+    const ids = Array.from({ length: 10 }, (_, i) => `hld_extra${i}`);
+    await mockSnapshot(page, {
+      ...base,
+      holdings: [
+        ...base.holdings,
+        ...ids.map((id, i) => holding({ id, name: `Spare account ${i + 1}`, typeId: 'typ_cash' })),
+      ],
+      values: {
+        ...base.values,
+        ...Object.fromEntries(
+          ids.map((id, i) => [
+            id,
+            [[day(3), 10_000 + i * 100, 'SGD', 10_000 + i * 100, 'web', null, `val_${id}`]],
+          ]),
+        ),
+      },
+    });
+    await page.goto('/app/');
+    const position = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'Position' }) });
+    const posBox = await position.boundingBox();
+    const noteBox = await page.getByTestId('stale-note').boundingBox();
+    if (!posBox || !noteBox) throw new Error('no boxes for the position and the stale note');
+    expect(Math.abs(noteBox.x - posBox.x)).toBeLessThan(2);
+    const gap = noteBox.y - (posBox.y + posBox.height);
+    expect(gap).toBeGreaterThanOrEqual(0);
+    expect(gap).toBeLessThan(64);
   });
 
   test('rows carry staleness, and the stale count offers to connect an agent', async ({

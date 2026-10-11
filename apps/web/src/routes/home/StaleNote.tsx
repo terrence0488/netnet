@@ -16,7 +16,7 @@ export function StaleNote({ count }: { readonly count: number }) {
   const { copied, failed, copy } = useCopy();
   const them = count > 1 ? 'them' : 'it';
   return (
-    <div className={styles.note}>
+    <div className={styles.note} data-testid="stale-note">
       <p className={styles.head}>
         <b>
           {count} holding{count > 1 ? 's are' : ' is'} out of date.

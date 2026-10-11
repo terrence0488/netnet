@@ -65,6 +65,11 @@
   text-align: center;
 }
 
+/* The title holds the dialog's initial focus; a heading is not a control, so no ring. */
+.title:focus {
+  outline: none;
+}
+
 .headButton {
   justify-self: start;
   display: inline-flex;

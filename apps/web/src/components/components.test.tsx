@@ -139,6 +139,15 @@ describe('Sheet', () => {
     expect(markup).toContain('>Add a value</h2>');
     expect(markup).toMatch(/<button[^>]*aria-disabled="true"[^>]*>Save<\/button>/);
   });
+
+  it('leaves its title programmatically focusable, for the initial focus on open', () => {
+    const markup = html(
+      <Sheet open={false} onClose={() => undefined} title="Filter Home">
+        <p>Body</p>
+      </Sheet>,
+    );
+    expect(markup).toMatch(/<h2[^>]*tabindex="-1"[^>]*>Filter Home<\/h2>/);
+  });
 });
 
 describe('the web app’s markup (design-system §6.1 rule 9)', () => {
