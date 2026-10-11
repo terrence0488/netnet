@@ -499,9 +499,12 @@
   gap: var(--space-7);
 }
 
+/* Each field is a grid of label, box and hint: the box row stretches, so the pair's boxes share
+   one height however tall the display-size amount runs. */
 .two > * {
   flex: 1;
   min-width: 0;
+  grid-template-rows: auto 1fr;
 }
 
 .two > *:first-child {

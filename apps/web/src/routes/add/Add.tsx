@@ -282,17 +282,15 @@ function AddForm({
             max={today}
             onChange={(event) => setDate(event.target.value)}
           />
-          {snapshot.tags.length > 0 ? (
-            <TagsField
-              tags={snapshot.tags}
-              selected={tagIds}
-              onToggle={(id) =>
-                setTagIds(
-                  tagIds.includes(id) ? tagIds.filter((t) => t !== id) : [...tagIds, id].sort(),
-                )
-              }
-            />
-          ) : null}
+          <TagsField
+            tags={snapshot.tags}
+            selected={tagIds}
+            onToggle={(id) =>
+              setTagIds(
+                tagIds.includes(id) ? tagIds.filter((t) => t !== id) : [...tagIds, id].sort(),
+              )
+            }
+          />
           {duplicate ? (
             <DuplicateNotice
               candidates={duplicate}
@@ -318,7 +316,8 @@ function AddForm({
 
 /**
  * The person's tags as toggle chips, like the Choice row's answers: pressed chips fill tomato.
- * Optional, and only shown while the person has tags.
+ * Always shown, like the prototype's Tags row; while there are no tags it says where to add
+ * them.
  */
 function TagsField({
   tags,
@@ -335,19 +334,25 @@ function TagsField({
       <p id={labelId} className={styles.tagsLabel}>
         Tags
       </p>
-      <div role="group" aria-labelledby={labelId} className={styles.chips}>
-        {tags.map((tag) => (
-          <button
-            key={tag.id}
-            type="button"
-            className={styles.chip}
-            aria-pressed={selected.includes(tag.id)}
-            onClick={() => onToggle(tag.id)}
-          >
-            {tag.name}
-          </button>
-        ))}
-      </div>
+      {tags.length > 0 ? (
+        <div role="group" aria-labelledby={labelId} className={styles.chips}>
+          {tags.map((tag) => (
+            <button
+              key={tag.id}
+              type="button"
+              className={styles.chip}
+              aria-pressed={selected.includes(tag.id)}
+              onClick={() => onToggle(tag.id)}
+            >
+              {tag.name}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className={styles.noTags}>
+          No tags yet. <Link to="/account/taxonomy">Add tags</Link>
+        </p>
+      )}
     </div>
   );
 }

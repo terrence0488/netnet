@@ -407,11 +407,22 @@ test('the Add form takes tags for a liability', async ({ page }) => {
   expect(posts.bodies[0]).toMatchObject({ kind: 'liability', tagIds: ['tag_joint', 'tag_long'] });
 });
 
-test('the Add form hides tags while there are none', async ({ page }) => {
+test('the Add form keeps its Tags row while there are none, leading to Types and tags', async ({
+  page,
+}) => {
   await mockSnapshot(page, ledger(1, [], {}, { tags: [] }));
   await page.goto('/app/add');
   await expect(page.getByRole('heading', { level: 1, name: 'New Asset' })).toBeVisible();
-  await expect(page.getByRole('group', { name: 'Tags' })).toHaveCount(0);
+  await expect(page.getByText('Tags', { exact: true })).toBeVisible();
+  await expect(page.getByText('No tags yet.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Liability', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'New Liability' })).toBeVisible();
+  await expect(page.getByText('No tags yet.')).toBeVisible();
+
+  await page.getByRole('link', { name: 'Add tags' }).click();
+  await expect(page).toHaveURL(/\/app\/account\/taxonomy$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Types and tags' })).toBeVisible();
 });
 
 test('a sound screen at phone and computer widths', async ({ page }, testInfo) => {

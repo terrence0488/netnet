@@ -1,7 +1,14 @@
 /// <reference lib="dom" />
 import { expect, test, type Page } from '@playwright/test';
 import { expectSoundScreen } from './accounts';
-import { asSignedIn, mockSnapshot } from './support';
+import {
+  VIEWPORTS,
+  asSignedIn,
+  expectInside,
+  expectNoHorizontalScroll,
+  expectSameHeight,
+  mockSnapshot,
+} from './support';
 
 /**
  * The holding page (PRD J2, J3, J4): the latest value, the trend with the change over the
@@ -599,6 +606,40 @@ test('an unknown holding says so, with the way back', async ({ page }) => {
   await expect(page.getByText('This holding isn’t here any more.')).toBeVisible();
   await page.locator('main').getByRole('link', { name: 'Home' }).click();
   await expect(page).toHaveURL(/\/app$/);
+});
+
+test('the value sheets carry the symbol, align, and stay inside', async ({ page }, testInfo) => {
+  await page.goto('/app/holdings/hld_broker');
+  await page.getByRole('button', { name: 'Update' }).click();
+  const add = page.getByRole('dialog', { name: 'Add Value' });
+  await expect(add).toBeVisible();
+  // The narrow symbol for USD, beside the display-size amount (design-system §6, Amount entry).
+  await expect(add.getByText('$', { exact: true })).toBeVisible();
+  await expectSameHeight(
+    add.getByLabel('Asset Value').locator('xpath=..'),
+    add.getByLabel('Currency'),
+  );
+  await expectInside(add, add.getByLabel('As of'));
+  const size = page.viewportSize();
+  await page.setViewportSize(VIEWPORTS.narrow);
+  await expectInside(add, add.getByLabel('As of'));
+  await expectNoHorizontalScroll(page);
+  if (size) await page.setViewportSize(size);
+  await expectSoundScreen(page, testInfo);
+  await page.keyboard.press('Escape');
+
+  const rows = page.getByRole('button', { expanded: false }).filter({ hasText: /\$/ });
+  await rows.nth(0).click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  const edit = page.getByRole('dialog', { name: 'Edit Value' });
+  await expect(edit).toBeVisible();
+  await expect(edit.getByText('$', { exact: true })).toBeVisible();
+  await expectSameHeight(
+    edit.getByLabel('Asset Value').locator('xpath=..'),
+    edit.getByLabel('Currency'),
+  );
+  await expectInside(edit, edit.getByLabel('As of'));
+  await expectSoundScreen(page, testInfo);
 });
 
 test('a sound screen at phone and computer widths', async ({ page }, testInfo) => {
