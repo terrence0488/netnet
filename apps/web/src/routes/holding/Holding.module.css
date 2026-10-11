@@ -51,6 +51,7 @@
   border-bottom: var(--border-rule) solid var(--rule);
   background: none;
   color: var(--ink);
+  text-decoration: none;
   font-size: var(--size-body);
   font-weight: var(--weight-body);
   text-align: left;
