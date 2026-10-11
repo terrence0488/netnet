@@ -37,6 +37,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Net Worth Goals, value notes and chart marks are out of v1 | No job needs them; goals edge toward reserved projection |
 | Running cost ≈$0 to 100 users and <$50/month to 1,000, holding indefinitely; reliability and security never trade against cost | Self-funded, open-ended runway; a failing MCP call kills trust in the core bet |
 | Success is sign-ups and engagement. After 8 weeks, M1 < 25, M3 < 15%, M7 < 20% or M6 < 10% is a kill reading, read on P-B and P-C only | One yardstick with an explicit exit; a blended reading would hide a segment failing |
+| The holding page's period bar chart ships with P5, on Insights' period machinery | Building period aggregation for one chart in P2 would duplicate what P5 builds for Insights; the trend and history rows carry the P2 holding page |
 
 ## Users and measurement
 

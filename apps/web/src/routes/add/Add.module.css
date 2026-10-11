@@ -92,17 +92,38 @@
   gap: var(--space-7);
 }
 
+/* Each field is a grid of label, box and hint: the box row stretches, so the pair's boxes share
+   one height however tall the display-size amount runs. */
 .two > * {
   flex: 1;
   min-width: 0;
+  grid-template-rows: auto 1fr;
 }
 
+/* The Tags label, like every field label: uppercase, in ink-3. */
 .tagsLabel {
   margin: 0 0 var(--space-3);
-  color: var(--ink);
+  color: var(--ink-3);
   font-size: var(--size-label);
   font-weight: var(--weight-label);
   letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.noTags {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  line-height: var(--leading-body-sm);
+}
+
+.noTags a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  min-width: var(--hit);
+  color: var(--brand-text);
 }
 
 .chips {

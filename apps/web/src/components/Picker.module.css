@@ -1,6 +1,8 @@
 .wrap {
   position: relative;
-  display: block;
+  /* A grid, so the select fills the wrap when its row stretches the pair to one height. */
+  display: grid;
+  min-width: 0;
 }
 
 .control {

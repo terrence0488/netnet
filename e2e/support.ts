@@ -4,7 +4,7 @@
  * axe check, no sideways scrolling, tap targets, the smallest text, and the page's scroll position.
  */
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, type TestInfo } from '@playwright/test';
+import { expect, type Locator, type Page, type TestInfo } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
 /** The widths every screen is checked at: the narrowest phone, a common phone, a computer. */
@@ -39,6 +39,26 @@ export async function expectNoHorizontalScroll(page: Page): Promise<void> {
     overflow.clientWidth,
   );
   expect(overflow.scrolled, 'the page scrolls sideways').toBe(0);
+}
+
+/** Two boxes render at the same height, within half a pixel (aligned fields, P2-T9). */
+export async function expectSameHeight(a: Locator, b: Locator): Promise<void> {
+  const [first, second] = await Promise.all([a.boundingBox(), b.boundingBox()]);
+  if (!first || !second) throw new Error('expected both boxes to be visible');
+  expect(Math.abs(first.height - second.height), 'the boxes differ in height').toBeLessThanOrEqual(
+    0.5,
+  );
+}
+
+/** A control sits fully inside its container's box, within half a pixel (P2-T9). */
+export async function expectInside(container: Locator, control: Locator): Promise<void> {
+  const outer = await container.boundingBox();
+  const inner = await control.boundingBox();
+  if (!outer || !inner) throw new Error('expected both boxes to be visible');
+  expect(inner.x, 'the control starts inside').toBeGreaterThanOrEqual(outer.x - 0.5);
+  expect(inner.x + inner.width, 'the control ends inside').toBeLessThanOrEqual(
+    outer.x + outer.width + 0.5,
+  );
 }
 
 /**

@@ -1,7 +1,14 @@
 /// <reference lib="dom" />
 import { expect, test, type Page, type Request } from '@playwright/test';
 import { expectSoundScreen } from './accounts';
-import { asSignedIn, mockSnapshot } from './support';
+import {
+  VIEWPORTS,
+  asSignedIn,
+  expectInside,
+  expectNoHorizontalScroll,
+  expectSameHeight,
+  mockSnapshot,
+} from './support';
 
 /**
  * Add (PRD J2): an asset or a liability with a value in any currency, accessibility settled by a
@@ -339,6 +346,44 @@ test('a back-dated opening value is accepted', async ({ page }) => {
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page).toHaveURL(/\/app$/);
   expect(posts.bodies[0]).toMatchObject({ opening: { amount: '1250', date: '2025-06-15' } });
+});
+
+test('amounts carry the symbol, fields align, and the date stays inside', async ({
+  page,
+}, testInfo) => {
+  await page.goto('/app/add');
+  await expect(page.getByRole('heading', { level: 1, name: 'New Asset' })).toBeVisible();
+  const main = page.locator('main');
+
+  // The narrow symbol for SGD, beside the display-size amount (design-system §6, Amount entry).
+  await expect(main.getByText('$', { exact: true })).toBeVisible();
+
+  // The Currency/Value pair shares one height, as the stacked text fields share another.
+  // (The date input stands 2px taller in Chromium, from its native segments; that is the
+  // platform's own control, deferred to it by design-system §6, and covered below for overflow.)
+  await expectSameHeight(
+    page.getByLabel('Asset Value').locator('xpath=..'),
+    page.getByLabel('Currency'),
+  );
+  await expectSameHeight(page.getByLabel('Asset Name'), page.getByLabel('Type'));
+
+  // The date stays inside the form here and at the narrowest phone, never scrolling sideways.
+  await expectInside(main, page.getByLabel('As of'));
+  const size = page.viewportSize();
+  await page.setViewportSize(VIEWPORTS.narrow);
+  await expectInside(main, page.getByLabel('As of'));
+  await expectNoHorizontalScroll(page);
+  if (size) await page.setViewportSize(size);
+  await expectSoundScreen(page, testInfo);
+
+  await page.getByRole('button', { name: 'Liability', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'New Liability' })).toBeVisible();
+  await expect(main.getByText('$', { exact: true })).toBeVisible();
+  await expectSameHeight(
+    page.getByLabel('Liability Value').locator('xpath=..'),
+    page.getByLabel('Currency'),
+  );
+  await expectSoundScreen(page, testInfo);
 });
 
 test('a sound screen at phone and computer widths', async ({ page }, testInfo) => {
