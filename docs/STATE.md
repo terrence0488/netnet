@@ -1,11 +1,11 @@
 # Project State
 
 ## Current
-Stage: Build P2 (full prototype conformance sweep)
+Stage: Build P2 (prod review follow-ups)
 Phase: P2
 Status: in-progress
-Next action: Founder reviews the sweep in production, then stage: test P2.
-**Branch:** `p2-feedback-fixes` (from `main`, CONVENTIONS §15).
+Next action: Founder reviews the follow-up fixes in production, then stage: test P2.
+**Branch:** `p2-home-sheet-fixes` (from `main`, CONVENTIONS §15).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -22,12 +22,10 @@ Next action: Founder reviews the sweep in production, then stage: test P2.
 | P5 | not-started | | |
 
 ## Handoff note (last session)
-PR #71 merged and deployed to production (deploy + smoke green): the full
-P1/P2 prototype-conformance sweep (agent tab, connect flow, approval, handoffs,
-StaleNote, Account, Archived) plus a basics-skip bounce fix CI caught (the
-amount screen's guard bounced back to its ask screen; the clear now commits
-synchronously first) with a mocked, database-free regression spec. Unit 1249
-green; full CI E2E 272 green.
+PR #73 merged and deployed to production (deploy + smoke green): the Founder's
+two prod-review fixes, the stale note stacked directly beneath the position and
+sheet initial focus on the title instead of Cancel (kills the iOS ring).
+Unit 1250 green; full CI (E2E + integration) green.
 Open: J4 menu "Edit" still has no screen; baseCurrency write API still missing;
 P3+ gaps recorded (Insights, Activity, reminders, settings, export, delete);
 test:int rotates app password (last); onboarding-basics/shell need Postgres
