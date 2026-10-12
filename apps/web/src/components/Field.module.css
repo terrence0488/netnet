@@ -53,3 +53,16 @@
   outline: none;
   box-shadow: var(--shadow-focus);
 }
+
+/* iOS gives date inputs an intrinsic width and centres the date: make them fill the column
+   like any field (prototype styles.css). */
+.box[type='date'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  text-align: left;
+}
+
+.box[type='date']::-webkit-date-and-time-value {
+  text-align: left;
+}
