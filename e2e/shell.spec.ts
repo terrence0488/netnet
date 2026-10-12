@@ -275,3 +275,34 @@ test('the web app is installable: its manifest, icons and fonts are served under
   });
   expect(faces).toEqual(expect.arrayContaining(['Unbounded: loaded', 'Space Grotesk: loaded']));
 });
+
+test('Account lists one column, Your agent and Log out last, at phone and computer widths', async ({
+  page,
+}) => {
+  for (const viewport of [VIEWPORTS.phone, VIEWPORTS.computer]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/app/account');
+    const settings = page.getByRole('heading', { name: 'Settings' });
+    const agent = page.getByRole('heading', { name: 'Your agent' });
+    const logOut = page.getByRole('button', { name: 'Log out' });
+    await expect(settings).toBeVisible();
+    await expect(agent).toBeVisible();
+    await expect(logOut).toBeVisible();
+    const [settingsBox, agentBox, logOutBox] = await Promise.all([
+      settings.boundingBox(),
+      agent.boundingBox(),
+      logOut.boundingBox(),
+    ]);
+    if (!settingsBox || !agentBox || !logOutBox) {
+      throw new Error('Account sections are not all visible.');
+    }
+    expect(
+      agentBox.y,
+      `Your agent sits below Settings at ${viewport.width}px`,
+    ).toBeGreaterThanOrEqual(settingsBox.y + settingsBox.height);
+    expect(
+      logOutBox.y,
+      `Log out sits below Your agent at ${viewport.width}px`,
+    ).toBeGreaterThanOrEqual(agentBox.y + agentBox.height);
+  }
+});
