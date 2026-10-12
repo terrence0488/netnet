@@ -624,6 +624,11 @@ test('the value sheets carry the symbol, align, and stay inside', async ({ page 
   await page.setViewportSize(VIEWPORTS.narrow);
   await expectInside(add, add.getByLabel('As of'));
   await expectNoHorizontalScroll(page);
+  // Squeezed below phone widths: the native date control is wider on some engines (iOS
+  // Safari renders it wider than Chromium), so the field must never widen its sheet. Only
+  // the date is pinned here; whole-page scrolling below 320px is out of scope.
+  await page.setViewportSize({ width: 160, height: 700 });
+  await expectInside(add, add.getByLabel('As of'));
   if (size) await page.setViewportSize(size);
   await expectSoundScreen(page, testInfo);
   await page.keyboard.press('Escape');

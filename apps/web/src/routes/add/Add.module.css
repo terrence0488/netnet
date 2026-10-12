@@ -48,6 +48,7 @@
 
 .form {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-8);
   max-width: var(--measure-phone);
   padding-bottom: var(--inset-page-end);
