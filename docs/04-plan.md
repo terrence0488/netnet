@@ -4,8 +4,9 @@ Status: **approved** · Stage owner: Software engineering manager
 Inputs: `docs/01-prd.md` (§6 acceptance criteria), `docs/03-architecture.md`, `CONVENTIONS.md`
 
 > Phases are vertical slices, each ending in a checkpoint deployed to production that the Founder
-> can use. P1 and P2 have task briefs (`docs/phases/P1/tasks/`, `docs/phases/P2/tasks/`). Later
-> phases stay outlines until they are reached, and are planned then (WORKFLOW Stage 4).
+> can use. P1, P2 and P3 have task briefs (`docs/phases/P1/tasks/`, `docs/phases/P2/tasks/`,
+> `docs/phases/P3/tasks/`). P4 stays an outline until it is reached, and is planned then
+> (WORKFLOW Stage 4).
 
 ---
 
@@ -154,7 +155,7 @@ its deviations are in `decisions.md`, and T11, T13, T15 and T18 build on them.
 
 ## 4. P2 and later phases
 
-P2 is planned in detail below, with task briefs. P3–P4 stay outlines until they are reached.
+P2 and P3 are planned in detail below, with task briefs. P4 stays an outline until it is reached.
 
 ### P2 — Worth using on its own
 
@@ -255,40 +256,110 @@ flowchart LR
 
 ### P3 — Trust, ownership, comeback and Insights
 
-**Checkpoint:** everything an agent or the person changed is visible and reversible. The person can
-take their data away or delete it. Someone away for a month gets one gentle reminder, by push where
-they turned it on and by email otherwise. Each month, quarter and year is reviewable, on the web
-and through the agent.
+Status: briefed. Briefs: `docs/phases/P3/tasks/P3-T1.md` … `P3-T10.md`.
 
-**Criteria:** all of J7, J10 and J12; J2's country change and the delete in the audit log; J3's
-edit in the audit log; J5's revocation in Activity; all of J11, built last (below).
+#### Checkpoint
 
-**Tasks (outline):**
-- Ledger `activity`, `undo` (entry and batch, `UNDO_CONFLICT` naming the blocker); REST
-  `/api/activity*`; MCP `list_activity` and `undo`; `value_undone`, `value_corrected`.
-- The Activity screen: newest first, grouped by agent turn, undo of an entry or a turn.
-- Settings: default currency (re-derived from stored rates as one undoable `system` change),
-  country (adds the new pack's types, removes none), sign-out.
-- Export (JSON and CSV) and account deletion (a recent sign-in, the 30-day window stated first,
-  every connection revoked, events re-keyed, `account_deleted`).
-- The comeback reminder: `reminder_state` with a backfill, `touchChecked` on session API calls and
-  MCP `tools/call`, the three daily runs with the claim, 08:00–21:00 local, the 60-a-day email cap,
-  the email with one-click unsubscribe, opened tracking. Security-email retries move into the runs.
-- Web push: VAPID, the endpoints API, a service worker that handles `push` and `notificationclick`
-  only, the Home card, Settings → Notifications, the device lifecycle, the push events.
+On `https://‹domain›`, deployed by the production workflow:
 
-Built last in the phase, after the trust work above, so a slip shows against the phase rather
-than eating it (PRD §4.1):
-- `core.periods`: calendar periods from value dates, carried vs observed, each entry's stored
-  conversion, drivers ranked by contribution, filters and exclusions; golden tests.
-- The holding page's second card: the bar chart of its period changes with the
-  monthly / quarterly / yearly switch and paging, from the same period machinery.
-- The Insights screen: Monthly, Quarterly and Yearly; a period's drivers; its own filters and Don't
-  Show, persisted; placeholders and the single "what's needed" statement; `insights_viewed`.
-- `Ledger.periods` and the MCP tool `get_period_changes`.
+1. Activity shows every change newest-first, grouped by agent turn, with what changed, old → new,
+   client and time — and undo of one entry or a whole turn, with conflicts naming the blocker.
+   Revocation reads there too.
+2. Settings changes the default currency (every value re-derived from its stored rate, one
+   undoable `system` change) and the country (the new pack's types added, none removed), and
+   signs out.
+3. Export downloads everything as JSON or CSV; deletion states the 30-day window first, then
+   erases `ledger`, identity, sessions, grants, endpoints and reminder state, revokes every
+   connection, and stops every reminder at once.
+4. Someone away for 30 days gets one gentle reminder, at most three per absence and only in
+   their daytime — by push to every device they turned on, by email otherwise, with one-click
+   unsubscribe and opened tracking. The security-email retries run inside the same runs.
+5. Insights shows Monthly, Quarterly and Yearly change with drivers, through its own persisted
+   filters and exclusions; the holding page grows its period bar chart with the M/Q/Y switch
+   and paging; the agent gets `get_period_changes`.
+6. Every step fires its §3.5 event with `segment`.
 
-**Founder items:** F19 VAPID keys and the link-signing secret; a real iPhone (NetNet on the Home
-Screen) and an Android phone for Stage 6's manual push check (architecture §12 risk 16).
+#### Acceptance criteria in P3
+
+Stage 6 tests P3 against these criteria (PRD §6), and re-checks the P1 (§3.2) and P2 criteria
+for regressions.
+
+| Job | In P3 |
+|---|---|
+| **J2** | Changing country afterwards (empty accounts start over; otherwise the new pack's types are added and none removed; labels follow the current pack, outcomes and reasons stay) · a delete shown in the audit log |
+| **J3** | An edit shown in the audit log |
+| **J4** | The holding page's second card: the bar chart of its period changes with the monthly / quarterly / yearly switch and paging, carried marking, the shared placeholder when history is short |
+| **J5** | Revocation shown in Activity |
+| **J7** | All: newest-first log with what changed, old → new, client and time, web changes in the same log · undo of an entry, exact and itself logged · undo of a batch, together · `value_corrected` / `value_undone` on agent-written values |
+| **J10** | Export as JSON and CSV complete enough to rebuild a spreadsheet from · deletion (a recent sign-in, the 30-day window stated first, everything erased, connections revoked, reminders stopped, events re-keyed, `account_deleted`) · no screen or response carries another user's data, re-verified by test |
+| **J11** | All, built last in the phase (PRD §4.1): three views with period rows newest-first · drivers per period · own filters recomputing every figure · Don't Show exclusions persisting and leaving Home alone · placeholders with the single what's-needed statement · periods from value dates, carried marking, stored conversions · `insights_viewed {view}` |
+| **J12** | All: due at 30/60/90 with no check, never a fourth, any check restarts the clock · daytime only · push where on, email otherwise, verified addresses only · the exact wording, no amounts or names · the Home card rules · Settings → Notifications · the device lifecycle · unsubscribe and opened tracking |
+
+Non-functional requirements in P3: N1 (the new tool carries `outcome` and `latency_ms`), N3
+(undo completes the auditability P1 started), N7 (the sweep), N9 (every new event prop an
+enum; every `notify()` message free of amounts, totals and names), N10 (the deny-list scan
+covers the new code), N11 (periods from a pure `core` function).
+
+#### Tasks
+
+| Task | Title | Depends on | Parallel-safe | Founder items first |
+|---|---|---|---|---|
+| P3-T1 | Activity log and undo (Ledger, REST, MCP) | — | yes | — |
+| P3-T2 | The Activity screen | T1 | yes | — |
+| P3-T3 | Settings — currency, country, sign-out | — | yes | — |
+| P3-T4 | Export and account deletion | T3, T5, T6 | yes | — |
+| P3-T5 | The comeback reminder — timing, runs and email | — | yes | F19 (`LINK_SIGNING_SECRET`) |
+| P3-T6 | Web push — channel, devices and asking | T3 | yes | F19 (VAPID keys) |
+| P3-T7 | Periods — core, Ledger and the agent tool | T2, T4, T6 | yes | — |
+| P3-T8 | The holding page's period bar chart | T7 | yes | — |
+| P3-T9 | The Insights screen | T7 | yes | — |
+| P3-T10 | Responsive sweep and the P3 checkpoint | T2, T4, T6, T8, T9 | no | — |
+
+T4's dependency on T3 is ordering only (both extend Settings); on T5 and T6 it is real (the
+tables `destroy()` clears). T7's dependency is ordering only: Insights is built last in the
+phase so a slip shows against the phase rather than eating the trust work (PRD §4.1). T8 and
+T9 run in one wave from the same engine and share nothing new — common needs go through
+`core`. The reminder backfill starts every existing user's clock on deploy day (P3-T5), so
+nobody gets a surprise reminder.
+
+#### Order
+
+```mermaid
+flowchart LR
+  T1[T1 activity + undo] --> T2[T2 Activity screen]
+  T3[T3 settings] --> T6[T6 push] & T4[T4 export + deletion]
+  T5[T5 reminder] --> T4
+  T6 --> T4
+  T2 & T4 & T6 --> T7[T7 periods]
+  T7 --> T8[T8 holding chart] & T9[T9 Insights]
+  T2 & T4 & T6 & T8 & T9 --> T10[T10 sweep + checkpoint]
+```
+
+| Wave | Tasks |
+|---|---|
+| 1 | T1, T3, T5 |
+| 2 | T2, T6 |
+| 3 | T4 |
+| 4 | T7 |
+| 5 | T8, T9 |
+| 6 | T10 |
+
+#### Running the build
+
+- `stage: build P3` in a new session. The build session works wave by wave, dispatching one
+  engineer subagent per task, and hands off to a new session between waves when its context runs
+  heavy (STATE names the next wave). `stage: build P3-Tn` runs a single task.
+- One branch and one pull request per task (`p3-tn`, CONVENTIONS §15), each with its own preview
+  and Neon branch. A preview's `DATABASE_URL` is injected per-deployment by its Preview job: never
+  redeploy from the Vercel dashboard; re-run the Preview job instead.
+- After T10, `stage: test P3` in a fresh session (WORKFLOW Stage 6), against the criteria above
+  plus the P1 and P2 criteria. Suggested manual checks for Stage 6: a real iPhone (NetNet on the
+  Home Screen) and an Android phone receiving and opening a push reminder; inbox delivery of a
+  reminder email; one-click unsubscribe; a daytime-only send; revocation visible in Activity.
+
+**Founder items:** F19 VAPID keys and the link-signing secret (before T5/T6); a real iPhone
+(NetNet on the Home Screen) and an Android phone for Stage 6's manual push check (architecture
+§12 risk 16).
 
 ### P4 — Ready to launch
 
