@@ -6,6 +6,13 @@
 export type Message =
   /** The link that verifies a new account's email (PRD J1). `token` is Better Auth's. */
   | { kind: 'account.verify_email'; token: string }
+  /**
+   * The comeback reminder (PRD J12): push to every active device, email only when there is none
+   * or every push failed. `agentName` is the connected agent used most recently — the guide's name
+   * for `claude`/`chatgpt`, the registered name for `other` only when short and plain — or absent
+   * when no agent is connected or its name cannot be shown; the "Just ask" line is then left out.
+   */
+  | { kind: 'reminder.comeback'; agentName?: string | undefined }
   /** The link that sets a new password. `token` is Better Auth's, single use. */
   | { kind: 'account.reset_password'; token: string }
   /**

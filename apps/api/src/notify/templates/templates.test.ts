@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { Message, MessageKind, MessageOf } from '../message';
 import { privacyProblems } from '../privacy';
 import { EMAIL_VERIFIED_PAGE, RESET_PASSWORD_PAGE } from './account';
-import { renderEmail } from './index';
+import { renderEmail, renderPush } from './index';
 import { escapeHtml } from './layout';
+import { COMEBACK_LINE, REMINDER_OPEN_PATH, UNSUBSCRIBE_PAGE } from './reminder';
 import { AGENT_TAB, UNVERIFIED_NAME, dayAndTime } from './security';
 
 /**
@@ -21,6 +22,9 @@ const RESET_TOKEN = 'Qm9vazEyQ2hhcHRlcjM0WFla';
 
 /** When a fictional agent was connected: 5 Aug 2026, 05:32 in Singapore. */
 const CONNECTED_AT = '2026-08-04T21:32:00.000Z';
+
+/** A signed `?r=` token's shape; rendering never verifies it. */
+const TOKEN = 'r1.c29tZS1wYXlsb2Fk.c29tZS1zaWduYXR1cmU';
 
 const SAMPLES: { [K in MessageKind]: MessageOf<K>[] } = {
   'account.verify_email': [{ kind: 'account.verify_email', token: JWT }],
@@ -49,6 +53,11 @@ const SAMPLES: { [K in MessageKind]: MessageOf<K>[] } = {
       timeZone: 'Not/AZone',
     },
   ],
+  'reminder.comeback': [
+    { kind: 'reminder.comeback' },
+    { kind: 'reminder.comeback', agentName: 'Claude' },
+    { kind: 'reminder.comeback', agentName: 'My agent 2.0' },
+  ],
 };
 
 /** The line each kind's footer starts with: why it was sent. */
@@ -56,7 +65,21 @@ const REASON: Record<MessageKind, string> = {
   'account.verify_email': 'You’re getting this because',
   'account.reset_password': 'You’re getting this because',
   'security.agent_connected': 'We send this every time an agent is connected.',
+  'reminder.comeback': 'You’re getting this because',
 };
+
+/** How many links each kind's email carries: the button, and the reminder's unsubscribe. */
+const LINKS: Record<MessageKind, number> = {
+  'account.verify_email': 1,
+  'account.reset_password': 1,
+  'security.agent_connected': 1,
+  'reminder.comeback': 2,
+};
+
+/** The render context each kind needs: the reminder's signed token besides the origin. */
+function ctxOf(msg: Message) {
+  return msg.kind === 'reminder.comeback' ? { origin: ORIGIN, token: TOKEN } : { origin: ORIGIN };
+}
 
 const ALL: Message[] = Object.values(SAMPLES).flat();
 
@@ -75,16 +98,16 @@ describe('every message template', () => {
   it.each(ALL.map((msg) => [msg.kind, msg] as const))(
     '%s passes the privacy test',
     (_kind, msg) => {
-      expect(privacyProblems({ ...renderEmail(msg, { origin: ORIGIN }) }, THEIR_WORDS)).toEqual([]);
+      expect(privacyProblems({ ...renderEmail(msg, ctxOf(msg)) }, THEIR_WORDS)).toEqual([]);
     },
   );
 
   it.each(ALL.map((msg) => [msg.kind, msg] as const))(
     '%s is one line, repeated as the subject, with one button and a reason it was sent',
     (_kind, msg) => {
-      const { subject, html, text } = renderEmail(msg, { origin: ORIGIN });
+      const { subject, html, text } = renderEmail(msg, ctxOf(msg));
       expect(html).toContain(`>${escapeHtml(subject)}</h1>`);
-      expect(html.match(/<a /g)).toHaveLength(1);
+      expect(html.match(/<a /g)).toHaveLength(LINKS[msg.kind]);
       expect(text.startsWith(`${subject}\n`)).toBe(true);
       expect(text).toContain(REASON[msg.kind]);
     },
@@ -173,6 +196,58 @@ describe('the security email', () => {
       time: '12:00 pm',
     });
     expect(() => dayAndTime('not a time', 'UTC')).toThrow();
+  });
+});
+
+describe('the comeback reminder', () => {
+  const [alone, withClaude] = SAMPLES['reminder.comeback'] as [
+    MessageOf<'reminder.comeback'>,
+    MessageOf<'reminder.comeback'>,
+    MessageOf<'reminder.comeback'>,
+  ];
+
+  it('reads the PRD’s line, word for word', () => {
+    expect(COMEBACK_LINE).toBe('Your net worth is due for an update.');
+  });
+
+  it('is a push titled NetNet whose tap opens Home with the token', () => {
+    const push = renderPush(withClaude, { origin: ORIGIN, token: TOKEN });
+    expect(push).toEqual({
+      title: 'NetNet',
+      body: 'Your net worth is due for an update. Just ask Claude.',
+      url: `${ORIGIN}${REMINDER_OPEN_PATH}?r=${encodeURIComponent(TOKEN)}`,
+    });
+    expect(privacyProblems({ ...push }, THEIR_WORDS)).toEqual([]);
+    expect(renderPush(alone, { origin: ORIGIN, token: TOKEN }).body).toBe(
+      'Your net worth is due for an update.',
+    );
+  });
+
+  it('is an email with the line as its subject, one button and the unsubscribe', () => {
+    const { subject, html, text, headers } = renderEmail(withClaude, {
+      origin: ORIGIN,
+      token: TOKEN,
+    });
+    expect(subject).toBe(COMEBACK_LINE);
+    expect(text).toContain('Just ask Claude.');
+    expect(text).toContain(`Open NetNet: ${ORIGIN}${REMINDER_OPEN_PATH}?r=${TOKEN}`);
+    expect(text).toContain(
+      `To stop these emails, unsubscribe: ${ORIGIN}${UNSUBSCRIBE_PAGE}?token=${TOKEN}`,
+    );
+    expect(html).toContain(`href="${ORIGIN}${UNSUBSCRIBE_PAGE}?token=${TOKEN}"`);
+    expect(UNSUBSCRIBE_PAGE).toBe('/app/reminders/unsubscribe');
+    expect(headers).toEqual({
+      'List-Unsubscribe': `<${ORIGIN}/api/reminders/unsubscribe?token=${TOKEN}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    });
+    const plain = renderEmail(alone, { origin: ORIGIN, token: TOKEN });
+    expect(plain.text).not.toContain('Just ask');
+    expect(plain.html).not.toContain('Just ask');
+  });
+
+  it('refuses to render without its signed token', () => {
+    expect(() => renderEmail(alone, { origin: ORIGIN })).toThrow(/signed token/);
+    expect(() => renderPush(alone, { origin: ORIGIN })).toThrow(/signed token/);
   });
 });
 

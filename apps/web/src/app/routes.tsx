@@ -14,6 +14,7 @@ import { LogIn } from '../routes/login/LogIn';
 import { NotFound } from '../routes/not-found/NotFound';
 import { RouteError } from '../routes/not-found/RouteError';
 import { Onboarding, onboardingRoutes } from '../routes/onboarding/Onboarding';
+import { Unsubscribe } from '../routes/reminders/Unsubscribe';
 import { Reset } from '../routes/reset/Reset';
 import { SetPassword } from '../routes/signup/SetPassword';
 import { SignUp } from '../routes/signup/SignUp';
@@ -54,8 +55,8 @@ const bare = (title: string): RouteHandle => ({ title, chrome: false });
  * Every screen is a child of the shell. A route without chrome says so in its handle
  * (`{chrome: false}`); its title names it in the browser's title bar. The guards (guards.tsx) are
  * layout routes: sign-up and log-in for the signed out, onboarding until it is done, and the
- * screens with chrome for a signed-in, onboarded person. The reset and verify links' pages open in
- * either state.
+ * screens with chrome for a signed-in, onboarded person. The reset, verify and unsubscribe
+ * links' pages open in either state.
  */
 export const routes: RouteObject[] = [
   {
@@ -78,6 +79,11 @@ export const routes: RouteObject[] = [
           },
           { path: 'reset', Component: Reset, handle: bare('New password') },
           { path: 'verify', Component: Verify, handle: bare('Verify your email') },
+          {
+            path: 'reminders/unsubscribe',
+            Component: Unsubscribe,
+            handle: bare('Email reminders'),
+          },
           {
             path: 'onboarding',
             Component: Onboarding,

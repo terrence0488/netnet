@@ -99,13 +99,16 @@ function securityEmails(person: Person) {
   );
 }
 
-async function cron(): Promise<Response> {
-  const res = await target.app.request(`${ORIGIN}/api/cron/daily`, {
+async function cron(path: '/api/cron/daily' | '/api/cron/reminders'): Promise<Response> {
+  const res = await target.app.request(`${ORIGIN}${path}`, {
     headers: { Authorization: `Bearer ${CRON_SECRET}` },
   });
   await target.settle();
   return res;
 }
+
+const daily = () => cron('/api/cron/daily');
+const reminders = () => cron('/api/cron/reminders');
 
 describe('GET /api/agent/approval', () => {
   it('shows who is asking: the registered name, how it registered, its host and the scopes', async () => {
@@ -464,12 +467,12 @@ describe('the connection attempt', () => {
     const fresh = await startAttempt(silent);
     expect((await target.app.request(`${ORIGIN}/api/cron/daily`)).status).toBe(401);
     // (The sweep is every user's: other tests' attempts may fail in it too.)
-    await cron();
+    await daily();
     expect(await events(silent.userId, 'agent_connection_failed')).toEqual([]);
     expect(await events(quiet.userId, 'agent_connection_failed')).toEqual([]);
 
     later(1000);
-    const res = await cron();
+    const res = await daily();
     expect(res.status).toBe(200);
     expect((await body(res)).attemptsFailed).toBeGreaterThanOrEqual(2);
     const states = async (userId: string) =>
@@ -505,7 +508,7 @@ describe('the connection attempt', () => {
     expect(await events(busy.userId, 'agent_connection_failed')).toEqual([]);
 
     // A second run fails nothing twice.
-    await cron();
+    await daily();
     expect(await events(silent.userId, 'agent_connection_failed')).toHaveLength(1);
     expect(await events(quiet.userId, 'agent_connection_failed')).toHaveLength(1);
   });
@@ -576,7 +579,7 @@ describe('the security email', () => {
     // A second Allow is a second connection and a second email; the retry sends neither again.
     await claude().connect(person.browser);
     later(11 * MINUTE);
-    await cron();
+    await reminders();
     expect(securityEmails(person)).toHaveLength(2);
     expect(await events(person.userId, 'security_email_sent')).toHaveLength(2);
   });
@@ -599,7 +602,7 @@ describe('the security email', () => {
     expect(email?.rendered.html).toContain('&lt;img src=x onerror=alert(1)&gt;');
   });
 
-  it('is retried by the daily cron when Resend did not accept it, from 10 minutes to 7 days', async () => {
+  it('is retried by the reminder run when Resend did not accept it, from 10 minutes to 7 days', async () => {
     const person = await newPerson();
     target.emailDown.value = true;
     await claude().connect(person.browser);
@@ -610,23 +613,23 @@ describe('the security email', () => {
 
     // Not yet: younger than 10 minutes.
     later(9 * MINUTE);
-    expect(await body(await cron())).toMatchObject({ securityEmails: { sent: 0, failed: 0 } });
+    expect(await body(await reminders())).toMatchObject({ securityEmails: { sent: 0, failed: 0 } });
 
     // Resend still down: the run says it failed, and the email stays unsent.
     later(2 * MINUTE);
-    const down = await cron();
+    const down = await reminders();
     expect(down.status).toBe(502);
     expect(await body(down)).toMatchObject({ securityEmails: { sent: 0, failed: 1 } });
     expect(securityEmails(person)).toEqual([]);
 
     target.emailDown.value = false;
     later(24 * 60 * MINUTE);
-    const res = await cron();
+    const res = await reminders();
     expect(res.status).toBe(200);
     expect((await body(res)).securityEmails).toMatchObject({ sent: 1 });
     expect(securityEmails(person)).toHaveLength(1);
     expect(await events(person.userId, 'security_email_sent')).toHaveLength(1);
-    await cron();
+    await reminders();
     expect(securityEmails(person)).toHaveLength(1);
   });
 
@@ -637,7 +640,7 @@ describe('the security email', () => {
     await target.settle();
     target.emailDown.value = false;
     later(7 * 24 * 60 * MINUTE + MINUTE);
-    await cron();
+    await reminders();
     expect(securityEmails(person)).toEqual([]);
   });
 });
