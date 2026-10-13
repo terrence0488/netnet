@@ -317,9 +317,9 @@ function AddForm({
 /**
  * The person's tags as toggle chips, like the Choice row's answers: pressed chips fill tomato.
  * Always shown, like the prototype's Tags row; while there are no tags it says where to add
- * them.
+ * them. Shared with the Edit screen, which is this form without the value.
  */
-function TagsField({
+export function TagsField({
   tags,
   selected,
   onToggle,

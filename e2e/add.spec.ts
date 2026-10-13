@@ -373,6 +373,11 @@ test('amounts carry the symbol, fields align, and the date stays inside', async 
   await page.setViewportSize(VIEWPORTS.narrow);
   await expectInside(main, page.getByLabel('As of'));
   await expectNoHorizontalScroll(page);
+  // Squeezed below phone widths: the native date control is wider on some engines (iOS
+  // Safari renders it wider than Chromium), so the field must never widen its form. Only
+  // the date is pinned here; whole-page scrolling below 320px is out of scope.
+  await page.setViewportSize({ width: 160, height: 700 });
+  await expectInside(main, page.getByLabel('As of'));
   if (size) await page.setViewportSize(size);
   await expectSoundScreen(page, testInfo);
 

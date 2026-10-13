@@ -13,7 +13,7 @@ import {
 /**
  * The holding page (PRD J2, J3, J4): the latest value, the trend with the change over the
  * baseline, the history newest first, a new value, changed accessibility, corrected and deleted
- * values, archive and delete, tags, and the connect flow. All data is fictional.
+ * values, archive and delete, tags, the Edit screen, and the connect flow. All data is fictional.
  */
 test.use({ timezoneId: 'UTC' });
 
@@ -624,6 +624,11 @@ test('the value sheets carry the symbol, align, and stay inside', async ({ page 
   await page.setViewportSize(VIEWPORTS.narrow);
   await expectInside(add, add.getByLabel('As of'));
   await expectNoHorizontalScroll(page);
+  // Squeezed below phone widths: the native date control is wider on some engines (iOS
+  // Safari renders it wider than Chromium), so the field must never widen its sheet. Only
+  // the date is pinned here; whole-page scrolling below 320px is out of scope.
+  await page.setViewportSize({ width: 160, height: 700 });
+  await expectInside(add, add.getByLabel('As of'));
   if (size) await page.setViewportSize(size);
   await expectSoundScreen(page, testInfo);
   await page.keyboard.press('Escape');
@@ -640,6 +645,203 @@ test('the value sheets carry the symbol, align, and stay inside', async ({ page 
   );
   await expectInside(edit, edit.getByLabel('As of'));
   await expectSoundScreen(page, testInfo);
+});
+
+test('the menu offers Edit, Archive and Delete in that order', async ({ page }) => {
+  await page.goto('/app/holdings/hld_broker');
+  await page.getByRole('button', { name: 'Holding menu' }).click();
+  const menu = page.getByRole('dialog', { name: 'Brokerage account' });
+  const items = await menu.locator('a, button').allInnerTexts();
+  expect(items.filter((text) => text !== 'Cancel')).toStrictEqual(['Edit', 'Archive', 'Delete']);
+
+  const edit = menu.getByRole('link', { name: 'Edit', exact: true });
+  await expect(edit).toHaveAttribute('href', '/app/holdings/hld_broker/edit');
+  await edit.click();
+  await expect(page).toHaveURL(/\/app\/holdings\/hld_broker\/edit/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Edit Asset' })).toBeVisible();
+});
+
+test('edits the name, type, access and tags, and returns to the holding', async ({
+  page,
+}, testInfo) => {
+  let patch: Record<string, unknown> | undefined;
+  await page.route('**/api/holdings/hld_broker', async (route) => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    patch = route.request().postDataJSON() as Record<string, unknown>;
+    const row = {
+      ...BROKER,
+      name: 'Brokerage pot',
+      typeId: 'typ_prop',
+      access: 'illiquid',
+      accessReason: 'you’d have to sell it first',
+      tagIds: ['tag_1'],
+    };
+    await mockSnapshot(page, { ...LEDGER, dataVersion: 5, holdings: [row, FLAT] });
+    return route.fulfill({ json: { result: row, dataVersion: 5, warnings: [] } });
+  });
+
+  await page.goto('/app/holdings/hld_broker');
+  await page.getByRole('button', { name: 'Holding menu' }).click();
+  await page
+    .getByRole('dialog', { name: 'Brokerage account' })
+    .getByRole('link', { name: 'Edit', exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/app\/holdings\/hld_broker\/edit/);
+
+  // The prototype's edit mode: name, type, the access block and Tags — no currency, value
+  // or date.
+  await expect(page.getByRole('heading', { level: 1, name: 'Edit Asset' })).toBeVisible();
+  await expect(page.getByLabel('Asset Name')).toHaveValue('Brokerage account');
+  await expect(page.getByLabel('Type')).toHaveValue('typ_listed');
+  await expect(page.getByText(/listed investments can be sold within days/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Change', exact: true })).toBeVisible();
+  const chip = page.getByRole('button', { name: 'Retirement' });
+  await expect(chip).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByLabel('Currency')).toHaveCount(0);
+  await expect(page.getByLabel('Asset Value')).toHaveCount(0);
+  await expect(page.getByLabel('As of')).toHaveCount(0);
+  await expectSoundScreen(page, testInfo);
+
+  await page.getByLabel('Asset Name').fill('Brokerage pot');
+  await page.getByLabel('Type').selectOption({ label: 'Property' });
+  await expect(page.getByText('Do you live in it?')).toBeVisible();
+  await page.getByRole('button', { name: 'No', exact: true }).click();
+  await expect(page.getByText(/you’d have to sell it first/)).toBeVisible();
+  await chip.click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+
+  await expect(page).toHaveURL(/\/app\/holdings\/hld_broker$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Brokerage pot' })).toBeVisible();
+  expect(patch).toStrictEqual({
+    name: 'Brokerage pot',
+    typeId: 'typ_prop',
+    tagIds: ['tag_1'],
+    access: 'no',
+  });
+});
+
+test('the undecided edit starts from its “Not sure”, and deciding saves', async ({ page }) => {
+  let patch: Record<string, unknown> | undefined;
+  await page.route('**/api/holdings/hld_flat', async (route) => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    patch = route.request().postDataJSON() as Record<string, unknown>;
+    const row = { ...FLAT, access: 'locked', accessReason: 'it’s your home' };
+    await mockSnapshot(page, { ...LEDGER, dataVersion: 5, holdings: [BROKER, row] });
+    return route.fulfill({ json: { result: row, dataVersion: 5, warnings: [] } });
+  });
+
+  await page.goto('/app/holdings/hld_flat/edit');
+  await expect(page.getByRole('heading', { level: 1, name: 'Edit Asset' })).toBeVisible();
+  await expect(page.getByText('Do you live in it?')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Not sure' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.getByText(/Saving is fine as it is/)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Yes, it’s my home' }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+
+  await expect(page).toHaveURL(/\/app\/holdings\/hld_flat$/);
+  expect(patch).toStrictEqual({
+    name: 'Riverside flat',
+    typeId: 'typ_prop',
+    tagIds: [],
+    access: 'yes',
+  });
+});
+
+test('editing needs a name, and asks for it without saving', async ({ page }) => {
+  let patches = 0;
+  await page.route('**/api/holdings/hld_broker', async (route) => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    patches += 1;
+    return route.fulfill({ json: { result: BROKER, dataVersion: 5, warnings: [] } });
+  });
+
+  await page.goto('/app/holdings/hld_broker/edit');
+  await page.getByLabel('Asset Name').fill('');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByText('Give it a name.')).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/holdings\/hld_broker\/edit/);
+  expect(patches).toBe(0);
+});
+
+test('a liability edits with no accessibility and no access in the patch', async ({ page }) => {
+  const loan = holdingRow({
+    id: 'hld_loan',
+    name: 'Student loan',
+    kind: 'liability',
+    typeId: 'typ_loan',
+    access: null,
+  });
+  const withLoan = {
+    ...LEDGER,
+    types: [
+      ...TYPES,
+      {
+        id: 'typ_loan',
+        universal: 'loan',
+        packTypeKey: null,
+        customName: null,
+        sort: 3,
+        archived: false,
+      },
+    ],
+    holdings: [BROKER, FLAT, loan],
+    values: {
+      ...LEDGER.values,
+      hld_loan: [[day(2), 40_000, 'SGD', 40_000, 'web', null, 'val_loan']],
+    },
+  };
+  await mockSnapshot(page, withLoan);
+  await page.route('**/api/holdings/hld_loan/values*', (route) =>
+    route.fulfill({
+      json: {
+        items: [
+          valueRow({
+            id: 'val_loan',
+            holdingId: 'hld_loan',
+            date: day(2),
+            amountMinor: 40_000,
+            baseMinor: 40_000,
+          }),
+        ],
+        nextCursor: null,
+      },
+    }),
+  );
+  let patch: Record<string, unknown> | undefined;
+  await page.route('**/api/holdings/hld_loan', async (route) => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    patch = route.request().postDataJSON() as Record<string, unknown>;
+    await mockSnapshot(page, { ...withLoan, dataVersion: 5 });
+    return route.fulfill({ json: { result: loan, dataVersion: 5, warnings: [] } });
+  });
+
+  await page.goto('/app/holdings/hld_loan/edit');
+  await expect(page.getByRole('heading', { level: 1, name: 'Edit Liability' })).toBeVisible();
+  await expect(page.getByLabel('Liability Name')).toHaveValue('Student loan');
+  await expect(page.getByLabel('Type')).toHaveValue('typ_loan');
+  await expect(page.getByLabel('Type').locator('option')).toHaveCount(1);
+  await expect(page.getByText(/Counts toward/)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Not sure' })).toHaveCount(0);
+
+  await page.getByLabel('Liability Name').fill('Student loan (refinanced)');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page).toHaveURL(/\/app\/holdings\/hld_loan$/);
+  expect(patch).toStrictEqual({
+    name: 'Student loan (refinanced)',
+    typeId: 'typ_loan',
+    tagIds: [],
+  });
+});
+
+test('an unknown holding’s edit says so, with the way back', async ({ page }) => {
+  await page.goto('/app/holdings/hld_nope/edit');
+  await expect(page.getByText('This holding isn’t here any more.')).toBeVisible();
+  await page.locator('main').getByRole('link', { name: 'Home' }).click();
+  await expect(page).toHaveURL(/\/app$/);
 });
 
 test('a sound screen at phone and computer widths', async ({ page }, testInfo) => {

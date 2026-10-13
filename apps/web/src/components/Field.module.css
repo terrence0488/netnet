@@ -34,6 +34,9 @@
   width: 100%;
   /* An input's intrinsic width (a date's, in particular) never widens or overflows its column. */
   min-width: 0;
+  /* A date control renders wider on some engines (iOS Safari): the cap holds where min-width
+     does not. */
+  max-width: 100%;
   min-height: var(--hit);
   padding: var(--space-4) var(--inset-field);
   border: var(--border-edge) solid var(--edge);
@@ -49,4 +52,17 @@
 .box:focus {
   outline: none;
   box-shadow: var(--shadow-focus);
+}
+
+/* iOS gives date inputs an intrinsic width and centres the date: make them fill the column
+   like any field (prototype styles.css). */
+.box[type='date'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  text-align: left;
+}
+
+.box[type='date']::-webkit-date-and-time-value {
+  text-align: left;
 }

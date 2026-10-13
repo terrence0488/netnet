@@ -744,8 +744,9 @@ function TagsSheet({
 }
 
 /**
- * The holding's menu (PRD J4): archive and unarchive, and delete with a confirm step. Deleting
- * leaves the page for Home; the totals follow the write's data version, as on every screen.
+ * The holding's menu (PRD J4): Edit first, then archive and unarchive, then delete with a confirm
+ * step. Deleting leaves the page for Home; the totals follow the write's data version, as on
+ * every screen.
  */
 function MenuSheet({
   holding,
@@ -814,6 +815,9 @@ function MenuSheet({
         </div>
       ) : (
         <div>
+          <Link to={`/holdings/${holding.id}/edit`} className={styles.menuOpt} onClick={onClose}>
+            <span className={styles.grow}>Edit</span>
+          </Link>
           <button
             type="button"
             className={styles.menuOpt}
