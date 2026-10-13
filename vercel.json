@@ -10,6 +10,11 @@
   },
   "outputDirectory": "dist",
   "regions": ["sin1"],
+  "crons": [
+    { "path": "/api/cron/reminders", "schedule": "0 1 * * *" },
+    { "path": "/api/cron/reminders", "schedule": "0 9 * * *" },
+    { "path": "/api/cron/reminders", "schedule": "0 17 * * *" }
+  ],
   "git": { "deploymentEnabled": false },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },

@@ -4,6 +4,7 @@ import { crossRate, type Fx } from '../content/fx';
 import { contentStore, type ContentStore } from '../content/store';
 import { database, type Database } from '../db/client';
 import { ensureProfile, type Profile } from '../db/profiles';
+import { touchChecked } from '../db/reminders';
 import { appVersion } from '../events/app-version';
 import { track, type Track } from '../events/track';
 import { withUser, type WithUser } from '../ledger/with-user';
@@ -40,9 +41,9 @@ export interface McpDeps {
   /** A tool call on the connection: `last_used_at`, and `first_call_at` the first time. */
   touch: (connectionId: string) => Promise<void>;
   /**
-   * P3 (J12) HOOK: `touchChecked(userId)` — the person has checked NetNet today — goes here. It
-   * runs after a `tools/call`, read or write, and only there: `tools/list` and the handshake
-   * must never reach it. A no-op until P3 implements it.
+   * `touchChecked(userId)` (J12): the person has checked NetNet today. It runs after a
+   * `tools/call`, read or write, and only there: `tools/list` and the handshake must never
+   * reach it (see `callTool`).
    */
   touchChecked: (userId: string) => Promise<void>;
 }
@@ -61,5 +62,5 @@ export const appMcpDeps: McpDeps = {
   origin: publicOrigin,
   markLive: markAttemptLive,
   touch: touchConnection,
-  touchChecked: () => Promise.resolve(),
+  touchChecked: (userId) => touchChecked(database(), userId, new Date()),
 };

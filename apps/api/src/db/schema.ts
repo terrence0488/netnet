@@ -383,6 +383,34 @@ export const agentConnection = core.table(
   ],
 );
 
+/**
+ * The comeback reminder's clock per person (architecture §7.10, PRD J12): when they last checked
+ * NetNet, when the next reminder is due, and how many went since the check. Dates are calendar
+ * dates in the person's `time_zone`. `enabled` is Settings → Notifications' Reminders (off: nothing
+ * by any channel); `emailEnabled` is Email reminders (off: no reminder email). `lastOpenedAt` is a
+ * watermark: the `last_sent_at` of the latest reminder opened, so each reminder's first open fires
+ * `reminder_opened` exactly once. Only `apps/api/src/db/**` touches this (CONVENTIONS §3).
+ */
+export const reminderState = core.table(
+  'reminder_state',
+  {
+    userId: text('user_id').primaryKey(),
+    enabled: boolean('enabled').notNull().default(true),
+    emailEnabled: boolean('email_enabled').notNull().default(true),
+    lastCheckedOn: date('last_checked_on', { mode: 'string' }),
+    nextDueOn: date('next_due_on', { mode: 'string' }),
+    sentSinceCheck: integer('sent_since_check').notNull().default(0),
+    lastSentAt: instant('last_sent_at'),
+    /** The channel the latest reminder went by: `push` or `email`. */
+    lastChannel: text('last_channel'),
+    lastOpenedAt: instant('last_opened_at'),
+  },
+  (t) => [
+    check('reminder_state_sent_since_check', sql`${t.sentSinceCheck} >= 0`),
+    checkOneOf('reminder_state', t.lastChannel, ['push', 'email'] as const),
+  ],
+);
+
 export const connectionAttempt = core.table(
   'connection_attempt',
   {

@@ -19,6 +19,11 @@ import { eventStore } from '../../src/db/analytics';
 import type { ContentRef } from '../../src/db/content';
 import { ensureProfile } from '../../src/db/profiles';
 import { countHit } from '../../src/db/rate-limits';
+import {
+  countReminderEmailsToday,
+  getReminderState,
+  recordReminderSent,
+} from '../../src/db/reminders';
 import { createTrack } from '../../src/events/track';
 import { agentRoutes } from '../../src/http/agent';
 import { holdingsRoutes } from '../../src/http/holdings';
@@ -38,9 +43,10 @@ import { noStore, requestContext } from '../../src/lib/request-context';
 import { sessionContext } from '../../src/lib/session';
 import { mcpRoutes } from '../../src/mcp/route';
 import type { McpDeps } from '../../src/mcp/deps';
-import { createNotify } from '../../src/notify/notify';
+import { REMINDER_EMAILS_PER_DAY, createNotify } from '../../src/notify/notify';
 import { accountOf } from '../../src/db/profiles';
 import { captureChannel } from '../../src/notify/email';
+import { signReminderToken } from '../../src/notify/links';
 import { FIXED_NOW, type TestDatabase } from '../isolation/harness';
 import { COUNTRY_V1, GENERIC_V1, fakeRates, newUserId } from '../ledger/support';
 import { FakeMetadataServer } from '../support/cimd-server';
@@ -63,6 +69,9 @@ const TEST_USER = 'x-test-user';
 
 /** A test-only secret: 32 bytes of nothing in particular. */
 const SECRET = 'test-secret-0123456789abcdef0123456789abcdef';
+
+/** A test-only link-signing secret for the reminder's tokens. */
+const LINK_SECRET = 'test-link-secret-0123456789abcdef';
 
 export const COUNTRIES: Countries = {
   QZ: { currency: 'EUR', pack: 'qz' },
@@ -211,7 +220,11 @@ export async function connectAgent(
 
 export async function mcpTestApp(
   db: TestDatabase,
-  options: { verify?: (auth: Auth) => VerifyAccessToken } = {},
+  options: {
+    verify?: (auth: Auth) => VerifyAccessToken;
+    /** `touchChecked` after a `tools/call`; a no-op unless the test passes the real one. */
+    touchChecked?: (userId: string) => Promise<void>;
+  } = {},
 ): Promise<McpTestApp> {
   const store = createContentStore({ source: memoryContent(), clock: () => FIXED_NOW.getTime() });
   const fx = createFx(fakeRates());
@@ -230,6 +243,14 @@ export async function mcpTestApp(
     recipient: (userId) => accountOf(db.appDb, userId),
     email: { id: 'email', send: (to, rendered) => emails.send(to, rendered) },
     origin: ORIGIN,
+    reminders: {
+      state: (userId) => getReminderState(db.appDb, userId),
+      sent: (userId, channel) => recordReminderSent(db.appDb, userId, channel),
+      emailBudgetLeft: async () =>
+        (await countReminderEmailsToday(db.appDb, FIXED_NOW)) < REMINDER_EMAILS_PER_DAY,
+      sign: (userId, channel, sentAt) =>
+        signReminderToken(LINK_SECRET, { userId, channel, sentAt }),
+    },
   }));
   const auth = createAuth({
     db: db.appDb,
@@ -239,6 +260,7 @@ export async function mcpTestApp(
     notify,
     track,
     appVersion: () => 'test123',
+    clock: () => FIXED_NOW,
     background,
     fetchClientMetadata: cimd.fetch,
   });
@@ -289,7 +311,7 @@ export async function mcpTestApp(
     origin: () => ORIGIN,
     markLive: (userId, connectionId) => agent.attempts.markLive(userId, connectionId),
     touch: (connectionId) => agent.connections.touch(connectionId),
-    touchChecked: () => Promise.resolve(),
+    touchChecked: options.touchChecked ?? (() => Promise.resolve()),
   };
 
   const app = new Hono<AppEnv>();

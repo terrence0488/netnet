@@ -52,6 +52,8 @@ const COVERED_ELSEWHERE: Record<string, string> = {
   'DELETE /api/agent/connections/:id': 'test/isolation/agent.test.ts',
   'GET /api/agent/approval': 'test/isolation/agent.test.ts',
   'POST /api/agent/approval': 'test/isolation/agent.test.ts',
+  'POST /api/reminders/opened': 'test/reminders/routes.test.ts',
+  'POST /api/reminders/unsubscribe': 'test/reminders/routes.test.ts',
   'POST /mcp': 'test/mcp/isolation.test.ts',
 };
 
@@ -76,6 +78,7 @@ const NO_USER_DATA: Record<string, string> = {
   'GET /api/content/:kind/:ref': 'published content, the same for everyone',
   'GET /api/cron/fx': 'the cron secret, and exchange rates only',
   'GET /api/cron/daily': 'the cron secret; answers counts only',
+  'GET /api/cron/reminders': 'the cron secret; answers counts only',
   'GET /.well-known/oauth-authorization-server': 'OAuth metadata, the same for everyone',
   'GET /.well-known/oauth-protected-resource': 'OAuth metadata, the same for everyone',
   'GET /.well-known/oauth-protected-resource/mcp': 'OAuth metadata, the same for everyone',

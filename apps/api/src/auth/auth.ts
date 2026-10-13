@@ -7,6 +7,7 @@ import { createAuthMiddleware, createEmailVerificationToken } from 'better-auth/
 import { authAdapter } from '../db/auth-adapter';
 import { database, type Database } from '../db/client';
 import { createProfile } from '../db/profiles';
+import { createReminderState, todayInZone } from '../db/reminders';
 import { socialProvidersFromEnv, type SocialConfig } from './social';
 import { appVersion } from '../events/app-version';
 import { track, type Track } from '../events/track';
@@ -49,6 +50,8 @@ export interface AuthDeps {
   notify: Notify;
   track: Track;
   appVersion: () => string;
+  /** The clock sign-up dates the reminder's clock by. */
+  clock: () => Date;
   /** Runs work after the response: the emails and the event. */
   background: (task: Promise<unknown>) => void;
   /** Fetches agents' CIMD documents (see `OAuthPluginOptions`). */
@@ -196,9 +199,13 @@ export function createAuth(deps: AuthDeps) {
           // After sign-up's transaction commits, so the account can be read from elsewhere.
           after: async (user, ctx) => {
             try {
-              await createProfile(deps.db, user.id, signUpTimeZone(ctx?.body));
+              const timeZone = signUpTimeZone(ctx?.body);
+              await createProfile(deps.db, user.id, timeZone);
+              // Signing up counts as a check: the first reminder is due in 30 days. A failure
+              // here is repaired by the first `touchChecked`, which makes the row.
+              await createReminderState(deps.db, user.id, todayInZone(timeZone, deps.clock()));
             } catch {
-              // GET /api/me makes it with its defaults; the sign-up itself has succeeded.
+              // GET /api/me makes the profile with its defaults; the sign-up itself succeeded.
               log('profile_create_failed', { userId: user.id, errorCode: 'INTERNAL' });
             }
             const method = signUpMethod(ctx?.params);
@@ -255,6 +262,7 @@ export function auth(): Auth {
     notify,
     track,
     appVersion,
+    clock: () => new Date(),
     background: (task) =>
       inBackground(task, () => log('auth_task_failed', { errorCode: 'INTERNAL' })),
     fetchClientMetadata: fetchClientMetadataResource,

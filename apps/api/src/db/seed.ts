@@ -1,7 +1,7 @@
 import { seedLedger } from '../ledger/seed';
 import { createWithUser } from '../ledger/with-user';
 import type { Database } from './client';
-import { agentConnection, fxRate, profile } from './schema';
+import { agentConnection, fxRate, profile, reminderState } from './schema';
 
 /**
  * Fictional data for a preview or a local database (`pnpm db:seed`): one demo person with a
@@ -41,6 +41,10 @@ export async function seed(db: Database): Promise<void> {
       lastUsedAt: SEEDED_AT,
       securityEmailSentAt: SEEDED_AT,
     })
+    .onConflictDoNothing();
+  await db
+    .insert(reminderState)
+    .values({ userId: DEMO_USER_ID, lastCheckedOn: '2026-07-31', nextDueOn: '2026-08-30' })
     .onConflictDoNothing();
   await db
     .insert(fxRate)

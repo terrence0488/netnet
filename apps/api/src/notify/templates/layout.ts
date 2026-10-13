@@ -15,6 +15,11 @@ export interface EmailParts {
   button: { label: string; url: string; lead?: string };
   /** Why this was sent. */
   footer: string;
+  /**
+   * A link in the footer's sentence, at the sentence's size (design-system "Email"): the
+   * reminder's one-click unsubscribe. `lead` joins it to the sentence ("… emails. ‹lead› ‹link›").
+   */
+  footerLink?: { lead: string; label: string; url: string };
 }
 
 const ESCAPES: Record<string, string> = {
@@ -102,7 +107,14 @@ ${
     'font-size': type.meta.size,
     'line-height': '1.5',
     color: ink['ink-3'],
-  })}">${e(parts.footer)}</p>
+  })}">${e(parts.footer)}${
+    parts.footerLink === undefined
+      ? ''
+      : ` ${e(parts.footerLink.lead)} <a href="${e(parts.footerLink.url)}" style="${style({
+          color: ink['ink-3'],
+          'font-size': type.meta.size,
+        })}">${e(parts.footerLink.label)}</a>`
+  }</p>
 </td></tr></table>
 </td></tr></table>
 </body>
@@ -112,7 +124,9 @@ ${
     parts.line,
     ...(parts.detail === undefined ? [] : [parts.detail]),
     `${parts.button.lead === undefined ? '' : `${parts.button.lead} `}${parts.button.label}: ${parts.button.url}`,
-    parts.footer,
+    parts.footerLink === undefined
+      ? parts.footer
+      : `${parts.footer} ${parts.footerLink.lead} ${parts.footerLink.label}: ${parts.footerLink.url}`,
   ].join('\n\n');
   return { html, text: `${text}\n` };
 }

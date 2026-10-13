@@ -5,6 +5,7 @@ import {
   geoSchema,
   profilePatchSchema,
   profileSchema,
+  reminderTokenSchema,
   timeZoneSchema,
 } from './account';
 
@@ -78,5 +79,18 @@ describe('profileSchema and geoSchema', () => {
 
   it('list the onboarding steps in order', () => {
     expect(ONBOARDING_STATES).toStrictEqual(['country', 'segment', 'start', 'basics', 'done']);
+  });
+});
+
+describe('reminderTokenSchema', () => {
+  it('accepts the token and refuses anything around it', () => {
+    expect(reminderTokenSchema.parse({ token: 'r1.payload.sig' })).toStrictEqual({
+      token: 'r1.payload.sig',
+    });
+    expect(reminderTokenSchema.safeParse({}).success).toBe(false);
+    expect(reminderTokenSchema.safeParse({ token: '' }).success).toBe(false);
+    expect(reminderTokenSchema.safeParse({ token: 'x'.repeat(1025) }).success).toBe(false);
+    expect(reminderTokenSchema.safeParse({ token: 'r1.a.b', extra: 1 }).success).toBe(false);
+    expect(reminderTokenSchema.safeParse({ token: 42 }).success).toBe(false);
   });
 });

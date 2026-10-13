@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { useMe, useTimeZoneSync } from '../api/account';
 import { startSessionTracker } from '../api/events';
+import { useReminderOpenParam } from '../api/reminders';
 import { ToastViewport } from '../components/Toast';
 import { Wordmark } from '../components/Wordmark';
 import { cx } from '../components/cx';
@@ -58,6 +59,9 @@ export function Shell() {
   useEffect(() => {
     document.title = title;
   }, [title]);
+
+  // The comeback reminder's `?r=` token, posted and dropped on every screen (PRD J12).
+  useReminderOpenParam();
 
   return (
     <div className={cx(styles.shell, !chrome && styles.bare)} data-chrome={chrome}>
