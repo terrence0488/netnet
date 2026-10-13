@@ -9,9 +9,11 @@ import { getHoldingInputSchema } from './get-holding';
 import { getNetWorthHistoryInputSchema } from './get-net-worth-history';
 import { getSetupGuideInputSchema } from './get-setup-guide';
 import { getTaxonomyInputSchema } from './get-taxonomy';
+import { listActivityInputSchema } from './list-activity';
 import { listHoldingsInputSchema } from './list-holdings';
 import { recordValuesInputSchema } from './record-values';
 import { mcpErrorSchema } from './shared';
+import { undoInputSchema } from './undo';
 import { updateHoldingInputSchema } from './update-holding';
 import { updateValueInputSchema } from './update-value';
 import { upsertTagInputSchema } from './upsert-tag';
@@ -164,6 +166,24 @@ describe('mcp input schemas', () => {
     const ok = deleteTagInputSchema.safeParse({ tag_id: 'tag_01J', merge_into: 'tag_02K' });
     expect(ok.success).toBe(true);
     expect(deleteTagInputSchema.safeParse({}).success).toBe(false);
+  });
+
+  it('list_activity pages up to 100, optionally one batch', () => {
+    expect(listActivityInputSchema.safeParse({}).success).toBe(true);
+    expect(
+      listActivityInputSchema.safeParse({ cursor: 'abc', limit: 100, batch_id: 'bat_01J' }).success,
+    ).toBe(true);
+    expect(listActivityInputSchema.safeParse({ limit: 101 }).success).toBe(false);
+    expect(listActivityInputSchema.safeParse({ limit: 0 }).success).toBe(false);
+  });
+
+  it('undo takes exactly one of entry_id and batch_id', () => {
+    expect(undoInputSchema.safeParse({ entry_id: 'aud_01J' }).success).toBe(true);
+    expect(undoInputSchema.safeParse({ batch_id: 'bat_01J' }).success).toBe(true);
+    expect(undoInputSchema.safeParse({}).success).toBe(false);
+    expect(undoInputSchema.safeParse({ entry_id: 'aud_01J', batch_id: 'bat_01J' }).success).toBe(
+      false,
+    );
   });
 
   it('rejects unknown fields', () => {

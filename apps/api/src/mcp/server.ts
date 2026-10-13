@@ -17,7 +17,7 @@ import type { ToolDef } from './tool';
 
 /**
  * The MCP server (architecture §3, §7.4): the official SDK's `McpServer`, stateless, negotiating
- * three protocol versions, with P1's sixteen tools. `tools/list` and the handshake are the SDK's;
+ * three protocol versions, with the registry's tools. `tools/list` and the handshake are the SDK's;
  * `tools/call` is overridden below (public API), so a malformed call fails like every other
  * error — `isError` with `structuredContent.error {code, message, fields?}` — and every call
  * fires `agent_tool_called`, instead of the SDK's text-only error with no event.
@@ -104,7 +104,7 @@ export interface McpExtra extends Record<string, unknown> {
   scopes: readonly string[];
 }
 
-/** One request's server: the sixteen tools over its context, on the three versions. */
+/** One request's server: the registry's tools over its context, on the three versions. */
 export function createMcpServer(extra: McpExtra, version: string): McpServer {
   const server = new McpServer(
     { name: SERVER_NAME, version, title: SERVER_TITLE },

@@ -1,5 +1,7 @@
 import {
   MAX_NAME_LENGTH,
+  type ActivityQuery,
+  type AuditEntry,
   type ContextInput,
   type CreateHolding,
   type Holding,
@@ -19,12 +21,15 @@ import {
   type Tag,
   type TagInput,
   type TypeInput,
+  type UndoResult,
+  type UndoTarget,
   type UserType,
   type Value,
   type ValuePatch,
   type ValueResult,
   type Write,
 } from '@netnet/contracts';
+import { activity, undo } from './activity';
 import { createHolding, deleteHolding, updateHolding } from './holdings';
 import { setPrefs } from './prefs';
 import { context, getHolding, history, listHoldings, snapshot } from './reads';
@@ -48,7 +53,7 @@ export type { LedgerContent, LedgerOptions } from './scope';
  * The Ledger (architecture §7.3): the only code that touches the `ledger` schema, and the one
  * implementation behind REST and MCP. Every write is one transaction with its audit rows,
  * `data_version + 1`, its batch, its warnings and its domain events; the edge `track()`s the
- * events. Undo, activity, a base currency change, export and erasure come with P3; periods with P5.
+ * events. A base currency change, export and erasure come with P3; periods with P5.
  */
 export interface Ledger {
   /** The ledger in `baseCurrency`, with every universal type and the pack chain's types. Once. */
@@ -59,6 +64,8 @@ export interface Ledger {
   listHoldings(q: HoldingQuery): Promise<Page<HoldingView>>;
   getHolding(id: string, values?: PageReq): Promise<HoldingDetail>;
   history(q: HistoryQuery): Promise<Series>;
+  /** The audit log, newest first, optionally one agent turn. */
+  activity(p: ActivityQuery): Promise<Page<AuditEntry>>;
 
   createHolding(i: CreateHolding): Promise<Write<Holding>>;
   updateHolding(id: string, p: HoldingPatch): Promise<Write<Holding>>;
@@ -71,6 +78,8 @@ export interface Ledger {
   deleteType(id: string, moveTo?: string): Promise<Write<void>>;
   upsertTag(i: TagInput): Promise<Write<Tag>>;
   deleteTag(id: string, mergeInto?: string): Promise<Write<void>>;
+  /** Undoes one entry, or a whole agent turn newest first and all or nothing. */
+  undo(t: UndoTarget): Promise<Write<UndoResult>>;
   setPrefs(p: PrefsPatch): Promise<Write<Prefs>>;
   applyPackTypes(pack: PackRef): Promise<Write<UserType[]>>;
   /**
@@ -87,6 +96,7 @@ export const LEDGER_READS = [
   'listHoldings',
   'getHolding',
   'history',
+  'activity',
 ] as const satisfies readonly (keyof Ledger)[];
 
 /** The methods that write, each through `withUser(…, {write: true})` with its audit rows. */
@@ -102,6 +112,7 @@ export const LEDGER_WRITES = [
   'deleteType',
   'upsertTag',
   'deleteTag',
+  'undo',
   'setPrefs',
   'applyPackTypes',
   'changeCountry',
@@ -117,6 +128,7 @@ export function openLedger(tx: LedgerTx, options: LedgerOptions): Ledger {
     listHoldings: (q) => listHoldings(s, q),
     getHolding: (id, values) => getHolding(s, id, values),
     history: (q) => history(s, q),
+    activity: (p) => activity(s, p),
     createHolding: (i) => createHolding(s, i),
     updateHolding: (id, p) => updateHolding(s, id, p),
     deleteHolding: (id) => deleteHolding(s, id),
@@ -127,6 +139,7 @@ export function openLedger(tx: LedgerTx, options: LedgerOptions): Ledger {
     deleteType: (id, moveTo) => deleteType(s, id, moveTo),
     upsertTag: (i) => upsertTag(s, i),
     deleteTag: (id, mergeInto) => deleteTag(s, id, mergeInto),
+    undo: (t) => undo(s, t),
     setPrefs: (p) => setPrefs(s, p),
     applyPackTypes: (pack) => applyPackTypes(s, pack),
     changeCountry: (i) => changeCountry(s, i),

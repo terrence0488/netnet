@@ -9,6 +9,7 @@ import {
   VALUE_FX_SOURCES,
   WARNING_CODES,
   accessAnswerSchema,
+  activityQuerySchema,
   createHoldingSchema,
   historyQuerySchema,
   holdingFilterSchema,
@@ -21,6 +22,7 @@ import {
   prefsPatchSchema,
   tagInputSchema,
   typeInputSchema,
+  undoTargetSchema,
   valuePatchSchema,
 } from './ledger';
 
@@ -42,7 +44,12 @@ describe('vocabularies and limits', () => {
     expect([MAX_NAME_LENGTH, MAX_TAGS_PER_HOLDING, MAX_VALUES_PER_CALL]).toEqual([120, 20, 200]);
     expect(VALUE_FX_SOURCES).toEqual(['ecb', 'fallback', 'same', 'user', 'agent']);
     expect(WARNING_CODES).toEqual(['SAME_DATE_REPLACED']);
-    expect(DOMAIN_EVENT_NAMES).toEqual(['holding_created', 'value_recorded', 'value_corrected']);
+    expect(DOMAIN_EVENT_NAMES).toEqual([
+      'holding_created',
+      'value_recorded',
+      'value_corrected',
+      'value_undone',
+    ]);
     expect(PREF_KEYS).toEqual(['homeFilter', 'insightsFilter', 'baseline', 'sort']);
     expect(HOLDING_SORTS).toContain('value_desc');
   });
@@ -230,6 +237,21 @@ describe('prefsPatchSchema and holdingFilterSchema', () => {
 });
 
 describe('queries', () => {
+  it('pages activity up to 100, optionally one batch, and undo takes one target', () => {
+    expect(
+      activityQuerySchema.safeParse({ cursor: 'abc', limit: 100, batchId: 'bat_01J' }).success,
+    ).toBe(true);
+    expect(activityQuerySchema.safeParse({}).success).toBe(true);
+    expect(paths(activityQuerySchema.safeParse({ limit: 101 }))).toEqual(['limit']);
+    expect(paths(activityQuerySchema.safeParse({ batchId: 7 }))).toEqual(['batchId']);
+    expect(undoTargetSchema.safeParse({ entryId: 'aud_01J' }).success).toBe(true);
+    expect(undoTargetSchema.safeParse({ batchId: 'bat_01J' }).success).toBe(true);
+    expect(undoTargetSchema.safeParse({}).success).toBe(false);
+    expect(undoTargetSchema.safeParse({ entryId: 'aud_01J', batchId: 'bat_01J' }).success).toBe(
+      false,
+    );
+  });
+
   it('pages values up to 500 and holdings up to 100', () => {
     expect(pageReqSchema.safeParse({ cursor: 'abc', limit: 500 }).success).toBe(true);
     expect(paths(pageReqSchema.safeParse({ limit: 501 }))).toEqual(['limit']);
