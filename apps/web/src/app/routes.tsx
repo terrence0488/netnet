@@ -1,5 +1,6 @@
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { Account } from '../routes/account/Account';
+import { Activity } from '../routes/activity/Activity';
 import { Add } from '../routes/add/Add';
 import { Edit } from '../routes/add/Edit';
 import { Agent } from '../routes/agent/Agent';
@@ -126,6 +127,11 @@ export const routes: RouteObject[] = [
                 handle: { title: 'Archived' } satisfies RouteHandle,
               },
               { path: 'agent', Component: Agent, handle: { title: 'Agent' } satisfies RouteHandle },
+              {
+                path: 'activity',
+                Component: Activity,
+                handle: { title: 'Activity' } satisfies RouteHandle,
+              },
               {
                 path: 'account',
                 Component: Account,

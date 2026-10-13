@@ -12,17 +12,18 @@ export interface NavEntry {
   readonly icon: NavIconName;
   /** Paths whose screens belong to this entry, so it stays marked while one of them is open. */
   readonly owns: readonly string[];
-  /** Where it shows. Both by default; the prototype keeps Activity in the sidebar only. */
+  /** Where it shows. Both by default; a sidebar-only entry names `['sidebar']`. */
   readonly places?: readonly NavPlace[];
 }
 
 /**
- * The prototype's tabs, as far as P1 goes: Home, the Agent tab, and Account, which holds Log out
- * until P3's settings join it (design-system §7).
+ * The tabs, as far as P3 goes: Home, the Agent tab, the Activity log (in both, so a phone reaches
+ * it too), and Account, which holds Log out until P3's settings join it (design-system §7).
  */
 export const NAV: readonly NavEntry[] = [
   { to: '/', label: 'Home', icon: 'home', owns: ['/', '/add', '/holdings', '/archived'] },
   { to: '/agent', label: 'Agent', icon: 'agent', owns: ['/agent', '/connect'] },
+  { to: '/activity', label: 'Activity', icon: 'activity', owns: ['/activity'] },
   { to: '/account', label: 'Account', icon: 'account', owns: ['/account'] },
 ];
 
