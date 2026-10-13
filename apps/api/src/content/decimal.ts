@@ -76,6 +76,17 @@ export function divideDecimal(
 }
 
 /**
+ * `a × b`, exactly: the product of two finite decimals is finite, so nothing is rounded. Both are
+ * positive plain decimal strings; the result is one too.
+ */
+export function multiplyDecimal(a: string, b: string): string {
+  const x = parse(a);
+  const y = parse(b);
+  if (x.digits === 0n || y.digits === 0n) return '0';
+  return format(x.digits * y.digits, -(x.scale + y.scale));
+}
+
+/**
  * A rate as a JSON number becomes a decimal string. JavaScript prints a double with the fewest
  * digits that read back as the same double, which for a published rate is the digits it was
  * published with; exponent notation (`1e-7`) is expanded.

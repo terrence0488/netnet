@@ -172,6 +172,7 @@ export function accountsApp(
       // These suites are about the profile; making the ledger is test/http's (me-init).
       initLedger: () => Promise.resolve(),
       changeLedgerCountry: () => Promise.resolve(),
+      changeLedgerCurrency: () => Promise.resolve(),
     }),
   );
   app.route('/api/geo', geoRoutes(countries));

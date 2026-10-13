@@ -237,6 +237,75 @@ describe('changeCountry', () => {
     expect(again.dataVersion).toBe(write.dataVersion);
   });
 
+  it('moving back with a holding removes nothing and leaves outcomes as applied', async () => {
+    const userId = await suite.newUser('EUR', 'qz');
+    const cash = await suite.as(userId).write((l) =>
+      l.createHolding({
+        name: 'Current account',
+        kind: 'asset',
+        universal: 'cash',
+        currency: 'EUR',
+      }),
+    );
+    const home = await suite.as(userId).write((l) =>
+      l.createHolding({
+        name: 'Flat',
+        kind: 'asset',
+        universal: 'property',
+        currency: 'EUR',
+        access: 'home',
+      }),
+    );
+    const first = await typesOf(userId);
+    expect(first.some((t) => t.pack_type_key === 'auto_loan')).toBe(true);
+    const before = await suite.as(userId).read((l) => l.snapshot());
+    const version = await dataVersion(suite, userId);
+
+    const write = await suite
+      .as(userId)
+      .write((l) => l.changeCountry({ baseCurrency: 'USD', pack: suite.content.ref(null) }));
+
+    // Generic adds nothing the ledger lacks: every type stays, by id, and nothing is written.
+    expect(await typesOf(userId)).toEqual(first);
+    expect(write.dataVersion).toBe(version);
+    const after = await suite.as(userId).read((l) => l.snapshot());
+    expect(after.baseCurrency).toBe('EUR');
+    for (const id of [cash.result.id, home.result.id]) {
+      const was = before.holdings.find((h) => h.id === id)!;
+      const now = after.holdings.find((h) => h.id === id)!;
+      expect(now).toMatchObject({
+        typeId: was.typeId,
+        access: was.access,
+        accessReason: was.accessReason,
+        accessUntil: was.accessUntil,
+        accessBasis: was.accessBasis,
+      });
+    }
+    expect(after.holdings.find((h) => h.id === home.result.id)).toMatchObject({
+      access: 'locked',
+      accessReason: 'it is your home',
+    });
+    expect(await orphans(userId)).toEqual([]);
+  });
+
+  it('moving back with no holding starts over in the generic types', async () => {
+    const userId = await suite.newUser('EUR', 'qz');
+    const first = await typesOf(userId);
+    expect(first.some((t) => t.pack_type_key === 'auto_loan')).toBe(true);
+
+    await suite
+      .as(userId)
+      .write((l) => l.changeCountry({ baseCurrency: 'USD', pack: suite.content.ref(null) }));
+
+    const types = await typesOf(userId);
+    expect(types.map(({ universal, pack_type_key }) => ({ universal, pack_type_key }))).toEqual(
+      UNIVERSALS.map((universal) => ({ universal, pack_type_key: null })),
+    );
+    expect(types.filter((t) => first.some((f) => f.id === t.id))).toEqual([]);
+    expect((await suite.as(userId).read((l) => l.snapshot())).baseCurrency).toBe('USD');
+    expect(await orphans(userId)).toEqual([]);
+  });
+
   it('refuses a currency not in circulation, and needs the ledger', async () => {
     const userId = await suite.newUser('USD', null);
     const refused = await appError(

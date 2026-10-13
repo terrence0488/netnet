@@ -23,7 +23,7 @@ import { createTrack } from '../../src/events/track';
 import { agentRoutes } from '../../src/http/agent';
 import { holdingsRoutes } from '../../src/http/holdings';
 import type { LedgerDeps } from '../../src/http/ledger-edge';
-import { ledgerCountryChange, ledgerInit, meRoutes } from '../../src/http/me';
+import { ledgerCountryChange, ledgerCurrencyChange, ledgerInit, meRoutes } from '../../src/http/me';
 import { prefsRoutes } from '../../src/http/prefs';
 import { snapshotRoutes } from '../../src/http/snapshot';
 import { tagsRoutes } from '../../src/http/tags';
@@ -331,6 +331,7 @@ export async function mcpTestApp(
       countries: () => Promise.resolve(COUNTRIES),
       initLedger: ledgerInit(db.withUser, ledgerDeps.options),
       changeLedgerCountry: ledgerCountryChange(db.withUser, ledgerDeps.options),
+      changeLedgerCurrency: ledgerCurrencyChange(db.withUser, ledgerDeps.options),
     }),
   );
   app.route('/api/snapshot', snapshotRoutes(ledgerDeps));
