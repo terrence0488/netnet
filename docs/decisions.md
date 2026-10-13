@@ -30,14 +30,14 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Free with no billing during the test market. Whatever ships free stays free; money comes only from capabilities added later (PRD §4.2) | A price would confound the demand signal; every scope choice is therefore a revenue choice |
 | Unlimited MCP read and write is permanently free | The differentiator is what drives adoption, and adoption is what this phase must produce |
 | Backward-looking analysis is free and in v1; forward-looking projection built by NetNet is reserved. The user's agent may project freely | "Historical vs projective" is a line that holds; "better charts are paid" would not |
-| Insights ships at launch and is built last (P5), after the MCP layer and analytics (P1) | Founder judged it core; it is the one v1 item that does not serve the experiment, so a slip shows against the launch date instead of eating the experiment's work |
+| Insights ships at launch and is built last within P3, after the trust and comeback work | Founder judged it core; it is the one v1 item that does not serve the experiment, so a slip shows against the phase instead of eating the trust work |
 | Liabilities are in v1 | Net worth is meaningless without debt, and the same value model covers it |
 | Income and expense tracking is neither in scope nor reserved | The balance sheet is the part nobody has; it is the first thing to reconsider if affordability questions dominate M7 |
 | No in-app AI chat and no financial-education content | Follows from no inference; opinionated defaults and the user's agent carry the education cost |
 | Net Worth Goals, value notes and chart marks are out of v1 | No job needs them; goals edge toward reserved projection |
 | Running cost ≈$0 to 100 users and <$50/month to 1,000, holding indefinitely; reliability and security never trade against cost | Self-funded, open-ended runway; a failing MCP call kills trust in the core bet |
 | Success is sign-ups and engagement. After 8 weeks, M1 < 25, M3 < 15%, M7 < 20% or M6 < 10% is a kill reading, read on P-B and P-C only | One yardstick with an explicit exit; a blended reading would hide a segment failing |
-| The holding page's period bar chart ships with P5, on Insights' period machinery | Building period aggregation for one chart in P2 would duplicate what P5 builds for Insights; the trend and history rows carry the P2 holding page |
+| The holding page's period bar chart ships with P3, on Insights' period machinery | Building period aggregation for one chart in P2 would duplicate what P3 builds for Insights; the trend and history rows carry the P2 holding page |
 
 ## Users and measurement
 
@@ -119,7 +119,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 
 | Decision | Why |
 |---|---|
-| v1 is built in five phases: P1 the core loop (sign up, add, connect, ask, the agent writes), P2 standalone value, P3 trust, ownership and the comeback reminder, P4 launch readiness, P5 Insights (`04-plan.md`) | Thin vertical slices with the riskiest assumptions (A1, A2, A4) first; everything the experiment depends on comes before Insights |
+| v1 is built in four phases: P1 the core loop (sign up, add, connect, ask, the agent writes), P2 standalone value, P3 trust, ownership, the comeback reminder and Insights, P4 launch readiness (`04-plan.md`) | Thin vertical slices with the riskiest assumptions (A1, A2, A4) first; Insights is built last within P3 |
 | Every phase ends on production, deployed only by the Founder's manual workflow; production stays unannounced until launch | Each checkpoint is tested where users will be, and nothing reaches production without the Founder |
 | A capability lands in the Ledger, REST and MCP in the same phase; its screen may follow later | One implementation, so the agent is never behind the UI (J6) |
 | A throwaway spike proved OAuth and MCP with real Claude before the auth and MCP work; its verdict (`docs/phases/P1/spike.md`) sets the library and its settings | The newest parts (the OAuth provider with CIMD, MCP 2026-07-28) are proven with a real client before anything depends on them |

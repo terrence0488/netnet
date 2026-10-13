@@ -1,10 +1,10 @@
 # Project State
 
 ## Current
-Stage: Build P2 (T9–T10 fixes)
+Stage: P2
 Phase: P2
-Status: in-progress
-Next action: `stage: test P2` (fresh session).
+Status: approved
+Next action: `stage: plan` (P3 task briefs).
 **Branch:** `p2-t10` (from `main`, CONVENTIONS §15).
 
 ## Approvals
@@ -16,18 +16,14 @@ Next action: `stage: test P2` (fresh session).
 | Architecture | **approved** | 2026-09-29 | `docs/03-architecture.md`, `CONVENTIONS.md` |
 | Plan | **approved** | 2026-10-08 | `docs/04-plan.md`, `docs/phases/P1/tasks/`, `docs/phases/P2/tasks/` |
 | P1 | **approved** | 2026-10-08 | Test report reviewed; Claude computer shots shipped (#61) |
-| P2 | in-progress | | T1–T6 done; T7 sweep done, prod steps open; T8 deferred; triage 2026-10-11 confirmed, T9–T10 done |
+| P2 | **approved** | 2026-10-12 | Test report + hands-on; Account and date review fixups in (#76) |
 | P3 | not-started | | |
 | P4 | not-started | | |
-| P5 | not-started | | |
 
 ## Handoff note (last session)
-P2-T10 done on `p2-t10`: menu Edit/Archive/Delete, new Edit screen (name, type,
-access, Tags; no currency/value/date) at `holdings/:id/edit`, saving via PATCH
-and returning to the holding. Contract verify found no backend gaps (PATCH and
-`update_holding` already take all four, audited). Unit 1250, lint, typecheck
-green (manager re-ran); holding E2E 48 + add/taxonomy 40 green at 390/1280/320.
-Still open: baseCurrency write API; P3+ gaps (Insights, Activity, reminders,
-settings, export, delete); T8 waits on Founder phone screenshots; iOS Safari
-look at Stage 6. QA `qa-p1-20261008@example.com` (S$5,328) excludable, P3-only
-delete. Tracker: https://claude.ai/artifact/UkJfDYaAAi8gJV1aBbk3nB.
+P2 approved 2026-10-12 after hands-on: Account single-column and iOS date fixes
+landed on `p2-t10` (3 commits past the tested `30e7188`, each verified; date
+confirmed on the Founder's iPhone). PR #76 still open — merge before P3 builds.
+T8 still waits on F11 phone shots (non-blocking). This file + the test report
+are uncommitted on `p2-t10`. P5 is merged into P3 (Insights last in the phase).
+Next: `stage: plan` writes the P3 task briefs, now including J11.

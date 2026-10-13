@@ -11,10 +11,10 @@ Inputs: `docs/01-prd.md` (§6 acceptance criteria), `docs/03-architecture.md`, `
 
 ## 1. How v1 is delivered
 
-Five phases. The riskiest assumption goes first: that a person can connect Claude or ChatGPT to
+Four phases. The riskiest assumption goes first: that a person can connect Claude or ChatGPT to
 their own balance sheet, ask it something, and let it write (A1, A2, A4). Everything the experiment
 depends on (the MCP layer, the §3.5 analytics, the distribution assets) comes before Insights, which
-is built last (PRD §4.1).
+is built last within P3 (PRD §4.1).
 
 **Rules that hold in every phase**
 
@@ -27,7 +27,7 @@ is built last (PRD §4.1).
 4. **Additive endpoints, fields, parameters or message kinds that the architecture implies** (for
    example, the approval page's API) are added to architecture §7 by the build and listed in the
    task report. Any other change to §7 is stop-and-raise (CONVENTIONS §12).
-5. **Launch (Stage 8) needs all five phases approved.**
+5. **Launch (Stage 8) needs all four phases approved.**
 
 ## 2. Phases at a glance
 
@@ -35,9 +35,8 @@ is built last (PRD §4.1).
 |---|---|---|---|
 | **P1** | **Ask your agent about your real position** | Sign up by email, confirm the country, add holdings by hand and see what you could use; connect Claude (or any MCP agent through "Other agent") in one flow; the agent answers from `get_financial_context` and writes values that appear in the app, marked as its own. Instrumented, isolated, backed up, probed | J1–J3 (core), J5, J6, J8; J10 isolation |
 | **P2** | **Worth using on its own** | Google and Apple sign-in; onboarding's start screen and the basics; the full Home (trend, allocation, baseline, filters, staleness, the agent handoff); the full holding page; types and tags | J1–J5 (rest), J9 |
-| **P3** | **Trust, ownership and the comeback** | Activity with undo of an entry or an agent turn; settings (currency, country); export and account deletion; the comeback reminder by web push or email; the security email's retries | J2 (country change), J7, J10, J12 |
+| **P3** | **Trust, ownership, comeback and Insights** | Activity with undo of an entry or an agent turn; settings (currency, country); export and account deletion; the comeback reminder by web push or email; the security email's retries; monthly, quarterly and yearly change with drivers, filters and exclusions; `get_period_changes` | J2 (country change), J7, J10, J12, J11 |
 | **P4** | **Ready to launch** | The landing page; the metrics per segment; usage and SLO alerts; all ten packs reviewed; guides and directory listings ready; the launch note; the M12 harness | G-D1–G-D4, M12, packs |
-| **P5** | **Insights** | Monthly, quarterly and yearly change with drivers, filters and exclusions; `get_period_changes` | J11 |
 
 ## 3. P1 — Ask your agent about your real position
 
@@ -155,7 +154,7 @@ its deviations are in `decisions.md`, and T11, T13, T15 and T18 build on them.
 
 ## 4. P2 and later phases
 
-P2 is planned in detail below, with task briefs. P3–P5 stay outlines until they are reached.
+P2 is planned in detail below, with task briefs. P3–P4 stay outlines until they are reached.
 
 ### P2 — Worth using on its own
 
@@ -175,7 +174,7 @@ On `https://‹domain›`, deployed by the production workflow:
    handoff. An empty Home offers one action and one alternative, with or without an agent.
 4. A holding opens its own trend with a range bar and paged history with expandable rows;
    values edit and delete; holdings archive and delete from the top-right menu; tags assign.
-   Its period bar chart lands in P5 with the period machinery.
+   Its period bar chart lands in P3 with the period machinery.
 5. Types and tags add, rename, merge and delete from the web; the Add form takes tags.
 6. Stale holdings are labelled on list and detail. Every step fires its §3.5 event. The phone
    screenshots render in the connect guides.
@@ -190,7 +189,7 @@ regressions.
 | **J1** | Sign-up and sign-in by Google and Apple, verified, with the official buttons, `method` on the sign-up events · the "Let's start" screen and the basics (the pack's checklist, follow-ups only after a yes, each answer saved at once, Skip, Back with removal logged, "Done for now", `via: guided`, resume, the P-A walk-through) · the agent route from onboarding and the blank Home after it · the empty Home's full rule, with and without an agent |
 | **J2** | Tags in the Add form · add, rename, merge and delete types and tags, holdings follow, nothing orphaned · archive and unarchive · delete from the web (audited in the rows; the log screen is P3) |
 | **J3** | Edit a value on the web (amount, date, currency): history, totals and charts recompute, the edit is audited (shown in P3), `value_corrected` fires |
-| **J4** | All except the holding bar chart: total, trend and allocation (carousel, side by side on a computer), the position ledger · the six baselines, every figure relative to the one in force and labelled, the baseline's name the control · trend ranges · a holding's trend with range bar, newest-first history with expandable rows, top-right menu (its period bar chart waits for P5) · the trend read by hover, tap, drag and arrow keys, a plain swipe still scrolling · the "Need more data" placeholder · sort (both value directions, type, money/percent change) and the filter sheet (Show Only, chips, AND/OR, Don't Show, archived, Apply) with the active filter visible · phone usable without sideways scrolling, computer side-by-side layout |
+| **J4** | All except the holding bar chart: total, trend and allocation (carousel, side by side on a computer), the position ledger · the six baselines, every figure relative to the one in force and labelled, the baseline's name the control · trend ranges · a holding's trend with range bar, newest-first history with expandable rows, top-right menu (its period bar chart waits for P3) · the trend read by hover, tap, drag and arrow keys, a plain swipe still scrolling · the "Need more data" placeholder · sort (both value directions, type, money/percent change) and the filter sheet (Show Only, chips, AND/OR, Don't Show, archived, Apply) with the active filter visible · phone usable without sideways scrolling, computer side-by-side layout |
 | **J5** | The same connect flow from onboarding and from a holding, `entry` carried · the prompt handoff for an empty or stale Home (the starting and update prompts, prefill where the client supports it, Copy where not, no financial data in prompts) |
 | **J9** | All: staleness labels on list and detail · the stale count on Home, handed to a connected agent or offering to connect one · no scheduled stale-holding message of any kind |
 
@@ -254,14 +253,15 @@ flowchart LR
 
 **Founder items:** F17 Google, F18 Apple, F11 remainder (phone shots for T8).
 
-### P3 — Trust, ownership and the comeback
+### P3 — Trust, ownership, comeback and Insights
 
 **Checkpoint:** everything an agent or the person changed is visible and reversible. The person can
 take their data away or delete it. Someone away for a month gets one gentle reminder, by push where
-they turned it on and by email otherwise.
+they turned it on and by email otherwise. Each month, quarter and year is reviewable, on the web
+and through the agent.
 
 **Criteria:** all of J7, J10 and J12; J2's country change and the delete in the audit log; J3's
-edit in the audit log; J5's revocation in Activity.
+edit in the audit log; J5's revocation in Activity; all of J11, built last (below).
 
 **Tasks (outline):**
 - Ledger `activity`, `undo` (entry and batch, `UNDO_CONFLICT` naming the blocker); REST
@@ -276,6 +276,16 @@ edit in the audit log; J5's revocation in Activity.
   the email with one-click unsubscribe, opened tracking. Security-email retries move into the runs.
 - Web push: VAPID, the endpoints API, a service worker that handles `push` and `notificationclick`
   only, the Home card, Settings → Notifications, the device lifecycle, the push events.
+
+Built last in the phase, after the trust work above, so a slip shows against the phase rather
+than eating it (PRD §4.1):
+- `core.periods`: calendar periods from value dates, carried vs observed, each entry's stored
+  conversion, drivers ranked by contribution, filters and exclusions; golden tests.
+- The holding page's second card: the bar chart of its period changes with the
+  monthly / quarterly / yearly switch and paging, from the same period machinery.
+- The Insights screen: Monthly, Quarterly and Yearly; a period's drivers; its own filters and Don't
+  Show, persisted; placeholders and the single "what's needed" statement; `insights_viewed`.
+- `Ledger.periods` and the MCP tool `get_period_changes`.
 
 **Founder items:** F19 VAPID keys and the link-signing secret; a real iPhone (NetNet on the Home
 Screen) and an Android phone for Stage 6's manual push check (architecture §12 risk 16).
@@ -310,20 +320,6 @@ listings and launch note ready to submit and post.
   versus a spreadsheet upload, scored blind. Each run's API spend is approved by the Founder first.
 
 **Founder items:** F20–F23.
-
-### P5 — Insights
-
-**Checkpoint:** Insights per J11 on production, on the web and through `get_period_changes`,
-plus the holding page's period bar chart.
-
-**Tasks (outline):**
-- `core.periods`: calendar periods from value dates, carried vs observed, each entry's stored
-  conversion, drivers ranked by contribution, filters and exclusions; golden tests.
-- The holding page's second card: the bar chart of its period changes with the
-  monthly / quarterly / yearly switch and paging, from the same period machinery.
-- The Insights screen: Monthly, Quarterly and Yearly; a period's drivers; its own filters and Don't
-  Show, persisted; placeholders and the single "what's needed" statement; `insights_viewed`.
-- `Ledger.periods` and the MCP tool `get_period_changes`.
 
 ## 5. Founder setup checklist
 
@@ -381,14 +377,14 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | J1 | P1, P2 |
 | J2 | P1, P2, P3 |
 | J3 | P1, P2 (edit), P3 (in the log) |
-| J4 | P2, P5 (holding bar chart) |
+| J4 | P2, P3 (holding bar chart) |
 | J5 | P1, P2 (other entries, handoff) |
 | J6 | P1 (undo in P3) |
 | J7 | P3 |
 | J8 | P1 (M12 in P4) |
 | J9 | P2 |
 | J10 | P1 (isolation), P3 |
-| J11 | P5 |
+| J11 | P3 |
 | J12 | P3 |
 | G-D1–G-D4 | P4 |
 | §2.3 packs | P1 (machinery; generic, SG, MY, GB), P4 (the other seven; all ten reviewed) |
@@ -399,7 +395,7 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | `holding_created {via: guided}` | P2 |
 | `value_undone`, `reminder_sent`, `reminder_opened`, `push_prompt_shown`, `push_prompt_result`, `push_enabled`, `push_disabled`, `account_deleted` | P3 |
 | `landing_view` | P4 |
-| `insights_viewed` | P5 |
+| `insights_viewed` | P3 |
 
 ## 7. Delivery risks
 
