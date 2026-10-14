@@ -1,5 +1,7 @@
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { Account } from '../routes/account/Account';
+import { DeleteAccount } from '../routes/account/DeleteAccount';
+import { Export } from '../routes/account/Export';
 import { General } from '../routes/account/General';
 import { Notifications } from '../routes/account/Notifications';
 import { Add } from '../routes/add/Add';
@@ -153,6 +155,16 @@ export const routes: RouteObject[] = [
                 path: 'account/taxonomy',
                 Component: Taxonomy,
                 handle: { title: 'Types and tags' } satisfies RouteHandle,
+              },
+              {
+                path: 'account/export',
+                Component: Export,
+                handle: { title: 'Export' } satisfies RouteHandle,
+              },
+              {
+                path: 'account/delete',
+                Component: DeleteAccount,
+                handle: { title: 'Delete account' } satisfies RouteHandle,
               },
               {
                 path: '*',

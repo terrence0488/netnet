@@ -247,6 +247,14 @@ export async function setRemindersEnabled(
     });
 }
 
+/**
+ * Deletes the reminder state (`DELETE /api/account`, PRD J10): every reminder stops at once, and
+ * no `push_disabled` fires.
+ */
+export async function deleteReminderState(db: Executor, userId: string): Promise<void> {
+  await db.delete(reminderState).where(eq(reminderState.userId, userId));
+}
+
 /** Turns email reminders off (the unsubscribe) or back on, making the row if it is missing. */
 export async function setEmailReminders(db: Executor, userId: string, on: boolean): Promise<void> {
   await db

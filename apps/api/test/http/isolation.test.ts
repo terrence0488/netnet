@@ -46,6 +46,8 @@ type Route = (typeof ROUTES)[number];
 const COVERED_ELSEWHERE: Record<string, string> = {
   'GET /api/me': 'test/isolation/me.test.ts',
   'PATCH /api/me': 'test/isolation/me.test.ts',
+  'GET /api/export': 'test/http/export.test.ts',
+  'DELETE /api/account': 'test/http/account.test.ts',
   'POST /api/agent/attempts': 'test/isolation/agent.test.ts',
   'GET /api/agent/attempts/:id': 'test/isolation/agent.test.ts',
   'GET /api/agent/connections': 'test/isolation/agent.test.ts',

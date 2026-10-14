@@ -37,6 +37,17 @@ export async function segmentOf(db: Executor, userId: string): Promise<Segment> 
   return rows[0]?.segment ?? 'unknown';
 }
 
+/**
+ * Re-keys an account's events to `randomId` on deletion (architecture §6.4): they still count,
+ * and they no longer point at anyone. `randomId` is a fresh `usr_` id that belongs to no account.
+ * Needs migration 0007's `SELECT (user_id), UPDATE (user_id)` grant — the WHERE reads the column,
+ * the SET writes it — the only read `netnet_app` may do to this table. No `RETURNING`: nothing
+ * else of the row may come back.
+ */
+export async function rekeyEvents(db: Executor, userId: string, randomId: string): Promise<void> {
+  await db.update(event).set({ userId: randomId }).where(eq(event.userId, userId));
+}
+
 export function eventStore(db: Executor): EventStore {
   return {
     segmentOf: (userId) => segmentOf(db, userId),

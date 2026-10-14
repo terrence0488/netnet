@@ -503,3 +503,41 @@ export interface ValueResult {
   replaced: boolean;
   warnings: Warning[];
 }
+
+/* ---------------------------------------------------------------- export */
+
+/**
+ * `GET /api/export?format=` (architecture §7.2, PRD J10): the full bundle as JSON, or one flat
+ * values table as CSV.
+ */
+export const exportFormatSchema = z.enum(['json', 'csv']);
+export type ExportFormat = z.infer<typeof exportFormatSchema>;
+
+/** A type as exported: the stored row plus the label the current pack gives it. */
+export interface ExportType extends UserType {
+  /** The type's name: the user's own, else the current pack's label. */
+  label: string;
+}
+
+/**
+ * `GET /api/export?format=json`: everything, to rebuild a spreadsheet from — the accessibility
+ * outcome and the answer behind it ride on each holding. Before the ledger exists (no country
+ * confirmed yet) the bundle is empty, with a null currency and version.
+ */
+export interface ExportBundle {
+  exportedAt: string;
+  baseCurrency: string | null;
+  dataVersion: number | null;
+  types: ExportType[];
+  tags: Tag[];
+  holdings: Holding[];
+  /** Every value, by holding, oldest first. */
+  values: Value[];
+}
+
+/**
+ * The CSV export's header (P3-T4, an additive detail under plan rule 4): one row per value, in the
+ * bundle's order. Amounts are decimals in major units; tags are `;`-separated names.
+ */
+export const EXPORT_CSV_HEADER =
+  'holding_id,holding_name,kind,type,currency,date,amount,base_amount,base_currency,fx_rate,fx_rate_date,fx_source,source,client,access,access_reason,tags';

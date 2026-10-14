@@ -25,13 +25,19 @@ export function sessionFromCookie(auth: () => Auth): ResolveSession {
     });
     for (const cookie of headers.getSetCookie()) c.header('Set-Cookie', cookie, { append: true });
     if (!response || !isId(response.user.id, 'usr')) return null;
-    return { userId: response.user.id, emailVerified: response.user.emailVerified };
+    return {
+      userId: response.user.id,
+      emailVerified: response.user.emailVerified,
+      signedInAt: new Date(response.session.createdAt),
+    };
   };
 }
 
 export interface VerifiedSession {
   userId: string;
   emailVerified: boolean;
+  /** When this session was signed in, when the resolver knows. */
+  signedInAt?: Date;
 }
 
 /** The signed-in person, or `UNAUTHENTICATED`, which sends the web app to sign in. */
@@ -40,7 +46,36 @@ export async function requireSession(c: Context<AppEnv>): Promise<VerifiedSessio
   if (user === null) {
     throw new AppError('UNAUTHENTICATED', 'Sign in first: this needs a signed-in session.');
   }
-  return { userId: user.userId, emailVerified: user.emailVerified };
+  return {
+    userId: user.userId,
+    emailVerified: user.emailVerified,
+    ...(user.signedInAt === undefined ? {} : { signedInAt: user.signedInAt }),
+  };
+}
+
+/** How fresh the sign-in must be to delete the account (architecture §7.2, PRD J10). */
+export const RECENT_SIGN_IN_MS = 10 * 60_000;
+
+/**
+ * The signed-in person with a sign-in in the last 10 minutes, or `REAUTH_REQUIRED`, which sends
+ * the web app to sign in again. An unknown sign-in time refuses too: only a known-fresh session
+ * may delete the account. `now` is the clock the tests move.
+ */
+export async function requireRecentSignIn(
+  c: Context<AppEnv>,
+  now: () => Date = () => new Date(),
+): Promise<VerifiedSession> {
+  const session = await requireSession(c);
+  if (
+    session.signedInAt === undefined ||
+    now().getTime() - session.signedInAt.getTime() > RECENT_SIGN_IN_MS
+  ) {
+    throw new AppError(
+      'REAUTH_REQUIRED',
+      'Sign in again first: deleting the account needs a sign-in from the last 10 minutes.',
+    );
+  }
+  return session;
 }
 
 /**

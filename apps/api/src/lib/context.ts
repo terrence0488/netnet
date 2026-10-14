@@ -6,6 +6,8 @@ export interface SessionUser {
   userId: string;
   /** Whether the account's email is verified: connecting an agent needs it (PRD J1, J5). */
   emailVerified: boolean;
+  /** When this session was signed in: deleting the account needs a recent one (PRD J10). */
+  signedInAt?: Date;
   /** Set when the profile was loaded with the session; `track()` reads it itself otherwise. */
   segment?: Segment;
 }

@@ -9,6 +9,8 @@ import { eventStore } from '../../src/db/analytics';
 import type { ContentRef } from '../../src/db/content';
 import { ensureProfile } from '../../src/db/profiles';
 import { createTrack } from '../../src/events/track';
+import { accountRoutes } from '../../src/http/account';
+import { exportRoutes } from '../../src/http/export';
 import { holdingsRoutes } from '../../src/http/holdings';
 import type { LedgerDeps } from '../../src/http/ledger-edge';
 import { ledgerCountryChange, ledgerCurrencyChange, ledgerInit, meRoutes } from '../../src/http/me';
@@ -38,6 +40,12 @@ import { captureWaitUntil, type CapturedWaitUntil } from '../support/wait-until'
 
 /** The header a test names its signed-in user with. Only this test app reads it. */
 const TEST_USER = 'x-test-user';
+
+/**
+ * The header a test backdates its sign-in with (epoch milliseconds): `DELETE /api/account` needs
+ * a sign-in from the last 10 minutes. Left out, the session signed in just now.
+ */
+const TEST_SIGNED_IN_AT = 'x-test-signed-in-at';
 
 /** A small country list: one with a pack, two without. */
 export const COUNTRIES: Countries = {
@@ -110,7 +118,10 @@ export function ledgerApp(db: TestDatabase): LedgerApp {
     originCheck(() => ['http://localhost:5173']),
     sessionContext((c) => {
       const userId = c.req.header(TEST_USER);
-      return Promise.resolve(userId ? { userId, emailVerified: true } : null);
+      if (!userId) return Promise.resolve(null);
+      const at = c.req.header(TEST_SIGNED_IN_AT);
+      const signedInAt = new Date(at === undefined || at === '' ? Date.now() : Number(at));
+      return Promise.resolve({ userId, emailVerified: true, signedInAt });
     }),
   );
   app.route(
@@ -130,6 +141,20 @@ export function ledgerApp(db: TestDatabase): LedgerApp {
   app.route('/api/types', typesRoutes(deps));
   app.route('/api/tags', tagsRoutes(deps));
   app.route('/api/prefs', prefsRoutes(deps));
+  app.route('/api/export', exportRoutes(deps));
+  // The re-auth clock is real time, like the sessions' sign-in times (see `aged`).
+  app.route(
+    '/api/account',
+    accountRoutes({
+      db: () => db.appDb,
+      withUser: deps.withUser,
+      profile: deps.profile,
+      options: deps.options,
+      track: deps.track,
+      appVersion: deps.appVersion,
+      clock: () => new Date(),
+    }),
+  );
   app.notFound(handleNotFound);
   app.onError(handleError);
 
@@ -183,7 +208,7 @@ export interface Person {
   get(path: string, headers?: Record<string, string>): Promise<Response>;
   post(path: string, json: unknown): Promise<Response>;
   patch(path: string, json: unknown): Promise<Response>;
-  delete(path: string): Promise<Response>;
+  delete(path: string, headers?: Record<string, string>): Promise<Response>;
 }
 
 export function person(target: LedgerApp, userId: string): Person {
@@ -192,7 +217,17 @@ export function person(target: LedgerApp, userId: string): Person {
     get: (path, headers = {}) => send(target, userId, 'GET', path, { headers }),
     post: (path, json) => send(target, userId, 'POST', path, { json }),
     patch: (path, json) => send(target, userId, 'PATCH', path, { json }),
-    delete: (path) => send(target, userId, 'DELETE', path),
+    delete: (path, headers = {}) => send(target, userId, 'DELETE', path, { headers }),
+  };
+}
+
+/** Signs `p` in `minutesAgo` minutes back: past 10, `DELETE /api/account` refuses. */
+export function aged(p: Person, minutesAgo: number): Person {
+  const at = Date.now() - minutesAgo * 60_000;
+  return {
+    ...p,
+    get: (path, headers = {}) => p.get(path, { ...headers, [TEST_SIGNED_IN_AT]: String(at) }),
+    delete: (path, headers = {}) => p.delete(path, { ...headers, [TEST_SIGNED_IN_AT]: String(at) }),
   };
 }
 

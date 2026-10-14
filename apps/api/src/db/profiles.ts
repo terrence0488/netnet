@@ -1,7 +1,7 @@
 import type { OnboardingState, Segment } from '@netnet/contracts';
-import { and, eq, or } from 'drizzle-orm';
+import { and, eq, like, or } from 'drizzle-orm';
 import type { Executor } from './client';
-import { profile, user } from './schema';
+import { profile, user, verification } from './schema';
 
 /**
  * A person's profile and account email (architecture §6.2): what `GET /api/me` shows and what
@@ -97,4 +97,22 @@ export async function accountOf(db: Executor, userId: string): Promise<Account |
     .where(eq(user.id, userId))
     .limit(1);
   return rows[0] ?? null;
+}
+
+/** Deletes the profile (`DELETE /api/account`, PRD J10). */
+export async function deleteProfile(db: Executor, userId: string): Promise<void> {
+  await db.delete(profile).where(eq(profile.userId, userId));
+}
+
+/**
+ * Deletes the identity (`DELETE /api/account`, PRD J10): the `user` row, whose foreign keys
+ * delete the sessions, the sign-in accounts and the OAuth grants (refresh and access tokens,
+ * consents) with it, plus any password-reset token waiting for the person. OAuth clients stay:
+ * they are shared between accounts.
+ */
+export async function deleteUser(db: Executor, userId: string): Promise<void> {
+  await db
+    .delete(verification)
+    .where(and(like(verification.identifier, 'reset-password:%'), eq(verification.value, userId)));
+  await db.delete(user).where(eq(user.id, userId));
 }

@@ -81,6 +81,11 @@ export async function insertApprovedAttempt(
   return row;
 }
 
+/** Deletes every connection attempt of an account (`DELETE /api/account`, PRD J10). */
+export async function deleteAttemptsForUser(db: Executor, userId: string): Promise<void> {
+  await db.delete(connectionAttempt).where(eq(connectionAttempt.userId, userId));
+}
+
 export async function getAttempt(
   db: Executor,
   userId: string,

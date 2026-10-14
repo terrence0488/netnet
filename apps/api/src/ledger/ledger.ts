@@ -2,6 +2,7 @@ import {
   MAX_NAME_LENGTH,
   type ContextInput,
   type CreateHolding,
+  type ExportBundle,
   type Holding,
   type HoldingDetail,
   type HoldingPatch,
@@ -26,6 +27,8 @@ import {
   type Write,
 } from '@netnet/contracts';
 import { changeBaseCurrency } from './currency';
+import { destroy } from './destroy';
+import { exportAll } from './export';
 import { createHolding, deleteHolding, updateHolding } from './holdings';
 import { setPrefs } from './prefs';
 import { context, getHolding, history, listHoldings, snapshot } from './reads';
@@ -50,7 +53,8 @@ export type { LedgerContent, LedgerOptions } from './scope';
  * The Ledger (architecture §7.3): the only code that touches the `ledger` schema, and the one
  * implementation behind REST and MCP. Every write is one transaction with its audit rows,
  * `data_version + 1`, its batch, its warnings and its domain events; the edge `track()`s the
- * events. Undo, activity, export and erasure come with P3; periods with P5.
+ * events. `destroy` is the one exception: it deletes the audit log itself, so it writes none.
+ * Undo, activity and periods come with P3 and P5.
  */
 export interface Ledger {
   /** The ledger in `baseCurrency`, with every universal type and the pack chain's types. Once. */
@@ -85,6 +89,13 @@ export interface Ledger {
    * types; with one, the currency stays and the pack's types are added (PRD J2).
    */
   changeCountry(i: CountryInput): Promise<Write<void>>;
+  /** Everything, to rebuild a spreadsheet from (PRD J10). Empty before the ledger exists. */
+  exportAll(): Promise<ExportBundle>;
+  /**
+   * Deletes every ledger row for this user, audit included. No audit row, no version: only
+   * `DELETE /api/account` calls it.
+   */
+  destroy(): Promise<void>;
 }
 
 /** The methods that only read. */
@@ -94,9 +105,13 @@ export const LEDGER_READS = [
   'listHoldings',
   'getHolding',
   'history',
+  'exportAll',
 ] as const satisfies readonly (keyof Ledger)[];
 
-/** The methods that write, each through `withUser(…, {write: true})` with its audit rows. */
+/**
+ * The methods that write, each through `withUser(…, {write: true})` with its audit rows —
+ * except `destroy`, which deletes the audit log itself and so writes none.
+ */
 export const LEDGER_WRITES = [
   'init',
   'createHolding',
@@ -113,6 +128,7 @@ export const LEDGER_WRITES = [
   'changeBaseCurrency',
   'applyPackTypes',
   'changeCountry',
+  'destroy',
 ] as const satisfies readonly (keyof Ledger)[];
 
 /** The Ledger over one `withUser` transaction. */
@@ -139,6 +155,8 @@ export function openLedger(tx: LedgerTx, options: LedgerOptions): Ledger {
     changeBaseCurrency: (ccy) => changeBaseCurrency(s, ccy),
     applyPackTypes: (pack) => applyPackTypes(s, pack),
     changeCountry: (i) => changeCountry(s, i),
+    exportAll: () => exportAll(s),
+    destroy: () => destroy(s),
   };
 }
 

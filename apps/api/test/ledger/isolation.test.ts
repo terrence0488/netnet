@@ -241,11 +241,23 @@ const CASES: Record<keyof Ledger, Case[]> = {
       returns: true,
     },
   ],
+  exportAll: [{ name: 'B’s export', call: (l) => l.exportAll(), returns: true }],
+  // Last: it deletes B’s ledger, so nothing after it may read B’s rows.
+  destroy: [{ name: 'B’s own ledger only', call: (l) => l.destroy(), returns: true }],
 };
 
 describe('isolation', () => {
   it('has a case for every Ledger method', () => {
     expect(Object.keys(CASES).sort()).toEqual([...LEDGER_READS, ...LEDGER_WRITES].sort());
+  });
+
+  // Before the cases: the last one deletes B’s ledger.
+  it('gives B’s snapshot and context only B’s rows', async () => {
+    const snapshot = await suite.as(USER_B).read((l) => l.snapshot());
+    expect(snapshot.holdings.map((h) => h.id).sort()).toEqual([...b().holdingIds].sort());
+    const context = await suite.as(USER_B).read((l) => l.context());
+    expect(context.connections.map((c) => c.id)).toEqual([CONNECTION_B]);
+    expect(context.values.map((v) => v.id).sort()).toEqual([...b().valueIds].sort());
   });
 
   const cases = Object.entries(CASES).flatMap(([method, list]) =>
@@ -270,13 +282,5 @@ describe('isolation', () => {
       }
     }
     expect(await ledgerOfA()).toBe(before);
-  });
-
-  it('gives B’s snapshot and context only B’s rows', async () => {
-    const snapshot = await suite.as(USER_B).read((l) => l.snapshot());
-    expect(snapshot.holdings.map((h) => h.id).sort()).toEqual([...b().holdingIds].sort());
-    const context = await suite.as(USER_B).read((l) => l.context());
-    expect(context.connections.map((c) => c.id)).toEqual([CONNECTION_B]);
-    expect(context.values.map((v) => v.id).sort()).toEqual([...b().valueIds].sort());
   });
 });

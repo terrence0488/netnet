@@ -86,3 +86,15 @@ export type Geo = z.infer<typeof geoSchema>;
  */
 export const reminderTokenSchema = z.strictObject({ token: z.string().min(1).max(1024) });
 export type ReminderToken = z.input<typeof reminderTokenSchema>;
+
+/**
+ * What `DELETE /api/account` promises (PRD J10): every backup holding the person's data expires
+ * within this many days. The confirm screen states it before the person confirms.
+ */
+export const ERASED_WITHIN_DAYS = 30;
+
+/** `DELETE /api/account`: the erasure window, restated. */
+export const accountDeletionSchema = z.strictObject({
+  erasedWithinDays: z.literal(ERASED_WITHIN_DAYS),
+});
+export type AccountDeletion = z.infer<typeof accountDeletionSchema>;
