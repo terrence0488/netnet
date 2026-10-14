@@ -599,3 +599,42 @@ describe('setPrefs', () => {
     expect(bad.details?.fields).toHaveProperty('sort');
   });
 });
+
+describe('insightsExclusions', () => {
+  it('sets and clears apart from the filter, and refuses ids that are not the user’s', async () => {
+    const userId = await suite.newUser('USD');
+    const cash = await suite.typeId(userId, 'cash');
+    const set = await suite.as(userId).write((l) =>
+      l.setPrefs({
+        insightsFilter: { show: 'assets' },
+        insightsExclusions: { typeIds: [cash] },
+      }),
+    );
+    expect(set.result).toEqual({
+      insightsFilter: { show: 'assets' },
+      insightsExclusions: { typeIds: [cash] },
+    });
+    const cleared = await suite.as(userId).write((l) => l.setPrefs({ insightsExclusions: null }));
+    expect(cleared.result).toEqual({ insightsFilter: { show: 'assets' } });
+    const missing = await appError(
+      suite
+        .as(userId)
+        .write((l) => l.setPrefs({ insightsExclusions: { holdingIds: ['hld_nope'] } })),
+    );
+    expect(missing).toMatchObject({
+      code: 'NOT_FOUND',
+      details: { fields: { 'insightsExclusions.holdingIds[0]': anyString } },
+    });
+  });
+
+  it('lets go of a deleted tag', async () => {
+    const userId = await suite.newUser('USD');
+    const tag = await suite.as(userId).write((l) => l.upsertTag({ name: 'Gone' }));
+    await suite
+      .as(userId)
+      .write((l) => l.setPrefs({ insightsExclusions: { tagIds: [tag.result.id] } }));
+    await suite.as(userId).write((l) => l.deleteTag(tag.result.id));
+    const snapshot = await suite.as(userId).read((l) => l.snapshot());
+    expect(snapshot.prefs).toEqual({ insightsExclusions: { tagIds: [] } });
+  });
+});

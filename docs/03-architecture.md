@@ -395,7 +395,7 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 | `POST /api/tags` · `PATCH /api/tags/:id` · `DELETE /api/tags/:id?mergeInto=` | same for tags | J2 |
 | `GET /api/activity` | `?cursor&limit≤100` → audit entries, newest first, grouped by batch | J7 |
 | `POST /api/activity/:entryId/undo` · `POST /api/activity/batches/:batchId/undo` | → `UNDO_CONFLICT {blockers}` when not possible | J7 |
-| `PATCH /api/prefs` | filters, exclusions, baseline, sort | J4, J11 |
+| `PATCH /api/prefs` | prefs by key — `homeFilter`, `insightsFilter`, `insightsExclusions` (the Don't Show holding, type and tag ids), `baseline`, `sort`; each given is set, `null` clears | J4, J11 |
 | `GET /api/notifications/prefs` | → `{reminders: bool, email: bool, emailVerified: bool, devices: [{id, label, platform, lastSeenAt}]}` (active devices only) | J12 |
 | `PATCH /api/notifications/prefs` | `{reminders?: bool, email?: bool}`; applies at once | J12 |
 | `GET /api/notifications/vapid-key` | → `{publicKey}` | J12 |

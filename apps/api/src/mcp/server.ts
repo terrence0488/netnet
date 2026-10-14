@@ -104,7 +104,7 @@ export interface McpExtra extends Record<string, unknown> {
   scopes: readonly string[];
 }
 
-/** One request's server: the sixteen tools over its context, on the three versions. */
+/** One request's server: the registry's tools over its context, on the three versions. */
 export function createMcpServer(extra: McpExtra, version: string): McpServer {
   const server = new McpServer(
     { name: SERVER_NAME, version, title: SERVER_TITLE },

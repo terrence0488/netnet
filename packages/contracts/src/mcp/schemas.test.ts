@@ -7,6 +7,7 @@ import { deleteValueInputSchema } from './delete-value';
 import { getFinancialContextInputSchema } from './get-financial-context';
 import { getHoldingInputSchema } from './get-holding';
 import { getNetWorthHistoryInputSchema } from './get-net-worth-history';
+import { getPeriodChangesInputSchema } from './get-period-changes';
 import { getSetupGuideInputSchema } from './get-setup-guide';
 import { getTaxonomyInputSchema } from './get-taxonomy';
 import { listHoldingsInputSchema } from './list-holdings';
@@ -57,6 +58,24 @@ describe('mcp input schemas', () => {
     ).toBe(false);
     expect(getNetWorthHistoryInputSchema.safeParse({ from: '2026-13-01' }).success).toBe(false);
     expect(getNetWorthHistoryInputSchema.safeParse({ interval: 'fortnight' }).success).toBe(false);
+  });
+
+  it('get_period_changes takes a view, at most 24 periods, and a count of drivers', () => {
+    const ok = getPeriodChangesInputSchema.safeParse({
+      view: 'yearly',
+      periods: 24,
+      drivers: 3,
+    });
+    expect(ok.success).toBe(true);
+    expect(getPeriodChangesInputSchema.safeParse({ view: 'monthly' }).success).toBe(true);
+    expect(getPeriodChangesInputSchema.safeParse({}).success).toBe(false);
+    expect(getPeriodChangesInputSchema.safeParse({ view: 'weekly' }).success).toBe(false);
+    expect(getPeriodChangesInputSchema.safeParse({ view: 'monthly', periods: 25 }).success).toBe(
+      false,
+    );
+    expect(getPeriodChangesInputSchema.safeParse({ view: 'monthly', drivers: 0 }).success).toBe(
+      false,
+    );
   });
 
   it('get_taxonomy takes nothing', () => {

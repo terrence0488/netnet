@@ -13,6 +13,8 @@ import {
   type PackRef,
   type Page,
   type PageReq,
+  type PeriodQuery,
+  type PeriodTable,
   type Prefs,
   type PrefsPatch,
   type Series,
@@ -31,7 +33,7 @@ import { destroy } from './destroy';
 import { exportAll } from './export';
 import { createHolding, deleteHolding, updateHolding } from './holdings';
 import { setPrefs } from './prefs';
-import { context, getHolding, history, listHoldings, snapshot } from './reads';
+import { context, getHolding, history, listHoldings, periods, snapshot } from './reads';
 import { Scope, type LedgerOptions } from './scope';
 import {
   applyPackTypes,
@@ -54,7 +56,7 @@ export type { LedgerContent, LedgerOptions } from './scope';
  * implementation behind REST and MCP. Every write is one transaction with its audit rows,
  * `data_version + 1`, its batch, its warnings and its domain events; the edge `track()`s the
  * events. `destroy` is the one exception: it deletes the audit log itself, so it writes none.
- * Undo, activity and periods come with P3 and P5.
+ * Undo and activity come with P3.
  */
 export interface Ledger {
   /** The ledger in `baseCurrency`, with every universal type and the pack chain's types. Once. */
@@ -65,6 +67,7 @@ export interface Ledger {
   listHoldings(q: HoldingQuery): Promise<Page<HoldingView>>;
   getHolding(id: string, values?: PageReq): Promise<HoldingDetail>;
   history(q: HistoryQuery): Promise<Series>;
+  periods(q: PeriodQuery): Promise<PeriodTable>;
 
   createHolding(i: CreateHolding): Promise<Write<Holding>>;
   updateHolding(id: string, p: HoldingPatch): Promise<Write<Holding>>;
@@ -105,6 +108,7 @@ export const LEDGER_READS = [
   'listHoldings',
   'getHolding',
   'history',
+  'periods',
   'exportAll',
 ] as const satisfies readonly (keyof Ledger)[];
 
@@ -141,6 +145,7 @@ export function openLedger(tx: LedgerTx, options: LedgerOptions): Ledger {
     listHoldings: (q) => listHoldings(s, q),
     getHolding: (id, values) => getHolding(s, id, values),
     history: (q) => history(s, q),
+    periods: (q) => periods(s, q),
     createHolding: (i) => createHolding(s, i),
     updateHolding: (id, p) => updateHolding(s, id, p),
     deleteHolding: (id) => deleteHolding(s, id),

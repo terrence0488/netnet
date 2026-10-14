@@ -79,6 +79,27 @@ describe('PATCH /api/prefs', () => {
     }
   });
 
+  it('keeps Insights’ exclusions apart from its filter', async () => {
+    const cash = await typeIdOf(p, 'cash');
+    const set = await json<WriteBody>(
+      await p.patch('/api/prefs', {
+        insightsFilter: { show: 'assets' },
+        insightsExclusions: { typeIds: [cash] },
+      }),
+    );
+    expect(set.result).toMatchObject({
+      insightsFilter: { show: 'assets' },
+      insightsExclusions: { typeIds: [cash] },
+    });
+    const cleared = await json<WriteBody>(
+      await p.patch('/api/prefs', { insightsExclusions: null }),
+    );
+    expect(cleared.result).toMatchObject({ insightsFilter: { show: 'assets' } });
+    expect(cleared.result).not.toHaveProperty('insightsExclusions');
+    const snapshot = await snapshotOf(p);
+    expect(snapshot.prefs).toEqual(cleared.result);
+  });
+
   it('answers NOT_FOUND for a filter naming an id that is not the person’s', async () => {
     const error = await errorOf(
       await p.patch('/api/prefs', { insightsFilter: { hideHoldingIds: [unknownId('hld')] } }),

@@ -1,10 +1,12 @@
 import {
   holdingFilterSchema,
+  insightsExclusionsSchema,
   prefsPatchSchema,
   PREF_KEYS,
   type PrefKey,
   type Prefs,
   type PrefsPatch,
+  type SavedExclusions,
   type SavedFilter,
   type Write,
 } from '@netnet/contracts';
@@ -16,13 +18,14 @@ import type { Scope } from './scope';
 import { runWrite, sameJson, type WriteScope } from './write';
 
 /**
- * Preferences that persist (PRD J4, J11): Home's and Insights' filters (exclusions included), the
- * baseline and the sort. One row per key, stored under its snake_case name.
+ * Preferences that persist (PRD J4, J11): Home's and Insights' filters, Insights' exclusions,
+ * the baseline and the sort. One row per key, stored under its snake_case name.
  */
 
 const STORED_KEY: Record<PrefKey, string> = {
   homeFilter: 'home_filter',
   insightsFilter: 'insights_filter',
+  insightsExclusions: 'insights_exclusions',
   baseline: 'baseline',
   sort: 'sort',
 };
@@ -54,16 +57,30 @@ export async function readPrefs(s: Scope): Promise<Prefs> {
   return out;
 }
 
+/** The ids a shape names, with the table each belongs to. */
+interface IdLists {
+  table: 'type' | 'tag' | 'holding';
+  field: string;
+  ids: string[];
+}
+
 /** The ids a filter names, with the table each belongs to. */
-function filterIds(
-  filter: SavedFilter,
-): { table: 'type' | 'tag' | 'holding'; field: string; ids: string[] }[] {
+function filterIds(filter: SavedFilter): IdLists[] {
   return [
-    { table: 'type' as const, field: 'typeIds', ids: filter.typeIds ?? [] },
-    { table: 'type' as const, field: 'hideTypeIds', ids: filter.hideTypeIds ?? [] },
-    { table: 'tag' as const, field: 'tagIds', ids: filter.tagIds ?? [] },
-    { table: 'tag' as const, field: 'hideTagIds', ids: filter.hideTagIds ?? [] },
-    { table: 'holding' as const, field: 'hideHoldingIds', ids: filter.hideHoldingIds ?? [] },
+    { table: 'type', field: 'typeIds', ids: filter.typeIds ?? [] },
+    { table: 'type', field: 'hideTypeIds', ids: filter.hideTypeIds ?? [] },
+    { table: 'tag', field: 'tagIds', ids: filter.tagIds ?? [] },
+    { table: 'tag', field: 'hideTagIds', ids: filter.hideTagIds ?? [] },
+    { table: 'holding', field: 'hideHoldingIds', ids: filter.hideHoldingIds ?? [] },
+  ];
+}
+
+/** The ids an exclusions list names, with the table each belongs to. */
+function exclusionIds(exclusions: SavedExclusions): IdLists[] {
+  return [
+    { table: 'holding', field: 'holdingIds', ids: exclusions.holdingIds ?? [] },
+    { table: 'type', field: 'typeIds', ids: exclusions.typeIds ?? [] },
+    { table: 'tag', field: 'tagIds', ids: exclusions.tagIds ?? [] },
   ];
 }
 
@@ -84,15 +101,24 @@ async function putPref(w: WriteScope, key: string, before: unknown, after: unkno
   await w.audit('prefs', key, action, entry(before), entry(after));
 }
 
-/** `setPrefs`: each key given is set, or cleared with null. Filters may name only this user's ids. */
+/**
+ * `setPrefs`: each key given is set, or cleared with null. Filters and exclusions may name only
+ * this user's ids.
+ */
 export function setPrefs(s: Scope, patch: PrefsPatch): Promise<Write<Prefs>> {
   const p = parseInput(prefsPatchSchema, patch);
   return runWrite(s, 'setPrefs', async (w) => {
     const errors = new FieldErrors();
+    const named: { key: string; lists: IdLists[] }[] = [];
     for (const key of ['homeFilter', 'insightsFilter'] as const) {
       const filter = p[key];
-      if (!filter) continue;
-      for (const { table, field, ids } of filterIds(filter)) {
+      if (filter) named.push({ key, lists: filterIds(filter) });
+    }
+    if (p.insightsExclusions) {
+      named.push({ key: 'insightsExclusions', lists: exclusionIds(p.insightsExclusions) });
+    }
+    for (const { key, lists } of named) {
+      for (const { table, field, ids } of lists) {
         const found = await existingIds(s, table, ids);
         ids.forEach((id, i) => {
           if (!found.has(id)) {
@@ -119,8 +145,8 @@ export function setPrefs(s: Scope, patch: PrefsPatch): Promise<Write<Prefs>> {
 }
 
 /**
- * Keeps saved filters pointing at what exists (PRD J2: nothing orphaned) when a type, tag or
- * holding goes: its id is swapped for `replacement` (a merge), or dropped.
+ * Keeps saved filters and exclusions pointing at what exists (PRD J2: nothing orphaned) when a
+ * type, tag or holding goes: its id is swapped for `replacement` (a merge), or dropped.
  */
 export async function scrubPrefs(
   w: WriteScope,
@@ -129,6 +155,8 @@ export async function scrubPrefs(
   replacement?: string,
 ): Promise<void> {
   const stored = await storedPrefs(w.s);
+  const swap = (ids: string[]) =>
+    ids.flatMap((x) => (x === id ? (replacement ? [replacement] : []) : [x]));
   for (const key of ['homeFilter', 'insightsFilter'] as const) {
     const name = STORED_KEY[key];
     const parsed = holdingFilterSchema.safeParse(stored.get(name));
@@ -137,10 +165,20 @@ export async function scrubPrefs(
     let changed = false;
     for (const { table: t, field, ids } of filterIds(filter)) {
       if (t !== table || !ids.includes(id)) continue;
-      const next = ids.flatMap((x) => (x === id ? (replacement ? [replacement] : []) : [x]));
-      Object.assign(filter, { [field]: [...new Set(next)] });
+      Object.assign(filter, { [field]: [...new Set(swap(ids))] });
       changed = true;
     }
     if (changed) await putPref(w, name, stored.get(name), filter);
   }
+  const name = STORED_KEY.insightsExclusions;
+  const parsed = insightsExclusionsSchema.safeParse(stored.get(name));
+  if (!parsed.success) return;
+  const exclusions: SavedExclusions = { ...parsed.data };
+  let changed = false;
+  for (const { table: t, field, ids } of exclusionIds(exclusions)) {
+    if (t !== table || !ids.includes(id)) continue;
+    Object.assign(exclusions, { [field]: [...new Set(swap(ids))] });
+    changed = true;
+  }
+  if (changed) await putPref(w, name, stored.get(name), exclusions);
 }

@@ -3,6 +3,7 @@ import type {
   McpGetFinancialContextOutput,
   McpGetHoldingOutput,
   McpGetNetWorthHistoryOutput,
+  McpGetPeriodChangesOutput,
   McpGetSetupGuideOutput,
   McpGetTaxonomyOutput,
   McpListHoldingsOutput,
@@ -23,7 +24,7 @@ import {
 } from './support';
 
 /**
- * The six read tools (architecture §7.4): a happy path, a validation error and not-found each,
+ * The seven read tools (architecture §7.4): a happy path, a validation error and not-found each,
  * and the proof that a read changes nothing.
  */
 
@@ -268,6 +269,103 @@ describe('get_net_worth_history', () => {
   });
 });
 
+describe('get_period_changes', () => {
+  it('returns each period newest first, with its change and ranked drivers', async () => {
+    const { agent, freshHolding, staleHolding, gbpHolding } = await seeded();
+    const gbp = okOf<McpGetHoldingOutput>(
+      await callTool(target, agent.token, 'get_holding', { holding_id: gbpHolding }),
+    );
+    const gbpBase = gbp.latest?.base_amount ?? 0;
+    expect(gbpBase).toBeGreaterThan(0);
+    const result = await callTool(target, agent.token, 'get_period_changes', {
+      view: 'monthly',
+    });
+    const table = okOf<McpGetPeriodChangesOutput>(result);
+    expect(result.content[0]?.text).toBe('3 monthly periods in EUR.');
+    expect(table.currency).toBe('EUR');
+    expect(table.view).toBe('monthly');
+    expect(table.periods.map((p) => [p.start, p.end])).toEqual([
+      ['2026-08-01', '2026-08-01'],
+      ['2026-07-01', '2026-07-31'],
+      ['2026-06-01', '2026-06-30'],
+    ]);
+    expect(table.periods[2]).toStrictEqual({
+      start: '2026-06-01',
+      end: '2026-06-30',
+      end_value: 50,
+      change: 50,
+      change_pct: null,
+      carried: false,
+      drivers: [{ holding_id: staleHolding, name: 'Old tin', contribution: 50 }],
+    });
+    const july = table.periods[1]!;
+    expect(july.end_value).toBe(1250 + 50 + gbpBase);
+    expect(july.change).toBe(1250 + gbpBase);
+    expect(july.carried).toBe(true);
+    expect(july.drivers).toStrictEqual([
+      { holding_id: freshHolding, name: 'Everyday pot', contribution: 1250 },
+      { holding_id: gbpHolding, name: 'London shares', contribution: gbpBase },
+    ]);
+    expect(table.periods[0]).toMatchObject({
+      end_value: july.end_value,
+      change: 0,
+      change_pct: 0,
+      carried: true,
+      drivers: [],
+    });
+  });
+
+  it('pages the newest periods with each one’s top drivers', async () => {
+    const { agent, freshHolding } = await seeded();
+    const table = okOf<McpGetPeriodChangesOutput>(
+      await callTool(target, agent.token, 'get_period_changes', {
+        view: 'monthly',
+        periods: 2,
+        drivers: 1,
+      }),
+    );
+    expect(table.periods.map((p) => p.start)).toEqual(['2026-08-01', '2026-07-01']);
+    expect(table.periods[1]?.drivers).toStrictEqual([
+      { holding_id: freshHolding, name: 'Everyday pot', contribution: 1250 },
+    ]);
+    const quarterly = okOf<McpGetPeriodChangesOutput>(
+      await callTool(target, agent.token, 'get_period_changes', {
+        view: 'quarterly',
+        periods: 1,
+      }),
+    );
+    expect(quarterly.periods.map((p) => [p.start, p.end])).toEqual([['2026-07-01', '2026-08-01']]);
+  });
+
+  it('names a bad view and counts outside 1 to 24 periods and 1 to 25 drivers', async () => {
+    const { agent } = await seeded();
+    const view = errOf(
+      await callTool(target, agent.token, 'get_period_changes', { view: 'weekly' }),
+      'VALIDATION_FAILED',
+    );
+    expect(view.fields).toHaveProperty('view');
+    const many = errOf(
+      await callTool(target, agent.token, 'get_period_changes', { view: 'monthly', periods: 25 }),
+      'VALIDATION_FAILED',
+    );
+    expect(many.fields).toHaveProperty('periods');
+    const none = errOf(
+      await callTool(target, agent.token, 'get_period_changes', { view: 'monthly', drivers: 0 }),
+      'VALIDATION_FAILED',
+    );
+    expect(none.fields).toHaveProperty('drivers');
+  });
+
+  it('needs a ledger', async () => {
+    const userId = await newPerson(target);
+    const agent = await connectAgent(target, userId);
+    errOf(
+      await callTool(target, agent.token, 'get_period_changes', { view: 'monthly' }),
+      'NOT_FOUND',
+    );
+  });
+});
+
 describe('get_taxonomy', () => {
   it('returns types with labels and meanings, and tags', async () => {
     const { agent, cashType } = await seeded();
@@ -357,6 +455,7 @@ describe('reads change nothing', () => {
       ['list_holdings', { limit: 1 }],
       ['get_holding', { holding_id: freshHolding }],
       ['get_net_worth_history', { group_by: 'access' }],
+      ['get_period_changes', { view: 'monthly' }],
       ['get_taxonomy', {}],
       ['get_setup_guide', {}],
       ['list_holdings', { type_ids: [cashType], archived: 'include' }],

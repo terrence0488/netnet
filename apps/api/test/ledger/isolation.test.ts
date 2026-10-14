@@ -113,6 +113,7 @@ const CASES: Record<keyof Ledger, Case[]> = {
     },
     { name: 'A’s tag', call: (l) => l.history({ tagIds: [a().tagId] }), sent: () => [a().tagId] },
   ],
+  periods: [{ name: 'B’s periods', call: (l) => l.periods({ view: 'monthly' }), returns: true }],
   createHolding: [
     {
       name: 'A’s type',

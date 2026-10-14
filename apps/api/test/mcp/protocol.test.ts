@@ -63,7 +63,7 @@ describe.each([{ version: '2026-07-28' }, { version: '2025-11-25' }])(
       );
       try {
         const listed = await client.listTools();
-        expect(listed.tools).toHaveLength(16);
+        expect(listed.tools).toHaveLength(17);
         expect(listed.tools.map((t) => t.name)).toContain('get_financial_context');
         const read = await client.callTool({ name: 'get_taxonomy', arguments: {} });
         expect(read.isError ?? false).toBe(false);
@@ -124,7 +124,7 @@ describe('raw client on 2025-06-18', () => {
     const listed = await rpc(agent.token, 'tools/list', {});
     expect(listed.status).toBe(200);
     const tools = (listed.body.result as { tools: { name: string }[] }).tools;
-    expect(tools).toHaveLength(16);
+    expect(tools).toHaveLength(17);
     const read = await rpc(agent.token, 'tools/call', { name: 'get_taxonomy', arguments: {} });
     expect(read.status).toBe(200);
     const taxonomy = (read.body.result as { structuredContent: { types: { id: string }[] } })

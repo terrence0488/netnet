@@ -6,6 +6,7 @@ import { deleteValueTool } from './tools/delete-value';
 import { getFinancialContextTool } from './tools/get-financial-context';
 import { getHoldingTool } from './tools/get-holding';
 import { getNetWorthHistoryTool } from './tools/get-net-worth-history';
+import { getPeriodChangesTool } from './tools/get-period-changes';
 import { getSetupGuideTool } from './tools/get-setup-guide';
 import { getTaxonomyTool } from './tools/get-taxonomy';
 import { listHoldingsTool } from './tools/list-holdings';
@@ -17,15 +18,15 @@ import { upsertTypeTool } from './tools/upsert-type';
 import type { ToolDef } from './tool';
 
 /**
- * P1's sixteen tools (architecture §7.4), in the order `tools/list` shows them: the summary
- * first, then reads, then writes. `list_activity` and `undo` come with P3, `get_period_changes`
- * with P5.
+ * The tools (architecture §7.4), in the order `tools/list` shows them: the summary first, then
+ * reads, then writes. `list_activity` and `undo` come with P3.
  */
 export const TOOL_REGISTRY: readonly ToolDef[] = [
   getFinancialContextTool,
   listHoldingsTool,
   getHoldingTool,
   getNetWorthHistoryTool,
+  getPeriodChangesTool,
   getTaxonomyTool,
   getSetupGuideTool,
   createHoldingTool,
