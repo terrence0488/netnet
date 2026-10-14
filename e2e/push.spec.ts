@@ -417,7 +417,8 @@ test.describe('Settings → Notifications', () => {
       deleted.push(route.request().url());
       return route.fulfill({ status: 204, body: '' });
     });
-    await page.getByRole('switch', { name: 'Notifications on this device' }).click();
+    const toggle = page.getByRole('switch', { name: 'Notifications on this device' });
+    await toggle.click();
     await expect
       .poll(() => deleted)
       .toEqual([
@@ -425,6 +426,9 @@ test.describe('Settings → Notifications', () => {
           '/api/notifications/endpoints/nep_01K1G4KX00AAAAAAAAAAAAAAAA?by=user',
         ),
       ]);
+    // The poll above sees the DELETE go out; the stored id is cleared once its answer lands,
+    // so wait for the switch to read off before reading storage.
+    await expect(toggle).toHaveAttribute('aria-checked', 'false');
     expect(
       await page.evaluate(() => window.localStorage.getItem('netnet.pushEndpointId')),
     ).toBeNull();
