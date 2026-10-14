@@ -32,6 +32,14 @@ function withoutLinks(text: string): string {
   return text.replace(/https?:\/\/\S+/g, ' ');
 }
 
+/**
+ * True when `text` holds a figure with a currency — the same patterns `privacyProblems` runs.
+ * The reminder run uses it to vet a registered agent name before it may reach a lock screen.
+ */
+export function containsMoneyFigure(text: string): boolean {
+  return MONEY.some((pattern) => pattern.test(text));
+}
+
 export interface Rendered {
   [part: string]: string | Record<string, string>;
 }

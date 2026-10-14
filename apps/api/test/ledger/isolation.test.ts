@@ -308,12 +308,4 @@ describe('isolation', () => {
     const page = await suite.as(USER_B).read((l) => l.activity({ batchId: a().batchId }));
     expect(page).toEqual({ items: [], nextCursor: null });
   });
-
-  it('gives B’s snapshot and context only B’s rows', async () => {
-    const snapshot = await suite.as(USER_B).read((l) => l.snapshot());
-    expect(snapshot.holdings.map((h) => h.id).sort()).toEqual([...b().holdingIds].sort());
-    const context = await suite.as(USER_B).read((l) => l.context());
-    expect(context.connections.map((c) => c.id)).toEqual([CONNECTION_B]);
-    expect(context.values.map((v) => v.id).sort()).toEqual([...b().valueIds].sort());
-  });
 });

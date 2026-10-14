@@ -774,8 +774,9 @@ long before this bites.
 
 **The agent named** in "Just ask {agent}." is the connected (not revoked) agent used most recently.
 For `claude` and `chatgpt` it is the guide's name. For `other` it is the name the agent registered,
-only if that is at most 24 letters, digits, spaces, dots or hyphens; otherwise the line is left
-out. An agent's registered name is untrusted text, and a lock screen is public.
+only if that is at most 24 letters, digits, spaces, dots or hyphens and reads as nothing like
+money ("USD5" and "10 pounds" do); otherwise the line is left out. An agent's registered name is
+untrusted text, and a lock screen is public.
 
 **The security email** (J5). The approval handler calls `notify()` after its response
 (`waitUntil`), so it goes straight away. When Resend accepts it, `security_email_sent_at` is set

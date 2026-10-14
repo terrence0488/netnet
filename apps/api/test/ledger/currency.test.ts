@@ -300,6 +300,36 @@ describe('changeBaseCurrency', () => {
     });
   });
 
+  it('undoes entry by entry, newest first, back to the old base', async () => {
+    const userId = await newUser('USD');
+    const eur = await holdingWith(userId, 'Euro savings', 'EUR', [
+      { amount: '1000', date: '2026-07-15' },
+    ]);
+    const usd = await holdingWith(userId, 'Dollar savings', 'USD', [
+      { amount: '300', date: '2026-08-01' },
+    ]);
+    const before = new Map(
+      (await Promise.all([eur, usd].map((id) => valuesOf(userId, id))))
+        .flat()
+        .map((v) => [v.id, v] as const),
+    );
+    const seen = (await auditRows(suite, userId)).length;
+    await as(userId, SYSTEM).write((l) => l.changeBaseCurrency('EUR'));
+
+    const entries = (await auditRows(suite, userId)).slice(seen);
+    expect(entries.map((r) => r.entity)).toEqual(['value', 'value', 'ledger']);
+    for (const entry of [...entries].reverse()) {
+      const undone = await as(userId).write((l) => l.undo({ entryId: entry.id }));
+      expect(undone.result.undone.map((u) => u.entryId)).toEqual([entry.id]);
+      expect(undone.result.undoIds).toHaveLength(1);
+    }
+    for (const [id, was] of before) {
+      const [now] = (await valuesOf(userId, was.holdingId)).filter((v) => v.id === id);
+      expect(baseOf(now!)).toStrictEqual(baseOf(was));
+    }
+    expect((await as(userId).read((l) => l.snapshot())).baseCurrency).toBe('USD');
+  });
+
   it('changes nothing when the currency is already the base', async () => {
     const userId = await newUser('USD');
     await holdingWith(userId, 'Savings', 'USD', [{ amount: '10', date: '2026-07-01' }]);
