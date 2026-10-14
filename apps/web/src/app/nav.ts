@@ -17,11 +17,12 @@ export interface NavEntry {
 }
 
 /**
- * The prototype's tabs, as far as P1 goes: Home, the Agent tab, and Account, which holds Log out
- * until P3's settings join it (design-system §7).
+ * The prototype's tabs: Home, Insights, the Agent tab, and Account, which holds Log out until
+ * P3's settings join it (design-system §7).
  */
 export const NAV: readonly NavEntry[] = [
   { to: '/', label: 'Home', icon: 'home', owns: ['/', '/add', '/holdings', '/archived'] },
+  { to: '/insights', label: 'Insights', icon: 'insights', owns: ['/insights'] },
   { to: '/agent', label: 'Agent', icon: 'agent', owns: ['/agent', '/connect'] },
   { to: '/account', label: 'Account', icon: 'account', owns: ['/account'] },
 ];

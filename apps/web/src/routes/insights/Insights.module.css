@@ -1,0 +1,207 @@
+/* Insights (PRD J11): views, charts, and the periods newest-first. */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-10) 0 var(--space-8);
+}
+
+.title {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-heading-screen);
+  font-weight: var(--weight-heading-screen);
+  letter-spacing: var(--tracking-heading-screen);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* An outlined disc; the disc is the target. An active filter fills it tomato. */
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: var(--hit);
+  height: var(--hit);
+  flex: none;
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-icon);
+}
+
+.iconButton:hover {
+  background: var(--paper);
+}
+
+.filterIcon {
+  width: var(--space-9);
+  height: var(--space-9);
+}
+
+.active {
+  background: var(--brand);
+  color: var(--brand-on);
+}
+
+.active:hover {
+  background: var(--brand);
+}
+
+/* The view switch and the range bar, centred like the prototype's. */
+.controls {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-5);
+}
+
+/* The segmented control: an outlined tray; the chosen segment fills tomato. */
+.seg {
+  display: flex;
+  width: 100%;
+  max-width: var(--measure-narrow);
+  padding: var(--space-1);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  box-shadow: var(--shadow-control);
+}
+
+.segment {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit);
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--ink-2);
+  font-size: var(--size-pct);
+  font-weight: var(--weight-pct);
+  white-space: nowrap;
+}
+
+.segment.on {
+  background: var(--brand);
+  color: var(--brand-on);
+  box-shadow: inset 0 0 0 var(--border-edge) var(--edge);
+}
+
+/* What is filtered or hidden, named above the figures it changes. */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  margin-top: var(--space-7);
+  padding: var(--space-4) var(--space-7);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--card);
+}
+
+.bannerText {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.bannerButton {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink-2);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+}
+
+.bannerButton:hover {
+  color: var(--ink);
+}
+
+/* The summary line: the average change, or the one statement of what is needed. */
+.summary {
+  margin: var(--space-8) 0 0;
+  color: var(--ink);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+}
+
+.figure {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.gain {
+  color: var(--gain);
+}
+
+.loss {
+  color: var(--loss);
+}
+
+.grid {
+  display: block;
+  padding-bottom: var(--inset-page-end);
+}
+
+.sectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+  margin: var(--space-11) 0 var(--space-3);
+  padding-bottom: var(--space-1);
+}
+
+.sectionHead h2 {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-heading-section);
+  font-weight: var(--weight-heading-section);
+  letter-spacing: var(--tracking-heading-section);
+}
+
+@media (min-width: 900px) {
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0 var(--space-16);
+    align-items: start;
+    padding-bottom: var(--inset-page-end-computer);
+  }
+
+  .growth {
+    grid-column: 1 / span 6;
+    min-width: 0;
+  }
+
+  .assets {
+    grid-column: 7 / span 6;
+    min-width: 0;
+  }
+
+  .distribution,
+  .list {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+}

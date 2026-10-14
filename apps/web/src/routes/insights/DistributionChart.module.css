@@ -1,0 +1,77 @@
+/* Distribution over time: legend, totals, stacked geometry, short labels. */
+
+.chart {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Names beside every swatch: the light-mode relief rule (design-system §5). */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-text);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  color: var(--ink-2);
+}
+
+.swatch {
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--border-hair);
+  flex: none;
+}
+
+/* One column per bar; the total centres over its cell. */
+.labels,
+.shorts {
+  display: flex;
+}
+
+.labels > div,
+.shorts > div {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}
+
+.total {
+  font-family: var(--font-text);
+  font-size: var(--size-pct);
+  font-weight: var(--weight-pct);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.plot {
+  margin-top: var(--space-3);
+}
+
+.plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.zero {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.shorts {
+  margin-top: var(--space-3);
+  font-family: var(--font-text);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  color: var(--ink-3);
+}

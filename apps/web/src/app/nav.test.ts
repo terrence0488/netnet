@@ -10,6 +10,7 @@ describe('the nav', () => {
     expect(activeEntry('/add')?.label).toBe('Home');
     expect(activeEntry('/holdings/hld_01')?.label).toBe('Home');
     expect(activeEntry('/archived')?.label).toBe('Home');
+    expect(activeEntry('/insights')?.label).toBe('Insights');
     expect(activeEntry('/agent')?.label).toBe('Agent');
     expect(activeEntry('/connect/claude')?.label).toBe('Agent');
     expect(activeEntry('/agents')).toBeUndefined();
@@ -27,11 +28,17 @@ describe('the nav', () => {
     const nav = [...NAV, activity];
     expect(entriesFor('sidebar', nav).map((e) => e.label)).toStrictEqual([
       'Home',
+      'Insights',
       'Agent',
       'Account',
       'Activity',
     ]);
-    expect(entriesFor('tabs', nav).map((e) => e.label)).toStrictEqual(['Home', 'Agent', 'Account']);
+    expect(entriesFor('tabs', nav).map((e) => e.label)).toStrictEqual([
+      'Home',
+      'Insights',
+      'Agent',
+      'Account',
+    ]);
     expect(activeEntry('/activity', nav)).toBe(activity);
   });
 

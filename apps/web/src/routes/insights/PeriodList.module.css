@@ -1,0 +1,206 @@
+/* The periods: newest first, each row carrying its change in money and %. */
+
+/* A period row: its label left, the change right; opening adds only what the row omits. */
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--inset-row);
+  position: relative;
+  width: 100%;
+  min-height: var(--hit);
+  padding: var(--inset-row) var(--inset-card);
+  border: none;
+  border-bottom: var(--border-rule) solid var(--rule);
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-text);
+}
+
+.row:hover .name {
+  color: var(--brand-text);
+  text-decoration: underline;
+  text-decoration-thickness: var(--border-rule);
+  text-underline-offset: var(--space-1);
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  letter-spacing: var(--tracking-body);
+}
+
+.amt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  text-align: right;
+  white-space: nowrap;
+  flex: none;
+}
+
+/* The change figures: a measurement in the text face, signed as well as coloured. */
+.change {
+  font-size: var(--size-figure);
+  font-weight: var(--weight-pct);
+  font-variant-numeric: tabular-nums;
+}
+
+.pct {
+  font-size: var(--size-pct);
+  font-weight: var(--weight-pct);
+  font-variant-numeric: tabular-nums;
+}
+
+.gain {
+  color: var(--gain);
+}
+
+.loss {
+  color: var(--loss);
+}
+
+.flat {
+  color: var(--ink-3);
+  font-size: var(--size-figure);
+}
+
+/* "so far" and "Carried" are states, never shouting; carried is ordinary, not a warning. */
+.chip,
+.carried {
+  border: var(--border-rule) solid currentColor;
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-3);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.chip {
+  color: var(--ink-2);
+}
+
+.carried {
+  color: var(--ink-3);
+}
+
+/* An opened period: the end value, the full change line, and what drove it. */
+.detail {
+  padding: var(--space-5) var(--inset-card) var(--space-8);
+  border-bottom: var(--border-rule) solid var(--rule);
+}
+
+.detail:last-child {
+  border-bottom: none;
+}
+
+.endLabel {
+  margin: 0 0 var(--space-2);
+  color: var(--ink-3);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.changeLine {
+  margin: var(--space-3) 0 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+}
+
+.span {
+  margin: var(--space-2) 0 0;
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+}
+
+.driversTitle {
+  margin: var(--space-8) 0 0;
+  font-family: var(--font-display);
+  font-size: var(--size-heading-card);
+  font-weight: var(--weight-heading-card);
+  letter-spacing: var(--tracking-heading-card);
+}
+
+.empty {
+  margin: var(--space-4) 0 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+}
+
+.drivers {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+}
+
+.driver {
+  display: flex;
+  align-items: baseline;
+  gap: var(--inset-row);
+  min-height: var(--hit);
+  padding: var(--space-4) 0;
+  border-bottom: var(--border-rule) solid var(--rule);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.drivers li:last-child .driver {
+  border-bottom: none;
+}
+
+.driver:hover .name {
+  color: var(--brand-text);
+  text-decoration: underline;
+  text-decoration-thickness: var(--border-rule);
+  text-underline-offset: var(--space-1);
+}
+
+.sub {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+}
+
+.contribution {
+  font-size: var(--size-figure);
+  font-weight: var(--weight-pct);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex: none;
+}
+
+.note {
+  margin: var(--space-5) 0 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+/* Periods derive from value dates: said once, under the list. */
+.dates {
+  margin: var(--space-5) 0 0;
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+}

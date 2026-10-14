@@ -1,0 +1,80 @@
+/* Period growth bars: values above, geometry, short labels below (design-system §5). */
+
+.chart {
+  display: flex;
+  flex-direction: column;
+}
+
+/* One column per bar; the value centres over its cell. */
+.labels,
+.shorts {
+  display: flex;
+}
+
+.labels > div,
+.shorts > div {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}
+
+.value {
+  font-family: var(--font-text);
+  font-size: var(--size-pct);
+  font-weight: var(--weight-pct);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.gain {
+  color: var(--gain);
+}
+
+.loss {
+  color: var(--loss);
+}
+
+.flat {
+  color: var(--ink-3);
+}
+
+.plot {
+  margin-top: var(--space-3);
+}
+
+.plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.zero {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+/* Gain and loss bars; a flat period is a tick on the zero line. */
+.bar {
+  fill: var(--rule-strong);
+}
+
+.up {
+  fill: var(--gain);
+}
+
+.down {
+  fill: var(--loss);
+}
+
+.tick {
+  fill: var(--rule-strong);
+}
+
+.shorts {
+  margin-top: var(--space-3);
+  font-family: var(--font-text);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  color: var(--ink-3);
+}
