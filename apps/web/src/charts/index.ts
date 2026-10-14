@@ -5,6 +5,7 @@ export {
   type AllocationSegment,
 } from './AllocationChart';
 export { AssetsLiabilitiesChart, type AssetsLiabilitiesChartProps } from './AssetsLiabilitiesChart';
+export { BarChart, type BarChartProps, type BarDatum } from './BarChart';
 export {
   ChartPlaceholder,
   type ChartPlaceholderProps,

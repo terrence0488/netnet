@@ -7,6 +7,7 @@ import {
   expectInside,
   expectNoHorizontalScroll,
   expectSameHeight,
+  isPhone,
   mockSnapshot,
 } from './support';
 
@@ -427,7 +428,9 @@ test('the trend covers the range bar’s span, and waits for a second value', as
   // One value is a placeholder saying what makes the trend appear, with no range bar.
   await page.goto('/app/holdings/hld_flat');
   await expect(page.getByTestId('trend-chart-placeholder')).toBeVisible();
-  await expect(page.getByText('Need more data')).toBeVisible();
+  await expect(
+    page.getByTestId('trend-chart-placeholder').getByText('Need more data'),
+  ).toBeVisible();
   await expect(
     page.getByText('Update this next month, or add an earlier value, to see how it moves.'),
   ).toBeVisible();
@@ -842,6 +845,183 @@ test('an unknown holding’s edit says so, with the way back', async ({ page }) 
   await expect(page.getByText('This holding isn’t here any more.')).toBeVisible();
   await page.locator('main').getByRole('link', { name: 'Home' }).click();
   await expect(page).toHaveURL(/\/app$/);
+});
+
+/** The 1st of the month `ago` months back: monthly buckets land deterministically, and the
+    current month's value is never dated in the future. */
+const monthDate = (ago: number) => {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - ago, 1))
+    .toISOString()
+    .slice(0, 10);
+};
+
+/** Fourteen months of a fictional growth fund, skipping one month so a period carries. */
+const GROWTH_VALUES: Array<[number, number]> = [
+  [13, 10_000_000],
+  [12, 10_500_000],
+  [11, 10_300_000],
+  [10, 10_800_000],
+  [9, 10_800_000],
+  [7, 11_200_000],
+  [6, 11_000_000],
+  [5, 11_500_000],
+  [4, 11_700_000],
+  [3, 11_400_000],
+  [2, 11_900_000],
+  [1, 12_100_000],
+  [0, 12_300_000],
+];
+
+const GROWTH = holdingRow({ id: 'hld_growth', name: 'Growth fund', typeId: 'typ_listed' });
+
+async function mockGrowth(page: Page) {
+  await mockSnapshot(page, {
+    ...LEDGER,
+    dataVersion: 6,
+    holdings: [GROWTH],
+    values: {
+      hld_growth: GROWTH_VALUES.map(([ago, minor]) => [
+        monthDate(ago),
+        minor,
+        'SGD',
+        minor,
+        'web',
+        null,
+        `val_m${ago}`,
+      ]),
+    },
+  });
+  await page.route('**/api/holdings/hld_growth/values*', (route) => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({
+        json: {
+          items: [...GROWTH_VALUES].reverse().map(([ago, minor]) =>
+            valueRow({
+              id: `val_m${ago}`,
+              holdingId: 'hld_growth',
+              date: monthDate(ago),
+              amountMinor: minor,
+              baseMinor: minor,
+            }),
+          ),
+          nextCursor: null,
+        },
+      });
+    }
+    return route.fallback();
+  });
+}
+
+test('the period chart switches views, pages newest first, and reads aloud', async ({
+  page,
+}, testInfo) => {
+  await mockGrowth(page);
+  await page.goto('/app/holdings/hld_growth');
+  await expect(page.getByRole('heading', { level: 2, name: 'Period changes' })).toBeVisible();
+  const chart = page.getByTestId('period-chart');
+  await expect(chart).toBeVisible();
+  // The newest five months, oldest first: +$2K, −$3K, +$5K, +$2K, +$2K.
+  await expect(chart.getByText('−$3K')).toBeVisible();
+  await expect(chart.locator('rect[data-carried]')).toHaveCount(5);
+
+  const earlier = page.getByRole('button', { name: 'Earlier periods' });
+  const later = page.getByRole('button', { name: 'Later periods' });
+  const window = page.getByTestId('period-chart-window');
+  await expect(later).toHaveAttribute('aria-disabled', 'true');
+  await expect(earlier).not.toHaveAttribute('aria-disabled', 'true');
+  const newest = await window.innerText();
+  // The disabled arrow ignores its click: dispatched, since Playwright will not click an
+  // aria-disabled control on its own.
+  await later.dispatchEvent('click');
+  expect(await window.innerText()).toBe(newest);
+  await earlier.click();
+  const middle = await window.innerText();
+  expect(middle).not.toBe(newest);
+  await expect(chart.locator('rect[data-carried]')).toHaveCount(5);
+  await earlier.click();
+  const oldest = await window.innerText();
+  expect(oldest).not.toBe(middle);
+  await expect(chart.locator('rect[data-carried]')).toHaveCount(4);
+  await expect(chart.getByText('—')).toBeVisible();
+  await expect(earlier).toHaveAttribute('aria-disabled', 'true');
+  await later.click();
+  expect(await window.innerText()).toBe(middle);
+
+  // The switch walks the views, back to the newest window each time.
+  const views = page.getByRole('group', { name: 'Growth fund period view' });
+  await views.getByRole('button', { name: 'Quarterly' }).click();
+  await expect(window).toHaveText(/Q\d \d{4}/);
+  await expect(later).toHaveAttribute('aria-disabled', 'true');
+  await views.getByRole('button', { name: 'Yearly' }).click();
+  await expect(window).toHaveText(/^\d{4} – \d{4}$/);
+  await expect(earlier).toHaveAttribute('aria-disabled', 'true');
+  await expect(later).toHaveAttribute('aria-disabled', 'true');
+  await views.getByRole('button', { name: 'Monthly' }).click();
+  expect(await window.innerText()).toBe(newest);
+
+  // Arrow keys read a bar's period and figures; hover and tap do too.
+  const plot = page.getByTestId('period-chart-plot');
+  const readout = page.getByTestId('period-chart-readout');
+  await plot.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(readout).toContainText('+$2,000');
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  await expect(readout).toContainText('+$5,000');
+  await plot.hover();
+  await expect(readout).toBeVisible();
+  if (isPhone(testInfo)) {
+    const box = await plot.boundingBox();
+    if (!box) throw new Error('expected the plot to be visible');
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(readout).toBeVisible();
+  }
+
+  await expectSoundScreen(page, testInfo);
+});
+
+test('carried periods read as carried, not observed', async ({ page }) => {
+  await mockGrowth(page);
+  await page.goto('/app/holdings/hld_growth');
+  await expect(page.getByTestId('period-chart')).toBeVisible();
+  // The newest window observes every month: no carried words, no note.
+  await expect(page.getByText('Carried:')).toHaveCount(0);
+  await expect(page.locator('[data-testid="period-chart"] rect[data-carried="true"]')).toHaveCount(
+    0,
+  );
+
+  // A page back, the skipped month carries: the word under its bar and the note.
+  await page.getByRole('button', { name: 'Earlier periods' }).click();
+  await expect(page.locator('[data-testid="period-chart"] rect[data-carried="true"]')).toHaveCount(
+    1,
+  );
+  await expect(page.getByText('carried', { exact: true })).toBeVisible();
+  await expect(page.getByText(/nothing was recorded in this period/)).toBeVisible();
+
+  // Reading the carried bar says carried, with its flat change and end value.
+  const plot = page.getByTestId('period-chart-plot');
+  await plot.focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  const readout = page.getByTestId('period-chart-readout');
+  await expect(readout).toContainText('Carried');
+  await expect(readout).toContainText('Ended $108,000');
+});
+
+test('with one value, the period chart waits as the placeholder', async ({ page }, testInfo) => {
+  await page.goto('/app/holdings/hld_flat');
+  await expect(page.getByRole('heading', { level: 2, name: 'Period changes' })).toBeVisible();
+  const placeholder = page.getByTestId('period-chart-placeholder');
+  await expect(placeholder).toBeVisible();
+  await expect(placeholder.getByText('Need more data')).toBeVisible();
+  await expect(page.getByText('Update it in another month to compare months.')).toBeVisible();
+  // Controls that act on data are not shown on it.
+  await expect(page.getByRole('button', { name: 'Earlier periods' })).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Riverside flat period view' })).toHaveCount(0);
+  await expectSoundScreen(page, testInfo);
 });
 
 test('a sound screen at phone and computer widths', async ({ page }, testInfo) => {
