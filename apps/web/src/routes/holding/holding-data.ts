@@ -74,6 +74,12 @@ export function holdingTrend(
   return series(values, [input], { from, to: today }, 'day');
 }
 
+/** What the holding page's charts need: one value waits for its companion. */
+export const ONE_VALUE_REASON =
+  'Update this next month, or add an earlier value, to see how it moves.';
+/** What the holding page's charts need: no values wait for the first. */
+export const NO_VALUES_REASON = 'Add its first value, then update it as it changes.';
+
 /** The change baseline when none is selected: the agent's default context baseline. */
 export const HOLDING_BASELINE_DEFAULT: Baseline = 'last_month';
 

@@ -49,11 +49,14 @@ import { homeData } from '../home/home-data';
 import {
   BASELINE_LABELS,
   HOLDING_BASELINE_DEFAULT,
+  NO_VALUES_REASON,
+  ONE_VALUE_REASON,
   formatPct,
   holdingChange,
   holdingTrend,
   stalenessText,
 } from './holding-data';
+import { PeriodCard } from './PeriodCard';
 import { holdingValuesQuery, useHoldingValues, valueFooter } from './values';
 import styles from './Holding.module.css';
 
@@ -63,9 +66,6 @@ import styles from './Holding.module.css';
  * retag, archive and delete — the last two from the top-right menu. Its figures come from core
  * over the snapshot; the history's full values come paged from the API.
  */
-
-const ONE_VALUE_REASON = 'Update this next month, or add an earlier value, to see how it moves.';
-const NO_VALUES_REASON = 'Add its first value, then update it as it changes.';
 
 export function Holding() {
   const { id } = useParams();
@@ -242,6 +242,7 @@ function HoldingLoaded({
           )}
         </Card>
       </section>
+      <PeriodCard snapshot={snapshot} holding={holding} universal={data.universal} today={today} />
       <div className={styles.sectionHead}>
         <h2 id="history-heading">History · {total}</h2>
       </div>
