@@ -1,5 +1,7 @@
 import {
   MAX_NAME_LENGTH,
+  type ActivityQuery,
+  type AuditEntry,
   type ContextInput,
   type CreateHolding,
   type ExportBundle,
@@ -22,12 +24,15 @@ import {
   type Tag,
   type TagInput,
   type TypeInput,
+  type UndoResult,
+  type UndoTarget,
   type UserType,
   type Value,
   type ValuePatch,
   type ValueResult,
   type Write,
 } from '@netnet/contracts';
+import { activity, undo } from './activity';
 import { changeBaseCurrency } from './currency';
 import { destroy } from './destroy';
 import { exportAll } from './export';
@@ -56,7 +61,7 @@ export type { LedgerContent, LedgerOptions } from './scope';
  * implementation behind REST and MCP. Every write is one transaction with its audit rows,
  * `data_version + 1`, its batch, its warnings and its domain events; the edge `track()`s the
  * events. `destroy` is the one exception: it deletes the audit log itself, so it writes none.
- * Undo and activity come with P3.
+ * Activity, undo, the base currency change, export, erasure and periods come with P3.
  */
 export interface Ledger {
   /** The ledger in `baseCurrency`, with every universal type and the pack chain's types. Once. */
@@ -67,6 +72,8 @@ export interface Ledger {
   listHoldings(q: HoldingQuery): Promise<Page<HoldingView>>;
   getHolding(id: string, values?: PageReq): Promise<HoldingDetail>;
   history(q: HistoryQuery): Promise<Series>;
+  /** The audit log, newest first, optionally one agent turn. */
+  activity(p: ActivityQuery): Promise<Page<AuditEntry>>;
   periods(q: PeriodQuery): Promise<PeriodTable>;
 
   createHolding(i: CreateHolding): Promise<Write<Holding>>;
@@ -80,6 +87,8 @@ export interface Ledger {
   deleteType(id: string, moveTo?: string): Promise<Write<void>>;
   upsertTag(i: TagInput): Promise<Write<Tag>>;
   deleteTag(id: string, mergeInto?: string): Promise<Write<void>>;
+  /** Undoes one entry, or a whole agent turn newest first and all or nothing. */
+  undo(t: UndoTarget): Promise<Write<UndoResult>>;
   setPrefs(p: PrefsPatch): Promise<Write<Prefs>>;
   /**
    * Another default currency: every value re-derived from the stored rates at its own rate date,
@@ -108,6 +117,7 @@ export const LEDGER_READS = [
   'listHoldings',
   'getHolding',
   'history',
+  'activity',
   'periods',
   'exportAll',
 ] as const satisfies readonly (keyof Ledger)[];
@@ -128,6 +138,7 @@ export const LEDGER_WRITES = [
   'deleteType',
   'upsertTag',
   'deleteTag',
+  'undo',
   'setPrefs',
   'changeBaseCurrency',
   'applyPackTypes',
@@ -145,6 +156,7 @@ export function openLedger(tx: LedgerTx, options: LedgerOptions): Ledger {
     listHoldings: (q) => listHoldings(s, q),
     getHolding: (id, values) => getHolding(s, id, values),
     history: (q) => history(s, q),
+    activity: (p) => activity(s, p),
     periods: (q) => periods(s, q),
     createHolding: (i) => createHolding(s, i),
     updateHolding: (id, p) => updateHolding(s, id, p),
@@ -156,6 +168,7 @@ export function openLedger(tx: LedgerTx, options: LedgerOptions): Ledger {
     deleteType: (id, moveTo) => deleteType(s, id, moveTo),
     upsertTag: (i) => upsertTag(s, i),
     deleteTag: (id, mergeInto) => deleteTag(s, id, mergeInto),
+    undo: (t) => undo(s, t),
     setPrefs: (p) => setPrefs(s, p),
     changeBaseCurrency: (ccy) => changeBaseCurrency(s, ccy),
     applyPackTypes: (pack) => applyPackTypes(s, pack),

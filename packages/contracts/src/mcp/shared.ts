@@ -3,6 +3,7 @@ import { universalSchema } from '../content';
 import { errorCodeSchema } from '../errors';
 import { HOLDING_KINDS, VALUE_SOURCES } from '../figures';
 import {
+  MAX_ACTIVITY_PAGE,
   MAX_HOLDINGS_PAGE,
   MAX_NAME_LENGTH,
   MAX_TAGS_PER_HOLDING,
@@ -103,6 +104,12 @@ export const mcpValuesLimit = z
   .int('Give the limit as a whole number.')
   .min(1, 'Give a limit of at least 1.')
   .max(MAX_VALUES_PAGE, `Give a limit of at most ${MAX_VALUES_PAGE}.`)
+  .optional();
+
+export const mcpActivityLimit = z
+  .int('Give the limit as a whole number.')
+  .min(1, 'Give a limit of at least 1.')
+  .max(MAX_ACTIVITY_PAGE, `Give a limit of at most ${MAX_ACTIVITY_PAGE}.`)
   .optional();
 
 export const mcpCadenceDays = z
@@ -221,6 +228,45 @@ export const mcpCandidateSchema = z.strictObject({
   latest: z.strictObject({ date: outputDate, amount: major, currency: majorCurrency }).nullable(),
 });
 export type McpCandidate = z.infer<typeof mcpCandidateSchema>;
+
+/**
+ * One activity entry: the audit row as the log reads it. `before` and `after` are the entity
+ * exactly as the Ledger stores it (old → new on the entry), so they keep the Ledger's camelCase
+ * and minor units; everything else is snake_case.
+ */
+export const mcpAuditEntrySchema = z.strictObject({
+  id: z.string(),
+  /** The instant it was written, ISO-8601 UTC. */
+  at: z.iso.datetime(),
+  actor: z.enum(['user', 'agent', 'system']),
+  /** The agent's name as shown when an agent wrote it, or the agent a revocation disconnected. */
+  client_name: z.string().nullable(),
+  connection_id: z.string().nullable(),
+  /** The agent turn it belongs to, or null for the person's and NetNet's own writes. */
+  batch_id: z.string().nullable(),
+  action: z.string(),
+  entity: z.string(),
+  entity_id: z.string().nullable(),
+  before: z.unknown(),
+  after: z.unknown(),
+  /** The entry this one undoes, when it is itself an undo. */
+  undoes: z.string().nullable(),
+  /** The entry that undid this one, when it has been undone. */
+  undone_by: z.string().nullable(),
+  /** How the entry reads, such as "Agent disconnected" for a revocation. */
+  summary: z.string(),
+});
+export type McpAuditEntry = z.infer<typeof mcpAuditEntrySchema>;
+
+/** What an undo restored, in the order it was undone (a batch newest first). */
+export const mcpUndoResultSchema = z.strictObject({
+  undone: z.array(
+    z.strictObject({ entry_id: z.string(), entity: z.string(), entity_id: z.string().nullable() }),
+  ),
+  /** The new audit entries' ids, one per undone entry, in the same order. */
+  undo_ids: z.array(z.string()),
+});
+export type McpUndoResult = z.infer<typeof mcpUndoResultSchema>;
 
 /**
  * A failed call's `structuredContent`: the error code, what to change, the bad fields, and the

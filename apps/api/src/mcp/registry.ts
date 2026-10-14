@@ -9,8 +9,10 @@ import { getNetWorthHistoryTool } from './tools/get-net-worth-history';
 import { getPeriodChangesTool } from './tools/get-period-changes';
 import { getSetupGuideTool } from './tools/get-setup-guide';
 import { getTaxonomyTool } from './tools/get-taxonomy';
+import { listActivityTool } from './tools/list-activity';
 import { listHoldingsTool } from './tools/list-holdings';
 import { recordValuesTool } from './tools/record-values';
+import { undoTool } from './tools/undo';
 import { updateHoldingTool } from './tools/update-holding';
 import { updateValueTool } from './tools/update-value';
 import { upsertTagTool } from './tools/upsert-tag';
@@ -19,7 +21,7 @@ import type { ToolDef } from './tool';
 
 /**
  * The tools (architecture §7.4), in the order `tools/list` shows them: the summary first, then
- * reads, then writes. `list_activity` and `undo` come with P3.
+ * reads, then writes. `get_period_changes`, `list_activity` and `undo` come with P3.
  */
 export const TOOL_REGISTRY: readonly ToolDef[] = [
   getFinancialContextTool,
@@ -29,6 +31,7 @@ export const TOOL_REGISTRY: readonly ToolDef[] = [
   getPeriodChangesTool,
   getTaxonomyTool,
   getSetupGuideTool,
+  listActivityTool,
   createHoldingTool,
   updateHoldingTool,
   deleteHoldingTool,
@@ -39,4 +42,5 @@ export const TOOL_REGISTRY: readonly ToolDef[] = [
   deleteTypeTool,
   upsertTagTool,
   deleteTagTool,
+  undoTool,
 ];

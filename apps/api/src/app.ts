@@ -7,6 +7,7 @@ import { sessionFromCookie } from './auth/session';
 import { touchCheckedOnSession } from './auth/touch-checked';
 import { contentStore } from './content/store';
 import { accountRoutes } from './http/account';
+import { activityRoutes } from './http/activity';
 import { agentRoutes } from './http/agent';
 import { contentRoutes } from './http/content';
 import { eventsRoutes } from './http/events';
@@ -81,6 +82,7 @@ app.route('/api', valuesRoutes());
 app.route('/api/types', typesRoutes());
 app.route('/api/tags', tagsRoutes());
 app.route('/api/prefs', prefsRoutes());
+app.route('/api/activity', activityRoutes());
 
 /** The Reminders switches, the VAPID key and the push endpoints (PRD J12, §7.2). */
 app.route('/api/notifications', notificationsRoutes());

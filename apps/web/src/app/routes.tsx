@@ -4,6 +4,7 @@ import { DeleteAccount } from '../routes/account/DeleteAccount';
 import { Export } from '../routes/account/Export';
 import { General } from '../routes/account/General';
 import { Notifications } from '../routes/account/Notifications';
+import { Activity } from '../routes/activity/Activity';
 import { Add } from '../routes/add/Add';
 import { Edit } from '../routes/add/Edit';
 import { Agent } from '../routes/agent/Agent';
@@ -142,6 +143,11 @@ export const routes: RouteObject[] = [
                 handle: { title: 'Insights' } satisfies RouteHandle,
               },
               { path: 'agent', Component: Agent, handle: { title: 'Agent' } satisfies RouteHandle },
+              {
+                path: 'activity',
+                Component: Activity,
+                handle: { title: 'Activity' } satisfies RouteHandle,
+              },
               {
                 path: 'account',
                 Component: Account,

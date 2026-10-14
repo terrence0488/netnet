@@ -13,33 +13,36 @@ describe('the nav', () => {
     expect(activeEntry('/insights')?.label).toBe('Insights');
     expect(activeEntry('/agent')?.label).toBe('Agent');
     expect(activeEntry('/connect/claude')?.label).toBe('Agent');
+    expect(activeEntry('/activity')?.label).toBe('Activity');
     expect(activeEntry('/agents')).toBeUndefined();
     expect(activeEntry('/gallery')).toBeUndefined();
   });
 
   it('is data: a new entry is one line, and may live in the sidebar only', () => {
-    const activity: NavEntry = {
-      to: '/activity',
-      label: 'Activity',
-      icon: 'activity',
-      owns: ['/activity'],
+    const reports: NavEntry = {
+      to: '/reports',
+      label: 'Reports',
+      icon: 'insights',
+      owns: ['/reports'],
       places: ['sidebar'],
     };
-    const nav = [...NAV, activity];
+    const nav = [...NAV, reports];
     expect(entriesFor('sidebar', nav).map((e) => e.label)).toStrictEqual([
       'Home',
       'Insights',
       'Agent',
-      'Account',
       'Activity',
+      'Account',
+      'Reports',
     ]);
     expect(entriesFor('tabs', nav).map((e) => e.label)).toStrictEqual([
       'Home',
       'Insights',
       'Agent',
+      'Activity',
       'Account',
     ]);
-    expect(activeEntry('/activity', nav)).toBe(activity);
+    expect(activeEntry('/reports', nav)).toBe(reports);
   });
 
   it('leads only to screens that exist', () => {

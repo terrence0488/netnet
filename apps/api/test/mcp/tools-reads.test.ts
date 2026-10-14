@@ -6,6 +6,7 @@ import type {
   McpGetPeriodChangesOutput,
   McpGetSetupGuideOutput,
   McpGetTaxonomyOutput,
+  McpListActivityOutput,
   McpListHoldingsOutput,
 } from '@netnet/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -445,6 +446,61 @@ describe('get_setup_guide', () => {
   });
 });
 
+describe('list_activity', () => {
+  it('lists every change newest first, and pages', async () => {
+    const { agent } = await seeded();
+    const first = okOf<McpListActivityOutput>(
+      await callTool(target, agent.token, 'list_activity', { limit: 2 }),
+    );
+    expect(first.entries).toHaveLength(2);
+    expect(first.next_cursor).not.toBeNull();
+    expect(first.entries[0]).toMatchObject({
+      actor: 'agent',
+      entity: 'value',
+      action: 'create',
+      client_name: 'Claude',
+    });
+    expect(first.entries[0]?.batch_id).toMatch(/^bat_/);
+    expect(first.entries[0]?.summary).toBe('Recorded a value for 2026-07-15');
+    const second = okOf<McpListActivityOutput>(
+      await callTool(target, agent.token, 'list_activity', {
+        limit: 100,
+        cursor: first.next_cursor,
+      }),
+    );
+    const walked = [...first.entries, ...second.entries];
+    const all = okOf<McpListActivityOutput>(await callTool(target, agent.token, 'list_activity'));
+    expect(walked.map((e) => e.id)).toEqual(all.entries.map((e) => e.id));
+  });
+
+  it('filters to one agent turn', async () => {
+    const { agent } = await seeded();
+    const all = okOf<McpListActivityOutput>(await callTool(target, agent.token, 'list_activity'));
+    const latest = all.entries.find((e) => e.batch_id !== null)!;
+    const batchId = latest.batch_id!;
+    const turn = okOf<McpListActivityOutput>(
+      await callTool(target, agent.token, 'list_activity', { batch_id: batchId }),
+    );
+    expect(turn.entries.length).toBeGreaterThan(0);
+    expect(new Set(turn.entries.map((e) => e.batch_id))).toEqual(new Set([batchId]));
+    const unknown = okOf<McpListActivityOutput>(
+      await callTool(target, agent.token, 'list_activity', {
+        batch_id: 'bat_01K1G4KX00ZZZZZZZZZZZZ',
+      }),
+    );
+    expect(unknown.entries).toEqual([]);
+  });
+
+  it('rejects a limit over 100', async () => {
+    const { agent } = await seeded();
+    const error = errOf(
+      await callTool(target, agent.token, 'list_activity', { limit: 101 }),
+      'VALIDATION_FAILED',
+    );
+    expect(error.fields).toHaveProperty('limit');
+  });
+});
+
 describe('reads change nothing', () => {
   it('leaves data_version and every row as they were', async () => {
     const { agent, freshHolding, cashType } = await seeded();
@@ -458,6 +514,7 @@ describe('reads change nothing', () => {
       ['get_period_changes', { view: 'monthly' }],
       ['get_taxonomy', {}],
       ['get_setup_guide', {}],
+      ['list_activity', { limit: 2 }],
       ['list_holdings', { type_ids: [cashType], archived: 'include' }],
     ];
     for (const [name, args] of calls) {

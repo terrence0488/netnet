@@ -39,6 +39,9 @@ const ROUTES = [
   'PATCH /api/tags/:id',
   'DELETE /api/tags/:id',
   'PATCH /api/prefs',
+  'GET /api/activity',
+  'POST /api/activity/:id/undo',
+  'POST /api/activity/batches/:id/undo',
 ] as const;
 type Route = (typeof ROUTES)[number];
 
@@ -160,6 +163,8 @@ interface Case {
   /** A's ids the call sends, which may come back in the answer (an error naming them). */
   sent: () => string[];
   status: number;
+  /** A 200 GET whose answer is empty by design (a filter that matches nothing of B's). */
+  empty?: true;
 }
 
 const a = () => fixtures.a;
@@ -350,6 +355,43 @@ const CASES: Record<Route, Case[]> = {
       status: 404,
     },
   ],
+  'GET /api/activity': [
+    {
+      name: 'B reads B’s own log, whatever names A in the query',
+      method: 'GET',
+      path: () => `/api/activity?userId=${USER_A}`,
+      sent: () => [],
+      status: 200,
+    },
+    {
+      name: 'A’s batch filters to an empty page, not A’s turn',
+      method: 'GET',
+      path: () => `/api/activity?batchId=${a().batchId}`,
+      sent: () => [a().batchId],
+      status: 200,
+      empty: true,
+    },
+  ],
+  'POST /api/activity/:id/undo': [
+    {
+      name: 'A’s entry',
+      method: 'POST',
+      path: () => `/api/activity/${a().auditIds[0]}/undo`,
+      json: () => ({}),
+      sent: () => [a().auditIds[0] ?? ''],
+      status: 404,
+    },
+  ],
+  'POST /api/activity/batches/:id/undo': [
+    {
+      name: 'A’s batch',
+      method: 'POST',
+      path: () => `/api/activity/batches/${a().batchId}/undo`,
+      json: () => ({}),
+      sent: () => [a().batchId],
+      status: 404,
+    },
+  ],
   'PATCH /api/prefs': [
     {
       name: 'a filter naming A’s type',
@@ -441,7 +483,10 @@ describe('REST routes as user B, with user A’s ids', () => {
         expect(text).not.toContain(MARKER_A);
         const sent = c.sent();
         for (const id of aIds) if (!sent.includes(id)) expect(text).not.toContain(id);
-        if (c.status === 200 && c.method === 'GET') expect(text).toContain(MARKER_B);
+        if (c.status === 200 && c.method === 'GET' && !c.empty) {
+          expect(text).toContain(MARKER_B);
+        }
+        if (c.empty) expect(JSON.parse(text)).toEqual({ items: [], nextCursor: null });
 
         await target.settle();
         expect(await ledgerOf(USER_A)).toBe(beforeA);

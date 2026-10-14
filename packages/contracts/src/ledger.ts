@@ -47,6 +47,8 @@ export const DEFAULT_PERIODS = 12;
 /** Drivers per period (`get_period_changes`' `drivers`); 5 when left out. */
 export const MAX_DRIVERS = 25;
 export const DEFAULT_DRIVERS = 5;
+/** A page of the activity log (`list_activity`). */
+export const MAX_ACTIVITY_PAGE = 100;
 /** Ids in one filter list. */
 const MAX_FILTER_IDS = 500;
 /** The longest custom cadence: ten years. */
@@ -330,6 +332,28 @@ export const holdingQuerySchema = z.strictObject({
 });
 export type HoldingQuery = z.input<typeof holdingQuerySchema>;
 
+/**
+ * `activity` (`GET /api/activity`, `list_activity`): the audit log, newest first. `batchId`
+ * filters to one agent turn.
+ */
+export const activityQuerySchema = z.strictObject({
+  cursor: cursor.optional(),
+  limit: z
+    .int('Give the limit as a whole number.')
+    .min(1, 'Give a limit of at least 1.')
+    .max(MAX_ACTIVITY_PAGE, `Give a limit of at most ${MAX_ACTIVITY_PAGE}.`)
+    .optional(),
+  batchId: id.optional(),
+});
+export type ActivityQuery = z.input<typeof activityQuerySchema>;
+
+/** `undo` (`undo`): exactly one of an entry and a whole agent turn. */
+export const undoTargetSchema = z.union(
+  [z.strictObject({ entryId: id }), z.strictObject({ batchId: id })],
+  { error: 'Give entryId for one entry, or batchId for a whole agent turn, but not both.' },
+);
+export type UndoTarget = z.input<typeof undoTargetSchema>;
+
 /** `history` (`get_net_worth_history`). `to` defaults to today, `interval` to `month`. */
 export const historyQuerySchema = z
   .strictObject({
@@ -522,6 +546,54 @@ export interface Page<T> {
   nextCursor: string | null;
 }
 
+/** Who made an activity entry: the person, an agent, or NetNet itself. */
+export const ACTORS = ['user', 'agent', 'system'] as const;
+export type Actor = (typeof ACTORS)[number];
+
+/**
+ * One activity entry: an audit row as the log reads it (architecture §6.8, §7.2). `before` and
+ * `after` are the entity as stored (a holding, value, type, tag, pref, ledger or connection
+ * snapshot), so old → new is on the entry; a revocation's `clientName` is the disconnected
+ * agent's name. `summary` is the one-line reading both the web and an agent show.
+ */
+export interface AuditEntry {
+  id: string;
+  /** The instant it was written, ISO-8601 UTC. */
+  at: string;
+  actor: Actor;
+  /** The agent's name as shown when an agent wrote it, or the agent a revocation disconnected. */
+  clientName: string | null;
+  connectionId: string | null;
+  /** The agent turn it belongs to, or null for the person's and NetNet's own writes. */
+  batchId: string | null;
+  action: string;
+  entity: string;
+  entityId: string | null;
+  before: unknown;
+  after: unknown;
+  /** The entry this one undoes, when it is itself an undo. */
+  undoes: string | null;
+  /** The entry that undid this one, when it has been undone. */
+  undoneBy: string | null;
+  /** How the entry reads, such as "Agent disconnected" for a revocation. */
+  summary: string;
+}
+
+/** What an undo restored, in the order it was undone (a batch newest first). */
+export interface UndoResult {
+  undone: { entryId: string; entity: string; entityId: string | null }[];
+  /** The new audit entries' ids, one per undone entry, in the same order. */
+  undoIds: string[];
+}
+
+/** `UNDO_CONFLICT`'s `blockers`: a later change to undo first (architecture §7.5). */
+export interface UndoBlocker {
+  entry_id: string;
+  action: string;
+  /** The instant it was written, ISO-8601 UTC. */
+  at: string;
+}
+
 export const WARNING_CODES = ['SAME_DATE_REPLACED'] as const;
 export type WarningCode = (typeof WARNING_CODES)[number];
 
@@ -533,7 +605,12 @@ export interface Warning {
 }
 
 /** The analytics events a write gives back for the edge to `track()` (PRD J3, §7.7). */
-export const DOMAIN_EVENT_NAMES = ['holding_created', 'value_recorded', 'value_corrected'] as const;
+export const DOMAIN_EVENT_NAMES = [
+  'holding_created',
+  'value_recorded',
+  'value_corrected',
+  'value_undone',
+] as const;
 export type DomainEventName = (typeof DOMAIN_EVENT_NAMES)[number];
 
 export type DomainEvent = {

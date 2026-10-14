@@ -10,6 +10,7 @@ import type { ContentRef } from '../../src/db/content';
 import { ensureProfile } from '../../src/db/profiles';
 import { createTrack } from '../../src/events/track';
 import { accountRoutes } from '../../src/http/account';
+import { activityRoutes } from '../../src/http/activity';
 import { exportRoutes } from '../../src/http/export';
 import { holdingsRoutes } from '../../src/http/holdings';
 import type { LedgerDeps } from '../../src/http/ledger-edge';
@@ -141,6 +142,7 @@ export function ledgerApp(db: TestDatabase): LedgerApp {
   app.route('/api/types', typesRoutes(deps));
   app.route('/api/tags', tagsRoutes(deps));
   app.route('/api/prefs', prefsRoutes(deps));
+  app.route('/api/activity', activityRoutes(deps));
   app.route('/api/export', exportRoutes(deps));
   // The re-auth clock is real time, like the sessions' sign-in times (see `aged`).
   app.route(

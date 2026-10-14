@@ -114,6 +114,25 @@ const CASES: Record<keyof Ledger, Case[]> = {
     { name: 'A’s tag', call: (l) => l.history({ tagIds: [a().tagId] }), sent: () => [a().tagId] },
   ],
   periods: [{ name: 'B’s periods', call: (l) => l.periods({ view: 'monthly' }), returns: true }],
+  activity: [
+    {
+      name: 'everything B did',
+      call: (l) => l.activity({}),
+      returns: true,
+    },
+  ],
+  undo: [
+    {
+      name: 'A’s entry',
+      call: (l) => l.undo({ entryId: a().auditIds[0]! }),
+      sent: () => [a().auditIds[0]!],
+    },
+    {
+      name: 'A’s batch',
+      call: (l) => l.undo({ batchId: a().batchId }),
+      sent: () => [a().batchId],
+    },
+  ],
   createHolding: [
     {
       name: 'A’s type',
@@ -283,5 +302,18 @@ describe('isolation', () => {
       }
     }
     expect(await ledgerOfA()).toBe(before);
+  });
+
+  it('gives B an empty page for A’s batch, not A’s turn', async () => {
+    const page = await suite.as(USER_B).read((l) => l.activity({ batchId: a().batchId }));
+    expect(page).toEqual({ items: [], nextCursor: null });
+  });
+
+  it('gives B’s snapshot and context only B’s rows', async () => {
+    const snapshot = await suite.as(USER_B).read((l) => l.snapshot());
+    expect(snapshot.holdings.map((h) => h.id).sort()).toEqual([...b().holdingIds].sort());
+    const context = await suite.as(USER_B).read((l) => l.context());
+    expect(context.connections.map((c) => c.id)).toEqual([CONNECTION_B]);
+    expect(context.values.map((v) => v.id).sort()).toEqual([...b().valueIds].sort());
   });
 });
