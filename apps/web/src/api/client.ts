@@ -80,7 +80,7 @@ export interface Sent<T> {
 
 /** One request, without opinions about 304: the building block for `api` and conditional GETs. */
 export async function send<T>(
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: ApiPath,
   body?: unknown,
   options: RequestOptions = {},
@@ -152,6 +152,8 @@ export const api = {
     dataOf(send<T>('GET', path, undefined, options)),
   post: <T>(path: ApiPath, body?: unknown, options?: RequestOptions) =>
     dataOf(send<T>('POST', path, body, options)),
+  put: <T>(path: ApiPath, body?: unknown, options?: RequestOptions) =>
+    dataOf(send<T>('PUT', path, body, options)),
   patch: <T>(path: ApiPath, body?: unknown, options?: RequestOptions) =>
     dataOf(send<T>('PATCH', path, body, options)),
   del: <T>(path: ApiPath, body?: unknown, options?: RequestOptions) =>

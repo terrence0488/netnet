@@ -1,0 +1,135 @@
+/* Notifications (Account → Notifications): the switches, the other devices, Always. */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-10) 0 var(--space-8);
+}
+
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: var(--hit);
+  height: var(--hit);
+  flex: none;
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-icon);
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-size: var(--size-amount-symbol);
+  font-weight: var(--weight-amount-symbol);
+  line-height: 1;
+}
+
+.iconButton:hover {
+  background: var(--paper);
+}
+
+.title {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-heading-screen);
+  font-weight: var(--weight-heading-screen);
+  letter-spacing: var(--tracking-heading-screen);
+}
+
+.spacer {
+  flex: none;
+  width: var(--hit);
+  height: var(--hit);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-5);
+  max-width: var(--measure-phone);
+  padding-bottom: var(--inset-page-end);
+}
+
+.rows {
+  display: grid;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  min-height: var(--hit);
+  padding: var(--space-4) 0;
+}
+
+.row + .row,
+.devices + .row {
+  border-top: var(--border-rule) solid var(--rule);
+}
+
+.text {
+  flex: 1;
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.label {
+  color: var(--ink);
+  font-size: var(--size-body);
+  font-weight: var(--weight-button);
+  line-height: var(--leading-body);
+}
+
+.hint {
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  line-height: var(--leading-body-sm);
+}
+
+.pointer {
+  color: var(--attention);
+  font-size: var(--size-meta);
+  line-height: var(--leading-body-sm);
+}
+
+.always {
+  flex: none;
+  padding-right: var(--space-3);
+  color: var(--ink-2);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.devices {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  border-top: var(--border-rule) solid var(--rule);
+}
+
+.deviceList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.device {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  min-height: var(--hit);
+  padding: var(--space-2) 0;
+}
+
+.deviceLabel {
+  color: var(--ink);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+}

@@ -43,6 +43,7 @@ export { ResendLink } from './ResendLink';
 export { Rule, type RuleVariant } from './Rule';
 export { Sheet, type SheetAction, type SheetProps } from './Sheet';
 export { Spinner } from './Spinner';
+export { Switch, type SwitchProps } from './Switch';
 export { TextField, type TextFieldProps } from './TextField';
 export { ToastProvider, ToastViewport, useToast, type ToastApi, type ToastInput } from './Toast';
 export { Wordmark } from './Wordmark';

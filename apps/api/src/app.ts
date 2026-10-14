@@ -13,6 +13,7 @@ import { geoRoutes } from './http/geo';
 import { holdingsRoutes } from './http/holdings';
 import { liveCountries, meRoutes } from './http/me';
 import { mcpRoutes } from './mcp/route';
+import { notificationsRoutes } from './http/notifications';
 import { prefsRoutes } from './http/prefs';
 import { remindersRoutes } from './http/reminders';
 import { snapshotRoutes } from './http/snapshot';
@@ -74,6 +75,9 @@ app.route('/api', valuesRoutes());
 app.route('/api/types', typesRoutes());
 app.route('/api/tags', tagsRoutes());
 app.route('/api/prefs', prefsRoutes());
+
+/** The Reminders switches, the VAPID key and the push endpoints (PRD J12, §7.2). */
+app.route('/api/notifications', notificationsRoutes());
 
 /** Published content: no user data, no session (architecture §7.2). */
 app.route('/api/content', contentRoutes(contentStore));

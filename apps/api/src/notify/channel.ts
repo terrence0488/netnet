@@ -1,7 +1,10 @@
+import type { NotificationPlatform } from '@netnet/contracts';
+
 /**
- * A channel carries a rendered message to one place (architecture §7.10): email, web push (P3-T6)
- * and native push with the Expo apps. `notify()` chooses the channel; a channel only sends.
+ * A channel carries a rendered message to one place (architecture §7.10): email, web push and
+ * native push with the Expo apps. `notify()` chooses the channel; a channel only sends.
  */
+
 export type ChannelId = 'email' | 'webpush' | 'expo';
 
 /** Where an email goes: the account's address. Never logged, tracked or put in a message. */
@@ -45,11 +48,18 @@ export interface RenderedPush {
 }
 
 /**
- * A device push goes to. P3-T6's `notification_endpoint` row stands behind it; until then a test
- * fake. The id is the endpoint's, for revocation on `404`/`410`.
+ * A device push goes to: a `notification_endpoint` row, read for one send. The id is the row's,
+ * for revocation on `404`/`410`; the user and platform are what `push_disabled {by: browser}`
+ * names; the TTL is the seconds until 21:00 in the person's zone, so a phone that was off does
+ * not light up at night (§7.10).
  */
 export interface PushEndpoint {
   id: string;
+  userId: string;
+  platform: NotificationPlatform;
+  /** The subscription the browser gave: the push-service URL plus its two keys. */
+  subscription: { endpoint: string; p256dh: string; auth: string };
+  ttlSeconds: number;
 }
 
 export interface PushChannel extends Channel<PushEndpoint, RenderedPush> {

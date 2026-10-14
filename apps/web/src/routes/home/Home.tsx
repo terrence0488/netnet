@@ -48,6 +48,7 @@ import {
   type HomeData,
 } from './home-data';
 import { useHomePrefs } from './prefs';
+import { PushCard } from './PushCard';
 import { sortHoldings, sortLabel } from './sort';
 import { SortSheet } from './SortSheet';
 import { StaleNote } from './StaleNote';
@@ -448,6 +449,7 @@ function LoadedHome({
               baseCurrency={snapshot.baseCurrency}
             />
           </section>
+          <PushCard />
           {staleCount > 0 ? <StaleNote count={staleCount} /> : null}
         </div>
         <section aria-labelledby="holdings-heading" className={styles.list}>

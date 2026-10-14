@@ -81,6 +81,14 @@ export function Account() {
                   ›
                 </span>
               </Link>
+              <Link to="/account/notifications" className={styles.actionLink}>
+                <span className={styles.grow}>
+                  <span className={styles.name}>Notifications</span>
+                </span>
+                <span aria-hidden="true" className={styles.chev}>
+                  ›
+                </span>
+              </Link>
               <Link to="/account/taxonomy" className={styles.actionLink}>
                 <span className={styles.grow}>Types and tags</span>
                 <span aria-hidden="true" className={styles.chev}>

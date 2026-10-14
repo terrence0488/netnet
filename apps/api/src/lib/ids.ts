@@ -2,7 +2,18 @@
  * Prefixed ULIDs (architecture §6): `hld_01J…`. The ULID's first ten characters are the creation
  * time in milliseconds, so ids sort roughly by age; the other sixteen are random.
  */
-export const ID_PREFIXES = ['usr', 'hld', 'val', 'typ', 'tag', 'aud', 'bat', 'con', 'att'] as const;
+export const ID_PREFIXES = [
+  'usr',
+  'hld',
+  'val',
+  'typ',
+  'tag',
+  'aud',
+  'bat',
+  'con',
+  'att',
+  'nep',
+] as const;
 
 export type IdPrefix = (typeof ID_PREFIXES)[number];
 

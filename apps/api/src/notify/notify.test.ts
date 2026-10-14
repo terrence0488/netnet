@@ -144,7 +144,18 @@ describe('notify()', () => {
 
 describe('the comeback reminder', () => {
   const VERIFIED = { email: ADDRESS, emailVerified: true };
-  const DEVICES = [{ id: 'ep_1' }, { id: 'ep_2' }];
+  const device = (id: string): PushEndpoint => ({
+    id,
+    userId: USER,
+    platform: 'android',
+    subscription: {
+      endpoint: `https://push.example.net/push/${id}`,
+      p256dh: 'BEl64zp256dh',
+      auth: 'authsecret',
+    },
+    ttlSeconds: 3600,
+  });
+  const DEVICES = [device('ep_1'), device('ep_2')];
 
   it('goes by push to every active device, and not by email', async () => {
     const push = fakePush([true, true]);
@@ -205,7 +216,7 @@ describe('the comeback reminder', () => {
     const push = fakePush([true]);
     const { notify, email, channels } = reminderNotify({
       account: VERIFIED,
-      endpoints: [{ id: 'ep_1' }],
+      endpoints: [device('ep_1')],
       push: push.channel,
       reminders: {
         state: () => Promise.resolve({ enabled: false, emailEnabled: true, lastSentAt: SENT_AT }),
@@ -221,7 +232,7 @@ describe('the comeback reminder', () => {
     const push = fakePush([true]);
     const pushing = reminderNotify({
       account: VERIFIED,
-      endpoints: [{ id: 'ep_1' }],
+      endpoints: [device('ep_1')],
       push: push.channel,
       reminders: {
         state: () => Promise.resolve({ enabled: true, emailEnabled: false, lastSentAt: SENT_AT }),
@@ -261,7 +272,7 @@ describe('the comeback reminder', () => {
     const push = fakePush([true]);
     const { notify, email } = reminderNotify({
       account: VERIFIED,
-      endpoints: [{ id: 'ep_1' }],
+      endpoints: [device('ep_1')],
       push: push.channel,
       reminders: { sign: () => null },
     });

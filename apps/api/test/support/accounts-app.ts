@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AgentGuide, Countries } from '@netnet/contracts';
 import { Hono } from 'hono';
+import webpush from 'web-push';
 import { createAgent, type Agent } from '../../src/auth/agent';
 import { createAuth, type Auth } from '../../src/auth/auth';
 import type { GuideHosts, LoadGuideHosts } from '../../src/auth/classify';
@@ -24,6 +25,7 @@ import { agentRoutes } from '../../src/http/agent';
 import { eventsRoutes } from '../../src/http/events';
 import { geoRoutes } from '../../src/http/geo';
 import { meRoutes } from '../../src/http/me';
+import { notificationsRoutes } from '../../src/http/notifications';
 import { remindersRoutes } from '../../src/http/reminders';
 import { cronAuth } from '../../src/jobs/cron';
 import { dailyJob } from '../../src/jobs/daily';
@@ -39,6 +41,7 @@ import type { PushChannel, PushEndpoint } from '../../src/notify/channel';
 import { captureChannel, type CaptureChannel } from '../../src/notify/email';
 import { signReminderToken } from '../../src/notify/links';
 import { REMINDER_EMAILS_PER_DAY, createNotify } from '../../src/notify/notify';
+import type { VapidConfig } from '../../src/notify/webpush';
 import { FIXED_NOW, type TestDatabase } from '../isolation/harness';
 import { FakeMetadataServer } from './cimd-server';
 import { captureWaitUntil } from './wait-until';
@@ -61,6 +64,12 @@ export const LINK_SECRET = 'test-link-secret-0123456789abcdef';
 
 /** The cron routes' secret in tests. */
 export const CRON_SECRET = 'test-cron-secret';
+
+/** Test-only VAPID keys, generated per run: the routes serve the public one. */
+export const TEST_VAPID: VapidConfig = {
+  ...webpush.generateVAPIDKeys(),
+  subject: 'mailto:push@netnet.example',
+};
 
 /** The named guides' `matchHosts`, read from the repo's own `content/agents/`. */
 export function repoGuideHosts(): GuideHosts[] {
@@ -102,7 +111,7 @@ export interface AccountsAppOptions {
   social?: SocialConfig;
   /** The live guides' names for the reminder's "Just ask" line; none published by default. */
   guideName?: (client: 'claude' | 'chatgpt') => Promise<string | undefined>;
-  /** Push devices and the channel; no devices by default (P3-T6 wires the real ones). */
+  /** Push devices and the channel: a fake, or the real `webpush` wiring. None by default. */
   push?: { endpoints: (userId: string) => Promise<PushEndpoint[]>; channel: PushChannel };
 }
 
@@ -216,6 +225,16 @@ export function accountsApp(db: TestDatabase, options: AccountsAppOptions = {}):
       appVersion: () => 'test123',
       clock: () => clock.now,
       secret: () => LINK_SECRET,
+    }),
+  );
+  app.route(
+    '/api/notifications',
+    notificationsRoutes({
+      db: () => db.appDb,
+      track,
+      appVersion: () => 'test123',
+      clock: () => clock.now,
+      vapid: () => TEST_VAPID,
     }),
   );
   app.use(

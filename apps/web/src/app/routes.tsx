@@ -1,6 +1,7 @@
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { Account } from '../routes/account/Account';
 import { General } from '../routes/account/General';
+import { Notifications } from '../routes/account/Notifications';
 import { Add } from '../routes/add/Add';
 import { Edit } from '../routes/add/Edit';
 import { Agent } from '../routes/agent/Agent';
@@ -142,6 +143,11 @@ export const routes: RouteObject[] = [
                 path: 'account/general',
                 Component: General,
                 handle: { title: 'General' } satisfies RouteHandle,
+              },
+              {
+                path: 'account/notifications',
+                Component: Notifications,
+                handle: { title: 'Notifications' } satisfies RouteHandle,
               },
               {
                 path: 'account/taxonomy',

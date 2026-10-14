@@ -68,13 +68,14 @@ describe('0005_reminder_state', () => {
       readFileSync(new URL('meta/_journal.json', MIGRATIONS), 'utf8'),
     ) as Journal;
     const tags = journal.entries.map((entry) => entry.tag);
-    expect(tags.at(-1)).toBe('0005_reminder_state');
+    const through0005 = tags.slice(0, tags.indexOf('0005_reminder_state') + 1);
+    expect(through0005.at(-1)).toBe('0005_reminder_state');
 
     const { client } = await freshDatabase().then((made) => {
       created.push(made);
       return made;
     });
-    for (const tag of tags.slice(0, -1)) await apply(client, tag);
+    for (const tag of through0005.slice(0, -1)) await apply(client, tag);
     await client.query(
       `insert into core."user" (id, name, email) values
          ('usr_01K1G4KX00AAAAAAAAAAAAAAAA', '', 'migration-a@example.com'),
