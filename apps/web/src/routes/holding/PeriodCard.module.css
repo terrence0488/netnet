@@ -1,0 +1,95 @@
+/* The holding page's period card (design-system §5, §6.1): the pager above the chart names
+   the window, the switch below it names the view. */
+
+/* ‹ window ›: the pager says what it is paging, and an arrow with nowhere to go is dimmed
+   rather than leading to an empty chart. */
+.pager {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-5);
+}
+
+.arrow {
+  display: grid;
+  place-items: center;
+  width: var(--hit);
+  height: var(--hit);
+  flex: none;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-amount-symbol);
+  font-weight: var(--weight-amount-symbol);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.arrow:not([aria-disabled='true']):hover {
+  color: var(--brand-text);
+}
+
+.arrow[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+.window {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink-3);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+/* What carried means, where the chart shows it (the prototype's note, unboxed: the card is
+   box enough). */
+.carried {
+  margin: var(--space-5) 0 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+}
+
+.carried b {
+  color: var(--ink);
+}
+
+/* Monthly / Quarterly / Yearly: an outlined tray, the chosen segment tomato. */
+.switch {
+  display: flex;
+  gap: var(--space-2);
+  max-width: calc(var(--space-20) * 6);
+  margin: var(--space-6) auto 0;
+  padding: var(--space-2);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  box-shadow: var(--shadow-control);
+}
+
+.segment {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--hit);
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--ink-2);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  cursor: pointer;
+}
+
+.segment.on {
+  background: var(--brand);
+  color: var(--brand-on);
+  box-shadow: inset 0 0 0 var(--border-edge) var(--edge);
+}
