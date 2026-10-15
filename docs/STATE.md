@@ -4,8 +4,8 @@
 Stage: Build (P3)
 Phase: P3
 Status: in-progress
-Next action: Founder: merge the P3 stack in order, set F19 prod secrets, deploy by the manual workflow — then `stage: test P3`.
-**Branch:** `main` at #76. P3 stack, merge in this order: #77 (docs), then #78 (T1) → #81 (T2), then #79 (T3) + #80 (T5, either order) → #82 (T6) → #83 (T4) → #84 (T7) → #85 (T8) + #86 (T9, either order) → #87 (T10 sweep, LAST). Retarget each PR's base as you go.
+Next action: Founder: set F19 prod secrets, deploy by the manual workflow — then `stage: test P3` in a fresh session.
+**Branch:** `main` current (P3 stack #77–#87 merged, branches deleted).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -21,10 +21,9 @@ Next action: Founder: merge the P3 stack in order, set F19 prod secrets, deploy 
 | P4 | not-started | | |
 
 ## Handoff note (last session)
-P3 built overnight 2026-10-14: T1–T9 done, T10 swept (390 E2E green, audit
-clean), production deploy left to the Founder. Merge in the order above
-(retarget each base as you go); set F19 prod secrets first or reminders/push
-fail closed. #86 Preview red: Neon preview-project branch limit (code gates
-green; tip #87 fully green incl. Preview+smoke — re-run #86's Preview after
-merges free branches). P2-T8 still waits on F11 phone shots (non-blocking).
-Stage 6 manual checks are in the T10 brief report.
+P3 stack merged to `main` 2026-10-15 (#77–#87, branches deleted; final tree:
+lint/typecheck clean, 1459 unit tests green). Still Founder actions: F19
+prod secrets (reminders/push fail closed without them), the manual
+production deploy with the checkpoint verified there. Then `stage: test P3`
+in a fresh session; its manual checks are in the T10 brief report. P2-T8
+still waits on F11 phone shots (non-blocking).
