@@ -411,6 +411,53 @@ export const reminderState = core.table(
   ],
 );
 
+/**
+ * One row per device where push is on (architecture §6.2, PRD J12): the subscription the browser
+ * gave (a push-service URL plus its two keys), the device as the person recognises it, and the
+ * send outcomes behind revocation. **Active** = not revoked. Revoked when the person turns the
+ * device off or removes it, on sign-out on that device, and when the push service answers
+ * `404`/`410` or fails five times in a row. Deleted with the account. Only
+ * `apps/api/src/db/**` touches this (CONVENTIONS §3).
+ */
+export const notificationEndpoint = core.table(
+  'notification_endpoint',
+  {
+    /** `nep_` */
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull(),
+    /** `webpush`; `expo` joins with the native apps. */
+    channel: text('channel', { enum: ['webpush'] })
+      .notNull()
+      .default('webpush'),
+    /** The push-service URL the browser subscribed with. */
+    endpoint: text('endpoint').notNull(),
+    /** `{p256dh, auth}`: the subscription's keys, base64url from the browser. */
+    keys: jsonb('keys').notNull(),
+    /** `ios`, `android` or `desktop`: what `push_enabled` names. */
+    platform: text('platform', { enum: ['ios', 'android', 'desktop'] }).notNull(),
+    /** "Android · Chrome": the device as the person recognises it in the device list. */
+    deviceLabel: text('device_label').notNull(),
+    createdAt: instant('created_at').notNull().defaultNow(),
+    /** "Last used" in the device list: made, checked in, or re-activated. */
+    lastSeenAt: instant('last_seen_at').notNull().defaultNow(),
+    lastSuccessAt: instant('last_success_at'),
+    /** Failures in a row; five revokes. A success resets it. */
+    failureCount: integer('failure_count').notNull().default(0),
+    revokedAt: instant('revoked_at'),
+  },
+  (t) => [
+    index('notification_endpoint_user_id_idx').on(t.userId),
+    // One live row per URL: revoked rows keep their URL, so a re-subscribe re-activates.
+    uniqueIndex('notification_endpoint_user_endpoint_key')
+      .on(t.userId, t.endpoint)
+      .where(sql`${t.revokedAt} is null`),
+    checkId('notification_endpoint', t.id, 'nep'),
+    checkOneOf('notification_endpoint', t.channel, ['webpush']),
+    checkOneOf('notification_endpoint', t.platform, ['ios', 'android', 'desktop']),
+    check('notification_endpoint_failure_count', sql`${t.failureCount} >= 0`),
+  ],
+);
+
 export const connectionAttempt = core.table(
   'connection_attempt',
   {

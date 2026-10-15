@@ -57,6 +57,11 @@ const COVERED_ELSEWHERE: Record<string, string> = {
   'POST /api/agent/approval': 'test/isolation/agent.test.ts',
   'POST /api/reminders/opened': 'test/reminders/routes.test.ts',
   'POST /api/reminders/unsubscribe': 'test/reminders/routes.test.ts',
+  'GET /api/notifications/prefs': 'test/notifications/isolation.test.ts',
+  'PATCH /api/notifications/prefs': 'test/notifications/isolation.test.ts',
+  'POST /api/notifications/endpoints': 'test/notifications/isolation.test.ts',
+  'PUT /api/notifications/endpoints/:id': 'test/notifications/isolation.test.ts',
+  'DELETE /api/notifications/endpoints/:id': 'test/notifications/isolation.test.ts',
   'POST /mcp': 'test/mcp/isolation.test.ts',
 };
 
@@ -77,6 +82,7 @@ const NO_USER_DATA: Record<string, string> = {
   'GET /api/auth/get-session': 'Better Auth: the session it is sent with',
   'GET /api/geo': 'the CDN’s country for the request',
   'POST /api/events': 'writes the session’s own client event; takes no ids',
+  'GET /api/notifications/vapid-key': 'the public VAPID key, the same for everyone',
   'GET /api/content/current': 'published content, the same for everyone',
   'GET /api/content/:kind/:ref': 'published content, the same for everyone',
   'GET /api/cron/fx': 'the cron secret, and exchange rates only',

@@ -166,5 +166,10 @@ export default tseslint.config(
     files: ['apps/api/**/*.ts', 'api/**/*.ts', 'test/**/*.ts', 'e2e/**/*.ts', '*.config.{js,ts}'],
     languageOptions: { globals: globals.node },
   },
+  {
+    // The service worker runs in a worker scope: `self`, not `window`.
+    files: ['apps/web/public/sw.js'],
+    languageOptions: { globals: globals.worker },
+  },
   prettier,
 );

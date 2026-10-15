@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { useMe, useTimeZoneSync } from '../api/account';
 import { startSessionTracker } from '../api/events';
+import { usePushSessionSync } from '../api/push';
 import { useReminderOpenParam } from '../api/reminders';
 import { ToastViewport } from '../components/Toast';
 import { Wordmark } from '../components/Wordmark';
@@ -28,12 +29,13 @@ function NavLinks({ place, active }: { place: NavPlace; active: NavEntry | undef
 
 /**
  * What runs while someone is signed in, whichever screen they are on: the session tracker
- * (`session_started` after 30 minutes idle, architecture §7.7) and the browser's time zone kept on
- * the profile.
+ * (`session_started` after 30 minutes idle, architecture §7.7), the browser's time zone kept on
+ * the profile, and the push check-in on a device with push on.
  */
 function SignedIn({ me }: { me: ProfileView }) {
   useEffect(() => startSessionTracker(), []);
   useTimeZoneSync(me);
+  usePushSessionSync();
   return null;
 }
 

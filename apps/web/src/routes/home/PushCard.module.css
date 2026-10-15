@@ -1,0 +1,45 @@
+/* The Nudge card (design-system §6): a note's outline with no hard shadow, a bell in
+   ink-2, one body sentence, then an outlined Turn on and a Not now link in ink-3. */
+
+.card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-2) var(--space-5);
+  margin-top: var(--space-7);
+  padding: var(--space-5) var(--space-7);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--card);
+}
+
+.bell {
+  grid-row: span 2;
+  width: var(--space-10);
+  height: var(--space-10);
+  margin-top: var(--space-1);
+  color: var(--ink-2);
+}
+
+.ask {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.notNow {
+  color: var(--ink-3);
+}
+
+.result {
+  margin: var(--space-7) 0 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body-sm);
+}

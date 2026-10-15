@@ -1,0 +1,56 @@
+/* Switch: the platform's on/off idiom in our palette — an outlined track filling tomato
+   when on, with a sliding knob. The 44px target toggles it; the track draws tight inside. */
+
+.switch {
+  display: grid;
+  place-items: center;
+  min-width: var(--hit);
+  min-height: var(--hit);
+  padding: var(--space-3);
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.switch[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+.track {
+  display: block;
+  width: calc(var(--space-20) + var(--space-4));
+  height: calc(var(--space-10) + var(--space-4));
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  transition: background var(--duration-press);
+}
+
+.switch[data-on='true'] .track {
+  background: var(--brand);
+}
+
+.knob {
+  display: block;
+  width: var(--space-10);
+  height: var(--space-10);
+  margin: var(--space-1);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--ink-3);
+  transition: transform var(--duration-press);
+  transform: translateX(0);
+}
+
+.switch[data-on='true'] .knob {
+  background: var(--card);
+  transform: translateX(var(--space-10));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .knob {
+    transition: none;
+  }
+}

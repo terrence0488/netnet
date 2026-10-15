@@ -115,9 +115,9 @@ export interface ClaimedReminder {
 /**
  * Claims everyone due and awake in one `UPDATE … RETURNING` (§7.10 step 2): `enabled`, fewer than
  * three reminders since the check, `next_due_on` on or before their local today, local time
- * 08:00–21:00, and somewhere to send (a verified address with email reminders on; P3-T6 adds
- * active devices to the disjunction). The claim moves `next_due_on` 30 days out and counts the
- * send, so two overlapping runs cannot both send to one person and nobody gets a fourth.
+ * 08:00–21:00, and somewhere to send — an active device, or a verified address with email
+ * reminders on. The claim moves `next_due_on` 30 days out and counts the send, so two overlapping
+ * runs cannot both send to one person and nobody gets a fourth.
  */
 export async function claimDueReminders(db: Executor, at: Date): Promise<ClaimedReminder[]> {
   const instant = at.toISOString();
@@ -136,7 +136,11 @@ export async function claimDueReminders(db: Executor, at: Date): Promise<Claimed
     from core.profile p join core."user" u on u.id = p.user_id
     where rs.user_id = p.user_id
       and rs.enabled
-      and rs.email_enabled and u.email_verified
+      and (exists (
+             select 1 from core.notification_endpoint ne
+             where ne.user_id = rs.user_id and ne.revoked_at is null
+           )
+           or (rs.email_enabled and u.email_verified))
       and rs.sent_since_check < 3
       and rs.next_due_on <= (${local}::date)
       and extract(hour from ${local}) between 8 and 20
@@ -226,6 +230,21 @@ export async function markReminderOpened(
     )
     .returning({ userId: reminderState.userId });
   return rows.length === 1;
+}
+
+/** Turns Reminders off or back on (Settings → Notifications), making the row if missing. */
+export async function setRemindersEnabled(
+  db: Executor,
+  userId: string,
+  on: boolean,
+): Promise<void> {
+  await db
+    .insert(reminderState)
+    .values({ userId, enabled: on })
+    .onConflictDoUpdate({
+      target: reminderState.userId,
+      set: { enabled: on },
+    });
 }
 
 /** Turns email reminders off (the unsubscribe) or back on, making the row if it is missing. */

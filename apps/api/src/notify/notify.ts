@@ -1,6 +1,9 @@
 import { database } from '../db/client';
+import { activePushTargets, recordPushFailure, recordPushSuccess } from '../db/endpoints';
 import { accountOf, type Account } from '../db/profiles';
 import { countReminderEmailsToday, getReminderState, recordReminderSent } from '../db/reminders';
+import { appVersion } from '../events/app-version';
+import { track } from '../events/track';
 import { publicOrigin } from '../lib/env';
 import { log } from '../lib/log';
 import type { EmailChannel, PushChannel, PushEndpoint } from './channel';
@@ -8,6 +11,7 @@ import { emailChannelFromEnv } from './email';
 import { linkSecret, signReminderToken } from './links';
 import type { Delivery, MessageKind, MessageOf, Notify } from './message';
 import { renderEmail, renderPush } from './templates';
+import { fetchPost, webPushChannelFromEnv } from './webpush';
 
 /**
  * `notify(userId, msg)`: the only way NetNet reaches a person (architecture §7.10, CONVENTIONS §6).
@@ -50,8 +54,8 @@ export interface ReminderDeps {
   /** Signs the `?r=` token, or null without `LINK_SIGNING_SECRET` (F19): fail closed. */
   sign: (userId: string, channel: 'push' | 'email', sentAt: string) => string | null;
   /**
-   * Push devices and the channel. P3-T6 wires the real ones; absent until then, which means no
-   * devices, so the reminder goes by email.
+   * Push devices and the channel. Absent without the VAPID keys (F19), which means no devices,
+   * so the reminder goes by email.
    */
   push?:
     { endpoints: (userId: string) => Promise<PushEndpoint[]>; channel: PushChannel } | undefined;
@@ -147,6 +151,32 @@ export function createNotify(deps: () => NotifyDeps): Notify {
 }
 
 let sharedEmail: EmailChannel | undefined;
+const sharedPushPost = fetchPost();
+
+/** The live push wiring: the person's devices with their TTLs, and the `webpush` channel. */
+function livePush(): ReminderDeps['push'] {
+  const channel = webPushChannelFromEnv({
+    post: sharedPushPost,
+    store: {
+      success: (id, at) => recordPushSuccess(database(), id, at),
+      failure: (id, status, at) => recordPushFailure(database(), id, status, at),
+    },
+    track,
+    appVersion,
+  });
+  if (channel === undefined) return undefined;
+  return {
+    endpoints: async (userId) =>
+      (await activePushTargets(database(), userId, new Date())).map((row) => ({
+        id: row.id,
+        userId: row.userId,
+        platform: row.platform,
+        subscription: { endpoint: row.endpoint, ...row.keys },
+        ttlSeconds: row.ttlSeconds,
+      })),
+    channel,
+  };
+}
 
 export const notify: Notify = createNotify(() => ({
   recipient: (userId) => accountOf(database(), userId),
@@ -158,5 +188,6 @@ export const notify: Notify = createNotify(() => ({
     emailBudgetLeft: async () =>
       (await countReminderEmailsToday(database(), new Date())) < REMINDER_EMAILS_PER_DAY,
     sign: (userId, channel, sentAt) => signReminderToken(linkSecret(), { userId, channel, sentAt }),
+    push: livePush(),
   },
 }));
