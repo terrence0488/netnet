@@ -6,6 +6,7 @@ import { createAgent, type Agent } from '../../src/auth/agent';
 import { createAuth, type Auth } from '../../src/auth/auth';
 import type { GuideHosts, LoadGuideHosts } from '../../src/auth/classify';
 import type { SocialConfig } from '../../src/auth/social';
+import { touchCheckedOnSession } from '../../src/auth/touch-checked';
 import { wellKnownRoutes } from '../../src/auth/oauth-routes';
 import { originCheck } from '../../src/auth/origin-check';
 import { authRoutes } from '../../src/auth/routes';
@@ -13,13 +14,20 @@ import { sessionFromCookie } from '../../src/auth/session';
 import { eventStore } from '../../src/db/analytics';
 import { accountOf } from '../../src/db/profiles';
 import { countHit } from '../../src/db/rate-limits';
+import {
+  countReminderEmailsToday,
+  getReminderState,
+  recordReminderSent,
+} from '../../src/db/reminders';
 import { createTrack } from '../../src/events/track';
 import { agentRoutes } from '../../src/http/agent';
 import { eventsRoutes } from '../../src/http/events';
 import { geoRoutes } from '../../src/http/geo';
 import { meRoutes } from '../../src/http/me';
+import { remindersRoutes } from '../../src/http/reminders';
 import { cronAuth } from '../../src/jobs/cron';
 import { dailyJob } from '../../src/jobs/daily';
+import { remindersJob } from '../../src/jobs/reminders';
 import { baseCurrencyOf } from '../../src/ledger/base-currency';
 import type { AppEnv } from '../../src/lib/context';
 import { handleError, handleNotFound } from '../../src/lib/error-handler';
@@ -27,8 +35,10 @@ import { createRateLimit } from '../../src/lib/rate-limit';
 import { noStore, requestContext } from '../../src/lib/request-context';
 import { sessionContext } from '../../src/lib/session';
 import type { EmailChannel } from '../../src/notify/channel';
+import type { PushChannel, PushEndpoint } from '../../src/notify/channel';
 import { captureChannel, type CaptureChannel } from '../../src/notify/email';
-import { createNotify } from '../../src/notify/notify';
+import { signReminderToken } from '../../src/notify/links';
+import { REMINDER_EMAILS_PER_DAY, createNotify } from '../../src/notify/notify';
 import { FIXED_NOW, type TestDatabase } from '../isolation/harness';
 import { FakeMetadataServer } from './cimd-server';
 import { captureWaitUntil } from './wait-until';
@@ -45,6 +55,9 @@ export const ORIGIN = 'http://localhost:5173';
 
 /** A test-only secret: 32 bytes of nothing in particular. */
 const SECRET = 'test-secret-0123456789abcdef0123456789abcdef';
+
+/** A test-only link-signing secret for the reminder's tokens. Tests mint tokens with it. */
+export const LINK_SECRET = 'test-link-secret-0123456789abcdef';
 
 /** The cron routes' secret in tests. */
 export const CRON_SECRET = 'test-cron-secret';
@@ -84,10 +97,16 @@ export interface AccountsApp {
   settle(): Promise<void>;
 }
 
-export function accountsApp(
-  db: TestDatabase,
-  options: { guides?: LoadGuideHosts; social?: SocialConfig } = {},
-): AccountsApp {
+export interface AccountsAppOptions {
+  guides?: LoadGuideHosts;
+  social?: SocialConfig;
+  /** The live guides' names for the reminder's "Just ask" line; none published by default. */
+  guideName?: (client: 'claude' | 'chatgpt') => Promise<string | undefined>;
+  /** Push devices and the channel; no devices by default (P3-T6 wires the real ones). */
+  push?: { endpoints: (userId: string) => Promise<PushEndpoint[]>; channel: PushChannel };
+}
+
+export function accountsApp(db: TestDatabase, options: AccountsAppOptions = {}): AccountsApp {
   const emails = captureChannel();
   const emailDown = { value: false };
   const email: EmailChannel = {
@@ -105,6 +124,15 @@ export function accountsApp(
     recipient: (userId) => accountOf(db.appDb, userId),
     email,
     origin: ORIGIN,
+    reminders: {
+      state: (userId) => getReminderState(db.appDb, userId),
+      sent: (userId, channel) => recordReminderSent(db.appDb, userId, channel),
+      emailBudgetLeft: async () =>
+        (await countReminderEmailsToday(db.appDb, clock.now)) < REMINDER_EMAILS_PER_DAY,
+      sign: (userId, channel, sentAt) =>
+        signReminderToken(LINK_SECRET, { userId, channel, sentAt }),
+      ...(options.push === undefined ? {} : { push: options.push }),
+    },
   }));
   const track = createTrack(() => ({ store: eventStore(db.appDb), clock: () => clock.now }));
   const rateLimit = createRateLimit(() => ({
@@ -119,6 +147,7 @@ export function accountsApp(
     notify,
     track,
     appVersion: () => 'test123',
+    clock: () => clock.now,
     background,
     fetchClientMetadata: cimd.fetch,
     ...(options.social ? { social: options.social } : {}),
@@ -145,6 +174,7 @@ export function accountsApp(
     originCheck(() => [ORIGIN]),
     sessionContext(sessionFromCookie(() => auth)),
   );
+  app.use('/api/*', touchCheckedOnSession({ db: () => db.appDb, clock: () => clock.now }));
   app.route(
     '/api/auth',
     authRoutes({
@@ -177,6 +207,17 @@ export function accountsApp(
   );
   app.route('/api/geo', geoRoutes(countries));
   app.route('/api/events', eventsRoutes({ track, rateLimit, appVersion: () => 'test123' }));
+  app.route(
+    '/api/reminders',
+    remindersRoutes({
+      db: () => db.appDb,
+      track,
+      rateLimit,
+      appVersion: () => 'test123',
+      clock: () => clock.now,
+      secret: () => LINK_SECRET,
+    }),
+  );
   app.use(
     '/api/cron/*',
     cronAuth(() => CRON_SECRET),
@@ -184,6 +225,18 @@ export function accountsApp(
   app.get(
     '/api/cron/daily',
     dailyJob(() => agent),
+  );
+  app.get(
+    '/api/cron/reminders',
+    remindersJob(() => ({
+      db: () => db.appDb,
+      clock: () => clock.now,
+      notify,
+      track,
+      appVersion: () => 'test123',
+      guideName: options.guideName ?? (() => Promise.resolve(undefined)),
+      retrySecurityEmails: () => agent.connections.retrySecurityEmails(),
+    })),
   );
   app.notFound(handleNotFound);
   app.onError(handleError);

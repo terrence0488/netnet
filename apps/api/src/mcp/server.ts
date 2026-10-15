@@ -92,8 +92,8 @@ export async function callTool(
           .then(() => undefined),
       );
     }
-    // P3 (J12) HOOK: touchChecked(userId) runs here — see McpDeps. tools/call only: tools/list
-    // and the handshake never reach this wrapper.
+    // J12: the call counts as a check. tools/call only: tools/list and the handshake never
+    // reach this wrapper.
     ctx.background(ctx.deps.touchChecked(ctx.userId));
   }
 }

@@ -36,7 +36,7 @@ export interface ToolCtx {
   /** The Ledger's options for this person: rates, their pack chain, their time zone. */
   options: LedgerOptions;
   deps: McpDeps;
-  /** Runs work after the response: events, the connection's touch, the P3 hook. */
+  /** Runs work after the response: events, the connection's touch, the checked touch. */
   background: (task: Promise<unknown>) => void;
   /** The agent guide's name for a `claude` or `chatgpt` connection, from content. */
   guideName: string | undefined;

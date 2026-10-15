@@ -4,6 +4,7 @@ import { wellKnownRoutes } from './auth/oauth-routes';
 import { originCheck } from './auth/origin-check';
 import { authRoutes } from './auth/routes';
 import { sessionFromCookie } from './auth/session';
+import { touchCheckedOnSession } from './auth/touch-checked';
 import { contentStore } from './content/store';
 import { activityRoutes } from './http/activity';
 import { agentRoutes } from './http/agent';
@@ -14,6 +15,7 @@ import { holdingsRoutes } from './http/holdings';
 import { liveCountries, meRoutes } from './http/me';
 import { mcpRoutes } from './mcp/route';
 import { prefsRoutes } from './http/prefs';
+import { remindersRoutes } from './http/reminders';
 import { snapshotRoutes } from './http/snapshot';
 import { tagsRoutes } from './http/tags';
 import { typesRoutes } from './http/types';
@@ -21,6 +23,7 @@ import { valuesRoutes } from './http/values';
 import { cronAuth, cronSecret } from './jobs/cron';
 import { dailyJob } from './jobs/daily';
 import { defaultFxJob } from './jobs/fx';
+import { remindersJob } from './jobs/reminders';
 import type { AppEnv } from './lib/context';
 import { appOrigins } from './lib/env';
 import { handleError, handleNotFound } from './lib/error-handler';
@@ -41,6 +44,9 @@ app.use(
   originCheck(appOrigins),
   sessionContext(sessionFromCookie(auth)),
 );
+
+/** The comeback reminder's clock: any session-authenticated `/api/*` request restarts it (§7.10). */
+app.use('/api/*', touchCheckedOnSession());
 
 /** Shallow by design: an uptime monitor must never wake the database. */
 app.get('/api/health', (c) => c.json({ ok: true }));
@@ -75,9 +81,13 @@ app.route('/api/activity', activityRoutes());
 app.route('/api/content', contentRoutes(contentStore));
 
 /** Vercel Cron calls these with GET and the bearer secret (architecture §9.3). */
+/** The reminder's signed links: opened tracking and the one-click unsubscribe (§7.2, J12). */
+app.route('/api/reminders', remindersRoutes());
+
 app.use('/api/cron/*', cronAuth(cronSecret));
 app.get('/api/cron/fx', defaultFxJob());
 app.get('/api/cron/daily', dailyJob());
+app.get('/api/cron/reminders', remindersJob());
 
 app.notFound(handleNotFound);
 app.onError(handleError);

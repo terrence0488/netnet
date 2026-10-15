@@ -78,3 +78,11 @@ export type ProfilePatch = z.input<typeof profilePatchSchema>;
 /** `GET /api/geo`: the country the request came from, by our CDN's IP lookup (PRD §2.3 rule 2). */
 export const geoSchema = z.strictObject({ country: countryCodeSchema.nullable() });
 export type Geo = z.infer<typeof geoSchema>;
+
+/**
+ * `POST /api/reminders/opened` and `POST /api/reminders/unsubscribe` (PRD J12): the signed `?r=`
+ * token from a reminder, naming the person, the channel and the reminder. A token that is present
+ * but does not verify is NOT_FOUND; only a missing one is a validation failure.
+ */
+export const reminderTokenSchema = z.strictObject({ token: z.string().min(1).max(1024) });
+export type ReminderToken = z.input<typeof reminderTokenSchema>;

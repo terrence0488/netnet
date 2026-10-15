@@ -1,7 +1,6 @@
 /**
- * A channel carries a rendered message to one place (architecture §7.10): email now, web push with
- * the comeback reminder (P3), native push with the Expo apps. `notify()` chooses the channel;
- * a channel only sends.
+ * A channel carries a rendered message to one place (architecture §7.10): email, web push (P3-T6)
+ * and native push with the Expo apps. `notify()` chooses the channel; a channel only sends.
  */
 export type ChannelId = 'email' | 'webpush' | 'expo';
 
@@ -32,4 +31,27 @@ export interface Channel<To, Rendered> {
 
 export interface EmailChannel extends Channel<Address, RenderedEmail> {
   readonly id: 'email';
+}
+
+/**
+ * A push notification as a template renders it: the title, one body line, and where a tap goes
+ * (the reminder's `?r=` link). P3-T6's `webpush` channel wraps it in the wire payload, encrypts
+ * it per device and signs it with the VAPID key.
+ */
+export interface RenderedPush {
+  title: string;
+  body: string;
+  url: string;
+}
+
+/**
+ * A device push goes to. P3-T6's `notification_endpoint` row stands behind it; until then a test
+ * fake. The id is the endpoint's, for revocation on `404`/`410`.
+ */
+export interface PushEndpoint {
+  id: string;
+}
+
+export interface PushChannel extends Channel<PushEndpoint, RenderedPush> {
+  readonly id: 'webpush' | 'expo';
 }
