@@ -12,6 +12,7 @@ import { log } from '../lib/log';
 import { routeOf } from '../lib/request-context';
 import type { Notify } from '../notify/message';
 import { notify } from '../notify/notify';
+import { containsMoneyFigure } from '../notify/privacy';
 
 /**
  * A reminder run (architecture §7.10): `GET /api/cron/reminders`, three times a day (§9.3). It
@@ -27,14 +28,19 @@ const PLAIN_NAME = /^[A-Za-z0-9 .-]{1,24}$/;
 /**
  * The agent the reminder names: the guide's name for `claude` and `chatgpt`, the registered name
  * for `other` only when short and plain — otherwise the line is left out, and a lock screen never
- * shows untrusted text.
+ * shows untrusted text. A name that reads as money ("USD5", "10 pounds") is not plain: it would
+ * trip the privacy test on the rendered message, so the line is left out for it too.
  */
 export function reminderAgentName(
   client: Client,
   registeredName: string,
   guideName: string | undefined,
 ): string | undefined {
-  if (client === 'other') return PLAIN_NAME.test(registeredName) ? registeredName : undefined;
+  if (client === 'other') {
+    return PLAIN_NAME.test(registeredName) && !containsMoneyFigure(registeredName)
+      ? registeredName
+      : undefined;
+  }
   return guideName;
 }
 

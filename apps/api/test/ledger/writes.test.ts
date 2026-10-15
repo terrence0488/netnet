@@ -280,6 +280,7 @@ describe('the read methods', () => {
       await l.history({});
       await l.activity({});
       await l.exportAll();
+      await l.activity({});
     });
     expect(await rowCounts(suite, f.userId)).toEqual(counts);
     expect(await dataVersion(suite, f.userId)).toBe(version);
