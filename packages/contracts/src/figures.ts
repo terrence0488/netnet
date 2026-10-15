@@ -82,6 +82,17 @@ export interface HoldingFilter {
 
 export type TagMode = 'any' | 'all';
 
+/**
+ * Insights' Don't Show list (PRD J11): a holding, type or tag id in here is dropped from
+ * Insights figures only — Home totals and net worth never read it. A holding with any listed tag
+ * is dropped.
+ */
+export interface HoldingExclusions {
+  holdingIds?: readonly string[];
+  typeIds?: readonly string[];
+  tagIds?: readonly string[];
+}
+
 /** A series runs from `from` (by default the earliest value) to `to`, both inclusive. */
 export interface DateRange {
   from?: string;
@@ -90,6 +101,10 @@ export interface DateRange {
 
 export const INTERVALS = ['day', 'month', 'quarter', 'year'] as const;
 export type Interval = (typeof INTERVALS)[number];
+
+/** Insights' views (PRD J11): calendar months, quarters and years. */
+export const PERIOD_VIEWS = ['monthly', 'quarterly', 'yearly'] as const;
+export type PeriodView = (typeof PERIOD_VIEWS)[number];
 
 export const GROUP_BYS = ['none', 'type', 'access', 'currency'] as const;
 export type GroupBy = (typeof GROUP_BYS)[number];
@@ -169,6 +184,39 @@ export interface Point {
   groups?: Record<string, number>;
   /** Some holding counted here had no value dated inside this bucket (PRD J11). */
   carried: boolean;
+}
+
+/**
+ * One holding's part in a period's change: its signed end value minus its signed value at the
+ * previous period's end, in base-currency minor units. Positive when it pushed the period up.
+ */
+export interface Driver {
+  holdingId: string;
+  name: string;
+  contribution: number;
+}
+
+/**
+ * One calendar period (PRD J11): the period-end value, the absolute and % change against the
+ * previous period's end, whether any counted holding's figure was carried, and the holdings that
+ * moved it, ranked by contribution. All money in base-currency minor units, from each value's
+ * stored `baseMinor`.
+ */
+export interface Period {
+  /** The calendar period's first day. */
+  start: string;
+  /** Its last day — or today, when the period is the current one and still open. */
+  end: string;
+  /** Net worth at `end`: assets minus liabilities. */
+  endValue: number;
+  /** `endValue` minus the previous period's end value (0 before the first). */
+  change: number;
+  /** Percent of the previous end value's size; null when that was 0. */
+  changePct: number | null;
+  /** Some holding counted here had no value dated inside this period (PRD J11). */
+  carried: boolean;
+  /** The holdings with a nonzero contribution, ranked by contribution, largest first. */
+  drivers: Driver[];
 }
 
 /** A change against a baseline. All null when the series offers nothing to compare. */

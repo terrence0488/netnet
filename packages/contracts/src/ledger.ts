@@ -6,12 +6,15 @@ import {
   GROUP_BYS,
   HOLDING_KINDS,
   INTERVALS,
+  PERIOD_VIEWS,
   type AccessBasis,
   type Baseline,
   type GroupBy,
   type HoldingAccess,
   type HoldingKind,
   type Interval,
+  type Period,
+  type PeriodView,
   type Point,
   type Staleness,
   type ValueSource,
@@ -38,6 +41,12 @@ export const MAX_VALUES_PER_CALL = 200;
 export const MAX_HOLDINGS_PAGE = 100;
 /** A page of a holding's values (`get_holding`'s `values_limit`). */
 export const MAX_VALUES_PAGE = 500;
+/** Periods in one `get_period_changes` answer (architecture §7.4); 12 when left out. */
+export const MAX_PERIODS = 24;
+export const DEFAULT_PERIODS = 12;
+/** Drivers per period (`get_period_changes`' `drivers`); 5 when left out. */
+export const MAX_DRIVERS = 25;
+export const DEFAULT_DRIVERS = 5;
 /** A page of the activity log (`list_activity`). */
 export const MAX_ACTIVITY_PAGE = 100;
 /** Ids in one filter list. */
@@ -243,6 +252,17 @@ export const holdingFilterSchema = z.strictObject({
 });
 export type SavedFilter = z.output<typeof holdingFilterSchema>;
 
+/**
+ * Insights' Don't Show list (PRD J11): the holdings, types and tags dropped from Insights
+ * figures only. It is its own pref key so the screen can keep it apart from the filter.
+ */
+export const insightsExclusionsSchema = z.strictObject({
+  holdingIds: ids(MAX_FILTER_IDS).optional(),
+  typeIds: ids(MAX_FILTER_IDS).optional(),
+  tagIds: ids(MAX_FILTER_IDS).optional(),
+});
+export type SavedExclusions = z.output<typeof insightsExclusionsSchema>;
+
 /** How Home lists holdings (the prototype's Sort By). */
 export const HOLDING_SORTS = [
   'name',
@@ -259,6 +279,7 @@ export type HoldingSort = (typeof HOLDING_SORTS)[number];
 export const prefsPatchSchema = z.strictObject({
   homeFilter: holdingFilterSchema.nullable().optional(),
   insightsFilter: holdingFilterSchema.nullable().optional(),
+  insightsExclusions: insightsExclusionsSchema.nullable().optional(),
   baseline: z.enum(BASELINES).nullable().optional(),
   sort: z.enum(HOLDING_SORTS).nullable().optional(),
 });
@@ -268,11 +289,18 @@ export type PrefsPatch = z.input<typeof prefsPatchSchema>;
 export interface Prefs {
   homeFilter?: SavedFilter;
   insightsFilter?: SavedFilter;
+  insightsExclusions?: SavedExclusions;
   baseline?: Baseline;
   sort?: HoldingSort;
 }
 
-export const PREF_KEYS = ['homeFilter', 'insightsFilter', 'baseline', 'sort'] as const;
+export const PREF_KEYS = [
+  'homeFilter',
+  'insightsFilter',
+  'insightsExclusions',
+  'baseline',
+  'sort',
+] as const;
 export type PrefKey = (typeof PREF_KEYS)[number];
 
 const cursor = z.string().min(1).max(200);
@@ -341,6 +369,25 @@ export const historyQuerySchema = z
     message: 'Give a from date on or before the to date.',
   });
 export type HistoryQuery = z.input<typeof historyQuerySchema>;
+
+/**
+ * `periods` (`get_period_changes`): the newest `periods` calendar periods in `view`, each with
+ * its top `drivers` contributors.
+ */
+export const periodQuerySchema = z.strictObject({
+  view: z.enum(PERIOD_VIEWS, { error: 'Use "monthly", "quarterly" or "yearly".' }),
+  periods: z
+    .int('Give the periods as a whole number.')
+    .min(1, 'Give at least 1 period.')
+    .max(MAX_PERIODS, `Give at most ${MAX_PERIODS} periods.`)
+    .optional(),
+  drivers: z
+    .int('Give the drivers as a whole number.')
+    .min(1, 'Give at least 1 driver.')
+    .max(MAX_DRIVERS, `Give at most ${MAX_DRIVERS} drivers.`)
+    .optional(),
+});
+export type PeriodQuery = z.input<typeof periodQuerySchema>;
 
 /**
  * A pack chain by reference: the country's pack (when there is one), then generic, each at a
@@ -484,6 +531,13 @@ export interface Series {
   interval: Interval;
   groupBy: GroupBy;
   points: Point[];
+}
+
+/** Change per calendar period, newest first, in the base currency's minor units. */
+export interface PeriodTable {
+  currency: string;
+  view: PeriodView;
+  periods: Period[];
 }
 
 export interface Page<T> {

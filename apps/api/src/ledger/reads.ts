@@ -1,7 +1,10 @@
 import {
+  DEFAULT_DRIVERS,
+  DEFAULT_PERIODS,
   historyQuerySchema,
   holdingQuerySchema,
   pageReqSchema,
+  periodQuerySchema,
   type ContextInput,
   type DateRange,
   type Holding,
@@ -12,6 +15,8 @@ import {
   type HistoryQuery,
   type Page,
   type PageReq,
+  type PeriodQuery,
+  type PeriodTable,
   type Series,
   type Snapshot,
   type Universal,
@@ -19,7 +24,7 @@ import {
   type ValueTuple,
   type VersionedPack,
 } from '@netnet/contracts';
-import { normaliseName, series, staleness, typeLabel } from '@netnet/core';
+import { normaliseName, periods as corePeriods, series, staleness, typeLabel } from '@netnet/core';
 import { and, desc, eq, lt, or } from 'drizzle-orm';
 import { listConnections } from '../db/agent-connections';
 import { isId, type IdPrefix } from '../lib/ids';
@@ -283,5 +288,28 @@ export async function history(s: Scope, query: HistoryQuery): Promise<Series> {
     interval,
     groupBy,
     points: series(values, holdings, range, interval, filter, groupBy),
+  };
+}
+
+/**
+ * `periods` (`get_period_changes`): `core.periods` over the stored conversions (J11), newest
+ * first, the newest `periods` with each one's top `drivers`.
+ */
+export async function periods(s: Scope, query: PeriodQuery): Promise<PeriodTable> {
+  const q = parseInput(periodQuerySchema, query);
+  const state = await s.requireState();
+  const types = new Map((await loadTypes(s)).map((t) => [t.id, t]));
+  const holdings = (await loadHoldings(s)).map((h) => holdingIn(h, universalOf(types, h)));
+  const values = (await loadValues(s)).map(valueIn);
+  const all = corePeriods(values, holdings, q.view, s.today());
+  const count = q.periods ?? DEFAULT_PERIODS;
+  const top = q.drivers ?? DEFAULT_DRIVERS;
+  return {
+    currency: state.baseCurrency,
+    view: q.view,
+    periods: all
+      .slice(-count)
+      .reverse()
+      .map((p) => ({ ...p, drivers: p.drivers.slice(0, top) })),
   };
 }

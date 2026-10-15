@@ -245,7 +245,7 @@ describe('handshake and list', () => {
     },
   };
 
-  it('negotiates 2025-11-25 and lists the eighteen tools', async () => {
+  it('negotiates 2025-11-25 and lists the nineteen tools', async () => {
     const userId = await onboarded(target);
     const agent = await connectAgent(target, userId);
     const hello = await rpcOf(
@@ -266,7 +266,7 @@ describe('handshake and list', () => {
     expect(listed.status).toBe(200);
     const tools = (listed.body.result as { tools: { name: string; description: string }[] }).tools;
     expect(tools.map((t) => t.name).sort()).toStrictEqual(TOOL_REGISTRY.map((t) => t.name).sort());
-    expect(tools).toHaveLength(18);
+    expect(tools).toHaveLength(19);
     for (const tool of tools) expect(tool.description.length).toBeGreaterThan(0);
   });
 

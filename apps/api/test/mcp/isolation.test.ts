@@ -3,6 +3,7 @@ import type {
   McpGetFinancialContextOutput,
   McpGetHoldingOutput,
   McpGetNetWorthHistoryOutput,
+  McpGetPeriodChangesOutput,
   McpGetTaxonomyOutput,
   McpUpsertTagOutput,
   McpUpsertTypeOutput,
@@ -163,6 +164,19 @@ describe('isolation', () => {
       for (const point of history.points) {
         expect(Object.keys(point.groups ?? {})).not.toContain('EUR');
       }
+    });
+  });
+
+  it('get_period_changes answers B, never A', async () => {
+    const p = await pair();
+    await unchanged(p, async () => {
+      const table = okOf<McpGetPeriodChangesOutput>(
+        await callTool(target, p.b.agent.token, 'get_period_changes', { view: 'monthly' }),
+      );
+      expect(table.currency).toBe('GBP');
+      expect(table.periods.map((period) => period.start)).toEqual(['2026-08-01', '2026-07-01']);
+      expect(table.periods[1]?.drivers.map((d) => d.name)).toStrictEqual(['Beta pot']);
+      seesOnlyOwn(table, p.a);
     });
   });
 
@@ -371,6 +385,8 @@ describe('isolation', () => {
       get_holding: () =>
         callTool(target, p.b.agent.token, 'get_holding', { holding_id: p.a.holdingId }),
       get_net_worth_history: () => callTool(target, p.b.agent.token, 'get_net_worth_history'),
+      get_period_changes: () =>
+        callTool(target, p.b.agent.token, 'get_period_changes', { view: 'monthly' }),
       get_taxonomy: () => callTool(target, p.b.agent.token, 'get_taxonomy'),
       get_setup_guide: () => callTool(target, p.b.agent.token, 'get_setup_guide'),
       list_activity: () => callTool(target, p.b.agent.token, 'list_activity'),

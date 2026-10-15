@@ -15,6 +15,8 @@ import {
   type PackRef,
   type Page,
   type PageReq,
+  type PeriodQuery,
+  type PeriodTable,
   type Prefs,
   type PrefsPatch,
   type Series,
@@ -36,7 +38,7 @@ import { destroy } from './destroy';
 import { exportAll } from './export';
 import { createHolding, deleteHolding, updateHolding } from './holdings';
 import { setPrefs } from './prefs';
-import { context, getHolding, history, listHoldings, snapshot } from './reads';
+import { context, getHolding, history, listHoldings, periods, snapshot } from './reads';
 import { Scope, type LedgerOptions } from './scope';
 import {
   applyPackTypes,
@@ -72,6 +74,7 @@ export interface Ledger {
   history(q: HistoryQuery): Promise<Series>;
   /** The audit log, newest first, optionally one agent turn. */
   activity(p: ActivityQuery): Promise<Page<AuditEntry>>;
+  periods(q: PeriodQuery): Promise<PeriodTable>;
 
   createHolding(i: CreateHolding): Promise<Write<Holding>>;
   updateHolding(id: string, p: HoldingPatch): Promise<Write<Holding>>;
@@ -115,6 +118,7 @@ export const LEDGER_READS = [
   'getHolding',
   'history',
   'activity',
+  'periods',
   'exportAll',
 ] as const satisfies readonly (keyof Ledger)[];
 
@@ -153,6 +157,7 @@ export function openLedger(tx: LedgerTx, options: LedgerOptions): Ledger {
     getHolding: (id, values) => getHolding(s, id, values),
     history: (q) => history(s, q),
     activity: (p) => activity(s, p),
+    periods: (q) => periods(s, q),
     createHolding: (i) => createHolding(s, i),
     updateHolding: (id, p) => updateHolding(s, id, p),
     deleteHolding: (id) => deleteHolding(s, id),

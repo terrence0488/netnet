@@ -21,6 +21,7 @@ import {
   newValuesSchema,
   packRefSchema,
   pageReqSchema,
+  periodQuerySchema,
   prefsPatchSchema,
   tagInputSchema,
   typeInputSchema,
@@ -52,7 +53,13 @@ describe('vocabularies and limits', () => {
       'value_corrected',
       'value_undone',
     ]);
-    expect(PREF_KEYS).toEqual(['homeFilter', 'insightsFilter', 'baseline', 'sort']);
+    expect(PREF_KEYS).toEqual([
+      'homeFilter',
+      'insightsFilter',
+      'insightsExclusions',
+      'baseline',
+      'sort',
+    ]);
     expect(HOLDING_SORTS).toContain('value_desc');
   });
 });
@@ -217,11 +224,13 @@ describe('prefsPatchSchema and holdingFilterSchema', () => {
           includeArchived: true,
         },
         insightsFilter: { hideHoldingIds: ['hld_1'] },
+        insightsExclusions: { holdingIds: ['hld_1'], typeIds: ['typ_1'], tagIds: ['tag_1'] },
         baseline: 'last_quarter',
         sort: 'change_pct',
       }).success,
     ).toBe(true);
     expect(prefsPatchSchema.safeParse({ homeFilter: null, baseline: null }).success).toBe(true);
+    expect(prefsPatchSchema.safeParse({ insightsExclusions: null }).success).toBe(true);
   });
 
   it.each([
@@ -229,6 +238,11 @@ describe('prefsPatchSchema and holdingFilterSchema', () => {
     ['an unknown sort', { sort: 'size' }, 'sort'],
     ['an unknown pref', { theme: 'dark' }, 'theme'],
     ['an unknown filter field', { homeFilter: { archived: true } }, 'homeFilter.archived'],
+    [
+      'an unknown exclusions field',
+      { insightsExclusions: { show: 'assets' } },
+      'insightsExclusions.show',
+    ],
   ])('rejects %s', (_, patch, path) => {
     expect(paths(prefsPatchSchema.safeParse(patch))).toEqual([path]);
   });
@@ -278,6 +292,26 @@ describe('queries', () => {
       'from',
     ]);
     expect(paths(historyQuerySchema.safeParse({ interval: 'week' }))).toEqual(['interval']);
+  });
+
+  it('asks periods for a view, at most 24 periods, and a count of drivers', () => {
+    expect(
+      periodQuerySchema.safeParse({ view: 'quarterly', periods: 24, drivers: 3 }).success,
+    ).toBe(true);
+    expect(periodQuerySchema.safeParse({ view: 'monthly' }).success).toBe(true);
+    expect(paths(periodQuerySchema.safeParse({ view: 'weekly' }))).toEqual(['view']);
+    expect(paths(periodQuerySchema.safeParse({ view: 'monthly', periods: 25 }))).toEqual([
+      'periods',
+    ]);
+    expect(paths(periodQuerySchema.safeParse({ view: 'monthly', periods: 0 }))).toEqual([
+      'periods',
+    ]);
+    expect(paths(periodQuerySchema.safeParse({ view: 'monthly', drivers: 0 }))).toEqual([
+      'drivers',
+    ]);
+    expect(paths(periodQuerySchema.safeParse({ view: 'monthly', drivers: 26 }))).toEqual([
+      'drivers',
+    ]);
   });
 });
 

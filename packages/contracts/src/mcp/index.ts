@@ -6,6 +6,7 @@ export * from './delete-value';
 export * from './get-financial-context';
 export * from './get-holding';
 export * from './get-net-worth-history';
+export * from './get-period-changes';
 export * from './get-setup-guide';
 export * from './get-taxonomy';
 export * from './list-activity';

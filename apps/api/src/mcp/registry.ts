@@ -6,6 +6,7 @@ import { deleteValueTool } from './tools/delete-value';
 import { getFinancialContextTool } from './tools/get-financial-context';
 import { getHoldingTool } from './tools/get-holding';
 import { getNetWorthHistoryTool } from './tools/get-net-worth-history';
+import { getPeriodChangesTool } from './tools/get-period-changes';
 import { getSetupGuideTool } from './tools/get-setup-guide';
 import { getTaxonomyTool } from './tools/get-taxonomy';
 import { listActivityTool } from './tools/list-activity';
@@ -20,13 +21,14 @@ import type { ToolDef } from './tool';
 
 /**
  * The tools (architecture §7.4), in the order `tools/list` shows them: the summary first, then
- * reads, then writes. `get_period_changes` comes with P5.
+ * reads, then writes. `get_period_changes`, `list_activity` and `undo` come with P3.
  */
 export const TOOL_REGISTRY: readonly ToolDef[] = [
   getFinancialContextTool,
   listHoldingsTool,
   getHoldingTool,
   getNetWorthHistoryTool,
+  getPeriodChangesTool,
   getTaxonomyTool,
   getSetupGuideTool,
   listActivityTool,

@@ -6,6 +6,7 @@ import {
   HOLDING_KINDS,
   INTERVALS,
   NOT_SURE,
+  PERIOD_VIEWS,
   VALUE_SOURCES,
 } from './figures';
 
@@ -14,6 +15,7 @@ describe('figure vocabularies', () => {
     expect(HOLDING_KINDS).toStrictEqual(['asset', 'liability']);
     expect(VALUE_SOURCES).toStrictEqual(['web', 'agent', 'system']);
     expect(INTERVALS).toStrictEqual(['day', 'month', 'quarter', 'year']);
+    expect(PERIOD_VIEWS).toStrictEqual(['monthly', 'quarterly', 'yearly']);
     expect(GROUP_BYS).toStrictEqual(['none', 'type', 'access', 'currency']);
     expect(BASELINES).toStrictEqual([
       'initial',

@@ -319,3 +319,97 @@ describe('history', () => {
     expect(error.details?.fields).toHaveProperty('from');
   });
 });
+
+describe('periods', () => {
+  it('gives each month newest first, from the stored conversions, archived holdings left out', async () => {
+    const table = await suite.as(userId).read((l) => l.periods({ view: 'monthly' }));
+    expect(table).toMatchObject({ currency: 'USD', view: 'monthly' });
+    expect(table.periods.map((p) => [p.start, p.end, p.endValue])).toEqual([
+      ['2026-08-01', '2026-08-01', 10_250_000],
+      ['2026-07-01', '2026-07-31', 10_250_000],
+      ['2026-06-01', '2026-06-30', 10_100_000],
+      ['2026-05-01', '2026-05-31', 10_100_000],
+      ['2026-04-01', '2026-04-30', 10_000_000],
+      ['2026-03-01', '2026-03-31', 10_000_000],
+      ['2026-02-01', '2026-02-28', 30_000_000],
+      ['2026-01-01', '2026-01-31', 30_000_000],
+      ['2025-12-01', '2025-12-31', 30_000_000],
+    ]);
+    expect(table.periods[1]).toMatchObject({
+      change: 150_000,
+      changePct: (150_000 / 10_100_000) * 100,
+      carried: true,
+    });
+    expect(table.periods[1]?.drivers).toEqual([
+      { holdingId: ids.fund, name: 'World fund', contribution: 100_000 },
+      { holdingId: ids.cash, name: 'Everyday account', contribution: 50_000 },
+    ]);
+    expect(table.periods[5]).toMatchObject({ change: -20_000_000, carried: true });
+    expect(table.periods.at(-1)).toMatchObject({
+      change: 30_000_000,
+      changePct: null,
+      carried: false,
+    });
+  });
+
+  it('pages the newest periods with each one’s top drivers', async () => {
+    const table = await suite
+      .as(userId)
+      .read((l) => l.periods({ view: 'monthly', periods: 2, drivers: 1 }));
+    expect(table.periods.map((p) => p.start)).toEqual(['2026-08-01', '2026-07-01']);
+    expect(table.periods[1]?.drivers).toEqual([
+      { holdingId: ids.fund, name: 'World fund', contribution: 100_000 },
+    ]);
+    const quarterly = await suite
+      .as(userId)
+      .read((l) => l.periods({ view: 'quarterly', periods: 1 }));
+    expect(quarterly.periods.map((p) => [p.start, p.end])).toEqual([['2026-07-01', '2026-08-01']]);
+  });
+
+  it('names a bad view and counts outside 1 to 24 periods and 1 to 25 drivers', async () => {
+    const view = await appError(
+      suite.as(userId).read((l) => l.periods({ view: 'weekly' } as never)),
+    );
+    expect(view.details?.fields).toHaveProperty('view');
+    const many = await appError(
+      suite.as(userId).read((l) => l.periods({ view: 'monthly', periods: 25 })),
+    );
+    expect(many.details?.fields).toHaveProperty('periods');
+    const none = await appError(
+      suite.as(userId).read((l) => l.periods({ view: 'monthly', drivers: 0 })),
+    );
+    expect(none.details?.fields).toHaveProperty('drivers');
+  });
+
+  it('recomputes the affected periods when a value is back-dated', async () => {
+    const newcomer = await suite.newUser('USD');
+    const holdingId = (
+      await suite
+        .as(newcomer)
+        .write((l) =>
+          l.createHolding({ name: 'Side pot', kind: 'asset', universal: 'cash', currency: 'USD' }),
+        )
+    ).result.id;
+    await suite
+      .as(newcomer)
+      .write((l) => l.recordValues([{ holdingId, amount: '1000', date: '2026-05-31' }]));
+    const before = await suite.as(newcomer).read((l) => l.periods({ view: 'monthly' }));
+    expect(before.periods.map((p) => [p.start, p.endValue])).toEqual([
+      ['2026-08-01', 100_000],
+      ['2026-07-01', 100_000],
+      ['2026-06-01', 100_000],
+      ['2026-05-01', 100_000],
+    ]);
+    await suite
+      .as(newcomer)
+      .write((l) => l.recordValues([{ holdingId, amount: '1200', date: '2026-06-15' }]));
+    const after = await suite.as(newcomer).read((l) => l.periods({ view: 'monthly' }));
+    expect(after.periods.map((p) => [p.start, p.endValue, p.carried])).toEqual([
+      ['2026-08-01', 120_000, true],
+      ['2026-07-01', 120_000, true],
+      ['2026-06-01', 120_000, false],
+      ['2026-05-01', 100_000, false],
+    ]);
+    expect(after.periods[2]).toMatchObject({ change: 20_000 });
+  });
+});
