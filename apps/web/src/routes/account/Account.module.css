@@ -36,6 +36,10 @@
   font-weight: var(--weight-button);
 }
 
+.danger {
+  color: var(--loss);
+}
+
 .chev {
   flex: none;
   color: var(--ink-3);

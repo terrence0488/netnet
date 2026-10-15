@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ERASED_WITHIN_DAYS,
   ONBOARDING_STATES,
+  accountDeletionSchema,
   canonicalTimeZone,
   geoSchema,
   profilePatchSchema,
@@ -100,5 +102,17 @@ describe('reminderTokenSchema', () => {
     expect(reminderTokenSchema.safeParse({ token: 'x'.repeat(1025) }).success).toBe(false);
     expect(reminderTokenSchema.safeParse({ token: 'r1.a.b', extra: 1 }).success).toBe(false);
     expect(reminderTokenSchema.safeParse({ token: 42 }).success).toBe(false);
+  });
+});
+
+describe('accountDeletionSchema', () => {
+  it('is the 30-day window, restated (PRD J10)', () => {
+    expect(ERASED_WITHIN_DAYS).toBe(30);
+    expect(accountDeletionSchema.parse({ erasedWithinDays: 30 })).toStrictEqual({
+      erasedWithinDays: 30,
+    });
+    expect(accountDeletionSchema.safeParse({}).success).toBe(false);
+    expect(accountDeletionSchema.safeParse({ erasedWithinDays: 7 }).success).toBe(false);
+    expect(accountDeletionSchema.safeParse({ erasedWithinDays: 30, extra: 1 }).success).toBe(false);
   });
 });

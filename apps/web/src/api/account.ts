@@ -1,5 +1,6 @@
 import {
   canonicalTimeZone,
+  type AccountDeletion,
   type Geo,
   type ProfilePatch,
   type ProfileView,
@@ -55,6 +56,14 @@ export function useUpdateMe() {
     mutationFn: (patch: ProfilePatch) => api.patch<ProfileView>('/me', patch),
     onSuccess: (me) => client.setQueryData(ME_KEY, me),
   });
+}
+
+/**
+ * Deletes the account (`DELETE /api/account`, PRD J10): everything erased within
+ * `erasedWithinDays`. Needs a sign-in from the last 10 minutes (`REAUTH_REQUIRED` otherwise).
+ */
+export function deleteAccount(): Promise<AccountDeletion> {
+  return api.del<AccountDeletion>('/account');
 }
 
 /**

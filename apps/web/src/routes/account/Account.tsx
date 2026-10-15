@@ -119,6 +119,31 @@ export function Account() {
               </Card>
             </section>
           )}
+          <section aria-labelledby="privacy">
+            <h2 id="privacy" className={styles.sectionTitle}>
+              Privacy and security
+            </h2>
+            <Card flush>
+              <Link to="/account/export" className={styles.actionLink}>
+                <span className={styles.grow}>
+                  <span className={styles.name}>Export everything</span>
+                  <span className={styles.meta}>Machine-readable, including full history</span>
+                </span>
+                <span aria-hidden="true" className={styles.chev}>
+                  ›
+                </span>
+              </Link>
+              <Link to="/account/delete" className={styles.actionLink}>
+                <span className={styles.grow}>
+                  <span className={`${styles.name} ${styles.danger}`}>Delete account</span>
+                  <span className={styles.meta}>Erases all your data</span>
+                </span>
+                <span aria-hidden="true" className={styles.chev}>
+                  ›
+                </span>
+              </Link>
+            </Card>
+          </section>
           <p className={styles.note}>NetNet never sells your data or sees your documents.</p>
           <Card flush>
             <button

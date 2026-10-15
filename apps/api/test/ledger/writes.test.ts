@@ -167,6 +167,9 @@ const CASES: Record<
     run: (l) => l.changeCountry({ baseCurrency: 'EUR', pack: suite.content.ref('qz') }),
     touches: [['type', 'create']],
   },
+  // `destroy` deletes the audit log itself, so it touches nothing auditable: the audit-shape test
+  // below skips it, and `destroy.test.ts` checks what it deletes instead.
+  destroy: { run: (l) => l.destroy(), touches: [] },
 };
 
 /** The fixture for a case: `init` starts from a user with no ledger. */
@@ -204,7 +207,7 @@ describe('the write methods', () => {
     expect(Object.keys(CASES).sort()).toEqual([...LEDGER_WRITES].sort());
   });
 
-  it.each(LEDGER_WRITES)(
+  it.each(LEDGER_WRITES.filter((method) => method !== 'destroy'))(
     '%s: one audit row per entity touched, with the actor, client, connection and batch; data_version + 1',
     async (method) => {
       const f = await setUp(method);
@@ -276,6 +279,7 @@ describe('the read methods', () => {
       await l.getHolding(f.holdingId);
       await l.history({});
       await l.activity({});
+      await l.exportAll();
     });
     expect(await rowCounts(suite, f.userId)).toEqual(counts);
     expect(await dataVersion(suite, f.userId)).toBe(version);

@@ -124,6 +124,28 @@ export async function revokeConnection(
   return before;
 }
 
+/**
+ * Revokes every active connection of an account at `at` (`DELETE /api/account`, PRD J10): each
+ * row's `revoked_at`, and every refresh token not yet revoked. Returns the revoked connection ids.
+ * Unlike `revokeConnection` it writes no audit entry: the audit log is deleted with the account.
+ */
+export async function revokeAllConnections(
+  db: Executor,
+  userId: string,
+  at: Date,
+): Promise<string[]> {
+  const rows = await db
+    .update(agentConnection)
+    .set({ revokedAt: at })
+    .where(and(eq(agentConnection.userId, userId), isNull(agentConnection.revokedAt)))
+    .returning({ id: agentConnection.id });
+  await db
+    .update(oauthRefreshToken)
+    .set({ revoked: at })
+    .where(and(eq(oauthRefreshToken.userId, userId), isNull(oauthRefreshToken.revoked)));
+  return rows.map((r) => r.id);
+}
+
 /** Deletes the consents an approval wrote under `referenceId`: none is ever reused (§7.6). */
 export async function deleteConsents(
   db: Executor,

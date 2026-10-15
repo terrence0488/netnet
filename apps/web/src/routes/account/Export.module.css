@@ -1,0 +1,83 @@
+/* Export (Account → Export everything): everything, in one file. */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-10) 0 var(--space-8);
+}
+
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: var(--hit);
+  height: var(--hit);
+  flex: none;
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-icon);
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-size: var(--size-amount-symbol);
+  font-weight: var(--weight-amount-symbol);
+  line-height: 1;
+}
+
+.iconButton:hover {
+  background: var(--paper);
+}
+
+.title {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-heading-screen);
+  font-weight: var(--weight-heading-screen);
+  letter-spacing: var(--tracking-heading-screen);
+}
+
+.spacer {
+  flex: none;
+  width: var(--hit);
+  height: var(--hit);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-5);
+  max-width: var(--measure-phone);
+  padding-bottom: var(--inset-page-end);
+}
+
+.copy {
+  display: grid;
+  gap: var(--space-5);
+  justify-items: start;
+}
+
+.heading {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-heading-card);
+  font-weight: var(--weight-heading-card);
+  letter-spacing: var(--tracking-heading-card);
+}
+
+.text {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5) var(--space-7);
+}

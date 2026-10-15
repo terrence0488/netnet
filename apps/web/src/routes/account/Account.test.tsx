@@ -80,4 +80,13 @@ describe('the Account tab', () => {
     expect(render()).toContain('Claude');
     expect(render(PERSON, [])).toContain('none yet');
   });
+
+  it('leads into Privacy and security: export and deletion', () => {
+    const markup = render();
+    expect(markup).toContain('Privacy and security');
+    expect(markup).toContain('Export everything');
+    expect(markup).toContain('href="/app/account/export"');
+    expect(markup).toContain('Delete account');
+    expect(markup).toContain('href="/app/account/delete"');
+  });
 });

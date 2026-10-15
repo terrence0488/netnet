@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DOMAIN_EVENT_NAMES,
+  EXPORT_CSV_HEADER,
   HOLDING_SORTS,
   MAX_NAME_LENGTH,
   MAX_TAGS_PER_HOLDING,
@@ -11,6 +12,7 @@ import {
   accessAnswerSchema,
   activityQuerySchema,
   createHoldingSchema,
+  exportFormatSchema,
   historyQuerySchema,
   holdingFilterSchema,
   holdingPatchSchema,
@@ -292,5 +294,19 @@ describe('packRefSchema', () => {
       '0.key',
       '0.version',
     ]);
+  });
+});
+
+describe('exportFormatSchema and EXPORT_CSV_HEADER', () => {
+  it('takes json or csv, and the header is the brief’s column list, exactly', () => {
+    expect(exportFormatSchema.parse('json')).toBe('json');
+    expect(exportFormatSchema.parse('csv')).toBe('csv');
+    expect(exportFormatSchema.safeParse('xml').success).toBe(false);
+    expect(exportFormatSchema.safeParse('').success).toBe(false);
+    expect(EXPORT_CSV_HEADER).toBe(
+      'holding_id,holding_name,kind,type,currency,date,amount,' +
+        'base_amount,base_currency,fx_rate,fx_rate_date,fx_source,source,client,' +
+        'access,access_reason,tags',
+    );
   });
 });

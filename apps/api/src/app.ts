@@ -6,10 +6,12 @@ import { authRoutes } from './auth/routes';
 import { sessionFromCookie } from './auth/session';
 import { touchCheckedOnSession } from './auth/touch-checked';
 import { contentStore } from './content/store';
+import { accountRoutes } from './http/account';
 import { activityRoutes } from './http/activity';
 import { agentRoutes } from './http/agent';
 import { contentRoutes } from './http/content';
 import { eventsRoutes } from './http/events';
+import { exportRoutes } from './http/export';
 import { geoRoutes } from './http/geo';
 import { holdingsRoutes } from './http/holdings';
 import { liveCountries, meRoutes } from './http/me';
@@ -66,6 +68,10 @@ app.route('/mcp', mcpRoutes());
 
 app.route('/api/me', meRoutes());
 app.route('/api/geo', geoRoutes(liveCountries(contentStore)));
+
+/** The person's data to take away, and the account's deletion (PRD J10). */
+app.route('/api/export', exportRoutes());
+app.route('/api/account', accountRoutes());
 
 app.route('/api/events', eventsRoutes());
 
