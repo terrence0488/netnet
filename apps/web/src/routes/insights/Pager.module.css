@@ -1,0 +1,36 @@
+/* A chart pager: two arrows around the window they name. */
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* The arrow fills the 44px target; the chevron itself stays small. */
+.arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit);
+  min-height: var(--hit);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-size: var(--size-figure);
+  font-weight: var(--weight-heading-section);
+}
+
+/* Unavailable stays solid and dimmed, never disabled (design-system §6.1). */
+.unavailable {
+  color: var(--ink-3);
+  opacity: var(--opacity-disabled);
+}
+
+.window {
+  font-family: var(--font-text);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  color: var(--ink-2);
+  white-space: nowrap;
+}

@@ -144,7 +144,14 @@ test('changing the currency saves it, and Home reads the snapshot again', async 
   expect(patches).toStrictEqual([{ baseCurrency: 'EUR' }]);
   expect(snapshots).toHaveLength(1);
 
+  // Home renders from its cached snapshot first and refetches after it: the heading can show
+  // before the refetch request leaves, so wait for its response rather than the paint.
+  const refetched = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' && new URL(response.url()).pathname === '/api/snapshot',
+  );
   await goTab(page, 'Home');
+  await refetched;
   await expect(page.getByRole('heading', { name: 'Net worth' })).toBeVisible();
   expect(snapshots).toHaveLength(2);
   expect(await snapshots[1]).toBe('"1:generic@1"');

@@ -4,7 +4,7 @@ export type NavPlace = 'tabs' | 'sidebar';
 
 /**
  * One way into the app from its chrome: a tab on a phone, a sidebar item on a computer. The nav is
- * data, so Insights (P5) and Activity (P3) each arrive as one entry here.
+ * data, so Insights and Activity (both P3) each arrive as one entry here.
  */
 export interface NavEntry {
   readonly to: string;
@@ -17,11 +17,13 @@ export interface NavEntry {
 }
 
 /**
- * The tabs, as far as P3 goes: Home, the Agent tab, the Activity log (in both, so a phone reaches
- * it too), and Account, which holds Log out until P3's settings join it (design-system §7).
+ * The prototype's tabs: Home, Insights, the Agent tab, the Activity log (in both, so a
+ * phone reaches it too), and Account, which holds Log out until P3's settings join it
+ * (design-system §7).
  */
 export const NAV: readonly NavEntry[] = [
   { to: '/', label: 'Home', icon: 'home', owns: ['/', '/add', '/holdings', '/archived'] },
+  { to: '/insights', label: 'Insights', icon: 'insights', owns: ['/insights'] },
   { to: '/agent', label: 'Agent', icon: 'agent', owns: ['/agent', '/connect'] },
   { to: '/activity', label: 'Activity', icon: 'activity', owns: ['/activity'] },
   { to: '/account', label: 'Account', icon: 'account', owns: ['/account'] },

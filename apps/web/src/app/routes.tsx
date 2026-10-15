@@ -14,6 +14,7 @@ import { Connect } from '../routes/connect/Connect';
 import { Forgot } from '../routes/forgot/Forgot';
 import { Holding } from '../routes/holding/Holding';
 import { Home } from '../routes/home/Home';
+import { Insights } from '../routes/insights/Insights';
 import { LogIn } from '../routes/login/LogIn';
 import { NotFound } from '../routes/not-found/NotFound';
 import { RouteError } from '../routes/not-found/RouteError';
@@ -135,6 +136,11 @@ export const routes: RouteObject[] = [
                 path: 'archived',
                 Component: Archived,
                 handle: { title: 'Archived' } satisfies RouteHandle,
+              },
+              {
+                path: 'insights',
+                Component: Insights,
+                handle: { title: 'Insights' } satisfies RouteHandle,
               },
               { path: 'agent', Component: Agent, handle: { title: 'Agent' } satisfies RouteHandle },
               {
