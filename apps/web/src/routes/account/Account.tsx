@@ -1,27 +1,44 @@
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useMe } from '../../api/account';
 import { signOut } from '../../api/auth';
+import { countriesQuery } from '../../api/content';
+import { revokePushOnSignOut } from '../../api/push';
 import { BASENAME } from '../../app/basename';
 import { Card, FormProblem, ResendLink, useAgentConnections } from '../../components';
 import { failureSentence } from '../../components/auth-copy';
+import { countryOptions, readerLanguages } from '../onboarding/countries';
 import styles from './Account.module.css';
 
 /**
- * Account: who is signed in, the unverified line with Resend, the way into types and tags, the
- * connected agents, and Log out (the prototype's Account tab; P3's settings join it).
+ * Account: who is signed in, the unverified line with Resend, the way into General and types and
+ * tags, the connected agents, and Log out (the prototype's Account tab).
  */
 export function Account() {
   const me = useMe().data;
   const connections = useAgentConnections();
+  const countries = useQuery(countriesQuery);
   const [problem, setProblem] = useState<string>();
   const [leaving, setLeaving] = useState(false);
+  const languages = useMemo(() => readerLanguages(), []);
+  const country = me?.country;
+  const baseCurrency = me?.baseCurrency;
+  const generalMeta = useMemo(() => {
+    const name =
+      country && countries.data
+        ? countryOptions(countries.data, languages).find((option) => option.code === country)?.name
+        : undefined;
+    return [name, baseCurrency].filter(Boolean).join(' · ');
+  }, [countries.data, languages, country, baseCurrency]);
 
   const logOut = async () => {
     if (leaving) return;
     setLeaving(true);
     setProblem(undefined);
     try {
+      // Best-effort: leaving turns this device's push off, but signing out matters more.
+      await revokePushOnSignOut().catch(() => undefined);
       await signOut();
       // A fresh page, so nothing of the account stays in memory: no cached figure, no profile.
       window.location.replace(`${BASENAME}/login`);
@@ -55,6 +72,15 @@ export function Account() {
               Settings
             </h2>
             <Card flush>
+              <Link to="/account/general" className={styles.actionLink}>
+                <span className={styles.grow}>
+                  <span className={styles.name}>General</span>
+                  {generalMeta === '' ? null : <span className={styles.meta}>{generalMeta}</span>}
+                </span>
+                <span aria-hidden="true" className={styles.chev}>
+                  ›
+                </span>
+              </Link>
               <Link to="/account/taxonomy" className={styles.actionLink}>
                 <span className={styles.grow}>Types and tags</span>
                 <span aria-hidden="true" className={styles.chev}>

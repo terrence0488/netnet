@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { decimalFromNumber, divideDecimal, normalizeDecimal, RATE_DIGITS } from './decimal';
+import {
+  decimalFromNumber,
+  divideDecimal,
+  multiplyDecimal,
+  normalizeDecimal,
+  RATE_DIGITS,
+} from './decimal';
 
 describe('divideDecimal', () => {
   it('keeps twelve significant digits by default', () => {
@@ -42,6 +48,22 @@ describe('normalizeDecimal', () => {
     expect(normalizeDecimal('1.2300')).toBe('1.23');
     expect(normalizeDecimal('007')).toBe('7');
     expect(normalizeDecimal('0.000')).toBe('0');
+  });
+});
+
+describe('multiplyDecimal', () => {
+  it('multiplies exactly, with no trailing zeros', () => {
+    expect(multiplyDecimal('1.35', '0.74')).toBe('0.999');
+    expect(multiplyDecimal('150', '0.0068')).toBe('1.02');
+    expect(multiplyDecimal('2', '3')).toBe('6');
+    expect(multiplyDecimal('0.1', '0.1')).toBe('0.01');
+    expect(multiplyDecimal('1.165', '1')).toBe('1.165');
+  });
+
+  it('refuses what is not a plain decimal', () => {
+    for (const bad of ['1,5', '-2', '', '1e3']) {
+      expect(() => multiplyDecimal(bad, '1.5')).toThrow('Not a plain decimal');
+    }
   });
 });
 

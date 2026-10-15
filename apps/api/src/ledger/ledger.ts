@@ -30,6 +30,7 @@ import {
   type Write,
 } from '@netnet/contracts';
 import { activity, undo } from './activity';
+import { changeBaseCurrency } from './currency';
 import { createHolding, deleteHolding, updateHolding } from './holdings';
 import { setPrefs } from './prefs';
 import { context, getHolding, history, listHoldings, snapshot } from './reads';
@@ -50,10 +51,11 @@ import type { Actor, LedgerTx, WithUser } from './with-user';
 export type { LedgerContent, LedgerOptions } from './scope';
 
 /**
+/**
  * The Ledger (architecture §7.3): the only code that touches the `ledger` schema, and the one
  * implementation behind REST and MCP. Every write is one transaction with its audit rows,
  * `data_version + 1`, its batch, its warnings and its domain events; the edge `track()`s the
- * events. A base currency change, export and erasure come with P3; periods with P5.
+ * events. Activity, undo, the base currency change, export, erasure and periods come with P3.
  */
 export interface Ledger {
   /** The ledger in `baseCurrency`, with every universal type and the pack chain's types. Once. */
@@ -81,6 +83,11 @@ export interface Ledger {
   /** Undoes one entry, or a whole agent turn newest first and all or nothing. */
   undo(t: UndoTarget): Promise<Write<UndoResult>>;
   setPrefs(p: PrefsPatch): Promise<Write<Prefs>>;
+  /**
+   * Another default currency: every value re-derived from the stored rates at its own rate date,
+   * in one write. Called with the system actor, so the log reads one system change.
+   */
+  changeBaseCurrency(ccy: string): Promise<Write<void>>;
   applyPackTypes(pack: PackRef): Promise<Write<UserType[]>>;
   /**
    * Another country confirmed: with no holding yet, the ledger starts over in its currency and
@@ -114,6 +121,7 @@ export const LEDGER_WRITES = [
   'deleteTag',
   'undo',
   'setPrefs',
+  'changeBaseCurrency',
   'applyPackTypes',
   'changeCountry',
 ] as const satisfies readonly (keyof Ledger)[];
@@ -141,6 +149,7 @@ export function openLedger(tx: LedgerTx, options: LedgerOptions): Ledger {
     deleteTag: (id, mergeInto) => deleteTag(s, id, mergeInto),
     undo: (t) => undo(s, t),
     setPrefs: (p) => setPrefs(s, p),
+    changeBaseCurrency: (ccy) => changeBaseCurrency(s, ccy),
     applyPackTypes: (pack) => applyPackTypes(s, pack),
     changeCountry: (i) => changeCountry(s, i),
   };

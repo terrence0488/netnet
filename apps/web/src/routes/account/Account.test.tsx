@@ -1,10 +1,11 @@
-import type { AgentConnection, ProfileView } from '@netnet/contracts';
+import type { AgentConnection, Countries, ProfileView } from '@netnet/contracts';
 import { QueryClient } from '@tanstack/react-query';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createMemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { App } from '../../App';
 import { ME_KEY } from '../../api/account';
+import { countriesQuery } from '../../api/content';
 import { BASENAME, routes } from '../../app/routes';
 import { agentConnectionsQuery } from '../../components/AskAgent';
 
@@ -28,6 +29,12 @@ const CONNECTION: AgentConnection = {
   lastUsedAt: '2026-10-04T09:00:00.000Z',
 };
 
+const COUNTRIES: Countries = {
+  DE: { currency: 'EUR' },
+  SG: { currency: 'SGD', pack: 'sg' },
+  US: { currency: 'USD' },
+};
+
 /** Renders the Account tab with the person and connections already known. */
 function render(
   me: ProfileView | null = PERSON,
@@ -35,6 +42,7 @@ function render(
 ): string {
   const client = new QueryClient();
   client.setQueryData(ME_KEY, me);
+  client.setQueryData(countriesQuery.queryKey, COUNTRIES);
   client.setQueryData(agentConnectionsQuery.queryKey, connections);
   const router = createMemoryRouter(routes, {
     basename: BASENAME,
@@ -52,6 +60,13 @@ describe('the Account tab', () => {
     expect(markup).toContain('href="/app/account/taxonomy"');
     expect(markup).toContain('Log out');
     expect(markup).toContain('NetNet never sells your data or sees your documents.');
+  });
+
+  it('leads into General, showing the country and currency', () => {
+    const markup = render();
+    expect(markup).toContain('>General</span>');
+    expect(markup).toContain('href="/app/account/general"');
+    expect(markup).toContain('Singapore · SGD');
   });
 
   it('offers to resend while the email is unverified', () => {

@@ -10,14 +10,15 @@ import { baseCurrencyOf } from '../ledger/base-currency';
 import { appLedgerOptions } from '../ledger/content';
 import { createWithLedger, type Ledger, type LedgerOptions } from '../ledger/ledger';
 import type { CountryInput } from '../ledger/taxonomy';
-import { withUser, type WithUser } from '../ledger/with-user';
+import { withUser, type Actor, type WithUser } from '../ledger/with-user';
 import type { AppEnv } from '../lib/context';
 import { AppError } from '../lib/errors';
 
 /**
  * `GET /api/me` and `PATCH /api/me` (architecture §7.2): the signed-in person's profile. The user
  * is the session's, never one named in the request (CONVENTIONS §3). The first country the person
- * confirms makes their ledger, in the same request; another country later moves it.
+ * confirms makes their ledger, in the same request; another country later moves it, and a base
+ * currency re-derives its history.
  */
 
 export interface MeDeps {
@@ -36,6 +37,11 @@ export interface MeDeps {
    * starts over in `baseCurrency` and the country's types; with one, it adds the pack's types.
    */
   changeLedgerCountry: LedgerCountry;
+  /**
+   * Re-derives the ledger's history in `baseCurrency` (`Ledger.changeBaseCurrency`), as `system`,
+   * so the log reads one system change.
+   */
+  changeLedgerCurrency: LedgerCountry;
 }
 
 /** A ledger step for the country in `profile`, whose currency is `baseCurrency`. */
@@ -64,11 +70,12 @@ export function liveCountries(store: () => ContentStore): () => Promise<Countrie
 
 /**
  * A `LedgerCountry` over `withUser` and the person's Ledger options: `run` with the pack chain live
- * now for their country (architecture §7.3), as the person.
+ * now for their country (architecture §7.3), as `actor`.
  */
 function ledgerCountry(
   withLedgerUser: WithUser,
   options: (profile: Profile) => LedgerOptions,
+  actor: Actor,
   run: (ledger: Ledger, country: CountryInput) => Promise<unknown>,
 ): LedgerCountry {
   return async (userId, profile, baseCurrency) => {
@@ -77,7 +84,7 @@ function ledgerCountry(
     const pack = chain.map((p) => ({ key: p.id, version: p.version }));
     await createWithLedger(withLedgerUser, ledgerOptions)(
       userId,
-      { kind: 'user' },
+      actor,
       (ledger) => run(ledger, { baseCurrency, pack }),
       { write: true },
     );
@@ -89,7 +96,9 @@ export function ledgerInit(
   withLedgerUser: WithUser,
   options: (profile: Profile) => LedgerOptions,
 ): LedgerCountry {
-  return ledgerCountry(withLedgerUser, options, (ledger, country) => ledger.init(country));
+  return ledgerCountry(withLedgerUser, options, { kind: 'user' }, (ledger, country) =>
+    ledger.init(country),
+  );
 }
 
 /** `MeDeps.changeLedgerCountry`: `Ledger.changeCountry`. */
@@ -97,7 +106,19 @@ export function ledgerCountryChange(
   withLedgerUser: WithUser,
   options: (profile: Profile) => LedgerOptions,
 ): LedgerCountry {
-  return ledgerCountry(withLedgerUser, options, (ledger, country) => ledger.changeCountry(country));
+  return ledgerCountry(withLedgerUser, options, { kind: 'user' }, (ledger, country) =>
+    ledger.changeCountry(country),
+  );
+}
+
+/** `MeDeps.changeLedgerCurrency`: `Ledger.changeBaseCurrency`, as `system`. */
+export function ledgerCurrencyChange(
+  withLedgerUser: WithUser,
+  options: (profile: Profile) => LedgerOptions,
+): LedgerCountry {
+  return ledgerCountry(withLedgerUser, options, { kind: 'system' }, (ledger, country) =>
+    ledger.changeBaseCurrency(country.baseCurrency),
+  );
 }
 
 const defaultDeps: MeDeps = {
@@ -106,6 +127,7 @@ const defaultDeps: MeDeps = {
   countries: liveCountries(contentStore),
   initLedger: ledgerInit(withUser, appLedgerOptions),
   changeLedgerCountry: ledgerCountryChange(withUser, appLedgerOptions),
+  changeLedgerCurrency: ledgerCurrencyChange(withUser, appLedgerOptions),
 };
 
 function invalid(fields: Record<string, string>): AppError {
@@ -130,7 +152,8 @@ function parseChange(body: unknown) {
   for (const issue of parsed.error.issues) {
     if (issue.code === 'unrecognized_keys') {
       for (const key of issue.keys) {
-        fields[key] = 'Remove it: send country, segment, timeZone or onboardingState.';
+        fields[key] =
+          'Remove it: send country, baseCurrency, segment, timeZone or onboardingState.';
       }
     } else {
       fields[issue.path.map(String).join('.') || 'body'] = issue.message;
@@ -192,21 +215,37 @@ export function meRoutes(deps: MeDeps = defaultDeps): Hono<AppEnv> {
       }
       const before =
         change.country === undefined ? undefined : await ensureProfile(deps.db(), userId);
-      const updated = await updateProfile(deps.db(), userId, change);
+      // The base currency lives in the ledger, not the profile: it drives a ledger step below.
+      const { baseCurrency: wanted, ...profile } = change;
+      const updated = await updateProfile(deps.db(), userId, profile);
       if (updated === null) {
         throw invalid({
           segment: 'It is set once, in onboarding, and cannot be changed now. Leave it out.',
         });
       }
-      // The first confirmed country makes the ledger, in its currency (PRD J1). Another country
-      // moves it (J2): over again while it has no holding (a country corrected in onboarding),
-      // else adding the new pack's types. The same country again changes nothing.
+      // The first confirmed country makes the ledger, in its currency, or in the base currency
+      // asked for with it (PRD J1). Another country moves it (J2): over again while it has no
+      // holding (a country corrected in onboarding), else adding the new pack's types. The same
+      // country again changes nothing. A base currency on its own re-derives the ledger's history
+      // in it (P3-T3); before the ledger exists there is nothing to re-derive.
       if (country !== undefined) {
         if ((await deps.baseCurrency(userId)) === null) {
-          await deps.initLedger(userId, updated, country.currency);
-        } else if (before?.country !== change.country) {
-          await deps.changeLedgerCountry(userId, updated, country.currency);
+          await deps.initLedger(userId, updated, wanted ?? country.currency);
+        } else {
+          if (before?.country !== change.country) {
+            await deps.changeLedgerCountry(userId, updated, country.currency);
+          }
+          if (wanted !== undefined) {
+            await deps.changeLedgerCurrency(userId, updated, wanted);
+          }
         }
+      } else if (wanted !== undefined) {
+        if ((await deps.baseCurrency(userId)) === null) {
+          throw invalid({
+            country: 'Choose where you live first: the ledger is made in its currency.',
+          });
+        }
+        await deps.changeLedgerCurrency(userId, updated, wanted);
       }
       return c.json(await view(deps, userId, updated));
     },

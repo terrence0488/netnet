@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { countryCodeSchema } from './content';
+import { currencyExponent } from './currencies';
 import { segmentSchema } from './events';
 
 /**
@@ -48,11 +49,26 @@ export const profileSchema = z.strictObject({
 export type ProfileView = z.infer<typeof profileSchema>;
 
 /**
+ * A default currency: an ISO 4217 code in circulation; lower case is accepted and raised, as for
+ * a holding's currency.
+ */
+export const baseCurrencySchema = z
+  .string({ error: 'Give the currency as a three-letter ISO 4217 code, such as "USD".' })
+  .trim()
+  .toUpperCase()
+  .refine(
+    (code) => currencyExponent(code) !== undefined,
+    'Use the ISO 4217 code of a currency in circulation, such as "USD".',
+  );
+
+/**
  * `PATCH /api/me`. Every field is optional. `country` must be on the country list (with or without
- * a pack); `segment` is accepted only while it is `unknown` (it is set once, PRD §3.5).
+ * a pack); `segment` is accepted only while it is `unknown` (it is set once, PRD §3.5);
+ * `baseCurrency` re-derives the ledger's history in the new currency (P3-T3).
  */
 export const profilePatchSchema = z.strictObject({
   country: countryCodeSchema.exactOptional(),
+  baseCurrency: baseCurrencySchema.exactOptional(),
   segment: segmentSchema.exactOptional(),
   timeZone: timeZoneSchema.exactOptional(),
   onboardingState: onboardingStateSchema.exactOptional(),

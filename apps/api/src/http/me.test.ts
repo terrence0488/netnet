@@ -33,6 +33,7 @@ function appAs(user: SessionUser | null) {
       countries: () => Promise.resolve(COUNTRIES),
       initLedger: () => Promise.reject(new Error('the ledger was reached')),
       changeLedgerCountry: () => Promise.reject(new Error('the ledger was reached')),
+      changeLedgerCurrency: () => Promise.reject(new Error('the ledger was reached')),
     }),
   );
   app.route(
@@ -62,6 +63,8 @@ describe('PATCH /api/me', () => {
     ['[]', 'body'],
     ['{"country": "ZZ"}', 'country'],
     ['{"country": "sg"}', 'country'],
+    ['{"baseCurrency": "ZZZ"}', 'baseCurrency'],
+    ['{"baseCurrency": "US"}', 'baseCurrency'],
     ['{"segment": "wealthy"}', 'segment'],
     ['{"timeZone": "Moon/Base"}', 'timeZone'],
     ['{"onboardingState": "finished"}', 'onboardingState'],

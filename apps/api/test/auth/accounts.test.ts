@@ -548,7 +548,8 @@ describe('GET /api/me and PATCH /api/me', () => {
       [{ segment: 'rich' }, 'segment'],
       [{ email: 'someone@example.com' }, 'email'],
       [{ emailVerified: true }, 'emailVerified'],
-      [{ baseCurrency: 'USD' }, 'baseCurrency'],
+      // A base currency is a real field, but with no ledger yet there is nothing to re-derive.
+      [{ baseCurrency: 'USD' }, 'country'],
       [[], 'body'],
     ];
     for (const [json, field] of cases) {

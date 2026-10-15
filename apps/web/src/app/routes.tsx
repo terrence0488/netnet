@@ -1,5 +1,6 @@
 import { createBrowserRouter, type RouteObject } from 'react-router';
 import { Account } from '../routes/account/Account';
+import { General } from '../routes/account/General';
 import { Activity } from '../routes/activity/Activity';
 import { Add } from '../routes/add/Add';
 import { Edit } from '../routes/add/Edit';
@@ -136,6 +137,11 @@ export const routes: RouteObject[] = [
                 path: 'account',
                 Component: Account,
                 handle: { title: 'Account' } satisfies RouteHandle,
+              },
+              {
+                path: 'account/general',
+                Component: General,
+                handle: { title: 'General' } satisfies RouteHandle,
               },
               {
                 path: 'account/taxonomy',

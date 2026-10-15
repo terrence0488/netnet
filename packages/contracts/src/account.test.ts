@@ -22,17 +22,22 @@ describe('timeZoneSchema', () => {
 });
 
 describe('profilePatchSchema', () => {
-  it('accepts any of its four fields, alone or together, and nothing at all', () => {
+  it('accepts any of its five fields, alone or together, and nothing at all', () => {
     expect(profilePatchSchema.parse({})).toStrictEqual({});
+    expect(profilePatchSchema.parse({ baseCurrency: 'eur' })).toStrictEqual({
+      baseCurrency: 'EUR',
+    });
     expect(
       profilePatchSchema.parse({
         country: 'SG',
+        baseCurrency: 'SGD',
         segment: 'starting_out',
         timeZone: 'europe/london',
         onboardingState: 'done',
       }),
     ).toStrictEqual({
       country: 'SG',
+      baseCurrency: 'SGD',
       segment: 'starting_out',
       timeZone: 'Europe/London',
       onboardingState: 'done',
@@ -43,6 +48,9 @@ describe('profilePatchSchema', () => {
     [{ country: 'sg' }, 'country'],
     [{ country: 'SGP' }, 'country'],
     [{ country: null }, 'country'],
+    [{ baseCurrency: 'ZZZ' }, 'baseCurrency'],
+    [{ baseCurrency: 'US' }, 'baseCurrency'],
+    [{ baseCurrency: null }, 'baseCurrency'],
     [{ segment: 'rich' }, 'segment'],
     [{ timeZone: 'Nowhere/Land' }, 'timeZone'],
     [{ onboardingState: 'onboard' }, 'onboardingState'],
