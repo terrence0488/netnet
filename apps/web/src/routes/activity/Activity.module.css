@@ -1,0 +1,165 @@
+/* The Activity screen (PRD J7): the log newest first, each agent turn its own card. */
+
+.top {
+  padding: var(--space-10) 0 var(--space-8);
+}
+
+.list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-9);
+  padding-bottom: var(--space-9);
+}
+
+/* One turn: the writer and the one control that undoes the whole turn. */
+.turnHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4) var(--space-6);
+  padding: var(--inset-row) var(--inset-card);
+}
+
+.turnTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--size-heading-card);
+  font-weight: var(--weight-heading-card);
+  letter-spacing: var(--tracking-heading-card);
+  overflow-wrap: anywhere;
+}
+
+.turnNotice {
+  padding: 0 var(--inset-card) var(--inset-row);
+  border-top: var(--border-rule) solid var(--rule);
+}
+
+/* One entry: rows reach the card's edges and split themselves with soft rules. */
+.block {
+  padding: var(--inset-row) var(--inset-card);
+}
+
+.turnHead + .block,
+.turnNotice + .block,
+.block + .block {
+  border-top: var(--border-rule) solid var(--rule);
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+/* The provenance device: the agent's blue on the row's inner left edge, quiet on purpose. */
+.byAgent {
+  padding-left: var(--space-6);
+}
+
+.byAgent::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--space-1);
+  bottom: var(--space-1);
+  width: var(--border-mark);
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  background: var(--agent);
+  opacity: var(--opacity-agent-mark);
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.summary {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+  overflow-wrap: anywhere;
+}
+
+.detail {
+  margin: var(--space-1) 0 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-figure);
+  font-weight: var(--weight-figure);
+  letter-spacing: var(--tracking-figure);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: var(--space-1) 0 0;
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  letter-spacing: var(--tracking-meta);
+  line-height: var(--leading-body-sm);
+}
+
+.undo {
+  flex: none;
+}
+
+/* A conflict or a failure: what stands in the way, and what to do, in plain language. */
+.notice {
+  margin-top: var(--space-6);
+  padding: var(--space-6) var(--space-7);
+  border: var(--border-rule) solid var(--attention);
+  border-radius: var(--radius-control);
+  background: var(--warn-bg);
+}
+
+.noticeText {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+  line-height: var(--leading-body);
+  overflow-wrap: anywhere;
+}
+
+.noticeActs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin-top: var(--space-4);
+  align-items: center;
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  padding-bottom: var(--inset-page-end);
+}
+
+/* Nothing has changed yet: a sentence and the way back. */
+.empty {
+  display: grid;
+  gap: var(--space-5);
+  justify-items: center;
+  text-align: center;
+  padding: var(--space-12) 0 var(--inset-page-end);
+}
+
+.emptyTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--size-heading-section);
+  font-weight: var(--weight-heading-section);
+  letter-spacing: var(--tracking-heading-section);
+}
+
+.emptyBody {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  line-height: var(--leading-body);
+}

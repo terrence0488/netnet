@@ -1,0 +1,159 @@
+import type { AuditEntry, Page, ProfileView } from '@netnet/contracts';
+import { QueryClient } from '@tanstack/react-query';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createMemoryRouter } from 'react-router';
+import { describe, expect, it } from 'vitest';
+import { App } from '../../App';
+import { ME_KEY } from '../../api/account';
+import { ACTIVITY_KEY } from '../../api/activity';
+import { BASENAME, routes } from '../../app/routes';
+
+const PERSON: ProfileView = {
+  email: 'avery@example.com',
+  emailVerified: true,
+  country: 'SG',
+  baseCurrency: 'SGD',
+  segment: 'accumulating',
+  timeZone: 'UTC',
+  onboardingState: 'done',
+};
+
+let made = 0;
+
+function entry(over: Partial<AuditEntry> = {}): AuditEntry {
+  made += 1;
+  return {
+    id: `aud_test_${made}`,
+    at: '2026-10-12T13:14:00.000Z',
+    actor: 'user',
+    clientName: null,
+    connectionId: null,
+    batchId: null,
+    action: 'update',
+    entity: 'value',
+    entityId: `val_test_${made}`,
+    before: { amountMinor: 5_000_000, currency: 'SGD' },
+    after: { amountMinor: 6_750_000, currency: 'SGD' },
+    undoes: null,
+    undoneBy: null,
+    summary: 'Updated the value for 2026-10-12',
+    ...over,
+  };
+}
+
+/** Renders the Activity screen with the person signed in and the log's pages already known. */
+function render(pages: Page<AuditEntry>[]): string {
+  const client = new QueryClient();
+  client.setQueryData(ME_KEY, PERSON);
+  client.setQueryData(ACTIVITY_KEY, {
+    pages,
+    pageParams: pages.map(() => undefined),
+  });
+  const router = createMemoryRouter(routes, {
+    basename: BASENAME,
+    initialEntries: ['/app/activity'],
+  });
+  return renderToStaticMarkup(<App client={client} router={router} />);
+}
+
+const TURN = [
+  entry({
+    id: 'aud_new',
+    actor: 'agent',
+    clientName: 'Claude',
+    batchId: 'bat_1',
+    summary: 'Recorded a value for 2026-10-12',
+  }),
+  entry({
+    id: 'aud_old',
+    actor: 'agent',
+    clientName: 'Claude',
+    batchId: 'bat_1',
+    summary: 'Updated the value for 2026-10-11',
+  }),
+];
+
+describe('the Activity screen', () => {
+  it('lists newest first, grouped by agent turn with one control per turn', () => {
+    const markup = render([
+      { items: [...TURN, entry({ id: 'aud_web', summary: 'Added “Cash”' })], nextCursor: null },
+    ]);
+    expect(markup).toContain('Activity');
+    expect(markup.indexOf('Recorded a value for 2026-10-12')).toBeLessThan(
+      markup.indexOf('Updated the value for 2026-10-11'),
+    );
+    expect(markup).toContain('Claude');
+    expect(markup).toContain('Undo these 2 changes');
+    expect(markup.match(/aria-label="Undo: /g)).toHaveLength(3);
+  });
+
+  it('shows old → new, who did it and when', () => {
+    const markup = render([{ items: [entry({ id: 'aud_1' })], nextCursor: null }]);
+    expect(markup).toContain('→');
+    expect(markup).toContain('SGD');
+    expect(markup).toContain('You');
+    expect(markup).toMatch(/2026/);
+  });
+
+  it('reads a revocation with the disconnected agent and the time', () => {
+    const markup = render([
+      {
+        items: [
+          entry({
+            id: 'aud_revoke',
+            entity: 'connection',
+            action: 'create',
+            entityId: 'con_1',
+            clientName: 'Claude',
+            before: null,
+            after: { clientName: 'Claude' },
+            summary: 'Agent disconnected',
+          }),
+        ],
+        nextCursor: null,
+      },
+    ]);
+    expect(markup).toContain('Agent disconnected');
+    expect(markup).toContain('Claude');
+  });
+
+  it('gives an undone entry no Undo of its own', () => {
+    const markup = render([
+      { items: [entry({ id: 'aud_1', undoneBy: 'aud_2' })], nextCursor: null },
+    ]);
+    expect(markup).not.toContain('aria-label="Undo: ');
+  });
+
+  it('leaves a lone turn entry without a turn header', () => {
+    const markup = render([
+      { items: [entry({ id: 'aud_1', batchId: 'bat_1' })], nextCursor: null },
+    ]);
+    expect(markup).not.toContain('Undo these');
+    expect(markup).toContain('aria-label="Undo: ');
+  });
+
+  it('escapes the name the agent wrote under', () => {
+    const markup = render([
+      {
+        items: [
+          entry({ id: 'aud_1', actor: 'agent', clientName: '<img src=x>', batchId: 'bat_1' }),
+          entry({ id: 'aud_2', actor: 'agent', clientName: '<img src=x>', batchId: 'bat_1' }),
+        ],
+        nextCursor: null,
+      },
+    ]);
+    expect(markup).toContain('&lt;img src=x&gt;');
+    expect(markup).not.toContain('<img src=x>');
+  });
+
+  it('offers older changes while the log has another page', () => {
+    const markup = render([{ items: [entry({ id: 'aud_1' })], nextCursor: 'cursor_1' }]);
+    expect(markup).toContain('Show older changes');
+  });
+
+  it('says when nothing has changed yet, with the way back', () => {
+    const markup = render([{ items: [], nextCursor: null }]);
+    expect(markup).toContain('Nothing has changed yet.');
+    expect(markup).toContain('Back to Home');
+  });
+});
