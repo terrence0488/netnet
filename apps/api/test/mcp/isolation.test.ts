@@ -46,6 +46,8 @@ interface Person {
   valueId: string;
   customTypeId: string;
   tagId: string;
+  entryId: string;
+  batchId: string;
 }
 
 interface Pair {
@@ -86,12 +88,17 @@ async function pair(): Promise<Pair> {
     const full = okOf<McpGetHoldingOutput>(
       await callTool(target, agent.token, 'get_holding', { holding_id: holding.id }),
     );
+    const activity = okOf<{ entries: { id: string; batch_id: string | null }[] }>(
+      await callTool(target, agent.token, 'list_activity', { limit: 1 }),
+    );
     return {
       agent,
       holdingId: holding.id,
       valueId: full.values.items[0]?.id ?? '',
       customTypeId: customType.id,
       tagId: tag.id,
+      entryId: activity.entries[0]?.id ?? '',
+      batchId: activity.entries[0]?.batch_id ?? '',
     };
   };
   return { a: await make('QZ', 'Alpha'), b: await make('GB', 'Beta') };
@@ -167,6 +174,36 @@ describe('isolation', () => {
       );
       expect(taxonomy.types.map((t) => t.label)).toContain('Beta type');
       seesOnlyOwn(taxonomy, p.a);
+    });
+  });
+
+  it('list_activity lists B, never A', async () => {
+    const p = await pair();
+    await unchanged(p, async () => {
+      const activity = okOf<{ entries: { summary: string }[] }>(
+        await callTool(target, p.b.agent.token, 'list_activity'),
+      );
+      expect(activity.entries.length).toBeGreaterThan(0);
+      seesOnlyOwn(activity, p.a);
+      expect(JSON.stringify(activity)).toContain('Beta');
+      const filtered = okOf<{ entries: unknown[] }>(
+        await callTool(target, p.b.agent.token, 'list_activity', { batch_id: p.a.batchId }),
+      );
+      expect(filtered.entries).toEqual([]);
+    });
+  });
+
+  it('undo refuses the other person’s entry and batch', async () => {
+    const p = await pair();
+    await unchanged(p, async () => {
+      errOf(
+        await callTool(target, p.b.agent.token, 'undo', { entry_id: p.a.entryId }),
+        'NOT_FOUND',
+      );
+      errOf(
+        await callTool(target, p.b.agent.token, 'undo', { batch_id: p.a.batchId }),
+        'NOT_FOUND',
+      );
     });
   });
 
@@ -336,6 +373,8 @@ describe('isolation', () => {
       get_net_worth_history: () => callTool(target, p.b.agent.token, 'get_net_worth_history'),
       get_taxonomy: () => callTool(target, p.b.agent.token, 'get_taxonomy'),
       get_setup_guide: () => callTool(target, p.b.agent.token, 'get_setup_guide'),
+      list_activity: () => callTool(target, p.b.agent.token, 'list_activity'),
+      undo: () => callTool(target, p.b.agent.token, 'undo', { entry_id: p.a.entryId }),
       create_holding: () =>
         callTool(target, p.b.agent.token, 'create_holding', {
           name: 'Sneak',

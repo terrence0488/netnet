@@ -55,7 +55,7 @@ const DEFAULT_VALUES_PAGE = 50;
 
 /* ---------------------------------------------------------------- cursors */
 
-function encodeCursor(parts: readonly string[]): string {
+export function encodeCursor(parts: readonly string[]): string {
   return Buffer.from(parts.join('|'), 'utf8').toString('base64url');
 }
 
@@ -65,7 +65,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
  * The parts of a cursor this Ledger made, each matching its pattern (`'id'` for an id), or
  * VALIDATION_FAILED at `path`.
  */
-function decodeCursor(
+export function decodeCursor(
   cursor: string,
   shape: readonly (IdPrefix | RegExp)[],
   path: string,

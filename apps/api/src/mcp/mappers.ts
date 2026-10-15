@@ -1,14 +1,18 @@
 import type {
+  AuditEntry,
   Holding,
   HoldingView,
+  McpAuditEntry,
   McpHolding,
   McpHoldingView,
   McpTag,
   McpType,
+  McpUndoResult,
   McpValue,
   McpWarning,
   Pack,
   Tag,
+  UndoResult,
   UserType,
   Value,
   Warning,
@@ -90,6 +94,41 @@ export function userTypeToMcp(type: UserType, chain: readonly Pack[]): McpType {
 
 export function tagToMcp(tag: Tag): McpTag {
   return { id: tag.id, name: tag.name };
+}
+
+/**
+ * An activity entry as the outputs carry it: snake_case, with `before` and `after` exactly as the
+ * Ledger stores them (old → new on the entry), so those keep the Ledger's camelCase and minor
+ * units.
+ */
+export function auditEntryToMcp(entry: AuditEntry): McpAuditEntry {
+  return {
+    id: entry.id,
+    at: entry.at,
+    actor: entry.actor,
+    client_name: entry.clientName,
+    connection_id: entry.connectionId,
+    batch_id: entry.batchId,
+    action: entry.action,
+    entity: entry.entity,
+    entity_id: entry.entityId,
+    before: entry.before,
+    after: entry.after,
+    undoes: entry.undoes,
+    undone_by: entry.undoneBy,
+    summary: entry.summary,
+  };
+}
+
+export function undoResultToMcp(result: UndoResult): McpUndoResult {
+  return {
+    undone: result.undone.map((u) => ({
+      entry_id: u.entryId,
+      entity: u.entity,
+      entity_id: u.entityId,
+    })),
+    undo_ids: [...result.undoIds],
+  };
 }
 
 export function warningToMcp(warning: Warning): McpWarning {

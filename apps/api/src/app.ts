@@ -5,6 +5,7 @@ import { originCheck } from './auth/origin-check';
 import { authRoutes } from './auth/routes';
 import { sessionFromCookie } from './auth/session';
 import { contentStore } from './content/store';
+import { activityRoutes } from './http/activity';
 import { agentRoutes } from './http/agent';
 import { contentRoutes } from './http/content';
 import { eventsRoutes } from './http/events';
@@ -68,6 +69,7 @@ app.route('/api', valuesRoutes());
 app.route('/api/types', typesRoutes());
 app.route('/api/tags', tagsRoutes());
 app.route('/api/prefs', prefsRoutes());
+app.route('/api/activity', activityRoutes());
 
 /** Published content: no user data, no session (architecture §7.2). */
 app.route('/api/content', contentRoutes(contentStore));

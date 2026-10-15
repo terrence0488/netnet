@@ -9,6 +9,7 @@ import { eventStore } from '../../src/db/analytics';
 import type { ContentRef } from '../../src/db/content';
 import { ensureProfile } from '../../src/db/profiles';
 import { createTrack } from '../../src/events/track';
+import { activityRoutes } from '../../src/http/activity';
 import { holdingsRoutes } from '../../src/http/holdings';
 import type { LedgerDeps } from '../../src/http/ledger-edge';
 import { ledgerCountryChange, ledgerInit, meRoutes } from '../../src/http/me';
@@ -129,6 +130,7 @@ export function ledgerApp(db: TestDatabase): LedgerApp {
   app.route('/api/types', typesRoutes(deps));
   app.route('/api/tags', tagsRoutes(deps));
   app.route('/api/prefs', prefsRoutes(deps));
+  app.route('/api/activity', activityRoutes(deps));
   app.notFound(handleNotFound);
   app.onError(handleError);
 
