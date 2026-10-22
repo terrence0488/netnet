@@ -5,7 +5,7 @@ Stage: Triage (P3)
 Phase: P3
 Status: awaiting-approval
 Next action: the Founder reviews the triage and replies `approve triage P3` (re-approves the architecture and plan rewrites); then `stage: build P3` resumes at wave 7, P3-T14 first.
-**Branch:** `docs-p3-triage` (the triage pull request); `main` holds the test report and feedback (#91, #93).
+**Branch:** `docs-p3-triage` (PR #94, the triage); `main` holds the test report and feedback (#91, #93).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
