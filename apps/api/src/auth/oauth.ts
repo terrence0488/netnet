@@ -115,8 +115,8 @@ export function oauthPlugins(options: OAuthPluginOptions): BetterAuthPlugin[] {
   const { origin } = options;
   return [
     jwt({ jwt: { issuer: origin }, disableSettingJwtHeader: true }),
-    // Under exactOptionalPropertyTypes the provider's endpoint types (an openapi field typed
-    // `items?: undefined`) do not match BetterAuthPlugin; without the flag it checks (spike Q1).
+    // better-auth's endpoint types match BetterAuthPlugin again (the `items?: undefined`
+    // mismatch that once needed an assertion here is gone as of 1.7.12).
     mcp({
       resource: mcpResource(origin),
       loginPage: APPROVAL_PAGE,
@@ -136,7 +136,7 @@ export function oauthPlugins(options: OAuthPluginOptions): BetterAuthPlugin[] {
       },
       customAccessTokenClaims: ({ referenceId }) =>
         isId(referenceId, 'con') ? { [CONNECTION_CLAIM]: referenceId } : {},
-    }) as unknown as BetterAuthPlugin,
+    }),
     cimd({
       fetchClientMetadataResource: options.fetchClientMetadata,
       metadataProfile: 'mcp-2026-07-28',
