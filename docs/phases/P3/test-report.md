@@ -7,7 +7,7 @@ P1 and P2 criteria for regressions. Code under test: `main` at `520c504`; produc
 
 ## Summary
 
-**Verdict: fail. Two High issues block approval, and the production checkpoint is not yet
+**Verdict: fail. One High issue blocks approval, and the production checkpoint is not yet
 verified.**
 
 - **Product.** Most of P3 works end to end. Activity and undo, conflicts, revocation, export,
@@ -17,17 +17,15 @@ verified.**
   totals wrong (issue 1). Four Medium defects follow it: account deletion leaves rows behind,
   `value_undone` can't measure M5, a user's own exchange rate is lost on a currency round trip,
   and the probe's refresh token is printed in workflow logs.
-- **Operations.** GitHub Actions has run nothing since 2026-10-22 07:28 UTC (issue 2). The handoff
-  read the probe and backup failures as a changed secret. They are not: every job in every
-  workflow fails in 1–2 s before its first step, CI's included, and `backup.yml` never used the
-  action #89 bumped. Production backups, the probe, FX rates, the daily sweep and CI have all
-  stopped.
+- **Operations.** The probe and backup failures were not a changed secret, as the handoff
+  guessed. The account's Actions budget had run out, so every job in every workflow failed
+  before its first step. The budget is now raised (issue 7).
 - **Unverified on production.** This session's network policy refuses `netnetapp.io`. Public
   checks ran through the `netnet-orcin.vercel.app` alias of the same deployment. Whether Vercel
-  Cron fires `/api/cron/reminders` at all is open (issue 3): `decisions.md` records that Vercel's
+  Cron fires `/api/cron/reminders` at all is open (issue 2): `decisions.md` records that Vercel's
   scheduler never fired production crons. P3-T10's deploy criterion stays unchecked.
 
-**Automated gates** (local, Postgres 16; CI uses 18, and CI cannot run at present):
+**Automated gates** (local, Postgres 16; CI uses 18):
 
 | Gate | Result |
 |---|---|
@@ -71,10 +69,10 @@ exact wording.
   reverted together from the web; the agent's `undo` works too
 - J7 `value_corrected` / `value_undone` on agent-written values · **partial** · `value_corrected
   {original_source: agent, age_at_correction}` is right; `value_undone` also fires for web values
-  and carries nothing to tell them apart (issue 6)
+  and carries nothing to tell them apart (issue 5)
 - Settings: default currency re-derived from stored rates, one undoable `system` change · **fail**
   · re-derivation is right; one change is N+1 unbatched entries and the natural undo corrupts
-  totals (issue 1); a user's own rate is lost on a round trip (issue 7)
+  totals (issue 1); a user's own rate is lost on a round trip (issue 6)
 - Settings: sign-out · **pass** · `settings.spec`; `DELETE …/endpoints/:id?by=signout` fires
   `push_disabled {by: signout}` and the device then answers 404
 - J10 export as JSON and CSV · **pass** · JSON has types, tags, holdings and values with rates; the
@@ -84,7 +82,7 @@ exact wording.
   minutes → `REAUTH_REQUIRED`; the screen states 30 days before the button; ledger, sessions,
   identity, endpoints and connections are gone; events re-keyed; `account_deleted` with segment.
   But a `core.profile` and a `core.reminder_state` row are re-created for the deleted id
-  (issue 4)
+  (issue 3)
 - J10 no screen or response carries another user's data · **pass** · a second user gets 404 on
   the first's values, edits, undo and devices; their Activity and export hold nothing of the
   first's; integration isolation suites green
@@ -116,7 +114,7 @@ exact wording.
   one-click unsubscribe (JSON and the RFC 8058 form) turns email off
 - J12 email cap of 60 a UTC day · **pass** · the run sent up to 60 people and released the rest
   for a later run
-- Checkpoint 6, every step fires its §3.5 event with `segment` · **pass** (except issue 6) ·
+- Checkpoint 6, every step fires its §3.5 event with `segment` · **pass** (except issue 5) ·
   every event in the run carried a segment; no prop carried an amount, currency or name
 
 ### Non-functional (P3)
@@ -158,28 +156,20 @@ cron runs.
    (currency) entry sets the base back to SGD but leaves every value's converted amount in USD.
    The S$1,000 cash then counts as 769.23, and Home's total is wrong with no warning. A real
    account would get hundreds of rows.
-2. **High (operations) — GitHub Actions has run nothing since 2026-10-22 07:28 UTC.** Every job
-   in every workflow fails in 1–2 s with no steps and no logs. That includes CI's "What changed"
-   and `backup.yml`, which does not use the action #89 bumped. So it is not a changed secret, and
-   it started in the 07:23–07:28 window after the heavy runs on PR #88. Most likely the account's
-   included Actions minutes or spending limit ran out on this private repo (the run page's
-   annotation will say). Consequences: no backup since 2026-10-21 07:53 UTC (Neon Free keeps 6
-   hours), no MCP probe, no FX rates (new foreign values use stale rates), no attempt sweep, and
-   no CI on any PR.
-3. **Medium (open, unverified) — Reminders depend on Vercel Cron, which `decisions.md` records
+2. **Medium (open, unverified) — Reminders depend on Vercel Cron, which `decisions.md` records
    never fired in production.** The decision moved the daily and FX jobs to GitHub Actions and
    says "`vercel.json` carries no crons". `vercel.json` now carries the three reminder entries,
    so that entry is out of date. If Vercel still does not fire them, no reminder and no
    security-email retry ever goes. Clocks were started on deploy day (2026-10-15), so the first
-   reminders are due around 2026-11-14. The fallback in architecture §9.3 is GitHub Actions,
-   which issue 2 also blocks.
-4. **Medium — Account deletion re-creates a profile and a reminder row for the deleted id.**
+   reminders are due around 2026-11-14. The fallback in architecture §9.3 is GitHub Actions
+   schedules calling the same handler.
+3. **Medium — Account deletion re-creates a profile and a reminder row for the deleted id.**
    Steps: sign in, `DELETE /api/account`, query `core.profile` and `core.reminder_state` for that
    id. Expected: nothing (checkpoint 3). Actual: one row each. The after-response "checked
    NetNet" hook (`touchCheckedOnSession` → `ensureProfile` + upsert) runs for the deletion
    request itself. Nothing is sent to that id (no address remains), but erasure is incomplete and
    orphans accumulate.
-5. **Medium (security) — The probe's refresh token is printed in plain text in workflow logs.**
+4. **Medium (security) — The probe's refresh token is printed in plain text in workflow logs.**
    The "Store the rotated token" steps in `deploy.yml` and `probe.yml` inline `${{
    steps.*.outputs.refresh_token }}` into their script. The runner prints the script before
    `::add-mask::` takes effect, as deploy run #27's log shows. The token logged by the last
@@ -187,15 +177,21 @@ cron runs.
    and apps with read access. It grants `ledger.read/write` on the probe account. Fix: mask
    inside `scripts/probe.ts`/`smoke.ts` before writing `$GITHUB_OUTPUT`, then rotate the probe
    connection and delete the old run logs.
-6. **Medium — `value_undone` cannot measure M5.** Steps: record and edit a value on the web, then
+5. **Medium — `value_undone` cannot measure M5.** Steps: record and edit a value on the web, then
    undo the edit. Expected: `value_undone` for agent-written values (P3 table, architecture §6.8).
    Actual: it fires for web values too, with no props, so an agent undo and a web undo look the
    same and "within 48h" can't be read. `value_corrected` is right (it carries
    `original_source`).
-7. **Medium — A person's own exchange rate is lost on a currency round trip.** Steps: a USD
+6. **Medium — A person's own exchange rate is lost on a currency round trip.** Steps: a USD
    holding entered at rate 1.35 in an SGD ledger; switch the default to USD, then back to SGD.
    Expected: the stored conversion stays the person's (J2, J11). Actual: the rate becomes ECB's
    1.30 (`fx_source` user → ecb), and S$135 silently becomes S$130 in history and in every period.
+7. **Low — GitHub Actions stopped when the account's budget ran out.** From 2026-10-22 07:28 UTC
+   every job in every workflow failed in 1–2 s before its first step: CI, backup, probe, FX and
+   the daily sweep. The budget is now raised. Before launch, little was at risk: production holds
+   only the Founder's own account and the probe's, and Neon keeps 6 hours of restore history. The
+   cost that mattered was CI, which no pull request could pass meanwhile. Before launch, confirm
+   one green CI run and a working backup.
 8. **Low — The production dependency audit is red.** One high, five moderate and one low
    advisory, all in `vite` 8.3.0–8.3.2 (via better-auth → vitest) and `esbuild` ≤0.24.2 (via
    better-auth → drizzle-kit). These are dev-server tools that the API never runs, but CI's audit
@@ -239,13 +235,13 @@ cron runs.
 
 ## Suggested manual checks for the Founder
 
-1. **First:** GitHub → Settings → Billing (Actions) to clear issue 2. Then run Daily backup, MCP
-   probe and FX by hand and confirm they are green.
+1. Confirm Actions runs again (issue 7): one green CI run, then Daily backup and FX by hand. Run
+   the probe only after issue 4's fix.
 2. Vercel → the project's Cron Jobs and Logs: confirm `/api/cron/reminders` actually runs at
    01:00, 09:00 and 17:00 UTC, before the first reminders fall due (~2026-11-14). This also closes
    P3-T10's open criterion.
 3. `pnpm smoke --origin https://netnetapp.io` from your machine.
-4. After issue 5's fix: revoke the probe's connection and re-run the one-time setup in
+4. After issue 4's fix: revoke the probe's connection and re-run the one-time setup in
    `ops/probe.md`.
 5. A real iPhone with NetNet on the Home Screen, and an Android phone: turn push on, receive a
    reminder, open it from the lock screen. On an iPhone in a Safari tab, no push option appears.
