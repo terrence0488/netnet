@@ -408,8 +408,10 @@ describe('the connection attempt', () => {
     const first = await startAttempt(refused);
     const client = claude();
     const { code } = await client.connect(refused.browser);
+    // better-auth answers a bad verifier with the RFC 6749 invalid_grant status (400 since
+    // 1.7.12; it used to be 401). The refusal, not the number, is the contract.
     expect((await client.exchange(code, 'the-wrong-verifier-the-wrong-verifier-0123')).status).toBe(
-      401,
+      400,
     );
     expect(await attempt(refused, first)).toEqual({
       id: first,
