@@ -4,8 +4,8 @@
 Stage: Test (P3)
 Phase: P3
 Status: awaiting-approval
-Next action: Founder: review `docs/phases/P3/test-report.md` and use the product hands-on (its manual checks 1–2 first), then `stage: triage P3`.
-**Branch:** `main` current; the test report is on `docs-p3-test-report`.
+Next action: `stage: triage P3` in a fresh session (inputs: `docs/phases/P3/test-report.md`, `docs/phases/P3/feedback.md`).
+**Branch:** `main` current (#91 test report and #92 audit fix merged).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -21,12 +21,12 @@ Next action: Founder: review `docs/phases/P3/test-report.md` and use the product
 | P4 | not-started | | |
 
 ## Handoff note (last session)
-`stage: test P3` ran; verdict fail (`docs/phases/P3/test-report.md`). High: the currency
-change is N+1 unbatched entries whose natural undo corrupts totals. Mediums: Vercel Cron
-firing the reminders is unverified (first due ~11-14), deletion re-creates profile/reminder
-rows, the probe token is printed in workflow logs, `value_undone` can't measure M5, and a
-user's own FX rate is lost on a currency round trip. The Actions outage was the account's
-budget, now raised; confirm a green CI run. P3-T10 stays in-progress until production is
-verified (`netnetapp.io` was unreachable from the session). Suggested for triage: issues 1
-and 3–6 as P3 bug tasks.
+`stage: test P3` ran; verdict fail (`docs/phases/P3/test-report.md`). The Founder confirmed
+issue 1 hands-on and decided to remove undo entirely: changes only move forward
+(`docs/phases/P3/feedback.md`, which lists the PRD, architecture and code it reaches).
+Triage first rewrites J7, N3 and M5 in place for re-approval. Then it routes the rest:
+Vercel Cron firing the reminders is unverified (first due ~11-14); deletion re-creates
+profile/reminder rows; the probe token is printed in workflow logs; a user's own FX rate is
+lost on a currency round trip. P3-T10 stays in-progress until production is verified.
+The audit is fixed (#92) and Actions runs again after the budget increase.
 PR #88 is red; `claude/design-*` are unmerged explorations; P2-T8 waits on F11 (non-blocking).
