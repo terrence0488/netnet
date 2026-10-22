@@ -1,11 +1,11 @@
 # Project State
 
 ## Current
-Stage: Build (P3)
+Stage: Test (P3)
 Phase: P3
-Status: in-progress
-Next action: `stage: test P3` in a fresh session.
-**Branch:** `main` current (P3 stack #77–#87 merged, branches deleted).
+Status: awaiting-approval
+Next action: Founder: review `docs/phases/P3/test-report.md` and use the product hands-on (its manual checks 1–2 first), then `stage: triage P3`.
+**Branch:** `main` current; the test report is on `docs-p3-test-report`.
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -17,17 +17,16 @@ Next action: `stage: test P3` in a fresh session.
 | Plan | **approved** | 2026-10-13 | `docs/04-plan.md`, `docs/phases/P1/tasks/`, `docs/phases/P2/tasks/`, `docs/phases/P3/tasks/` |
 | P1 | **approved** | 2026-10-08 | Test report reviewed; Claude computer shots shipped (#61) |
 | P2 | **approved** | 2026-10-12 | Test report + hands-on; Account and date review fixups in (#76) |
-| P3 | built | | Merged and deployed to production; awaiting `stage: test P3` |
+| P3 | tested | | Test report: fail (2 High, 5 Medium); awaiting Founder review, then triage |
 | P4 | not-started | | |
 
 ## Handoff note (last session)
-P3 stack merged to `main` (#77–#87); F19 prod secrets are set and the production
-deploy (workflow run #27, from `82f7763`) succeeded. Open before or during
-`stage: test P3` (its manual checks are in the T10 brief report):
-- MCP probe (probe.yml) and Daily backup (backup.yml) began failing on 2026-10-22,
-  each within ~2 s and with no step logs, after weeks green. Likely a secret changed
-  with F19; read the failed run's error first, then `pnpm smoke --origin <prod>`.
-- CI on `main` is red only at "Audit production dependencies" (high/critical advisory).
-- `renovate/minor-and-patch-updates` (PR #88) is red; `claude/design-a-two-inks` and
-  `claude/design-c-soft` are unmerged prototype explorations (Home carousel).
-- P2-T8 still waits on F11 phone shots (non-blocking).
+`stage: test P3` ran; verdict fail (`docs/phases/P3/test-report.md`). Highs: the currency
+change is N+1 unbatched entries whose natural undo corrupts totals; GitHub Actions runs
+nothing since 2026-10-22 07:28 UTC (no backups, probe, FX, CI). Likely billing or minutes,
+not a secret. Mediums: deletion re-creates profile/reminder rows, the probe token is printed
+in workflow logs, `value_undone` can't measure M5, a user's own FX rate is lost on a
+currency round trip, and Vercel Cron firing the reminders is unverified (first due ~11-14).
+P3-T10 stays in-progress until production is verified (`netnetapp.io` was unreachable from
+the session). Suggested for triage: issues 1 and 4–7 as P3 bug tasks.
+PR #88 is red; `claude/design-*` are unmerged explorations; P2-T8 waits on F11 (non-blocking).
