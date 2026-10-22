@@ -1,6 +1,6 @@
 # 04 — Plan
 
-Status: **approved** · Stage owner: Software engineering manager
+Status: **awaiting re-approval** · Stage owner: Software engineering manager
 Inputs: `docs/01-prd.md` (§6 acceptance criteria), `docs/03-architecture.md`, `CONVENTIONS.md`
 
 > Phases are vertical slices, each ending in a checkpoint deployed to production that the Founder
@@ -36,7 +36,7 @@ is built last within P3 (PRD §4.1).
 |---|---|---|---|
 | **P1** | **Ask your agent about your real position** | Sign up by email, confirm the country, add holdings by hand and see what you could use; connect Claude (or any MCP agent through "Other agent") in one flow; the agent answers from `get_financial_context` and writes values that appear in the app, marked as its own. Instrumented, isolated, backed up, probed | J1–J3 (core), J5, J6, J8; J10 isolation |
 | **P2** | **Worth using on its own** | Google and Apple sign-in; onboarding's start screen and the basics; the full Home (trend, allocation, baseline, filters, staleness, the agent handoff); the full holding page; types and tags | J1–J5 (rest), J9 |
-| **P3** | **Trust, ownership, comeback and Insights** | Activity with undo of an entry or an agent turn; settings (currency, country); export and account deletion; the comeback reminder by web push or email; the security email's retries; monthly, quarterly and yearly change with drivers, filters and exclusions; `get_period_changes` | J2 (country change), J7, J10, J12, J11 |
+| **P3** | **Trust, ownership, comeback and Insights** | Activity, a read-only log of every change; settings (currency, country); export and account deletion; the comeback reminder by web push or email; the security email's retries; monthly, quarterly and yearly change with drivers, filters and exclusions; `get_period_changes` | J2 (country change), J7, J10, J12, J11 |
 | **P4** | **Ready to launch** | The landing page; the metrics per segment; usage and SLO alerts; all ten packs reviewed; guides and directory listings ready; the launch note; the M12 harness | G-D1–G-D4, M12, packs |
 
 ## 3. P1 — Ask your agent about your real position
@@ -73,12 +73,12 @@ Stage 6 tests P1 against these criteria (PRD §6). The rest of each job waits fo
 | **J2** | Add an asset or liability (name, type, currency, value, date; tags wait) · liabilities subtract · accessibility recorded in one of four states · asked as a fact, never a category · no-doubt types set with the pack's reason, overridable · generic pack for unpacked markets · country inferred, confirmed, alphabetical, currency default · pack types added on confirmation · instruments from any country · consequence shown, changeable from the holding · never blocks saving, asking the agent offered · "Not sure" → undecided, marked, with a way to decide · foreign currency stores original, conversion, rate and rate date | Tags; add, rename, merge and delete types and tags; archive; delete from the web (P2) · changing country afterwards (P3) · a delete shown in the audit log (P3) |
 | **J3** | Add a dated value, back-dated allowed, latest by date drives the total · same date: last write wins, with a warning · `value_recorded {source}`; `value_corrected` when an agent corrects a value | Editing a value on the web (P2) · the edit shown in the audit log (P3) |
 | **J5** | Everything except the handoff prompts: steps per client and platform with screenshots and the connector URL, no token · "Other agent" · Back step by step · the Connect button's logos · the same flow from the Agent tab and the empty Home · verify first, with resend, moving on by itself · approval moves NetNet on by itself · connection shown active with client name and time · failures fire `agent_connection_failed` and show a plain cause and retry · revoke rejects later calls · the security email · M9 readable | Entries from onboarding and a holding (P2) · the prompt handoff for an empty or stale Home (P2) · the revocation shown in Activity (P3) |
-| **J6** | All, except undo (P3) | — |
+| **J6** | All | — |
 | **J8** | All, except the blind comparison (M12, P4) | — |
 | **J10** | No screen or API response carries another user's data, verified by test | Export and deletion (P3) |
 
 Non-functional requirements from P1: N1 measured (`latency_ms`) and probed, N2, N3 (audit rows on
-every write; undo in P3), N4, N5, N7, N8, N9, N10, N11.
+every write; Activity shows them in P3), N4, N5, N7, N8, N9, N10, N11.
 
 ### 3.3 Tasks
 
@@ -256,24 +256,25 @@ flowchart LR
 
 ### P3 — Trust, ownership, comeback and Insights
 
-Status: briefed. Briefs: `docs/phases/P3/tasks/P3-T1.md` … `P3-T10.md`.
+Status: briefed. Briefs: `docs/phases/P3/tasks/P3-T1.md` … `P3-T18.md`.
 
 #### Checkpoint
 
 On `https://‹domain›`, deployed by the production workflow:
 
 1. Activity shows every change newest-first, grouped by agent turn, with what changed, old → new,
-   client and time — and undo of one entry or a whole turn, with conflicts naming the blocker.
-   Revocation reads there too.
-2. Settings changes the default currency (every value re-derived from its stored rate, one
-   undoable `system` change) and the country (the new pack's types added, none removed), and
-   signs out.
+   client and time. It is a read-only log: a mistake is corrected by another change. Revocation
+   reads there too.
+2. Settings changes the default currency (every value re-derived from its stored rate, a
+   person's own rates kept as given, one `system` entry in Activity) and the country (the new
+   pack's types added, none removed), and signs out.
 3. Export downloads everything as JSON or CSV; deletion states the 30-day window first, then
    erases `ledger`, identity, sessions, grants, endpoints and reminder state, revokes every
    connection, and stops every reminder at once.
 4. Someone away for 30 days gets one gentle reminder, at most three per absence and only in
    their daytime — by push to every device they turned on, by email otherwise, with one-click
-   unsubscribe and opened tracking. The security-email retries run inside the same runs.
+   unsubscribe and opened tracking. The security-email retries run inside the same runs, which
+   are GitHub Actions schedules.
 5. Insights shows Monthly, Quarterly and Yearly change with drivers, through its own persisted
    filters and exclusions; the holding page grows its period bar chart with the M/Q/Y switch
    and paging; the agent gets `get_period_changes`.
@@ -290,13 +291,13 @@ for regressions.
 | **J3** | An edit shown in the audit log |
 | **J4** | The holding page's second card: the bar chart of its period changes with the monthly / quarterly / yearly switch and paging, carried marking, the shared placeholder when history is short |
 | **J5** | Revocation shown in Activity |
-| **J7** | All: newest-first log with what changed, old → new, client and time, web changes in the same log · undo of an entry, exact and itself logged · undo of a batch, together · `value_corrected` / `value_undone` on agent-written values |
+| **J7** | All: newest-first log with what changed, old → new, client and time, web changes in the same log · one agent turn read together · a record only, nothing in it changes data · `value_corrected` when an agent-written value is edited or deleted |
 | **J10** | Export as JSON and CSV complete enough to rebuild a spreadsheet from · deletion (a recent sign-in, the 30-day window stated first, everything erased, connections revoked, reminders stopped, events re-keyed, `account_deleted`) · no screen or response carries another user's data, re-verified by test |
-| **J11** | All, built last in the phase (PRD §4.1): three views with period rows newest-first · drivers per period · own filters recomputing every figure · Don't Show exclusions persisting and leaving Home alone · placeholders with the single what's-needed statement · periods from value dates, carried marking, stored conversions · `insights_viewed {view}` |
+| **J11** | All, built last in the phase (PRD §4.1): three views with period rows newest-first, the first period with no change · drivers per period · own filters recomputing every figure · Don't Show exclusions persisting and leaving Home alone · placeholders with the single what's-needed statement · periods from value dates, carried marking, stored conversions · `insights_viewed {view}` |
 | **J12** | All: due at 30/60/90 with no check, never a fourth, any check restarts the clock · daytime only · push where on, email otherwise, verified addresses only · the exact wording, no amounts or names · the Home card rules · Settings → Notifications · the device lifecycle · unsubscribe and opened tracking |
 
 Non-functional requirements in P3: N1 (the new tool carries `outcome` and `latency_ms`), N3
-(undo completes the auditability P1 started), N7 (the sweep), N9 (every new event prop an
+(Activity completes the auditability P1 started), N7 (the sweep), N9 (every new event prop an
 enum; every `notify()` message free of amounts, totals and names), N10 (the deny-list scan
 covers the new code), N11 (periods from a pure `core` function).
 
@@ -313,7 +314,15 @@ covers the new code), N11 (periods from a pure `core` function).
 | P3-T7 | Periods — core, Ledger and the agent tool | T2, T4, T6 | yes | — |
 | P3-T8 | The holding page's period bar chart | T7 | yes | — |
 | P3-T9 | The Insights screen | T7 | yes | — |
-| P3-T10 | Responsive sweep and the P3 checkpoint | T2, T4, T6, T8, T9 | no | — |
+| P3-T10 | Responsive sweep and the P3 checkpoint | T2, T4, T6, T8, T9; T11–T18 for production | no | — |
+| P3-T11 | Remove undo; Activity is a read-only log | — | yes | — |
+| P3-T12 | The default-currency change — one entry, a person's own rates kept | T11 | yes | — |
+| P3-T13 | Account deletion leaves nothing behind; the export survives Safari | — | yes | — |
+| P3-T14 | The probe's refresh token never reaches a log | — | yes | — |
+| P3-T15 | The reminder runs on GitHub Actions schedules | — | yes | — |
+| P3-T16 | Insights — the first period has no change | — | yes | — |
+| P3-T17 | Home — the stale note under Position, and E2E with push | — | yes | — |
+| P3-T18 | The intermittent 500 on `GET /api/me` — diagnosable, then fixed | — | yes | — |
 
 T4's dependency on T3 is ordering only (both extend Settings); on T5 and T6 it is real (the
 tables `destroy()` clears). T7's dependency is ordering only: Insights is built last in the
@@ -321,6 +330,13 @@ phase so a slip shows against the phase rather than eating the trust work (PRD �
 T9 run in one wave from the same engine and share nothing new — common needs go through
 `core`. The reminder backfill starts every existing user's clock on deploy day (P3-T5), so
 nobody gets a surprise reminder.
+
+T11–T18 come from triaging Stage 6's report (`docs/phases/P3/feedback.md`). T14 goes first,
+because the token in the latest workflow logs is live; once it merges, the Founder rotates the
+token (its brief lists the steps). T15 must reach production before the first reminders fall due,
+around 2026-11-14. T12 follows T11 because both change the audit write path. When all eight are
+merged, the production workflow deploys, P3-T10's open criterion is verified there (the
+checkpoint, and the reminder schedule's first runs), and `stage: test P3` runs again.
 
 #### Order
 
@@ -333,6 +349,9 @@ flowchart LR
   T2 & T4 & T6 --> T7[T7 periods]
   T7 --> T8[T8 holding chart] & T9[T9 Insights]
   T2 & T4 & T6 & T8 & T9 --> T10[T10 sweep + checkpoint]
+  T11[T11 remove undo] --> T12[T12 currency entry + rates]
+  T12 & T13[T13 deletion + export] & T14[T14 probe token] & T15[T15 reminder schedules] --> T10
+  T16[T16 first period] & T17[T17 Home order + E2E] & T18[T18 the 500] --> T10
 ```
 
 | Wave | Tasks |
@@ -343,6 +362,9 @@ flowchart LR
 | 4 | T7 |
 | 5 | T8, T9 |
 | 6 | T10 |
+| 7 | T14 first, then T11, T13, T15, T16, T17, T18 |
+| 8 | T12 |
+| 9 | T10's production criterion (deploy, then verify) |
 
 #### Running the build
 
@@ -377,7 +399,8 @@ listings and launch note ready to submit and post.
   `netnet_metrics`; `pnpm metrics --env production`; the M10 funnel.
 - Operations: the daily health cron (Neon usage, the N1 SLO from events, the day's email count, a
   security email unsent for 24 hours), emailed to the Founder at the architecture §9.4 triggers; the
-  FX failure alert.
+  FX failure alert. Before launch, one green CI run and a working backup are confirmed, and the
+  Actions budget sits well above the schedules' use (architecture §9.3).
 - The seven remaining launch packs (ID, PH, TH, VN, HK, IN, AU), and all ten reviewed by someone who
   knows each market, the reviewer named in each publish message.
 - Agent guides checked against the clients' current screens; listing materials for Claude's and
@@ -385,7 +408,8 @@ listings and launch note ready to submit and post.
   tested on a free account and its guide is listed in the connect flow. Submitting them needs the privacy
   policy and terms (Stage 8's legal basics).
 - A security review before launch, starting with whether sign-up keeps saying that an email already
-  has an account (P1 answers 422; the reset flow reveals nothing).
+  has an account (P1 answers 422; the reset flow reveals nothing), and limiting push endpoints to
+  the known push services' hosts (any `https:` host is accepted today).
 - The launch note (G-D3): one text, the proof varied per audience.
 - The M12 harness: a fixed fictional dataset and question set, a deliberately weak model, NetNet
   versus a spreadsheet upload, scored blind. Each run's API spend is approved by the Founder first.
@@ -450,7 +474,7 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | J3 | P1, P2 (edit), P3 (in the log) |
 | J4 | P2, P3 (holding bar chart) |
 | J5 | P1, P2 (other entries, handoff) |
-| J6 | P1 (undo in P3) |
+| J6 | P1 |
 | J7 | P3 |
 | J8 | P1 (M12 in P4) |
 | J9 | P2 |
@@ -462,9 +486,9 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 
 | §3.5 events | First fired in |
 |---|---|
-| `signup_started`, `account_created`, `session_started`, `holding_created`, `value_recorded`, `value_corrected`, `agent_connection_started`, `agent_connection_completed`, `agent_connection_failed`, `agent_tool_called`, `security_email_sent` | P1 (all 21 schemas exist from P1) |
+| `signup_started`, `account_created`, `session_started`, `holding_created`, `value_recorded`, `value_corrected`, `agent_connection_started`, `agent_connection_completed`, `agent_connection_failed`, `agent_tool_called`, `security_email_sent` | P1 (all 20 schemas exist from P1) |
 | `holding_created {via: guided}` | P2 |
-| `value_undone`, `reminder_sent`, `reminder_opened`, `push_prompt_shown`, `push_prompt_result`, `push_enabled`, `push_disabled`, `account_deleted` | P3 |
+| `reminder_sent`, `reminder_opened`, `push_prompt_shown`, `push_prompt_result`, `push_enabled`, `push_disabled`, `account_deleted` | P3 |
 | `landing_view` | P4 |
 | `insights_viewed` | P3 |
 
