@@ -460,9 +460,9 @@ function LoadedHome({
                 type="button"
                 className={styles.tool}
                 onClick={() => setSheet('sort')}
-                aria-label={`Sort holdings. Now: ${sortLabel(prefs.sort)}`}
+                aria-label={`Sort: ${sortLabel(prefs.sort)}. Sort holdings`}
               >
-                Sort: {sortLabel(prefs.sort)} ▾
+                Sort: {sortLabel(prefs.sort)} <span aria-hidden="true">▾</span>
               </button>
             </div>
           </div>
