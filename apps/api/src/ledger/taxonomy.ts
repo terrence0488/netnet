@@ -322,8 +322,8 @@ export function upsertTag(s: Scope, input: TagInput): Promise<Write<Tag>> {
 
 /**
  * `deleteTag` (`delete_tag`). Holdings that carry the tag lose it, or carry `mergeInto` instead (a
- * merge); a tag is only a label, so nothing is refused. Each holding's change is audited, so undo
- * can put the tag back, and saved filters follow.
+ * merge); a tag is only a label, so nothing is refused. Each holding's change is audited, and
+ * saved filters follow.
  */
 export function deleteTag(s: Scope, id: string, mergeInto?: string): Promise<Write<void>> {
   return runWrite(s, 'deleteTag', async (w) => {

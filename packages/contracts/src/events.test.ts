@@ -47,7 +47,6 @@ const TOOLS = [
   'delete_type',
   'upsert_tag',
   'delete_tag',
-  'undo',
 ];
 
 /** `name?` marks an optional prop. */
@@ -62,7 +61,6 @@ const SPEC: Record<string, Record<string, SpecLeaf>> = {
     original_source: ['web', 'agent', 'system'],
     age_at_correction: { int: [0, 36_500] },
   },
-  value_undone: {},
   agent_connection_started: { client: CLIENT, entry: CONNECTION_ENTRY },
   agent_connection_completed: { client: CLIENT, entry: CONNECTION_ENTRY },
   agent_connection_failed: {
@@ -81,7 +79,6 @@ const SPEC: Record<string, Record<string, SpecLeaf>> = {
       'UNAUTHENTICATED',
       'NOT_FOUND',
       'LIKELY_DUPLICATE',
-      'UNDO_CONFLICT',
       'EMAIL_NOT_VERIFIED',
       'SCOPE_REQUIRED',
       'REAUTH_REQUIRED',
@@ -217,8 +214,8 @@ const SNAKE = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 /* ---- the tests ---- */
 
 describe('the event schemas', () => {
-  it('define the 21 events of architecture §7.7, and only those', () => {
-    expect(EVENT_NAMES).toHaveLength(21);
+  it('define the 20 events of architecture §7.7, and only those', () => {
+    expect(EVENT_NAMES).toHaveLength(20);
     expect([...EVENT_NAMES].sort()).toStrictEqual(Object.keys(SPEC).sort());
   });
 

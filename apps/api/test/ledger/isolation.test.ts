@@ -121,18 +121,6 @@ const CASES: Record<keyof Ledger, Case[]> = {
       returns: true,
     },
   ],
-  undo: [
-    {
-      name: 'A’s entry',
-      call: (l) => l.undo({ entryId: a().auditIds[0]! }),
-      sent: () => [a().auditIds[0]!],
-    },
-    {
-      name: 'A’s batch',
-      call: (l) => l.undo({ batchId: a().batchId }),
-      sent: () => [a().batchId],
-    },
-  ],
   createHolding: [
     {
       name: 'A’s type',

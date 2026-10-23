@@ -18,8 +18,6 @@ function entry(over: Partial<AuditEntry> = {}): AuditEntry {
     entityId: `val_test_${made}`,
     before: null,
     after: null,
-    undoes: null,
-    undoneBy: null,
     summary: 'Updated the value for 2026-10-12',
     ...over,
   };

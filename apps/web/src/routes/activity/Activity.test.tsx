@@ -34,8 +34,6 @@ function entry(over: Partial<AuditEntry> = {}): AuditEntry {
     entityId: `val_test_${made}`,
     before: { amountMinor: 5_000_000, currency: 'SGD' },
     after: { amountMinor: 6_750_000, currency: 'SGD' },
-    undoes: null,
-    undoneBy: null,
     summary: 'Updated the value for 2026-10-12',
     ...over,
   };

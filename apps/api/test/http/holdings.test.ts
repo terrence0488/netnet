@@ -347,7 +347,7 @@ describe('guided basics (P2-T2)', () => {
     ]);
 
     // Flipping the answer to no removes what the yes added; the removals are audited like any
-    // delete, keeping the values for undo.
+    // delete, keeping the values on the entry.
     await json<WriteBody<null>>(await p.delete(`/api/holdings/${made.id}`));
     const snapshot = await snapshotOf(p);
     expect(snapshot.values).not.toHaveProperty([made.id]);

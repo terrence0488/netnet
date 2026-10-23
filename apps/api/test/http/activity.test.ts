@@ -1,4 +1,4 @@
-import type { AuditEntry, Page, UndoResult } from '@netnet/contracts';
+import type { AuditEntry, Page } from '@netnet/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { openLedger } from '../../src/ledger/ledger';
 import { createTestDatabase, type TestDatabase } from '../isolation/harness';
@@ -16,8 +16,8 @@ import {
 
 /**
  * The activity log over REST (architecture §7.2, PRD J7): `GET /api/activity` newest first,
- * optionally one agent turn, and the two `POST …/undo` routes. An undone value fires
- * `value_undone` after the response.
+ * optionally one agent turn. It is read only: the routes that once reverted an entry or a turn
+ * answer NOT_FOUND like any unknown route.
  */
 let db: TestDatabase;
 let target: LedgerApp;
@@ -60,7 +60,7 @@ async function makeHolding(name: string): Promise<{ holdingId: string; valueId: 
 
 let connections = 0;
 
-/** An agent write through the Ledger, for a batch the person can undo over REST. */
+/** An agent write through the Ledger, for a batch the person can read over REST. */
 async function agentWrites(holdingId: string): Promise<string> {
   connections += 1;
   const connectionId = `con_01K1G4KX00TEST${String(connections).padStart(12, '0')}`;
@@ -89,6 +89,22 @@ describe('GET /api/activity', () => {
     expect(first.items).toHaveLength(2);
     expect(first.nextCursor).not.toBeNull();
     expect(first.items[0]?.summary).toBe('Updated "Holiday money"');
+    expect(Object.keys(first.items[0] ?? {}).sort()).toStrictEqual(
+      [
+        'id',
+        'at',
+        'actor',
+        'clientName',
+        'connectionId',
+        'batchId',
+        'action',
+        'entity',
+        'entityId',
+        'before',
+        'after',
+        'summary',
+      ].sort(),
+    );
     const rest = await activity(`?limit=100&cursor=${first.nextCursor}`);
     expect(rest.nextCursor).toBeNull();
     expect([...first.items, ...rest.items].map((e) => e.id)).toEqual(
@@ -113,82 +129,29 @@ describe('GET /api/activity', () => {
   });
 });
 
-describe('POST /api/activity/:id/undo', () => {
-  it('undoes one entry and answers the write shape', async () => {
+describe('undo', () => {
+  it('is gone: both former routes answer NOT_FOUND like any unknown route, and change nothing', async () => {
     const { holdingId, valueId } = await makeHolding('Rainy-day pot');
     await json(await p.patch(`/api/values/${valueId}`, { amount: '999.00' }));
     const update = (await activity()).items.find(
       (e) => e.entity === 'value' && e.entityId === valueId && e.action === 'update',
     )!;
-    const undone = await json<WriteBody<UndoResult>>(
-      await p.post(`/api/activity/${update.id}/undo`, {}),
-    );
-    expect(undone.result.undone).toEqual([
-      { entryId: update.id, entity: 'value', entityId: valueId },
-    ]);
-    expect(undone.result.undoIds).toHaveLength(1);
-    expect(undone.warnings).toEqual([]);
+    const batchId = await agentWrites(holdingId);
+    const before = await activity('?limit=100');
+    for (const path of [
+      `/api/activity/${update.id}/undo`,
+      `/api/activity/batches/${batchId}/undo`,
+    ]) {
+      expect(await errorOf(await p.post(path, {}), 404)).toStrictEqual({
+        code: 'NOT_FOUND',
+        message: `Nothing is at POST ${path}.`,
+      });
+    }
+    expect(await activity('?limit=100')).toStrictEqual(before);
     const values = await json<{ items: { id: string; amountMinor: number }[] }>(
       await p.get(`/api/holdings/${holdingId}/values`),
     );
-    expect(values.items.find((v) => v.id === valueId)?.amountMinor).toBe(10000);
-  });
-
-  it('undoes a whole agent turn', async () => {
-    const { holdingId } = await makeHolding('Turn pot');
-    const batchId = await agentWrites(holdingId);
-    const undone = await json<WriteBody<UndoResult>>(
-      await p.post(`/api/activity/batches/${batchId}/undo`, {}),
-    );
-    expect(undone.result.undone).toHaveLength(1);
-    const values = await json<{ items: { date: string }[] }>(
-      await p.get(`/api/holdings/${holdingId}/values`),
-    );
-    expect(values.items.map((v) => v.date)).not.toContain('2026-07-20');
-  });
-
-  it('answers UNDO_CONFLICT with the blockers, and NOT_FOUND for unknown ids', async () => {
-    const { valueId } = await makeHolding('Conflict pot');
-    await json(await p.patch(`/api/values/${valueId}`, { amount: '200.00' }));
-    const first = (await activity()).items.find(
-      (e) => e.entity === 'value' && e.entityId === valueId && e.action === 'update',
-    )!;
-    await json(await p.patch(`/api/values/${valueId}`, { amount: '300.00' }));
-    const second = (await activity()).items.find(
-      (e) => e.entity === 'value' && e.entityId === valueId && e.action === 'update',
-    )!;
-    const failed = await errorOf(await p.post(`/api/activity/${first.id}/undo`, {}), 409);
-    expect(failed.code).toBe('UNDO_CONFLICT');
-    expect(failed.blockers).toEqual([{ entry_id: second.id, action: 'update', at: second.at }]);
-
-    expect(
-      (await errorOf(await p.post(`/api/activity/${unknownId('aud')}/undo`, {}), 404)).code,
-    ).toBe('NOT_FOUND');
-    expect(
-      (await errorOf(await p.post(`/api/activity/batches/${unknownId('bat')}/undo`, {}), 404)).code,
-    ).toBe('NOT_FOUND');
-    expect((await errorOf(await p.post('/api/activity/nope/undo', {}), 400)).fields).toHaveProperty(
-      'id',
-    );
-  });
-
-  it('fires value_undone after the response, with the person’s segment', async () => {
-    const { valueId } = await makeHolding('Event pot');
-    await json(await p.patch('/api/me', { segment: 'accumulating' }));
-    await json(await p.patch(`/api/values/${valueId}`, { amount: '250.00' }));
-    const update = (await activity()).items.find(
-      (e) => e.entity === 'value' && e.entityId === valueId && e.action === 'update',
-    )!;
-    await target.settle();
-    await db.owner.query('truncate analytics.event');
-    const res = await p.post(`/api/activity/${update.id}/undo`, {});
-    expect(res.status, await res.clone().text()).toBe(200);
-    await target.settle();
-    const { rows } = await db.owner.query<{
-      name: string;
-      segment: string;
-      props: Record<string, unknown>;
-    }>('select name, segment, props from analytics.event order by id');
-    expect(rows).toStrictEqual([{ name: 'value_undone', segment: 'accumulating', props: {} }]);
+    expect(values.items.find((v) => v.id === valueId)?.amountMinor).toBe(99_900);
+    expect(values.items.map((v) => v.amountMinor)).toContain(13_000);
   });
 });

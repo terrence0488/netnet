@@ -40,8 +40,6 @@ const ROUTES = [
   'DELETE /api/tags/:id',
   'PATCH /api/prefs',
   'GET /api/activity',
-  'POST /api/activity/:id/undo',
-  'POST /api/activity/batches/:id/undo',
 ] as const;
 type Route = (typeof ROUTES)[number];
 
@@ -370,26 +368,6 @@ const CASES: Record<Route, Case[]> = {
       sent: () => [a().batchId],
       status: 200,
       empty: true,
-    },
-  ],
-  'POST /api/activity/:id/undo': [
-    {
-      name: 'A’s entry',
-      method: 'POST',
-      path: () => `/api/activity/${a().auditIds[0]}/undo`,
-      json: () => ({}),
-      sent: () => [a().auditIds[0] ?? ''],
-      status: 404,
-    },
-  ],
-  'POST /api/activity/batches/:id/undo': [
-    {
-      name: 'A’s batch',
-      method: 'POST',
-      path: () => `/api/activity/batches/${a().batchId}/undo`,
-      json: () => ({}),
-      sent: () => [a().batchId],
-      status: 404,
     },
   ],
   'PATCH /api/prefs': [

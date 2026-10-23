@@ -40,7 +40,7 @@ export class ApiError extends Error {
   /** Each bad field and the form it allows (VALIDATION_FAILED). */
   readonly fields: Readonly<Record<string, string>>;
   readonly requestId: string | undefined;
-  /** Code-specific details beside the code, such as `candidates` or `blockers`. */
+  /** Code-specific details beside the code, such as `candidates`. */
   readonly details: Readonly<Record<string, unknown>>;
 
   constructor(init: ApiErrorInit) {

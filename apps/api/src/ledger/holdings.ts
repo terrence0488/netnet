@@ -323,7 +323,7 @@ export function updateHolding(s: Scope, id: string, patch: HoldingPatch): Promis
 
 /**
  * `deleteHolding` (`DELETE /api/holdings/:id`, `delete_holding`): the holding, its values and
- * its tags go; its audit row keeps all of them, values included, for undo (P3).
+ * its tags go; its audit row keeps all of them, values included, so the log reads what went.
  */
 export function deleteHolding(s: Scope, id: string): Promise<Write<void>> {
   return runWrite(s, 'deleteHolding', async (w) => {
