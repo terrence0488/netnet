@@ -72,6 +72,31 @@ pnpm probe --origin https://‹domain›   # with PROBE_CLIENT_ID and PROBE_REFR
 A local run rotates the server-side token too: store the printed token as the secret at once
 (the old one dies after its short reuse window), or the next run is refused.
 
+## The token stays out of the logs
+
+The rotated refresh token is a live credential (`ledger.read` and `ledger.write` on the probe
+account). GitHub masks secrets, not step outputs, so the script masks it itself: whenever
+`GITHUB_ACTIONS` is `true`, `scripts/probe.ts` prints `::add-mask::‹token›` to stdout before it
+writes the token to `$GITHUB_OUTPUT`. The deploy's smoke tests rotate through the same code.
+From then on the job's log shows `***` wherever the token appears, including the `env:` that
+the storing step prints.
+
+The storing step (in `probe.yml` and `deploy.yml`) takes the token through `env:` as
+`REFRESH_TOKEN` and uses `"$REFRESH_TOKEN"`. Never put `${{ steps.….outputs.… }}` that carries a
+token inside a `run:` script: the runner prints the script with its expressions substituted
+before any line of it runs. `test/workflows/scan.test.ts` fails on any `run:` script under
+`.github/` that interpolates a refresh token, a token- or secret-named output, a secret or
+`github.token`.
+
+### If a token reaches a log
+
+1. **Revoke.** Signed in as the probe account, open the Agent tab, choose Revoke on
+   `NetNet probe` and confirm. Every token of that connection dies, the logged one included.
+2. **Set up again.** Repeat steps 3–6 of the one-time setup, so `PROBE_CLIENT_ID` and
+   `PROBE_REFRESH_TOKEN` hold a new connection's values, then prove it (step 8).
+3. **Delete the logs.** For every deploy and probe run whose log shows a token: Actions → the
+   run → ⋯ → Delete all logs.
+
 ## When it fails
 
 - A red run still stores its rotated token (the script emits it right after refresh), so the
