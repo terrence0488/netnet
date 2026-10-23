@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { FIXED_NOW, createTestDatabase, type TestDatabase } from '../isolation/harness';
+import { setEmailReminders, setRemindersEnabled, touchChecked } from '../../src/db/reminders';
+import { FIXED_NOW, createTestDatabase, sqlState, type TestDatabase } from '../isolation/harness';
+import { newUserId } from '../ledger/support';
 import { ORIGIN, accountsApp, type AccountsApp } from '../support/accounts-app';
 import { signUpPerson, type Person } from '../support/oauth-client';
 
@@ -91,5 +93,65 @@ describe('touchChecked', () => {
     await person.browser.send('/api/reminders/opened', { json: { token: 'r1.nope.nope' } });
     await web.settle();
     expect(await stateOf(person.userId)).toEqual(before);
+  });
+
+  it('makes a missing row for an account, from its time zone, and no profile', async () => {
+    const person = await newPerson('Pacific/Kiritimati');
+    await db.owner.query(`delete from core.reminder_state where user_id = $1`, [person.userId]);
+    // 10:00 UTC is midnight the next day in Kiritimati (UTC+14).
+    await touchChecked(db.appDb, person.userId, FIXED_NOW);
+    expect(await stateOf(person.userId)).toMatchObject({
+      last_checked_on: '2026-08-02',
+      next_due_on: '2026-09-01',
+    });
+
+    const noProfile = await newPerson();
+    await db.owner.query(`delete from core.reminder_state where user_id = $1`, [noProfile.userId]);
+    await db.owner.query(`delete from core.profile where user_id = $1`, [noProfile.userId]);
+    await touchChecked(db.appDb, noProfile.userId, FIXED_NOW);
+    expect(await stateOf(noProfile.userId)).toMatchObject({ last_checked_on: '2026-08-01' });
+    const { rows } = await db.owner.query(`select 1 from core.profile where user_id = $1`, [
+      noProfile.userId,
+    ]);
+    expect(rows).toHaveLength(0);
+  });
+});
+
+describe('an id no account holds, such as one just deleted (PRD J10)', () => {
+  it('gets no reminder row or profile from a check or either switch', async () => {
+    const gone = newUserId();
+    await touchChecked(db.appDb, gone, FIXED_NOW);
+    await setRemindersEnabled(db.appDb, gone, false);
+    await setEmailReminders(db.appDb, gone, false);
+    const { rows } = await db.owner.query<{ n: number }>(
+      `select (select count(*) from core.reminder_state where user_id = $1)
+            + (select count(*) from core.profile where user_id = $1) as n`,
+      [gone],
+    );
+    expect(Number(rows[0]?.n)).toBe(0);
+  });
+
+  it('is refused such a row by the database, whoever writes it', async () => {
+    const gone = newUserId();
+    expect(
+      await sqlState(
+        db.owner.query(`insert into core.reminder_state (user_id) values ($1)`, [gone]),
+      ),
+    ).toBe('23503');
+    expect(
+      await sqlState(db.owner.query(`insert into core.profile (user_id) values ($1)`, [gone])),
+    ).toBe('23503');
+  });
+
+  it('still lets the switches make a missing row for an account', async () => {
+    const person = await newPerson();
+    await db.owner.query(`delete from core.reminder_state where user_id = $1`, [person.userId]);
+    await setRemindersEnabled(db.appDb, person.userId, false);
+    await setEmailReminders(db.appDb, person.userId, false);
+    const { rows } = await db.owner.query(
+      `select enabled, email_enabled from core.reminder_state where user_id = $1`,
+      [person.userId],
+    );
+    expect(rows).toStrictEqual([{ enabled: false, email_enabled: false }]);
   });
 });
