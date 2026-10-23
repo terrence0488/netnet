@@ -102,7 +102,7 @@ describe('events from REST writes', () => {
     ]);
   });
 
-  it('value_recorded for a new value, value_corrected for a replacement or a correction', async () => {
+  it('value_recorded for a new value, value_corrected for a replacement, a correction or a deletion', async () => {
     const holding = await json<WriteBody<{ id: string }>>(
       await p.post('/api/holdings', {
         name: 'Spending money',
@@ -139,6 +139,13 @@ describe('events from REST writes', () => {
         ...ctx(),
       },
     ]);
+    expect(await firedBy(() => p.delete(`/api/values/${valueId}`))).toStrictEqual([
+      {
+        name: 'value_corrected',
+        props: { original_source: 'web', age_at_correction: 0 },
+        ...ctx(),
+      },
+    ]);
   });
 
   it('hands the events to waitUntil: they are written after the response', async () => {
@@ -155,7 +162,7 @@ describe('events from REST writes', () => {
     await target.settle();
   });
 
-  it('fires nothing for taxonomy, prefs and deletes, or for a refused write', async () => {
+  it('fires nothing for taxonomy, prefs, holding and tag deletes, or a refused write', async () => {
     const tag = await json<WriteBody<{ id: string }>>(await p.post('/api/tags', { name: 'Quiet' }));
     const holding = await json<WriteBody<{ id: string }>>(
       await p.post('/api/holdings', {
