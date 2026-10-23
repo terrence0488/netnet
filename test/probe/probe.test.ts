@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
@@ -200,36 +200,75 @@ describe('scripts/probe', () => {
     await expect(mcpCall(stub.url, 'token', 'tools/call', {})).rejects.toThrow('code NOT_FOUND');
   });
 
-  it('writes the rotated token to $GITHUB_OUTPUT, never to the log', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'probe-'));
+  it.each([
+    ['unset', {}],
+    ['false', { GITHUB_ACTIONS: 'false' }],
+  ])(
+    'writes the rotated token to $GITHUB_OUTPUT, never to the log (GITHUB_ACTIONS %s)',
+    (_label, actions: Record<string, string>) => {
+      const dir = mkdtempSync(join(tmpdir(), 'probe-'));
+      const output = join(dir, 'github-output');
+      const logged: string[] = [];
+      vi.spyOn(console, 'log').mockImplementation((line: string) => void logged.push(String(line)));
+      emitRotatedToken('brand-new-token', { ...actions, GITHUB_OUTPUT: output });
+      expect(readFileSync(output, 'utf8')).toBe('refresh_token=brand-new-token\n');
+      expect(logged.join('\n')).not.toContain('brand-new-token');
+    },
+  );
+
+  it('on GitHub Actions, masks the token on stdout before writing it to $GITHUB_OUTPUT', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'probe-mask-'));
     const output = join(dir, 'github-output');
-    const logged: string[] = [];
-    vi.spyOn(console, 'log').mockImplementation((line: string) => void logged.push(String(line)));
-    emitRotatedToken('brand-new-token', { GITHUB_OUTPUT: output });
+    const logged: { line: string; outputThen: string }[] = [];
+    vi.spyOn(console, 'log').mockImplementation((line: string) => {
+      const outputThen = existsSync(output) ? readFileSync(output, 'utf8') : '';
+      logged.push({ line: String(line), outputThen });
+    });
+    emitRotatedToken('brand-new-token', { GITHUB_ACTIONS: 'true', GITHUB_OUTPUT: output });
+    expect(logged[0]).toStrictEqual({ line: '::add-mask::brand-new-token', outputThen: '' });
+    expect(logged.slice(1).some(({ line }) => line.includes('brand-new-token'))).toBe(false);
     expect(readFileSync(output, 'utf8')).toBe('refresh_token=brand-new-token\n');
-    expect(logged.join('\n')).not.toContain('brand-new-token');
   });
 
-  it('runs as a CLI against any origin', async () => {
-    const stub = await startProbeOrigin();
-    const dir = mkdtempSync(join(tmpdir(), 'probe-cli-'));
-    const output = join(dir, 'github-output');
-    const { stdout } = await run(
-      join(REPO_ROOT, 'node_modules', '.bin', 'tsx'),
-      ['scripts/probe.ts', '--origin', stub.url],
-      {
-        cwd: REPO_ROOT,
-        env: {
-          ...process.env,
-          PROBE_CLIENT_ID: 'probe-client',
-          PROBE_REFRESH_TOKEN: 'stored',
-          GITHUB_OUTPUT: output,
+  it('on GitHub Actions without $GITHUB_OUTPUT, masks the token before printing it', () => {
+    const logged: string[] = [];
+    vi.spyOn(console, 'log').mockImplementation((line: string) => void logged.push(String(line)));
+    emitRotatedToken('brand-new-token', { GITHUB_ACTIONS: 'true' });
+    expect(logged[0]).toBe('::add-mask::brand-new-token');
+    expect(logged.slice(1).some((line) => line.includes('brand-new-token'))).toBe(true);
+  });
+
+  it.each([
+    ['true', [`::add-mask::${ROTATED_TOKEN}`]],
+    ['', []],
+  ])(
+    'runs as a CLI against any origin (GITHUB_ACTIONS "%s")',
+    async (actions, carrying) => {
+      const stub = await startProbeOrigin();
+      const dir = mkdtempSync(join(tmpdir(), 'probe-cli-'));
+      const output = join(dir, 'github-output');
+      const { stdout } = await run(
+        join(REPO_ROOT, 'node_modules', '.bin', 'tsx'),
+        ['scripts/probe.ts', '--origin', stub.url],
+        {
+          cwd: REPO_ROOT,
+          env: {
+            ...process.env,
+            PROBE_CLIENT_ID: 'probe-client',
+            PROBE_REFRESH_TOKEN: 'stored',
+            GITHUB_ACTIONS: actions,
+            GITHUB_OUTPUT: output,
+          },
+          timeout: 60_000,
         },
-        timeout: 60_000,
-      },
-    );
-    expect(stdout).toContain('probe: passed');
-    expect(stdout).not.toContain(ROTATED_TOKEN);
-    expect(readFileSync(output, 'utf8')).toBe(`refresh_token=${ROTATED_TOKEN}\n`);
-  }, 90_000);
+      );
+      expect(stdout).toContain('probe: passed');
+      // On a runner the mask is the only line that carries the token; elsewhere none does.
+      expect(stdout.split('\n').filter((line) => line.includes(ROTATED_TOKEN))).toStrictEqual(
+        carrying,
+      );
+      expect(readFileSync(output, 'utf8')).toBe(`refresh_token=${ROTATED_TOKEN}\n`);
+    },
+    90_000,
+  );
 });
