@@ -449,8 +449,9 @@ function LoadedHome({
               baseCurrency={snapshot.baseCurrency}
             />
           </section>
-          <PushCard />
+          {/* The note qualifies the figures above it, so it comes before the card's offer. */}
           {staleCount > 0 ? <StaleNote count={staleCount} /> : null}
+          <PushCard />
         </div>
         <section aria-labelledby="holdings-heading" className={styles.list}>
           <div className={styles.sectionHead}>
