@@ -25,7 +25,7 @@ HTML, CSS and JavaScript on purpose. Works offline.
 
 | Start from | Shaped like | What it shows |
 |---|---|---|
-| The sample account (default) | **P-C, Established** — ~S$1.84M, 12 holdings, SGD and USD, CPF, an HDB flat, unvested RSUs, a deliberately stale car | Everything at scale: Insights, history, agent writes, undo, reminders |
+| The sample account (default) | **P-C, Established** — ~S$1.84M, 12 holdings, SGD and USD, CPF, an HDB flat, unvested RSUs, a deliberately stale car | Everything at scale: Insights, history, agent writes, Activity, reminders |
 | PROTO → empty account → sign up | **P-A or P-B** — whoever you say you are | Sign-up, onboarding (region, segment, the basics), the first picture, fact-based accessibility |
 
 **All data in it is fictional.** It is not anyone's real balance sheet and must never be replaced
@@ -45,7 +45,7 @@ with one.
 | **J5** connect the agent | The intro screen, the empty Home, a holding's "Ask your agent", the Agent tab | One flow everywhere: choose the agent (ChatGPT, Claude, Other agent) → verify the email if needed → steps for this platform (phone or computer, switchable), each with a screenshot slot → NetNet's approval page (**Allow** / Cancel) → done, with no "I've done it" button. **Other agent** gets a generic guide (the address, "add a custom connector"), no platform switch or screenshots. Back returns step by step to where you began. On the agent route, Allow ends onboarding on a blank Home whose hint is the starting prompt and **Let Claude do it** (opens claude.ai with the prompt typed in). The **Connect to agent** icon turns through ChatGPT and Claude every two seconds. Grok and Muse are `parked` in `connectors.js`, reachable by no list or address. Revoke on the Agent tab. Two outside events are stood in for by dashed "Prototype:" buttons: opening the verification link, and the agent opening the approval page |
 | **J5** security email | Sent on every **Allow**; PROTO → Sent outside NetNet | "Claude was connected to your NetNet", when, and "Not you? Revoke it" to the Agent tab. Email only, cannot be turned off; listed under Account → Notifications → Security as "Always" |
 | **J6** agent assembles | Agent → Try it | Scripted turn: finds the existing holding rather than duplicating, then writes |
-| **J7** verify and undo | Activity | Single undo and whole-turn batch undo; web and agent changes in one list |
+| **J7** see what changed | Activity | A read-only log, old → new: each agent turn grouped, web and agent changes in one list |
 | **J8** grounded advice | Agent → Try it (second half) | The affordability question answered off money you could use, with staleness caveats. **A scripted replay — see §8** |
 | **J9** stay current | Stale chips on Home and detail; the out-of-date note on Home | In the app only. The note hands the job to a connected agent ("Ask Claude to update it", a prompt with no data in it), or offers to connect one |
 | **J10** own the data | Account → Export / Delete account | Export downloads JSON and CSV, including accessibility and the answer behind it |
@@ -181,7 +181,7 @@ Still open (`design-system.md` §9): the wordmark, and dark mode checked on a re
 9. **Agent provenance is quiet.** An agent-written value carries the blue mark on its row; the
    client is named only when the value is opened ("Added 3 days ago by Claude"); the Activity log
    keeps full attribution (J6, J7).
-10. **The audit log groups an agent's turn**, so one turn's writes can be undone together (J7).
+10. **The audit log groups an agent's turn**, so one turn's writes read together (J7).
 11. **A period drill-down**: tap any period in Insights to see which holdings drove it, ranked by
     contribution. J11 requires it; the mockups have no such screen.
 12. **Carried-forward is marked**, and the Insights copy states that periods derive from value dates,
@@ -382,7 +382,7 @@ this. What would you do?" Then walk them through Agent → Try it. *Watch: do th
 unprompted? At the point the agent writes to their data — what is the reaction?* (J5, J6, A1, A2)
 
 **Task 7 — Trust (2 min).** "The agent got a number wrong. Fix it." Then: "You've decided to stop
-using this. What now?" *Watch: Activity and undo; does export/delete reassure or alarm?* (J7, J10)
+using this. What now?" *Watch: do they find the change in Activity and correct it? Does export/delete reassure or alarm?* (J7, J10)
 
 **Task 8 — Coming back (2 min).** Sample account, Home. "What is this card asking you?" *Watch: do
 they read it as a nudge or a nag? Do they expect Turn on to show something from the browser?* Then

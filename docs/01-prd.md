@@ -148,8 +148,8 @@ preclude it (N10). Four constraints, binding now:
   applied until the user changes them or a logged migration re-applies them. Otherwise one edited
   default moves every user's "what you could use this month" with no action of theirs — the
   confident wrong answer §2.4 names as the failure that ends trust.
-- **Every pack change is audited and reversible** — who, what, when, old → new — as J7 is for user
-  data.
+- **Every pack change is audited and can be rolled back** — who, what, when, old → new. One bad
+  edit reaches every user at once, so going back to the previous version is a single step.
 - **Editing packs grants no access to user data.** Configuring the world and reading anyone's
   balance sheet are separate permissions.
 
@@ -240,7 +240,7 @@ Window: **8 weeks from public launch** unless stated. "Signup" = verified accoun
 | **M2** | Picture assembled | % of signups with ≥3 holdings within 7 days | **50%** | People will not hand over real data (A7), so no context exists |
 | **M3** | **Agent connection rate** | % of signups completing OAuth from an MCP client within 14 days | **40%** | **A1 is wrong** — the context never reaches an agent |
 | **M4** | Agent write adoption | % of connected users with ≥1 successful write tool call; median ≥5 writes/user/month | **70%** | **A2 is wrong** — the picture will go stale again |
-| **M5** | Correction rate | % of agent-written values edited or undone within 48h | **<10%** (>25% = failing) | Extraction accuracy is breaking trust (A5) |
+| **M5** | Correction rate | % of agent-written values edited or deleted within 48h | **<10%** (>25% = failing) | Extraction accuracy is breaking trust (A5) |
 | **M6** | Return rate | % of signups with any activity (web or agent) in calendar week 4 | **30%** | Not a recurring need for them (A6) |
 | **M7** | **Advice pull** (headline) | % of connected users making ≥1 read-only agent query **after** week 1; and median ≥3 such queries/user/month | **50%** | **The premise is wrong** — grounded advice was a novelty (A4) |
 | **M8** | Freshness | Median days since last value update, across users active in the last 30 days | **<45 days** | The context is too stale to answer from |
@@ -298,7 +298,7 @@ no evidence and §3.3 cannot be applied. Minimum event set:
 `value_recorded {source}` · `agent_connection_started {client, entry: onboarding|home|holding|agent}` ·
 `agent_connection_completed {client, entry}` · `agent_connection_failed {step, client, entry}` ·
 `agent_tool_called {tool, kind: read|write, outcome, latency_ms, client}` ·
-`value_corrected {original_source, age_at_correction}` · `value_undone` ·
+`value_corrected {original_source, age_at_correction}` ·
 `session_started` · `insights_viewed {view: monthly|quarterly|yearly}` ·
 `reminder_sent {channel: email|push}` · `reminder_opened {channel}` · `security_email_sent {client}` ·
 `push_prompt_shown {entry: home|settings}` ·
@@ -344,7 +344,7 @@ by calendar period (monthly, quarterly, yearly) with its own filters and exclusi
 assets-vs-liabilities** · staleness
 labels · **a gentle comeback reminder after a month away, by web push where the user has turned it
 on and by email otherwise** (J12) · **a comprehensive MCP layer with full CRUD, plus read tools shaped for advice, reached
-by OAuth from Claude, and ChatGPT once listed** · audit log and undo for every agent write · export and account
+by OAuth from Claude, and ChatGPT once listed** · an audit log of every write, the agent's and the user's · export and account
 deletion · the §3.5 analytics · the §3.4 distribution assets. Mobile-first responsive web, one API
 that native clients reuse later.
 
@@ -410,7 +410,7 @@ and J12 keep it current and trustworthy.
 | **J3** | record what something is worth today, and correct history | Snapshot model |
 | **J4** | see whether they are going up, against a baseline they choose | A6, M6 |
 | **J11** | see how each month, quarter and year actually went, and what drove it | A6, M6 |
-| **J7** | see exactly what the agent changed, and undo it | A2, M5 |
+| **J7** | see exactly what the agent changed, and when | A2, M5 |
 | **J9** | see what has gone out of date | M8 |
 | **J12** | get a gentle nudge if they haven't looked in a month, on the device they choose | M6, M8, M13, A14 |
 | **J10** | export everything and delete the account | A7 |
@@ -662,16 +662,17 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 - **Given** any tool call, **when** it completes, **then** `agent_tool_called {tool, kind, outcome,
   latency_ms}` fires; writes also fire the J3 events with `source: agent`.
 
-### J7 — Verify and undo (what makes agent writes defensible)
+### J7 — See what changed (what makes agent writes defensible)
 - **Given** agent activity, **when** the user opens the audit log, **then** they see every change
   newest-first with what changed, old → new, which client did it and when — web changes in the
   same log.
-- **Given** a log entry, **when** the user undoes it, **then** the previous state is restored
-  exactly, the undo is itself logged, and totals recompute.
-- **Given** a batch of writes from one agent turn, **when** the user undoes the batch, **then**
-  every change in that turn reverts together, not row by row.
-- **Given** a value the agent wrote, **when** the user corrects it, **then** `value_corrected`
-  fires with `original_source: agent` and the value's age at correction (M5).
+- **Given** several writes from one agent turn, **when** the log shows them, **then** they read
+  together as that turn, not as unrelated rows.
+- **Given** the audit log, **when** the user reads it, **then** it is a record only: nothing in it
+  changes data. Every change moves forward. A mistake, the agent's or the user's, is corrected by
+  another change, on the web or through the agent, and that change is logged like any other.
+- **Given** a value the agent wrote, **when** the user edits or deletes it, **then**
+  `value_corrected` fires with `original_source: agent` and the value's age at correction (M5).
 
 ### J8 — Advice grounded in my real position (the premise)
 - **Given** a connected agent, **when** the user asks a question about their finances ("can I
@@ -832,7 +833,7 @@ Given/When/Then, one set per job. Presented in J-number order for reference; §5
 |---|---|---|
 | **N1** | MCP tool-call success rate ≥99.5%; p95 tool latency <1.5s | A failing call teaches the user the context layer cannot be trusted — the core bet |
 | **N2** | No LLM inference in NetNet's backend; documents are never uploaded to NetNet | Cost stays near zero, documents stay off our servers, and advice stays the agent's job (§1) |
-| **N3** | Every write, from web or agent, is auditable and reversible | Makes agent write access recoverable rather than irreversible |
+| **N3** | Every write, from web or agent, is auditable | Makes agent write access accountable: every change can be seen, and corrected by another change |
 | **N4** | Data isolation per user, enforced at the data layer and covered by tests | Financial data; one leak ends the product |
 | **N5** | Secrets in environment variables only; none in the repo | Non-negotiable (CLAUDE.md) |
 | **N6** | Running cost ≈$0 to 100 users, <$50/month to 1,000, holding **indefinitely** — no trial-window free tiers | Open-ended runway (`00-discovery.md` §5) |

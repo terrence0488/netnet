@@ -366,7 +366,7 @@ that overlap are reported too (`tests/touch.mjs`). The prototype has none at eit
   page margin for a row outside a card), and nothing else may occupy that edge.
 - **No horizontal scrolling at phone width**, ever (PRD J4, J11).
 - **Only navigation moves the page.** Going to another screen starts at the top. An action that
-  updates the screen you are on (a chart pager, a range, a view switch, undo, expanding a row)
+  updates the screen you are on (a chart pager, a range, a view switch, expanding a row)
   leaves the reader exactly where they were. A reader halfway down Insights who pages a chart
   must still be looking at that chart.
 
