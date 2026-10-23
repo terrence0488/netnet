@@ -32,11 +32,13 @@ await p.click('[data-act="save-value"]'); await p.waitForTimeout(300);
 const rows=await p.$$('#s-holding .card.flush .row');
 t('value history now has 2 entries', rows.length===2);
 
-// --- undo from the audit log (J7)
+// --- the audit log is a record only (J7)
 await p.goto(URL+'#/activity',{waitUntil:'load'}); await p.waitForTimeout(250);
-const before=(await p.$$('#s-activity .row')).length;
-await p.click('[data-act="undo"]'); await p.waitForTimeout(300);
-t('undo marks an entry undone', (await p.textContent('#s-activity')).includes('undone'));
+const act=await p.textContent('#s-activity');
+t('Activity lists the new value first', (await p.textContent('#s-activity .row')).includes('Test Gold Bar'));
+t('an agent turn reads as one group', act.includes('changes at once'));
+t('Activity has no Undo, and nothing on it changes data',
+  !/undo/i.test(act) && (await p.$$('#s-activity [data-act]')).length===0);
 
 // --- filter (J4)
 await p.goto(URL+'#/home',{waitUntil:'load'}); await p.waitForTimeout(250);
