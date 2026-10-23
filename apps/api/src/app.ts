@@ -90,10 +90,10 @@ app.route('/api/notifications', notificationsRoutes());
 /** Published content: no user data, no session (architecture §7.2). */
 app.route('/api/content', contentRoutes(contentStore));
 
-/** Vercel Cron calls these with GET and the bearer secret (architecture §9.3). */
 /** The reminder's signed links: opened tracking and the one-click unsubscribe (§7.2, J12). */
 app.route('/api/reminders', remindersRoutes());
 
+/** GitHub Actions schedules call these with GET and the bearer secret (architecture §9.3). */
 app.use('/api/cron/*', cronAuth(cronSecret));
 app.get('/api/cron/fx', defaultFxJob());
 app.get('/api/cron/daily', dailyJob());
