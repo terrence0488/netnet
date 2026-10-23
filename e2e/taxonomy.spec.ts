@@ -102,7 +102,10 @@ interface Posted {
   bodies: Record<string, unknown>[];
 }
 
-/** The bodies POSTed or PATCHed to one API path. */
+/**
+ * The bodies POSTed or PATCHed to one API path. A click can resolve before Playwright reports the
+ * request it sent, so read them with `expect.poll`.
+ */
 function captureWrites(page: Page, path: string): Posted {
   const requests: Request[] = [];
   page.on('request', (request) => {
@@ -121,7 +124,7 @@ function captureWrites(page: Page, path: string): Posted {
   };
 }
 
-/** The URLs requested with DELETE. */
+/** The URLs requested with DELETE; like `captureWrites`, read them with `expect.poll`. */
 function captureDeletes(page: Page): URL[] {
   const urls: URL[] = [];
   page.on('request', (request) => {
@@ -171,7 +174,7 @@ test('a type renames from the web, and Home follows', async ({ page }) => {
   await dialog.getByLabel('Name').fill('Spending money');
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
 
-  expect(writes.bodies).toStrictEqual([{ name: 'Spending money' }]);
+  await expect.poll(() => writes.bodies).toStrictEqual([{ name: 'Spending money' }]);
   await expect(dialog).toBeHidden();
   await expect(page.getByRole('button', { name: /Spending money/ })).toBeVisible();
 
@@ -201,7 +204,7 @@ test('a type deletes with moveTo, and its holdings move', async ({ page }) => {
   await dialog.getByLabel('Move its holdings to').selectOption({ label: 'Cash & savings' });
   await dialog.getByRole('button', { name: 'Move and delete' }).click();
 
-  expect(deletes).toHaveLength(1);
+  await expect.poll(() => deletes).toHaveLength(1);
   expect(deletes[0]?.pathname).toBe('/api/types/typ_prop');
   expect(deletes[0]?.searchParams.get('moveTo')).toBe('typ_cash');
   await expect(dialog).toBeHidden();
@@ -237,7 +240,9 @@ test('a type adds from the web, and the Add form offers it', async ({ page }) =>
   await dialog.getByLabel('It means').selectOption({ label: 'Investments' });
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
 
-  expect(writes.bodies).toStrictEqual([{ name: 'Holiday fund', universal: 'listed' }]);
+  await expect
+    .poll(() => writes.bodies)
+    .toStrictEqual([{ name: 'Holiday fund', universal: 'listed' }]);
   await expect(dialog).toBeHidden();
   await expect(page.getByRole('button', { name: /Holiday fund/ })).toBeVisible();
 
@@ -272,7 +277,7 @@ test('a tag adds and renames from the web', async ({ page }) => {
   const addDialog = page.getByRole('dialog', { name: 'New tag' });
   await addDialog.getByLabel('Name').fill('Rainy day');
   await addDialog.getByRole('button', { name: 'Save', exact: true }).click();
-  expect(posts.bodies).toStrictEqual([{ name: 'Rainy day' }]);
+  await expect.poll(() => posts.bodies).toStrictEqual([{ name: 'Rainy day' }]);
   await expect(addDialog).toBeHidden();
   await expect(page.getByRole('button', { name: /Rainy day/ })).toBeVisible();
 
@@ -280,7 +285,7 @@ test('a tag adds and renames from the web', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: 'Long term' });
   await dialog.getByLabel('Name').fill('Forever money');
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
-  expect(patches.bodies).toStrictEqual([{ name: 'Forever money' }]);
+  await expect.poll(() => patches.bodies).toStrictEqual([{ name: 'Forever money' }]);
   await expect(dialog).toBeHidden();
   await expect(page.getByRole('button', { name: /Forever money/ })).toBeVisible();
 });
@@ -323,7 +328,7 @@ test('a tag deletes, or merges into another with mergeInto', async ({ page }) =>
   await dialog.getByLabel('Carry this tag instead').selectOption({ label: 'Joint' });
   await dialog.getByRole('button', { name: 'Merge and delete' }).click();
 
-  expect(deletes).toHaveLength(1);
+  await expect.poll(() => deletes).toHaveLength(1);
   expect(deletes[0]?.searchParams.get('mergeInto')).toBe('tag_joint');
   await expect(dialog).toBeHidden();
   await expect(page.getByRole('button', { name: /Long term/ })).toHaveCount(0);
@@ -333,7 +338,7 @@ test('a tag deletes, or merges into another with mergeInto', async ({ page }) =>
   await page.getByRole('button', { name: /Joint/ }).click();
   const plain = page.getByRole('dialog', { name: 'Joint' });
   await plain.getByRole('button', { name: 'Delete tag' }).click();
-  expect(deletes).toHaveLength(2);
+  await expect.poll(() => deletes).toHaveLength(2);
   expect(deletes[1]?.pathname).toBe('/api/tags/tag_joint');
   expect(deletes[1]?.searchParams.get('mergeInto')).toBeNull();
   await expect(plain).toBeHidden();
