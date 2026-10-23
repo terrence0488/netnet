@@ -74,7 +74,7 @@ const TURN = [
 ];
 
 describe('the Activity screen', () => {
-  it('lists newest first, grouped by agent turn with one control per turn', () => {
+  it('lists newest first, grouped by agent turn, and offers nothing that changes data', () => {
     const markup = render([
       { items: [...TURN, entry({ id: 'aud_web', summary: 'Added “Cash”' })], nextCursor: null },
     ]);
@@ -83,8 +83,8 @@ describe('the Activity screen', () => {
       markup.indexOf('Updated the value for 2026-10-11'),
     );
     expect(markup).toContain('Claude');
-    expect(markup).toContain('Undo these 2 changes');
-    expect(markup.match(/aria-label="Undo: /g)).toHaveLength(3);
+    expect(markup).toContain('2 changes at once');
+    expect(markup).not.toMatch(/undo/i);
   });
 
   it('shows old → new, who did it and when', () => {
@@ -117,19 +117,34 @@ describe('the Activity screen', () => {
     expect(markup).toContain('Claude');
   });
 
-  it('gives an undone entry no Undo of its own', () => {
+  it('reads a former undo entry as the change it made, old → new', () => {
     const markup = render([
-      { items: [entry({ id: 'aud_1', undoneBy: 'aud_2' })], nextCursor: null },
+      {
+        items: [
+          entry({
+            id: 'aud_former_undo',
+            entity: 'holding',
+            entityId: 'hld_1',
+            before: { name: 'Everyday money' },
+            after: { name: 'Spending money' },
+            summary: 'Updated "Spending money"',
+          }),
+        ],
+        nextCursor: null,
+      },
     ]);
-    expect(markup).not.toContain('aria-label="Undo: ');
+    expect(markup).toContain('Updated &quot;Spending money&quot;');
+    expect(markup).toContain('“Everyday money” → “Spending money”');
+    expect(markup).toContain('You');
+    expect(markup).not.toMatch(/undo/i);
   });
 
   it('leaves a lone turn entry without a turn header', () => {
     const markup = render([
       { items: [entry({ id: 'aud_1', batchId: 'bat_1' })], nextCursor: null },
     ]);
-    expect(markup).not.toContain('Undo these');
-    expect(markup).toContain('aria-label="Undo: ');
+    expect(markup).not.toContain('changes at once');
+    expect(markup).toContain('Updated the value for 2026-10-12');
   });
 
   it('escapes the name the agent wrote under', () => {

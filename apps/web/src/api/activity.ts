@@ -1,17 +1,10 @@
-import type { AuditEntry, Page, UndoResult } from '@netnet/contracts';
-import {
-  infiniteQueryOptions,
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query';
-import { api, type ApiPath, type Written } from './client';
+import type { AuditEntry, Page } from '@netnet/contracts';
+import { infiniteQueryOptions, useInfiniteQuery } from '@tanstack/react-query';
+import { api, type ApiPath } from './client';
 
 /**
- * The activity log over REST (P3-T1, PRD J7): the audit log newest first with cursor paging, and
- * undo of one entry or a whole agent turn. An undo's response carries the new `dataVersion`, which
- * the app's mutation cache picks up by itself, so the snapshot — and every total — refetches. The
- * log is invalidated here, so the undo entry reads at the top.
+ * The activity log over REST (P3-T1, PRD J7): the audit log newest first with cursor paging. It
+ * is read only: a mistake is corrected by another change, which the log then shows like any other.
  */
 
 export const ACTIVITY_KEY = ['activity'] as const;
@@ -35,32 +28,4 @@ export const activityQuery = infiniteQueryOptions({
 
 export function useActivity() {
   return useInfiniteQuery(activityQuery);
-}
-
-/** After an undo: the log reads again from the top, newest first. */
-function useInvalidateActivity() {
-  const client = useQueryClient();
-  return () => {
-    void client.invalidateQueries({ queryKey: ACTIVITY_KEY });
-  };
-}
-
-/** Undoes one log entry (T1: restores `before` exactly, or answers `UNDO_CONFLICT`). */
-export function useUndoEntry() {
-  const invalidate = useInvalidateActivity();
-  return useMutation({
-    mutationFn: (entryId: string) =>
-      api.post<Written<UndoResult>>(`/activity/${entryId}/undo` as ApiPath),
-    onSuccess: () => invalidate(),
-  });
-}
-
-/** Undoes a whole agent turn, newest first and all or nothing (T1). */
-export function useUndoBatch() {
-  const invalidate = useInvalidateActivity();
-  return useMutation({
-    mutationFn: (batchId: string) =>
-      api.post<Written<UndoResult>>(`/activity/batches/${batchId}/undo` as ApiPath),
-    onSuccess: () => invalidate(),
-  });
 }

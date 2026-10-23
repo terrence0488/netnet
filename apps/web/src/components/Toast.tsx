@@ -18,7 +18,7 @@ export interface ToastAction {
 
 export interface ToastInput {
   readonly message: string;
-  /** One follow-up, such as Undo or Retry. Choosing it dismisses the toast. */
+  /** One follow-up, such as Open or Retry. Choosing it dismisses the toast. */
   readonly action?: ToastAction;
 }
 
@@ -89,7 +89,7 @@ function ToastCard({ toast, dismiss }: { toast: Shown; dismiss: () => void }) {
           type="button"
           className={styles.action}
           onClick={() => {
-            // Dismissed first, so an action that says something (Undone.) is not dismissed too.
+            // Dismissed first, so an action that says something (Opened.) is not dismissed too.
             dismiss();
             toast.action?.onAction();
           }}

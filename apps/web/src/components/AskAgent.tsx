@@ -139,7 +139,7 @@ export function AskAgentDialog({
             Paste this into <ClientNames connections={connections.data} />.{' '}
             {connections.data.length > 0
               ? saved
-                ? 'It can read this holding, work it out with you, and set the answer — and you can undo anything it changes.'
+                ? 'It can read this holding, work it out with you, and set the answer — and every change it makes shows in Activity.'
                 : 'Work it out together, then answer the question here.'
               : saved
                 ? 'Connect it first, so it can see this holding.'
