@@ -76,6 +76,21 @@
   font-size: var(--size-figure);
 }
 
+/* The first period: where the change would be, that it is the first; its end value beneath,
+   in plain ink, since it is neither a gain nor a loss. */
+.first {
+  color: var(--ink-2);
+  font-size: var(--size-body-sm);
+  font-weight: var(--weight-body-sm);
+}
+
+.end {
+  color: var(--ink);
+  font-size: var(--size-pct);
+  font-weight: var(--weight-pct);
+  font-variant-numeric: tabular-nums;
+}
+
 /* "so far" and "Carried" are states, never shouting; carried is ordinary, not a warning. */
 .chip,
 .carried {

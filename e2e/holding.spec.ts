@@ -944,6 +944,13 @@ test('the period chart switches views, pages newest first, and reads aloud', asy
   expect(oldest).not.toBe(middle);
   await expect(chart.locator('rect[data-carried]')).toHaveCount(4);
   await expect(chart.getByText('—')).toBeVisible();
+  // The first month has nothing earlier to compare with: no bar, and it reads so.
+  await page.getByTestId('period-chart-plot').focus();
+  await page.keyboard.press('Home');
+  await expect(page.getByTestId('period-chart-readout')).toContainText(
+    'No earlier period to compare with',
+  );
+  await expect(page.getByTestId('period-chart-readout')).toContainText('Ended $100,000');
   await expect(earlier).toHaveAttribute('aria-disabled', 'true');
   await later.click();
   expect(await window.innerText()).toBe(middle);

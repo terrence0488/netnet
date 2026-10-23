@@ -5,8 +5,11 @@ import { formatSignedCompactMoney } from '../../charts/format';
 import styles from './GrowthChart.module.css';
 
 export interface GrowthChartProps {
-  /** The signed change per period in minor units, oldest-first. */
-  readonly values: readonly number[];
+  /**
+   * The signed change per period in minor units, oldest-first; null for the first period, which
+   * has nothing earlier to compare with.
+   */
+  readonly values: readonly (number | null)[];
   /** The short label per period (`Jun`, `Q1`): the pager above names the years. */
   readonly shorts: readonly string[];
   /** The ISO code the changes are denominated in. */
@@ -19,7 +22,8 @@ export interface GrowthChartProps {
 /**
  * Period growth (design-system §5, the prototype's bars): each bar carries its change above it
  * in HTML, so the plot holds geometry only and no axis. Gain and loss always carry their sign,
- * never hue alone; a flat period reads `—`, never `$0` noise. The labels hide from screen
+ * never hue alone; a flat period reads `—`, never `$0` noise, and so does the first, a tick
+ * rather than a bar, since nothing earlier compares with it. The labels hide from screen
  * readers: the period list below holds every figure on this chart.
  */
 export function GrowthChart({
@@ -38,10 +42,10 @@ export function GrowthChart({
             key={shorts[index] ?? index}
             className={cx(
               styles.value,
-              value > 0 ? styles.gain : value < 0 ? styles.loss : styles.flat,
+              value === null || value === 0 ? styles.flat : value > 0 ? styles.gain : styles.loss,
             )}
           >
-            {value === 0 ? '—' : formatSignedCompactMoney(value, currency)}
+            {value === null || value === 0 ? '—' : formatSignedCompactMoney(value, currency)}
           </div>
         ))}
       </div>

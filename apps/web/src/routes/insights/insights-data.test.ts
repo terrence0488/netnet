@@ -137,6 +137,40 @@ describe('insightPeriods', () => {
   });
 });
 
+describe('the first period', () => {
+  it('has its end value but no change, % or drivers, whatever the view', () => {
+    for (const view of ['monthly', 'quarterly', 'yearly'] as const) {
+      expect(insightPeriods(ledger(), view, TODAY, {}, {}).at(-1)).toMatchObject({
+        start: '2026-01-01',
+        change: null,
+        changePct: null,
+        drivers: [],
+      });
+    }
+    expect(insightPeriods(ledger(), 'monthly', TODAY, {}, {}).at(-1)?.endValue).toBe(100_000);
+  });
+
+  it('is the earliest left after the filter or the Don’t Show list', () => {
+    const data = ledger();
+    // Without the savings the set opens in February, owing: no change, never a −$400 loss.
+    const owing = {
+      start: '2026-02-01',
+      end: '2026-02-28',
+      endValue: -40_000,
+      change: null,
+      changePct: null,
+      carried: false,
+      drivers: [],
+    };
+    expect(
+      insightPeriods(data, 'monthly', TODAY, {}, { holdingIds: ['hld_cash'] }).at(-1),
+    ).toStrictEqual(owing);
+    expect(
+      insightPeriods(data, 'monthly', TODAY, { typeIds: ['typ_loan'] }, {}).at(-1),
+    ).toStrictEqual(owing);
+  });
+});
+
 describe('rangedPeriods', () => {
   it('takes All, the year so far, or the newest N', () => {
     const all = insightPeriods(ledger(), 'monthly', TODAY, {}, {});

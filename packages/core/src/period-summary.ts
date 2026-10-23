@@ -33,7 +33,9 @@ function meanMinor(values: readonly number[]): number {
  * Percentages are not money and average as given.
  */
 export function summarisePeriods(periods: readonly Period[]): PeriodSummary | null {
-  const comparable = periods.filter((_, index) => index > 0);
+  const comparable = periods.filter(
+    (period, index): period is Period & { change: number } => index > 0 && period.change !== null,
+  );
   if (comparable.length === 0) return null;
   return {
     count: comparable.length,

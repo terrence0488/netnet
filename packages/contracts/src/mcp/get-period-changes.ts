@@ -30,13 +30,16 @@ export const getPeriodChangesOutputSchema = z.strictObject({
       end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       /** Net worth at `end`: assets minus liabilities. */
       end_value: z.number(),
-      /** `end_value` minus the previous period's end value (0 before the first). */
-      change: z.number(),
-      /** Percent of the previous end value's size; null when that was 0. */
+      /**
+       * `end_value` minus the previous period's end value; null for the first period, which has
+       * nothing earlier to compare with.
+       */
+      change: z.number().nullable(),
+      /** Percent of the previous end value's size; null for the first period, or when it was 0. */
       change_pct: z.number().nullable(),
       /** Some holding counted here had no value dated inside this period. */
       carried: z.boolean(),
-      /** The holdings with a nonzero contribution, ranked by contribution, largest first. */
+      /** The holdings with a nonzero contribution, ranked by contribution; none for the first. */
       drivers: z.array(
         z.strictObject({
           holding_id: z.string(),

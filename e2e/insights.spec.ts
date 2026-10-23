@@ -221,9 +221,8 @@ test.describe('rich history', () => {
     await expect(rows.nth(1)).toContainText('+0.7%');
     await expect(rows.nth(2)).toContainText('+$14K');
     await expect(rows.nth(2)).toContainText('+2800%');
-    // The first period has no earlier period: its money, but no percentage.
-    await expect(rows.nth(12)).toContainText('+$500');
-    await expect(rows.nth(12)).not.toContainText('%');
+    // The first period has nothing earlier to compare with: its end value, never a change.
+    await expect(rows.nth(12)).toHaveText(`${monthLabel(12)}First month$500`);
 
     await newest.click();
     await expect(list.getByText('$14,900')).toBeVisible();
@@ -245,6 +244,33 @@ test.describe('rich history', () => {
     await expect(ranked.nth(0)).toContainText('+$13,500');
     await expect(ranked.nth(1)).toContainText('Everyday savings');
     await expect(ranked.nth(1)).toContainText('+$500');
+    await rows.nth(2).click();
+
+    // The first opens onto its end value, with nothing earlier and nothing that drove it.
+    await rows.nth(12).click();
+    await expect(list.getByText('No earlier month to compare with.')).toBeVisible();
+    await expect(list.getByRole('heading', { name: 'What drove it' })).toHaveCount(0);
+    await expect(list.getByRole('link')).toHaveCount(0);
+  });
+
+  test('the first period moves with the Don’t Show list, and still has no change', async ({
+    page,
+  }) => {
+    await page.goto('/app/insights');
+    await page.getByRole('button', { name: 'Insights filters' }).click();
+    const sheet = page.getByRole('dialog', { name: 'Insights Filters' });
+    await sheet.getByRole('button', { name: 'Everyday savings' }).click();
+    await sheet.getByRole('button', { name: 'Apply', exact: true }).click();
+
+    // Without the savings, the set opens two months back with the brokerage's S$13,500.
+    const list = page.getByRole('region', { name: 'Month by month' });
+    const rows = list.getByRole('button');
+    await expect(rows).toHaveCount(3);
+    await expect(rows.nth(2)).toHaveText(`${monthLabel(2)}First month$14K`);
+    await expect(rows.nth(1)).toContainText('−$400');
+    await rows.nth(2).click();
+    await expect(list.getByText('$13,500')).toBeVisible();
+    await expect(list.getByText('No earlier month to compare with.')).toBeVisible();
   });
 
   test('quarterly and yearly views with their own rows and summaries', async ({ page }) => {
@@ -264,6 +290,8 @@ test.describe('rich history', () => {
     await expect(rows.nth(0)).toContainText(todayStr().slice(0, 4));
     await expect(rows.nth(0)).toContainText('+$14K');
     await expect(rows.nth(0)).toContainText('+2880%');
+    await expect(rows.nth(1)).toContainText('First year');
+    await expect(rows.nth(1)).not.toContainText('+');
     await expect(page.getByText('Averaging')).toContainText('over the last 1 year');
   });
 
@@ -433,8 +461,7 @@ test.describe('placeholders', () => {
     const months = page.getByRole('region', { name: 'Month by month' });
     const rows = months.getByRole('button');
     await expect(rows).toHaveCount(1);
-    await expect(rows.nth(0)).toContainText('+$1K');
-    await expect(rows.nth(0)).not.toContainText('%');
+    await expect(rows.nth(0)).toHaveText(`${monthLabel(0)}so farFirst month$1K`);
     // Controls that act on data are not shown on a placeholder.
     await expect(page.getByTestId('growth-pager')).toHaveCount(0);
     await expect(page.getByTestId('distribution-pager')).toHaveCount(0);

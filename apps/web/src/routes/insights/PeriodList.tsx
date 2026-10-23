@@ -1,6 +1,6 @@
 import type { Period, PeriodView } from '@netnet/contracts';
 import { Link } from 'react-router';
-import { formatSignedCompactMoney } from '../../charts/format';
+import { formatCompactMoney, formatSignedCompactMoney } from '../../charts/format';
 import { Card, Figure } from '../../components';
 import { cx } from '../../components/cx';
 import { formatDate } from '../../components/dates';
@@ -12,8 +12,10 @@ import styles from './PeriodList.module.css';
 /**
  * The periods (PRD J11): newest first, each row carrying its change in money and % — period
  * rows are the one place a row carries both (design-system §2.1). Opening a period shows its
- * end value and the drivers ranked by contribution, in the default currency. A carried period
- * is marked as carried rather than observed, on the row and inside.
+ * end value and the drivers ranked by contribution, in the default currency. The first period
+ * has nothing earlier to compare with: its row says it is the first where the change would be,
+ * with its end value beneath, and it has no drivers. A carried period is marked as carried
+ * rather than observed, on the row and inside.
  */
 export function PeriodList({
   periods,
@@ -78,7 +80,7 @@ function PeriodRow({
   readonly open: boolean;
   readonly onToggle: () => void;
 }) {
-  const moved = period.change !== 0;
+  const { change } = period;
   return (
     <>
       <button type="button" className={styles.row} aria-expanded={open} onClick={onToggle}>
@@ -90,13 +92,18 @@ function PeriodRow({
           </span>
         </span>
         <span className={styles.amt}>
-          {moved ? (
+          {change === null ? (
             <>
-              <b className={cx(styles.change, period.change > 0 ? styles.gain : styles.loss)}>
-                {formatSignedCompactMoney(period.change, currency)}
+              <span className={styles.first}>First {noun}</span>
+              <span className={styles.end}>{formatCompactMoney(period.endValue, currency)}</span>
+            </>
+          ) : change !== 0 ? (
+            <>
+              <b className={cx(styles.change, change > 0 ? styles.gain : styles.loss)}>
+                {formatSignedCompactMoney(change, currency)}
               </b>
               {period.changePct !== null ? (
-                <span className={cx(styles.pct, period.change > 0 ? styles.gain : styles.loss)}>
+                <span className={cx(styles.pct, change > 0 ? styles.gain : styles.loss)}>
                   {formatChangePct(period.changePct)}
                 </span>
               ) : null}
@@ -122,7 +129,8 @@ function PeriodRow({
 
 /**
  * An opened period: only what the row omits — the end value, the full change line, and what
- * drove it. Drivers link to their holdings, like the prototype's drill-down.
+ * drove it. Drivers link to their holdings, like the prototype's drill-down. The first period
+ * says it has nothing earlier to compare with, and nothing drove it.
  */
 function PeriodDetail({
   period,
@@ -139,7 +147,7 @@ function PeriodDetail({
   readonly typeLabelOf: (holdingId: string) => string;
   readonly newest: boolean;
 }) {
-  const moved = period.change !== 0;
+  const { change } = period;
   return (
     <div className={styles.detail}>
       <p className={styles.endLabel}>
@@ -147,13 +155,15 @@ function PeriodDetail({
         {newest ? ' · so far' : null}
       </p>
       <Figure size="display" minor={period.endValue} currency={currency} total />
-      {moved ? (
+      {change === null ? (
+        <p className={styles.changeLine}>No earlier {noun} to compare with.</p>
+      ) : change !== 0 ? (
         <p className={styles.changeLine}>
-          <span className={cx(styles.change, period.change > 0 ? styles.gain : styles.loss)}>
-            {formatMoney(period.change, currency, { signed: true })}
+          <span className={cx(styles.change, change > 0 ? styles.gain : styles.loss)}>
+            {formatMoney(change, currency, { signed: true })}
           </span>
           {period.changePct !== null ? (
-            <span className={cx(styles.pct, period.change > 0 ? styles.gain : styles.loss)}>
+            <span className={cx(styles.pct, change > 0 ? styles.gain : styles.loss)}>
               {` · ${formatChangePct(period.changePct)}`}
             </span>
           ) : null}
@@ -162,30 +172,34 @@ function PeriodDetail({
         <p className={styles.changeLine}>No change this {noun}.</p>
       )}
       {newest ? <p className={styles.span}>{formatDate(period.start)} – today</p> : null}
-      <h3 className={styles.driversTitle}>What drove it</h3>
-      {period.drivers.length === 0 ? (
-        <p className={styles.empty}>Nothing moved in this period.</p>
-      ) : (
-        <ul className={styles.drivers}>
-          {period.drivers.map((driver) => (
-            <li key={driver.holdingId}>
-              <Link to={`/holdings/${driver.holdingId}`} className={styles.driver}>
-                <span className={styles.grow}>
-                  <span className={styles.name}>{driver.name}</span>
-                  <span className={styles.sub}>{typeLabelOf(driver.holdingId)}</span>
-                </span>
-                <b
-                  className={cx(
-                    styles.contribution,
-                    driver.contribution > 0 ? styles.gain : styles.loss,
-                  )}
-                >
-                  {formatMoney(driver.contribution, currency, { signed: true })}
-                </b>
-              </Link>
-            </li>
-          ))}
-        </ul>
+      {change === null ? null : (
+        <>
+          <h3 className={styles.driversTitle}>What drove it</h3>
+          {period.drivers.length === 0 ? (
+            <p className={styles.empty}>Nothing moved in this period.</p>
+          ) : (
+            <ul className={styles.drivers}>
+              {period.drivers.map((driver) => (
+                <li key={driver.holdingId}>
+                  <Link to={`/holdings/${driver.holdingId}`} className={styles.driver}>
+                    <span className={styles.grow}>
+                      <span className={styles.name}>{driver.name}</span>
+                      <span className={styles.sub}>{typeLabelOf(driver.holdingId)}</span>
+                    </span>
+                    <b
+                      className={cx(
+                        styles.contribution,
+                        driver.contribution > 0 ? styles.gain : styles.loss,
+                      )}
+                    >
+                      {formatMoney(driver.contribution, currency, { signed: true })}
+                    </b>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
       {period.carried ? (
         <p className={styles.note}>
