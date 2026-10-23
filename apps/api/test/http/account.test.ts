@@ -13,6 +13,7 @@ import {
   oauthRefreshToken,
 } from '../../src/db/schema';
 import { FIXED_NOW, createTestDatabase, type TestDatabase } from '../isolation/harness';
+import { rowsCarrying } from '../support/erasure';
 import {
   aged,
   errorOf,
@@ -27,8 +28,8 @@ import {
 } from './support';
 
 /**
- * `DELETE /api/account` (architecture §7.2, §8, PRD J10): connections revoked, ledger rows,
- * identity, sessions, OAuth grants, endpoints and reminder state deleted, events re-keyed, and
+ * `DELETE /api/account` (architecture §7.2, §8, PRD J10): ledger rows, identity, sessions, OAuth
+ * grants, connections, endpoints and reminder state deleted, events re-keyed, and
  * `account_deleted` — and no `push_disabled` — fired. Without a sign-in from the last 10 minutes
  * it refuses. All data is fictional (CONVENTIONS §6).
  */
@@ -248,13 +249,13 @@ describe('DELETE /api/account', () => {
     const res = await p.delete('/api/account');
     expect(await json<{ erasedWithinDays: number }>(res)).toStrictEqual({ erasedWithinDays: 30 });
 
-    // Revoked, not deleted: the next agent call is rejected, and the rows say so.
+    // The connections go with the account, so the next agent call is rejected.
     expect(await coreCounts(userId)).toMatchObject({
       user: 0,
       profile: 0,
       session: 0,
       account: 0,
-      connection: 2,
+      connection: 0,
       active_connection: 0,
       attempt: 0,
       endpoint: 0,
@@ -291,9 +292,11 @@ describe('DELETE /api/account', () => {
     );
     expect(push).toHaveLength(0);
 
-    // Nothing is readable afterwards: the profile and the ledger are gone with the account.
+    // Nothing is readable afterwards: the profile and the ledger are gone with the account. The
+    // session outlived it here, which is the same as no session, and reading makes nothing again.
     await errorOf(await p.get('/api/me'), 401);
-    await errorOf(await p.get('/api/snapshot'), 404);
+    await errorOf(await p.get('/api/snapshot'), 401);
+    expect(await rowsCarrying(db.owner, userId)).toStrictEqual({});
   });
 
   it('stops every reminder at once: the run never claims the deleted account', async () => {

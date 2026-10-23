@@ -17,7 +17,7 @@ import { FakeContent, GENERIC_V1, fakeRates, USER } from './support';
  * through the Ledger as the plain change it made, old → new.
  */
 
-const MIGRATION = '0008_drop_audit_undo';
+const MIGRATION = '0009_drop_audit_undo';
 const MIGRATIONS = new URL('../../migrations/', import.meta.url);
 
 interface Journal {

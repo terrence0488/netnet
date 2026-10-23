@@ -61,8 +61,15 @@
     {
       "idx": 8,
       "version": "7",
-      "when": 1792732150446,
-      "tag": "0008_drop_audit_undo",
+      "when": 1792731917974,
+      "tag": "0008_user_foreign_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792781881632,
+      "tag": "0009_drop_audit_undo",
       "breakpoints": true
     }
   ]

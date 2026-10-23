@@ -1,5 +1,5 @@
 {
-  "id": "751712ed-7466-4fac-8bbc-1ad86fd2aff0",
+  "id": "65896283-a71d-45bc-b284-7969748c7f5b",
   "prevId": "262a8f41-f005-4d30-a678-0b0eba701e89",
   "version": "7",
   "dialect": "postgresql",
@@ -212,7 +212,18 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "agent_connection_user_id_user_id_fk": {
+          "name": "agent_connection_user_id_user_id_fk",
+          "tableFrom": "agent_connection",
+          "tableTo": "user",
+          "schemaTo": "core",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -356,7 +367,18 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "connection_attempt_user_id_user_id_fk": {
+          "name": "connection_attempt_user_id_user_id_fk",
+          "tableFrom": "connection_attempt",
+          "tableTo": "user",
+          "schemaTo": "core",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -1006,7 +1028,18 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "notification_endpoint_user_id_user_id_fk": {
+          "name": "notification_endpoint_user_id_user_id_fk",
+          "tableFrom": "notification_endpoint",
+          "tableTo": "user",
+          "schemaTo": "core",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -2172,7 +2205,18 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "profile_user_id_user_id_fk": {
+          "name": "profile_user_id_user_id_fk",
+          "tableFrom": "profile",
+          "tableTo": "user",
+          "schemaTo": "core",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -2296,7 +2340,18 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "reminder_state_user_id_user_id_fk": {
+          "name": "reminder_state_user_id_user_id_fk",
+          "tableFrom": "reminder_state",
+          "tableTo": "user",
+          "schemaTo": "core",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -2618,6 +2673,18 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "undoes": {
+          "name": "undoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "undone_by": {
+          "name": "undone_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -2681,6 +2748,26 @@
           "tableTo": "batch",
           "schemaTo": "ledger",
           "columnsFrom": ["user_id", "batch_id"],
+          "columnsTo": ["user_id", "id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "audit_undoes_fk": {
+          "name": "audit_undoes_fk",
+          "tableFrom": "audit",
+          "tableTo": "audit",
+          "schemaTo": "ledger",
+          "columnsFrom": ["user_id", "undoes"],
+          "columnsTo": ["user_id", "id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "audit_undone_by_fk": {
+          "name": "audit_undone_by_fk",
+          "tableFrom": "audit",
+          "tableTo": "audit",
+          "schemaTo": "ledger",
+          "columnsFrom": ["user_id", "undone_by"],
           "columnsTo": ["user_id", "id"],
           "onDelete": "no action",
           "onUpdate": "no action"

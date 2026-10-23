@@ -184,7 +184,7 @@ describe('activity', () => {
       (e) => e.action === 'update' && e.entity === 'holding',
     )!;
     // What the retired undo wrote: the inverse change, as an ordinary row once its link columns
-    // are gone (migration 0008).
+    // are gone (migration 0009).
     const formerUndo = 'aud_01K1G4KX00FRMERENTRY000000';
     await suite.rows(
       `insert into ledger.audit (user_id, id, at, actor, action, entity, entity_id, before, after)

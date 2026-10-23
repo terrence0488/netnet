@@ -13,6 +13,7 @@ import {
   USER_A,
   USER_B,
   createTestDatabase,
+  ensureAccount,
   sqlState,
   type TestDatabase,
 } from '../isolation/harness';
@@ -34,6 +35,7 @@ beforeAll(async () => {
     count: (key, windowStart) => countHit(db.appDb, key, windowStart),
     clock: () => now,
   }));
+  await ensureAccount(db, USER_A);
   await db.appDb.insert(profile).values({ userId: USER_A, segment: 'accumulating' });
 }, 60_000);
 
