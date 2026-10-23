@@ -45,15 +45,17 @@ jobs:
           PROBE_REFRESH_TOKEN: ${{ secrets.PROBE_REFRESH_TOKEN }}
         run: pnpm --silent probe --origin "$PROBE_ORIGIN"
       # Even a failed probe rotated the token (the script emits it right after refresh), so this
-      # stores it whenever one was emitted — else the next probe is refused.
+      # stores it whenever one was emitted — else the next probe is refused. The script masked
+      # it before writing it to $GITHUB_OUTPUT, so this step's env shows `***`; it reaches the
+      # script only through env, since an expression in `run:` is printed with the script.
       - name: Store the rotated token
         if: steps.probe.outputs.refresh_token != ''
         env:
           GH_TOKEN: ${{ secrets.PROBE_SECRETS_TOKEN }}
+          REFRESH_TOKEN: ${{ steps.probe.outputs.refresh_token }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "::error::The probe token rotated, but PROBE_SECRETS_TOKEN is not set: the next probe would fail. Set it (ops/probe.md) and re-run the one-time setup."
             exit 1
           fi
-          echo "::add-mask::${{ steps.probe.outputs.refresh_token }}"
-          gh secret set PROBE_REFRESH_TOKEN --body "${{ steps.probe.outputs.refresh_token }}"
+          gh secret set PROBE_REFRESH_TOKEN --body "$REFRESH_TOKEN"
