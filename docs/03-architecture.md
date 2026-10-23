@@ -1,6 +1,6 @@
 # 03 — Architecture
 
-Status: **awaiting re-approval** · Stage owner: Staff software engineer
+Status: **approved** · Stage owner: Staff software engineer
 Inputs: `docs/01-prd.md`, `docs/02-prototype/prototype-notes.md`, `docs/02-prototype/design-system.md`
 
 > Designs only what the first phases need (WORKFLOW Stage 3). §7 is the contract Stage 4 plans

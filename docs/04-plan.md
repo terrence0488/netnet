@@ -1,6 +1,6 @@
 # 04 — Plan
 
-Status: **awaiting re-approval** · Stage owner: Software engineering manager
+Status: **approved** · Stage owner: Software engineering manager
 Inputs: `docs/01-prd.md` (§6 acceptance criteria), `docs/03-architecture.md`, `CONVENTIONS.md`
 
 > Phases are vertical slices, each ending in a checkpoint deployed to production that the Founder
