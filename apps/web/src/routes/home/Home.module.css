@@ -134,7 +134,8 @@
   padding-bottom: var(--inset-page-end);
 }
 
-/* Position with what needs updating beneath it: one column on a computer, in flow on a phone. */
+/* Position, what needs updating directly beneath it, then the push card: one column on a
+   computer, in flow on a phone. */
 .side {
   display: contents;
 }

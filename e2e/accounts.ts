@@ -122,7 +122,10 @@ export async function verifiedElsewhere(person: Person): Promise<void> {
   );
 }
 
-/** The client events the page sends, in order, as `name` or `name:method`. */
+/**
+ * The client events the page sends, in order, as `name`, `name:method` or `name:entry`
+ * (`push_prompt_shown:home`).
+ */
 export function recordEvents(page: Page): string[] {
   const sent: string[] = [];
   page.on('request', (request) => {
@@ -131,9 +134,10 @@ export function recordEvents(page: Page): string[] {
     if (pathname === '/api/events') {
       const { name, props } = request.postDataJSON() as {
         name: string;
-        props?: { method?: string };
+        props?: { method?: string; entry?: string };
       };
-      sent.push(props?.method ? `${name}:${props.method}` : name);
+      const detail = props?.method ?? props?.entry;
+      sent.push(detail ? `${name}:${detail}` : name);
     } else if (pathname === '/api/auth/sign-up/email') {
       sent.push('(sign-up)');
     }
