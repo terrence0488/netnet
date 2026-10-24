@@ -762,10 +762,14 @@ It is one statement: `UPDATE core.reminder_state SET last_checked_on = ‹today�
 4. **Retry security emails** not yet accepted (`security_email_sent_at` null, older than 10 minutes,
    younger than 7 days).
 
-**Why three runs.** The night (21:00–08:00) is 11 hours. Three runs eight hours apart cannot all
-fall inside it, even when a schedule starts a run an hour late. So on every local day, in every
-time zone, at least one run is in the daytime: a reminder goes out on the day it is due and never
-at night. A run that never starts (schedules are not retried) delays some people by a day at most.
+**Why three runs.** Each run sends only to people for whom it is daytime (08:00–21:00) when it
+starts, so however late it starts, no reminder goes at night. The daytime is 13 hours and the runs
+are scheduled eight hours apart. GitHub starts each run late, by hours (§9.3), but a delay that
+consecutive runs share moves them together without widening the gap between them. So while no run
+is delayed five hours more than the run before it, every gap stays under 13 hours, every local day
+in every time zone has a run in its daytime, and a reminder goes out on the day it is due. A run
+that never starts (schedules are not retried), or one delayed five hours more than the run before
+it, delays some people by a day at most.
 
 **Email budget.** Resend Free allows 100 emails a day, and sign-up verification and password resets
 use the same allowance. Reminder emails stop at **60 per UTC day**; anyone past that is released
@@ -878,10 +882,10 @@ preview gives the Founder a link to try a task's work before it merges.
 
 Every scheduled job is a GitHub Actions schedule that calls its handler with `CRON_SECRET`, and
 `vercel.json` carries no crons: Vercel's scheduler never fired the production crons, while
-GitHub's schedules demonstrably fire in this repository (decisions.md). A schedule may start a run
-late (minutes, an hour under load) and, rarely, not at all; every job below tolerates both. The
-reminder's time bands are three schedules on one handler. Jobs at the same hour share one
-database wake.
+GitHub's schedules demonstrably fire in this repository (decisions.md). A schedule starts a run
+late, by hours (two to six in this repository; `ops/probe.md` logs the starts), and, rarely, not at
+all; every job below tolerates both. The reminder's time bands are three schedules on one handler.
+Jobs at the same hour share one database wake.
 
 | Job | Where | When (UTC) | Wakes the database |
 |---|---|---|---|
