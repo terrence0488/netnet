@@ -31,6 +31,10 @@ const app = eventsApp(
           if (gate) await gate;
           rows.push(row);
         },
+        insertForAccount: async (row) => {
+          if (gate) await gate;
+          rows.push(row);
+        },
       },
       clock: () => new Date(now),
     })),

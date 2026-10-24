@@ -146,12 +146,15 @@ test.describe('against the database', () => {
     await page.request.post(`/api/holdings/${holding.result.id}/values`, {
       data: { amount: '100', date: today },
     });
-    // Other runs delete accounts into this same database; only rows past this one are this run's.
-    const lastEvent = await queryOne(
-      'select coalesce(max(id), 0)::text as n from analytics.event',
-      [],
+    // One of this account's own events: after the deletion it carries the random id the account's
+    // events were re-keyed to, which tells this run's `account_deleted` from those of other runs
+    // deleting accounts into the same database at the same time.
+    const ownEvent = await queryOne(
+      'select coalesce(max(id), 0)::text as n from analytics.event where user_id = $1',
+      [userId],
       'n',
     );
+    expect(ownEvent).not.toBe('0');
 
     await page.goto('/app/account/delete');
     await expect(page.getByText(/deleted within.*30 days/)).toBeVisible();
@@ -187,11 +190,17 @@ test.describe('against the database', () => {
         'n',
       ),
     ).toBe('0');
+    const rekeyed = await queryOne(
+      'select user_id from analytics.event where id = $1',
+      [ownEvent],
+      'user_id',
+    );
+    expect(rekeyed).not.toBe(userId);
     expect(
       await queryOne(
         `select count(*)::int as n from analytics.event
-         where name = 'account_deleted' and id > $1 and user_id != $2`,
-        [lastEvent, userId],
+         where name = 'account_deleted' and user_id = $1`,
+        [rekeyed],
         'n',
       ),
     ).toBe('1');

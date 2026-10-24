@@ -36,6 +36,7 @@ beforeAll(async () => {
     clock: () => now,
   }));
   await ensureAccount(db, USER_A);
+  await ensureAccount(db, USER_B);
   await db.appDb.insert(profile).values({ userId: USER_A, segment: 'accumulating' });
 }, 60_000);
 
@@ -95,6 +96,19 @@ describe('track() as netnet_app', () => {
     expect((await storedEvents()).map((e) => [e.user_id, e.segment])).toStrictEqual([
       [USER_B, 'unknown'],
       [null, 'unknown'],
+    ]);
+  });
+
+  it('writes no event for an id no account holds, and account_deleted on its re-keyed id', async () => {
+    const gone = 'usr_01K1G4KX00EEEEEEEEEEEEEEEE';
+    await track('session_started', {}, { userId: gone, appVersion: 'dev' });
+    await track(
+      'account_deleted',
+      {},
+      { rekeyedUserId: gone, segment: 'starting_out', appVersion: 'dev' },
+    );
+    expect((await storedEvents()).map((e) => [e.name, e.user_id, e.segment])).toStrictEqual([
+      ['account_deleted', gone, 'starting_out'],
     ]);
   });
 
