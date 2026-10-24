@@ -1,5 +1,5 @@
-import { UNIVERSALS, type AuditEntry, type Pack, type UserTypeIn } from '@netnet/contracts';
-import { typeLabel } from '@netnet/core';
+import type { AuditEntry, Pack } from '@netnet/contracts';
+import { typeLabelOfSnapshot } from '@netnet/core';
 import { formatDate } from '../../components/dates';
 import { formatMoney } from '../../components/money';
 
@@ -74,33 +74,6 @@ function moneyOf(side: unknown): MoneySide | undefined {
     : undefined;
 }
 
-/** A side's text-or-null field: absent reads as null, anything else as unreadable. */
-function nullableTextOf(side: unknown, key: string): string | null | undefined {
-  const found = recordOf(side)?.[key];
-  if (found === undefined || found === null) return null;
-  return typeof found === 'string' ? found : undefined;
-}
-
-/**
- * A type side as `typeLabel` reads it, or undefined when it cannot be read as one: its universal
- * type must be one, and its pack key and name text when present.
- */
-function typeOf(side: unknown): UserTypeIn | undefined {
-  const universal = UNIVERSALS.find((u) => u === recordOf(side)?.universal);
-  const packTypeKey = nullableTextOf(side, 'packTypeKey');
-  const customName = nullableTextOf(side, 'customName');
-  if (universal === undefined || packTypeKey === undefined || customName === undefined) {
-    return undefined;
-  }
-  return { universal, packTypeKey, customName };
-}
-
-/** A type side's name as every screen gives it: `typeLabel` over the person's pack chain. */
-function typeLabelOf(chain: readonly Pack[], side: unknown): string | undefined {
-  const type = typeOf(side);
-  return type ? typeLabel(chain, type) : undefined;
-}
-
 function valueChange(entry: AuditEntry): string | null {
   const before = entry.before === null ? undefined : moneyOf(entry.before);
   const after = entry.after === null ? undefined : moneyOf(entry.after);
@@ -163,7 +136,10 @@ export function describeChange(entry: AuditEntry, chain: readonly Pack[]): strin
         : null;
     case 'type':
       return entry.action === 'update'
-        ? renamedChange(typeLabelOf(chain, entry.before), typeLabelOf(chain, entry.after))
+        ? renamedChange(
+            typeLabelOfSnapshot(chain, entry.before),
+            typeLabelOfSnapshot(chain, entry.after),
+          )
         : null;
     case 'tag':
       return entry.action === 'update'

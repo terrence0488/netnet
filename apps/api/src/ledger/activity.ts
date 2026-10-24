@@ -1,13 +1,11 @@
 import {
   activityQuerySchema,
-  UNIVERSALS,
   type ActivityQuery,
   type AuditEntry,
   type Page,
   type Pack,
-  type UserTypeIn,
 } from '@netnet/contracts';
-import { typeLabel } from '@netnet/core';
+import { typeLabelOfSnapshot } from '@netnet/core';
 import { and, desc, eq, lt, or } from 'drizzle-orm';
 import { CONNECTION_ENTITY } from './connections';
 import { parseInput } from './input';
@@ -40,30 +38,9 @@ function holdingName(side: unknown): string {
   return str(obj(side)?.name) ?? 'a holding';
 }
 
-/** A snapshot's text or null field: absent reads as null, anything else as unreadable. */
-function nullableStr(value: unknown): string | null | undefined {
-  return value === undefined || value === null ? null : str(value);
-}
-
-/**
- * A type snapshot as `typeLabel` reads it, or undefined when it cannot be read as one: its
- * universal type must be one, and its pack key and name text when present.
- */
-function typeOf(side: unknown): UserTypeIn | undefined {
-  const t = obj(side);
-  const universal = UNIVERSALS.find((u) => u === t?.universal);
-  const packTypeKey = nullableStr(t?.packTypeKey);
-  const customName = nullableStr(t?.customName);
-  if (universal === undefined || packTypeKey === undefined || customName === undefined) {
-    return undefined;
-  }
-  return { universal, packTypeKey, customName };
-}
-
-/** A type's name as every screen gives it: `typeLabel` over the person's current pack chain. */
+/** A type's name as every screen gives it: its label over the person's current pack chain. */
 function typeName(chain: readonly Pack[], side: unknown): string {
-  const type = typeOf(side);
-  return type ? typeLabel(chain, type) : 'a type';
+  return typeLabelOfSnapshot(chain, side) ?? 'a type';
 }
 
 const PREF_LABELS: Record<string, string> = {

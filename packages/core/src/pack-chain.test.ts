@@ -1,6 +1,12 @@
 import { packSchema, type VersionedPack } from '@netnet/contracts';
 import { describe, expect, it } from 'vitest';
-import { chainValue, packChain, requireChainValue, typeLabel } from './pack-chain';
+import {
+  chainValue,
+  packChain,
+  requireChainValue,
+  typeLabel,
+  typeLabelOfSnapshot,
+} from './pack-chain';
 import { COUNTRY, GENERIC } from './testing/fixtures';
 
 /** The pack document itself, without the version the chain carries. */
@@ -87,5 +93,44 @@ describe('typeLabel', () => {
     expect(
       typeLabel(generic, { universal: 'loan', packTypeKey: 'auto_loan', customName: null }),
     ).toBe('Label loan');
+  });
+});
+
+describe('typeLabelOfSnapshot', () => {
+  const chain = packChain([GENERIC, COUNTRY], 'qz');
+
+  it('names a stored type as typeLabel does', () => {
+    const snapshot = (customName: string | null, packTypeKey: string | null) => ({
+      id: 'typ_01',
+      universal: 'loan',
+      packTypeKey,
+      customName,
+      sortOrder: 3,
+    });
+    expect(typeLabelOfSnapshot(chain, snapshot('Van loan', 'auto_loan'))).toBe('Van loan');
+    expect(typeLabelOfSnapshot(chain, snapshot(null, 'auto_loan'))).toBe('Auto loan');
+    expect(typeLabelOfSnapshot(chain, snapshot(null, null))).toBe('Label loan');
+    expect(typeLabelOfSnapshot(chain, snapshot(null, 'retired_key'))).toBe('Label loan');
+    expect(
+      typeLabelOfSnapshot(packChain([GENERIC, COUNTRY], null), snapshot(null, 'auto_loan')),
+    ).toBe('Label loan');
+  });
+
+  it('reads an absent pack key or name as none', () => {
+    expect(typeLabelOfSnapshot(chain, { universal: 'cash' })).toBe('Current account');
+    expect(typeLabelOfSnapshot(chain, { universal: 'cash', customName: 'Pot' })).toBe('Pot');
+  });
+
+  it.each([
+    ['nothing', null],
+    ['no object', 'loan'],
+    ['an array', ['loan']],
+    ['no universal type', { packTypeKey: 'auto_loan', customName: 'Van loan' }],
+    ['an unknown universal type', { universal: 'yacht', customName: 'Boat' }],
+    ['an inherited key as its universal type', { universal: 'toString', customName: null }],
+    ['a pack key that is not text', { universal: 'loan', packTypeKey: 7, customName: null }],
+    ['a name that is not text', { universal: 'loan', packTypeKey: null, customName: { a: 1 } }],
+  ])('is undefined for %s', (_, snapshot) => {
+    expect(typeLabelOfSnapshot(chain, snapshot)).toBeUndefined();
   });
 });

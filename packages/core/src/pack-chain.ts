@@ -71,3 +71,27 @@ export function typeLabel(chain: readonly Pack[], type: UserTypeIn): string {
   }
   return requireChainValue(chain, 'labels', type.universal);
 }
+
+/** A snapshot's text-or-null field: absent reads as null, anything else as unreadable. */
+function nullableText(value: unknown): string | null | undefined {
+  if (value === undefined || value === null) return null;
+  return typeof value === 'string' ? value : undefined;
+}
+
+/**
+ * A type as a stored snapshot (an audit entry's side) records it, named as `typeLabel` names it,
+ * or undefined when the snapshot cannot be read as a type: its universal type must be one the
+ * chain labels (generic labels every one), and its pack key and name text or null when present.
+ */
+export function typeLabelOfSnapshot(chain: readonly Pack[], snapshot: unknown): string | undefined {
+  if (typeof snapshot !== 'object' || snapshot === null) return undefined;
+  const side = snapshot as Record<string, unknown>;
+  const universal = side.universal;
+  if (typeof universal !== 'string' || !chain.some((p) => Object.hasOwn(p.labels, universal))) {
+    return undefined;
+  }
+  const packTypeKey = nullableText(side.packTypeKey);
+  const customName = nullableText(side.customName);
+  if (packTypeKey === undefined || customName === undefined) return undefined;
+  return typeLabel(chain, { universal: universal as Universal, packTypeKey, customName });
+}
