@@ -16,7 +16,7 @@ export const listActivityTool: ToolDef<McpListActivityInput, McpListActivityOutp
   description:
     'Every change you or the person made, newest first, each with who made it, when, the old ' +
     'and new values, and which agent turn it belongs to. Page through with cursor; filter to ' +
-    'one turn with batch_id. Undo one entry or a whole turn with undo.',
+    'one turn with batch_id. A record only: correct a mistake with another change.',
   kind: 'read',
   scope: 'ledger.read',
   annotations: { readOnlyHint: true, openWorldHint: false },

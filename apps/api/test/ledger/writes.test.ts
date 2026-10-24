@@ -39,8 +39,6 @@ interface Fixture {
   cashTypeId: string;
   tagId: string;
   otherTagId: string;
-  /** The value correction `undo` reverses. Only `setUp('undo')` sets it. */
-  undoEntryId?: string;
 }
 
 /** A user (with no country pack yet) whose ledger has one of everything a write can touch. */
@@ -144,11 +142,6 @@ const CASES: Record<
       ['tag', 'delete'],
     ],
   },
-  undo: {
-    // Without `setUp('undo')` (the read-transaction probe) the id only needs its shape.
-    run: (l, f) => l.undo({ entryId: f.undoEntryId ?? 'aud_01K1G4KX00ZZZZZZZZZZZZZZZZ' }),
-    touches: [['value', 'update']],
-  },
   setPrefs: { run: (l) => l.setPrefs({ baseline: 'year_start' }), touches: [['prefs', 'create']] },
   // The fixture's one USD value re-derived into EUR, then the base currency itself.
   changeBaseCurrency: {
@@ -179,18 +172,7 @@ async function setUp(method: WriteMethod): Promise<Fixture> {
     const connection = await suite.connect(userId);
     return { userId, connection } as Fixture;
   }
-  const f = await fixture();
-  // `undo` reverses a correction of the fixture's value, made before the case runs.
-  if (method === 'undo') {
-    await suite.as(f.userId, USER, null).write((l) => l.updateValue(f.valueId, { amount: 11 }));
-    const [entry] = await suite.rows<{ id: string }>(
-      `select id from ledger.audit where user_id = $1 and entity = 'value' and entity_id = $2
-        order by at desc, id desc limit 1`,
-      [f.userId, f.valueId],
-    );
-    f.undoEntryId = entry?.id ?? '';
-  }
-  return f;
+  return fixture();
 }
 
 describe('the write methods', () => {

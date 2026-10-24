@@ -114,8 +114,7 @@ const TABLES: Record<string, string> = {
   'ledger.prefs': 'user_id text, key text, value jsonb',
   'ledger.audit':
     'user_id text, id text, at timestamptz, actor text, client_name text, connection_id text, ' +
-    'batch_id text, action text, entity text, entity_id text, before jsonb, after jsonb, undoes text, ' +
-    'undone_by text',
+    'batch_id text, action text, entity text, entity_id text, before jsonb, after jsonb',
   'ledger.batch':
     'user_id text, id text, connection_id text, opened_at timestamptz, last_write_at timestamptz',
 };

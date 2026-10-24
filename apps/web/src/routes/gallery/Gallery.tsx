@@ -187,7 +187,7 @@ export function Gallery() {
               onClick={() =>
                 toast.show({
                   message: 'Value saved.',
-                  action: { label: 'Undo', onAction: () => toast.show({ message: 'Undone.' }) },
+                  action: { label: 'Open', onAction: () => toast.show({ message: 'Opened.' }) },
                 })
               }
             >

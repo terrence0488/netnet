@@ -14,7 +14,6 @@ import { listActivityInputSchema } from './list-activity';
 import { listHoldingsInputSchema } from './list-holdings';
 import { recordValuesInputSchema } from './record-values';
 import { mcpErrorSchema } from './shared';
-import { undoInputSchema } from './undo';
 import { updateHoldingInputSchema } from './update-holding';
 import { updateValueInputSchema } from './update-value';
 import { upsertTagInputSchema } from './upsert-tag';
@@ -194,15 +193,6 @@ describe('mcp input schemas', () => {
     ).toBe(true);
     expect(listActivityInputSchema.safeParse({ limit: 101 }).success).toBe(false);
     expect(listActivityInputSchema.safeParse({ limit: 0 }).success).toBe(false);
-  });
-
-  it('undo takes exactly one of entry_id and batch_id', () => {
-    expect(undoInputSchema.safeParse({ entry_id: 'aud_01J' }).success).toBe(true);
-    expect(undoInputSchema.safeParse({ batch_id: 'bat_01J' }).success).toBe(true);
-    expect(undoInputSchema.safeParse({}).success).toBe(false);
-    expect(undoInputSchema.safeParse({ entry_id: 'aud_01J', batch_id: 'bat_01J' }).success).toBe(
-      false,
-    );
   });
 
   it('rejects unknown fields', () => {

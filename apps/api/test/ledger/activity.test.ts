@@ -160,7 +160,7 @@ describe('activity', () => {
     expect(revoke.at).toBe(FIXED_NOW.toISOString());
   });
 
-  it('summarises web edits and deletes, and undos as what they undid', async () => {
+  it('summarises web edits and deletes', async () => {
     const { userId, holdingId } = await fixture();
     await suite.as(userId).write((l) => l.updateHolding(holdingId, { name: 'Everyday money' }));
     const tag = await suite.as(userId).write((l) => l.upsertTag({ name: 'Joint' }));
@@ -175,16 +175,41 @@ describe('activity', () => {
     expect(items.find((e) => e.action === 'create' && e.entity === 'holding')?.summary).toBe(
       'Added "Spending money"',
     );
+  });
 
-    const update = items.find((e) => e.action === 'update' && e.entity === 'holding')!;
-    await suite.as(userId).write((l) => l.undo({ entryId: update.id }));
-    const after = await entriesOf(userId);
-    expect(after.find((e) => e.undoes === update.id)?.summary).toBe(
-      'Undid Updated "Everyday money"',
+  it('reads a former undo entry as the change it made, old → new', async () => {
+    const { userId, holdingId } = await fixture();
+    await suite.as(userId).write((l) => l.updateHolding(holdingId, { name: 'Everyday money' }));
+    const update = (await entriesOf(userId)).find(
+      (e) => e.action === 'update' && e.entity === 'holding',
+    )!;
+    // What the retired undo wrote: the inverse change, as an ordinary row once its link columns
+    // are gone (migration 0009).
+    const formerUndo = 'aud_01K1G4KX00FRMERENTRY000000';
+    await suite.rows(
+      `insert into ledger.audit (user_id, id, at, actor, action, entity, entity_id, before, after)
+       values ($1, $2, $3, 'user', 'update', 'holding', $4, $5, $6)`,
+      [
+        userId,
+        formerUndo,
+        new Date(FIXED_NOW.getTime() + 60_000),
+        holdingId,
+        JSON.stringify(update.after),
+        JSON.stringify(update.before),
+      ],
     );
-    expect(after.find((e) => e.id === update.id)?.summary).toBe(
-      'Updated "Everyday money" (undone)',
-    );
+    const [newest, ...rest] = await entriesOf(userId);
+    expect(newest).toMatchObject({
+      id: formerUndo,
+      actor: 'user',
+      action: 'update',
+      entity: 'holding',
+      entityId: holdingId,
+      summary: 'Updated "Spending money"',
+    });
+    expect(newest?.before).toMatchObject({ name: 'Everyday money' });
+    expect(newest?.after).toMatchObject({ name: 'Spending money' });
+    expect(rest.find((e) => e.id === update.id)?.summary).toBe('Updated "Everyday money"');
   });
 
   it('reads the ledger’s creation and a currency change', async () => {

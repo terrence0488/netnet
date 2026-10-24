@@ -16,7 +16,7 @@ there is put back afterwards.
 
 | Suite | Covers |
 |---|---|
-| `func` | Core journeys: add a holding, update it (with currency conversion), undo from Activity, filter |
+| `func` | Core journeys: add a holding, update it (with currency conversion), Activity as a read-only log, filter |
 | `content` | Content rules (design-system §2.1): one figure one place, quiet provenance, no stray cents |
 | `scroll` | Scroll kept on re-render; `session_started` / `insights_viewed` events; disabled controls stay tappable |
 | `auth` | Sign-up, password, log-in, log-out, resume onboarding |

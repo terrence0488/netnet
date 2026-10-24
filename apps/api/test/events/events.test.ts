@@ -113,7 +113,7 @@ describe('track() as netnet_app', () => {
   });
 
   it('cannot select, change or delete what it wrote', async () => {
-    await track('value_undone', {}, { userId: USER_A, appVersion: 'dev' });
+    await track('session_started', {}, { userId: USER_A, appVersion: 'dev' });
     expect(await sqlState(db.appDb.select().from(event))).toBe('42501');
     expect(await sqlState(db.app.query(`update analytics.event set segment = 'unknown'`))).toBe(
       '42501',

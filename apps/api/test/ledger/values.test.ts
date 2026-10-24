@@ -468,4 +468,35 @@ describe('deleteValue', () => {
       'NOT_FOUND',
     );
   });
+
+  it('fires value_corrected with the value’s own source and age, from the web and an agent', async () => {
+    const { userId, holdingId } = await userWithHolding('USD');
+    const connection = await suite.connect(userId);
+    const agent = suite.as(userId, agentActor(connection));
+    const recorded = await agent.write((l) =>
+      l.recordValues([
+        { holdingId, amount: '10', date: '2026-07-30' },
+        { holdingId, amount: '20', date: '2026-07-31' },
+      ]),
+    );
+    const [first, second] = recorded.result.map((r) => r.value);
+    suite.clock.advance(3 * 86_400_000);
+    const byWeb = await suite.as(userId, USER).write((l) => l.deleteValue(first!.id));
+    expect(byWeb.events).toEqual([
+      { name: 'value_corrected', props: { original_source: 'agent', age_at_correction: 3 } },
+    ]);
+    const web = await suite
+      .as(userId, USER)
+      .write((l) => l.recordValues([{ holdingId, amount: '30', date: '2026-08-01' }]));
+    const byAgent = await agent.write((l) => l.deleteValue(web.result[0]!.value.id));
+    expect(byAgent.events).toEqual([
+      { name: 'value_corrected', props: { original_source: 'web', age_at_correction: 0 } },
+    ]);
+    // NetNet's own writes fire nothing (architecture §7.7).
+    const bySystem = await suite
+      .as(userId, { kind: 'system' })
+      .write((l) => l.deleteValue(second!.id));
+    expect(bySystem.events).toEqual([]);
+    suite.clock.set(new Date(Date.UTC(2026, 7, 1, 10)));
+  });
 });
