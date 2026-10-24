@@ -314,7 +314,7 @@ covers the new code), N11 (periods from a pure `core` function).
 | P3-T7 | Periods — core, Ledger and the agent tool | T2, T4, T6 | yes | — |
 | P3-T8 | The holding page's period bar chart | T7 | yes | — |
 | P3-T9 | The Insights screen | T7 | yes | — |
-| P3-T10 | Responsive sweep and the P3 checkpoint | T2, T4, T6, T8, T9; T11–T18 for production | no | — |
+| P3-T10 | Responsive sweep and the P3 checkpoint | T2, T4, T6, T8, T9; T11–T21 for production | no | — |
 | P3-T11 | Remove undo; Activity is a read-only log | — | yes | — |
 | P3-T12 | The default-currency change — one entry, a person's own rates kept | T11 | yes | — |
 | P3-T13 | Account deletion leaves nothing behind; the export survives Safari | — | yes | — |
@@ -323,6 +323,9 @@ covers the new code), N11 (periods from a pure `core` function).
 | P3-T16 | Insights — the first period has no change | — | yes | — |
 | P3-T17 | Home — the stale note under Position, and E2E with push | — | yes | — |
 | P3-T18 | The intermittent 500 on `GET /api/me` — diagnosable, then fixed | — | yes | — |
+| P3-T19 | Activity reads types by their labels, and dates as the screen does | — | yes | — |
+| P3-T20 | Insights — the average's percent agrees with its amount | — | yes | — |
+| P3-T21 | Failure logs name their cause, and a sign-out logs nothing | — | yes | — |
 
 T4's dependency on T3 is ordering only (both extend Settings); on T5 and T6 it is real (the
 tables `destroy()` clears). T7's dependency is ordering only: Insights is built last in the
@@ -338,6 +341,11 @@ around 2026-11-14. T12 follows T11 because both change the audit write path. Whe
 merged, the production workflow deploys, P3-T10's open criterion is verified there (the
 checkpoint, and the reminder schedule's first runs), and `stage: test P3` runs again.
 
+T19–T21 come from triaging the re-test's report (the same `feedback.md`): three Low issues, each
+a small task that touches nothing the others do. When all three are merged, the production
+workflow deploys again, P3-T10's production criterion is verified on it, and `stage: test P3`
+runs once more.
+
 #### Order
 
 ```mermaid
@@ -352,6 +360,7 @@ flowchart LR
   T11[T11 remove undo] --> T12[T12 currency entry + rates]
   T12 & T13[T13 deletion + export] & T14[T14 probe token] & T15[T15 reminder schedules] --> T10
   T16[T16 first period] & T17[T17 Home order + E2E] & T18[T18 the 500] --> T10
+  T19[T19 Activity labels] & T20[T20 Insights average] & T21[T21 failure logs] --> T10
 ```
 
 | Wave | Tasks |
@@ -365,6 +374,7 @@ flowchart LR
 | 7 | T14 first, then T11, T13, T15, T16, T17, T18 |
 | 8 | T12 |
 | 9 | T10's production criterion (deploy, then verify) |
+| 10 | T19, T20, T21, then T10's production criterion again |
 
 #### Running the build
 
