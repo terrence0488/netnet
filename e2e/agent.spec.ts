@@ -224,7 +224,7 @@ test('the empty Agent tab offers each agent as a direct row', async ({ page }, t
   await expect(page.getByRole('link', { name: 'Connect Claude' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Connect another agent' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'What it can do' })).toBeVisible();
-  await expect(page.getByText(/you can undo anything it changes/)).toBeVisible();
+  await expect(page.getByText(/every change it makes shows in Activity/)).toBeVisible();
   await expectSoundScreen(page, testInfo);
 
   await page.getByRole('link', { name: 'Connect Claude' }).click();

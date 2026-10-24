@@ -13,8 +13,7 @@ import { getTaxonomyInputSchema } from './get-taxonomy';
 import { listActivityInputSchema } from './list-activity';
 import { listHoldingsInputSchema } from './list-holdings';
 import { recordValuesInputSchema } from './record-values';
-import { mcpErrorSchema } from './shared';
-import { undoInputSchema } from './undo';
+import { mcpErrorSchema, mcpValueSchema } from './shared';
 import { updateHoldingInputSchema } from './update-holding';
 import { updateValueInputSchema } from './update-value';
 import { upsertTagInputSchema } from './upsert-tag';
@@ -196,15 +195,6 @@ describe('mcp input schemas', () => {
     expect(listActivityInputSchema.safeParse({ limit: 0 }).success).toBe(false);
   });
 
-  it('undo takes exactly one of entry_id and batch_id', () => {
-    expect(undoInputSchema.safeParse({ entry_id: 'aud_01J' }).success).toBe(true);
-    expect(undoInputSchema.safeParse({ batch_id: 'bat_01J' }).success).toBe(true);
-    expect(undoInputSchema.safeParse({}).success).toBe(false);
-    expect(undoInputSchema.safeParse({ entry_id: 'aud_01J', batch_id: 'bat_01J' }).success).toBe(
-      false,
-    );
-  });
-
   it('rejects unknown fields', () => {
     expect(
       deleteValueInputSchema.safeParse({ value_id: 'val_01J', holding_id: 'hld_01J' }).success,
@@ -269,5 +259,37 @@ describe('get_period_changes output', () => {
         periods: [period({ change: '250.25' })],
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('mcp value shape', () => {
+  const value = {
+    id: 'val_01J',
+    holding_id: 'hld_01J',
+    date: '2026-07-25',
+    amount: 1000,
+    currency: 'USD',
+    base_amount: 830.77,
+    base_currency: 'EUR',
+    fx_rate: '0.83076923076975',
+    fx_rate_date: '2026-07-25',
+    fx_source: 'user',
+    given_rate: '1.35',
+    given_rate_into: 'SGD',
+    source: 'web',
+    client_name: null,
+    entered_at: '2026-07-25T10:00:00.000Z',
+    updated_at: '2026-07-25T10:00:00.000Z',
+  };
+
+  it('carries the rate a person or agent gave, as given, or null for none', () => {
+    expect(mcpValueSchema.safeParse(value).success).toBe(true);
+    expect(
+      mcpValueSchema.safeParse({ ...value, given_rate: null, given_rate_into: null }).success,
+    ).toBe(true);
+    expect(mcpValueSchema.safeParse({ ...value, given_rate_into: 'sgd' }).success).toBe(false);
+    const without: Record<string, unknown> = { ...value };
+    delete without.given_rate;
+    expect(mcpValueSchema.safeParse(without).success).toBe(false);
   });
 });

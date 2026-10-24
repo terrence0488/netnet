@@ -1,11 +1,9 @@
 import type { AuditEntry } from '@netnet/contracts';
-import { isApiError } from '../../api/client';
-import { errorCopy, type ErrorCopy } from '../../components/ErrorState';
 import { formatMoney } from '../../components/money';
 
 /**
  * The Activity screen's readings (PRD J7): newest-first entries grouped by agent turn, each with
- * what changed, old → new, who did it and when — and plain words when an undo cannot go through.
+ * what changed, old → new, who did it and when.
  */
 
 export interface TurnGroup {
@@ -42,11 +40,6 @@ export function groupActivity(items: readonly AuditEntry[]): ActivityGroup[] {
     }
   }
   return groups;
-}
-
-/** A turn's entries that still stand: an undone entry's way back is its undo's own Undo. */
-export function undoableOf(group: TurnGroup): AuditEntry[] {
-  return group.entries.filter((entry) => entry.undoneBy === null);
 }
 
 /** The turn's writer: the client name on its entries, if they carry one. */
@@ -117,14 +110,28 @@ function prefsChange(entry: AuditEntry): string | null {
 }
 
 /**
+ * A change of the default currency is one entry however many values it re-derived (architecture
+ * §6.8): beneath its summary, how many. An entry logged before the count was kept, or one that
+ * recalculated nothing, leaves the summary to say it.
+ */
+function ledgerChange(entry: AuditEntry): string | null {
+  if (entry.action !== 'update') return null;
+  const count = recordOf(entry.after)?.valuesRederived;
+  if (typeof count !== 'number' || !Number.isSafeInteger(count) || count < 1) return null;
+  return `${count.toLocaleString()} ${count === 1 ? 'value' : 'values'} recalculated`;
+}
+
+/**
  * The old → new beneath an entry's summary, or null when the summary already says it (a creation,
- * a deletion, a revocation, the default currency). Sides that are not shaped as expected read as
- * no detail rather than a guess.
+ * a deletion, a revocation). Sides that are not shaped as expected read as no detail rather than
+ * a guess.
  */
 export function describeChange(entry: AuditEntry): string | null {
   switch (entry.entity) {
     case 'value':
       return valueChange(entry);
+    case 'ledger':
+      return ledgerChange(entry);
     case 'holding':
       return entry.action === 'update'
         ? renamedChange(textOf(entry.before, 'name'), textOf(entry.after, 'name'))
@@ -158,55 +165,4 @@ export function formatInstant(iso: string): string {
   const day = at.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   const time = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   return `${day}, ${time}`;
-}
-
-/** `UNDO_CONFLICT`'s blockers, newest first: the later changes to undo before this one. */
-export function conflictBlockers(error: unknown): string[] {
-  if (!isApiError(error, 'UNDO_CONFLICT')) return [];
-  const blockers = error.details['blockers'];
-  if (!Array.isArray(blockers)) return [];
-  const ids: string[] = [];
-  for (const blocker of blockers) {
-    const id = recordOf(blocker)?.entry_id;
-    if (typeof id === 'string') ids.push(id);
-  }
-  return ids;
-}
-
-export interface ConflictCopy {
-  readonly title: string;
-  readonly action: string;
-}
-
-/**
- * Plain words for a conflict: what stands in the way, named from the loaded log, and the offer to
- * undo it first. Never an id.
- */
-export function conflictCopy(blocker: AuditEntry | undefined): ConflictCopy {
-  if (!blocker) {
-    return {
-      title:
-        'This can’t be undone yet — a newer change is in the way. Undo that first, then try again.',
-      action: 'Undo the newer change first',
-    };
-  }
-  return {
-    title: `This can’t be undone yet — “${blocker.summary}” came afterwards. Undo that first, then try again.`,
-    action: `Undo “${blocker.summary}” first`,
-  };
-}
-
-/** Plain words when an undo fails for good: some changes, like a disconnection, stay made. */
-export function undoFailureCopy(error: unknown, entry: AuditEntry): ErrorCopy {
-  if (isApiError(error, 'VALIDATION_FAILED')) {
-    return {
-      title: 'This change can’t be undone.',
-      detail:
-        entry.entity === 'connection'
-          ? 'Disconnecting an agent stays in the log. Reconnect it from the Agent tab to use it again.'
-          : 'Some changes stay as they are once made.',
-      retry: false,
-    };
-  }
-  return errorCopy(error);
 }

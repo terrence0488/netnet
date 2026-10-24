@@ -10,6 +10,8 @@ const USER = 'usr_01K1G4KX00AAAAAAAAAAAAAAAA';
 const NEW_USER = 'usr_01K1G4KX00CCCCCCCCCCCCCCCC';
 
 let rows: EventRow[];
+/** Which insert wrote each row: the account's, or the plain one. */
+let via: ('account' | 'plain')[];
 let lookups: string[];
 let failWrites: boolean;
 let logged: string[];
@@ -21,16 +23,21 @@ function fakeStore(segments: Record<string, Segment>): EventStore {
       lookups.push(userId);
       return Promise.resolve(segments[userId] ?? 'unknown');
     },
-    insert: (row) => {
-      if (failWrites) return Promise.reject(new Error('connection terminated'));
-      rows.push(row);
-      return Promise.resolve();
-    },
+    insert: (row) => write(row, 'plain'),
+    insertForAccount: (row) => write(row, 'account'),
   };
+}
+
+function write(row: EventRow, by: 'account' | 'plain'): Promise<void> {
+  if (failWrites) return Promise.reject(new Error('connection terminated'));
+  rows.push(row);
+  via.push(by);
+  return Promise.resolve();
 }
 
 beforeEach(() => {
   rows = [];
+  via = [];
   lookups = [];
   failWrites = false;
   logged = [];
@@ -80,6 +87,23 @@ describe('track()', () => {
       [NEW_USER, 'unknown'],
       [null, 'unknown'],
     ]);
+  });
+
+  it('writes a verified user’s event only while their account exists, any other as it is', async () => {
+    await track('session_started', {}, { ...ctx, userId: USER });
+    await track('signup_started', { method: 'email' }, ctx);
+    // The id a deletion re-keyed to is no account's: its event goes in as it is.
+    await track('account_deleted', {}, { ...ctx, rekeyedUserId: NEW_USER, segment: 'established' });
+    await track('account_deleted', {}, { ...ctx, rekeyedUserId: NEW_USER });
+    expect(via).toStrictEqual(['account', 'plain', 'plain', 'plain']);
+    expect(rows.map((r) => [r.userId, r.segment])).toStrictEqual([
+      [USER, 'accumulating'],
+      [null, 'unknown'],
+      [NEW_USER, 'established'],
+      [NEW_USER, 'unknown'],
+    ]);
+    // No profile is looked up for the re-keyed id: there is none.
+    expect(lookups).toStrictEqual([USER]);
   });
 
   it('takes the time of the call, not of the write', async () => {
@@ -133,6 +157,12 @@ describe('track()', () => {
       expect(() => track('session_started', {}, { appVersion: 'build of My Savings' })).toThrow(
         /appVersion/,
       );
+      expect(() => track('account_deleted', {}, { ...ctx, rekeyedUserId: 'nobody' })).toThrow(
+        /rekeyedUserId/,
+      );
+      expect(() =>
+        track('account_deleted', {}, { ...ctx, userId: USER, rekeyedUserId: NEW_USER }),
+      ).toThrow(/cannot both be set/);
       expect(rows).toStrictEqual([]);
     });
   });
@@ -161,7 +191,7 @@ describe('track()', () => {
 
   it('never rejects when the write fails: it logs, and what the person was doing goes on', async () => {
     failWrites = true;
-    await expect(track('value_undone', {}, { ...ctx, userId: USER })).resolves.toBe(undefined);
+    await expect(track('session_started', {}, { ...ctx, userId: USER })).resolves.toBe(undefined);
     expect(logged.map((line) => JSON.parse(line) as unknown)).toStrictEqual([
       { event: 'event_write_failed', userId: USER, errorCode: 'INTERNAL' },
     ]);

@@ -47,7 +47,6 @@ interface Person {
   valueId: string;
   customTypeId: string;
   tagId: string;
-  entryId: string;
   batchId: string;
 }
 
@@ -89,7 +88,7 @@ async function pair(): Promise<Pair> {
     const full = okOf<McpGetHoldingOutput>(
       await callTool(target, agent.token, 'get_holding', { holding_id: holding.id }),
     );
-    const activity = okOf<{ entries: { id: string; batch_id: string | null }[] }>(
+    const activity = okOf<{ entries: { batch_id: string | null }[] }>(
       await callTool(target, agent.token, 'list_activity', { limit: 1 }),
     );
     return {
@@ -98,7 +97,6 @@ async function pair(): Promise<Pair> {
       valueId: full.values.items[0]?.id ?? '',
       customTypeId: customType.id,
       tagId: tag.id,
-      entryId: activity.entries[0]?.id ?? '',
       batchId: activity.entries[0]?.batch_id ?? '',
     };
   };
@@ -212,20 +210,6 @@ describe('isolation', () => {
         await callTool(target, p.b.agent.token, 'list_activity', { batch_id: p.a.batchId }),
       );
       expect(filtered.entries).toEqual([]);
-    });
-  });
-
-  it('undo refuses the other person’s entry and batch', async () => {
-    const p = await pair();
-    await unchanged(p, async () => {
-      errOf(
-        await callTool(target, p.b.agent.token, 'undo', { entry_id: p.a.entryId }),
-        'NOT_FOUND',
-      );
-      errOf(
-        await callTool(target, p.b.agent.token, 'undo', { batch_id: p.a.batchId }),
-        'NOT_FOUND',
-      );
     });
   });
 
@@ -398,7 +382,6 @@ describe('isolation', () => {
       get_taxonomy: () => callTool(target, p.b.agent.token, 'get_taxonomy'),
       get_setup_guide: () => callTool(target, p.b.agent.token, 'get_setup_guide'),
       list_activity: () => callTool(target, p.b.agent.token, 'list_activity'),
-      undo: () => callTool(target, p.b.agent.token, 'undo', { entry_id: p.a.entryId }),
       create_holding: () =>
         callTool(target, p.b.agent.token, 'create_holding', {
           name: 'Sneak',

@@ -1,0 +1,45 @@
+name: Reminders
+
+# The three reminder runs (architecture §9.3, §7.10): eight hours apart, so on every local day at
+# least one falls in the daytime even when a run starts an hour late. Vercel's scheduler never
+# fired the production crons, so GitHub Actions calls the handler directly with CRON_SECRET.
+# Dispatch by hand to run it on demand.
+on:
+  schedule:
+    - cron: '0 1 * * *'
+    - cron: '0 9 * * *'
+    - cron: '0 17 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remind:
+    name: Call the reminders handler
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # No `environment:` here on purpose: the `production` environment's required reviewer
+    # would hold every scheduled run for approval. CRON_SECRET is a repository secret, so
+    # the schedule runs unattended.
+    steps:
+      # The handler answers counts only (reminders sent by push and email, released, security
+      # emails sent and failed), so its response is safe to print in the run's log.
+      - name: Send due reminders, retry security emails
+        env:
+          PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Set the CRON_SECRET repository secret to the value in Vercel's Production env."
+            exit 1
+          fi
+          code=$(curl -sS -o /tmp/reminders.json -w '%{http_code}' \
+            -H "Authorization: Bearer $CRON_SECRET" "$PUBLIC_ORIGIN/api/cron/reminders")
+          cat /tmp/reminders.json
+          echo
+          if [ "$code" != 200 ]; then
+            echo "::error::The reminders handler answered HTTP $code."
+            exit 1
+          fi

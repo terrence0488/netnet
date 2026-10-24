@@ -90,8 +90,7 @@ function Approval({
         </p>
       )}
       <p className={styles.consent}>
-        It will be able to {consentAbilities(scopes)} Every change it makes is logged, and you can
-        undo it.
+        It will be able to {consentAbilities(scopes)} Every change it makes shows in Activity.
       </p>
       {problem ? (
         <FormProblem>

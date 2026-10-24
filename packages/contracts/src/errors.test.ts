@@ -10,14 +10,13 @@ describe('error codes', () => {
       UNAUTHENTICATED: 401,
       NOT_FOUND: 404,
       LIKELY_DUPLICATE: 409,
-      UNDO_CONFLICT: 409,
       EMAIL_NOT_VERIFIED: 403,
       SCOPE_REQUIRED: 403,
       REAUTH_REQUIRED: 401,
       RATE_LIMITED: 429,
       INTERNAL: 500,
     });
-    expect(ERROR_CODES).toHaveLength(12);
+    expect(ERROR_CODES).toHaveLength(11);
   });
 
   it('accepts an error body with fields and code-specific details', () => {

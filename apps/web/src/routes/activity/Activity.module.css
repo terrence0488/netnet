@@ -11,7 +11,7 @@
   padding-bottom: var(--space-9);
 }
 
-/* One turn: the writer and the one control that undoes the whole turn. */
+/* One turn: the agent that wrote it, and how many changes it made. */
 .turnHead {
   display: flex;
   flex-wrap: wrap;
@@ -31,9 +31,13 @@
   overflow-wrap: anywhere;
 }
 
-.turnNotice {
-  padding: 0 var(--inset-card) var(--inset-row);
-  border-top: var(--border-rule) solid var(--rule);
+.turnCount {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: var(--size-meta);
+  font-weight: var(--weight-meta);
+  letter-spacing: var(--tracking-meta);
+  line-height: var(--leading-body-sm);
 }
 
 /* One entry: rows reach the card's edges and split themselves with soft rules. */
@@ -42,16 +46,12 @@
 }
 
 .turnHead + .block,
-.turnNotice + .block,
 .block + .block {
   border-top: var(--border-rule) solid var(--rule);
 }
 
 .row {
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-4);
 }
 
 /* The provenance device: the agent's blue on the row's inner left edge, quiet on purpose. */
@@ -69,11 +69,6 @@
   border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
   background: var(--agent);
   opacity: var(--opacity-agent-mark);
-}
-
-.grow {
-  flex: 1;
-  min-width: 0;
 }
 
 .summary {
@@ -102,36 +97,6 @@
   font-weight: var(--weight-meta);
   letter-spacing: var(--tracking-meta);
   line-height: var(--leading-body-sm);
-}
-
-.undo {
-  flex: none;
-}
-
-/* A conflict or a failure: what stands in the way, and what to do, in plain language. */
-.notice {
-  margin-top: var(--space-6);
-  padding: var(--space-6) var(--space-7);
-  border: var(--border-rule) solid var(--attention);
-  border-radius: var(--radius-control);
-  background: var(--warn-bg);
-}
-
-.noticeText {
-  margin: 0;
-  color: var(--ink);
-  font-size: var(--size-body-sm);
-  font-weight: var(--weight-body-sm);
-  line-height: var(--leading-body);
-  overflow-wrap: anywhere;
-}
-
-.noticeActs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-6);
-  margin-top: var(--space-4);
-  align-items: center;
 }
 
 .more {

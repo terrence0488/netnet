@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   bigint,
   boolean,
+  char,
   check,
   date,
   foreignKey,
@@ -47,6 +48,7 @@ export const UNIVERSALS = [
 export const HOLDING_KINDS = ['asset', 'liability'] as const;
 export const ACCESS = ['accessible', 'illiquid', 'locked', 'undecided'] as const;
 export const VALUE_FX_SOURCES = ['ecb', 'fallback', 'same', 'user', 'agent'] as const;
+export const GIVEN_RATE_BY = ['user', 'agent'] as const;
 export const VALUE_SOURCES = ['web', 'agent', 'system'] as const;
 export const ACTORS = ['user', 'agent', 'system'] as const;
 
@@ -239,6 +241,14 @@ export const value = ledger.table(
     fxRate: numeric('fx_rate').notNull(),
     fxRateDate: date('fx_rate_date', { mode: 'string' }),
     fxSource: text('fx_source', { enum: VALUE_FX_SOURCES }).notNull(),
+    /**
+     * A rate the person or their agent gave, as given: 1 of `currency` in `given_rate_into`, the
+     * base currency when it was given. Every change of the base currency starts from it (§6.6).
+     * All three are null when none was given.
+     */
+    givenRate: numeric('given_rate'),
+    givenRateInto: char('given_rate_into', { length: 3 }),
+    givenRateBy: text('given_rate_by', { enum: GIVEN_RATE_BY }),
     source: text('source', { enum: VALUE_SOURCES }).notNull(),
     clientName: text('client_name'),
     connectionId: text('connection_id'),
@@ -268,6 +278,13 @@ export const value = ledger.table(
     checkCurrency('value', t.baseCurrency),
     check('value_fx_rate_check', sql`${t.fxRate} > 0`),
     checkOneOf('value', t.fxSource, VALUE_FX_SOURCES),
+    check('value_given_rate_check', sql`${t.givenRate} > 0`),
+    checkCurrency('value', t.givenRateInto),
+    checkOneOf('value', t.givenRateBy, GIVEN_RATE_BY),
+    check(
+      'value_given_rate_all_or_none_check',
+      sql`(${t.givenRate} is null) = (${t.givenRateInto} is null) and (${t.givenRate} is null) = (${t.givenRateBy} is null)`,
+    ),
     checkOneOf('value', t.source, VALUE_SOURCES),
     userIsolation(),
   ],
@@ -304,8 +321,6 @@ export const audit = ledger.table(
     entityId: text('entity_id'),
     before: jsonb('before'),
     after: jsonb('after'),
-    undoes: text('undoes'),
-    undoneBy: text('undone_by'),
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.id] }),
@@ -315,16 +330,6 @@ export const audit = ledger.table(
       name: 'audit_batch_fk',
       columns: [t.userId, t.batchId],
       foreignColumns: [batch.userId, batch.id],
-    }),
-    foreignKey({
-      name: 'audit_undoes_fk',
-      columns: [t.userId, t.undoes],
-      foreignColumns: [t.userId, t.id],
-    }),
-    foreignKey({
-      name: 'audit_undone_by_fk',
-      columns: [t.userId, t.undoneBy],
-      foreignColumns: [t.userId, t.id],
     }),
     index('audit_user_id_at_idx').on(t.userId, t.at),
     index('audit_user_id_batch_id_idx').on(t.userId, t.batchId),

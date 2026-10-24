@@ -145,6 +145,7 @@ describe('the Agent tab', () => {
   it('says what an agent can do beside the connections', () => {
     const markup = render([CONNECTION]);
     expect(markup).toContain('What it can do');
-    expect(markup).toContain('you can undo anything it changes');
+    expect(markup).toContain('every change it makes shows in Activity');
+    expect(markup).not.toMatch(/undo/i);
   });
 });

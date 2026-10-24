@@ -142,6 +142,13 @@ export const mcpValueSchema = z.strictObject({
   fx_rate: z.string(),
   fx_rate_date: outputDate.nullable(),
   fx_source: z.enum(VALUE_FX_SOURCES),
+  /**
+   * A rate the person or an agent gave, as given: 1 of `currency` in `given_rate_into`, the
+   * default currency when it was given. `fx_rate` starts from it whatever the default currency
+   * is now. Null when none was given.
+   */
+  given_rate: z.string().nullable(),
+  given_rate_into: majorCurrency.nullable(),
   source: z.enum(VALUE_SOURCES),
   /** The agent's name as shown when an agent wrote it: third-party text, shown escaped. */
   client_name: z.string().nullable(),
@@ -249,24 +256,10 @@ export const mcpAuditEntrySchema = z.strictObject({
   entity_id: z.string().nullable(),
   before: z.unknown(),
   after: z.unknown(),
-  /** The entry this one undoes, when it is itself an undo. */
-  undoes: z.string().nullable(),
-  /** The entry that undid this one, when it has been undone. */
-  undone_by: z.string().nullable(),
   /** How the entry reads, such as "Agent disconnected" for a revocation. */
   summary: z.string(),
 });
 export type McpAuditEntry = z.infer<typeof mcpAuditEntrySchema>;
-
-/** What an undo restored, in the order it was undone (a batch newest first). */
-export const mcpUndoResultSchema = z.strictObject({
-  undone: z.array(
-    z.strictObject({ entry_id: z.string(), entity: z.string(), entity_id: z.string().nullable() }),
-  ),
-  /** The new audit entries' ids, one per undone entry, in the same order. */
-  undo_ids: z.array(z.string()),
-});
-export type McpUndoResult = z.infer<typeof mcpUndoResultSchema>;
 
 /**
  * A failed call's `structuredContent`: the error code, what to change, the bad fields, and the

@@ -1,13 +1,13 @@
 import { seedLedger } from '../ledger/seed';
 import { createWithUser } from '../ledger/with-user';
 import type { Database } from './client';
-import { agentConnection, fxRate, profile, reminderState } from './schema';
+import { agentConnection, fxRate, profile, reminderState, user } from './schema';
 
 /**
- * Fictional data for a preview or a local database (`pnpm db:seed`): one demo person with a
- * profile, an agent connection, a few exchange rates and a small ledger. Every name and figure is
- * made up (CONVENTIONS §6). It runs as `netnet_app`, like the app, and can run again: rows that
- * exist are left alone.
+ * Fictional data for a preview or a local database (`pnpm db:seed`): one demo person with an
+ * account (no way to sign in to it), a profile, an agent connection, a few exchange rates and a
+ * small ledger. Every name and figure is made up (CONVENTIONS §6). It runs as `netnet_app`, like
+ * the app, and can run again: rows that exist are left alone.
  */
 export const DEMO_USER_ID = 'usr_01K1G4KX00DEM0000000000000';
 export const DEMO_CONNECTION_ID = 'con_01K1G4KX00DEM0000000000000';
@@ -16,6 +16,18 @@ export const DEMO_CONNECTION_ID = 'con_01K1G4KX00DEM0000000000000';
 const SEEDED_AT = new Date(Date.UTC(2026, 6, 31, 9));
 
 export async function seed(db: Database): Promise<void> {
+  // The account first: every core row keyed by a person's id references it.
+  await db
+    .insert(user)
+    .values({
+      id: DEMO_USER_ID,
+      name: '',
+      email: 'demo@example.com',
+      emailVerified: true,
+      createdAt: SEEDED_AT,
+      updatedAt: SEEDED_AT,
+    })
+    .onConflictDoNothing();
   await db
     .insert(profile)
     .values({

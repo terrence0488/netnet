@@ -84,6 +84,36 @@ describe('POST /api/holdings/:id/values', () => {
     });
   });
 
+  it('keeps a rate the person gives as given, into the default currency', async () => {
+    const holdingId = await newHolding();
+    const given = await record(holdingId, {
+      amount: '100',
+      date: '2026-07-30',
+      currency: 'USD',
+      fxRate: '0.91',
+    });
+    expect(given.result).toMatchObject({
+      currency: 'USD',
+      baseMinor: 9100,
+      fxRate: '0.91',
+      fxSource: 'user',
+      givenRate: '0.91',
+      givenRateInto: 'EUR',
+    });
+    const plain = await record(holdingId, { amount: '100', date: '2026-07-31' });
+    expect(plain.result).toMatchObject({ givenRate: null, givenRateInto: null });
+
+    // An edit to the amount keeps it; another currency without a rate clears it.
+    const edited = await json<WriteBody<ValueBody>>(
+      await p.patch(`/api/values/${given.result.id}`, { amount: '110' }),
+    );
+    expect(edited.result).toMatchObject({ baseMinor: 10010, givenRate: '0.91' });
+    const moved = await json<WriteBody<ValueBody>>(
+      await p.patch(`/api/values/${given.result.id}`, { currency: 'GBP' }),
+    );
+    expect(moved.result).toMatchObject({ fxSource: 'ecb', givenRate: null, givenRateInto: null });
+  });
+
   it('replaces a value for the same date, with SAME_DATE_REPLACED', async () => {
     const holdingId = await newHolding();
     const first = await record(holdingId, { amount: 100, date: '2026-07-15' });

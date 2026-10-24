@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
@@ -142,6 +142,35 @@ describe('scripts/smoke', () => {
       {},
     );
     expect(rotated).toBe('rotated-here');
+  });
+
+  it('on GitHub Actions, masks the rotated token before writing it to $GITHUB_OUTPUT', async () => {
+    const stub = await startStubOrigin((req, res) => {
+      if (req.path === '/api/auth/oauth2/token') {
+        json(res, 200, { access_token: 'a', refresh_token: 'rotated-here', expires_in: 3600 });
+        return;
+      }
+      const body = JSON.parse(req.body) as { method?: unknown };
+      const result =
+        body.method === 'tools/list'
+          ? { tools: [{ name: 'get_financial_context' }] }
+          : { content: [], structuredContent: {} };
+      json(res, 200, { jsonrpc: '2.0', id: 1, result });
+    });
+    stubs.push(stub);
+    const output = join(mkdtempSync(join(tmpdir(), 'smoke-mask-')), 'github-output');
+    const logged: { line: string; outputThen: string }[] = [];
+    vi.spyOn(console, 'log').mockImplementation((line: string) => {
+      const outputThen = existsSync(output) ? readFileSync(output, 'utf8') : '';
+      logged.push({ line: String(line), outputThen });
+    });
+    await checkAuthenticated(
+      { origin: stub.url, clientId: 'probe-client', refreshToken: 'stored' },
+      { GITHUB_ACTIONS: 'true', GITHUB_OUTPUT: output },
+    );
+    expect(logged[0]).toStrictEqual({ line: '::add-mask::rotated-here', outputThen: '' });
+    expect(logged.slice(1).some(({ line }) => line.includes('rotated-here'))).toBe(false);
+    expect(readFileSync(output, 'utf8')).toBe('refresh_token=rotated-here\n');
   });
 
   it.each([

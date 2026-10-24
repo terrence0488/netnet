@@ -12,7 +12,8 @@
  * without it (a local run) the token is printed once, marked, so it can be stored again.
  *
  * Nothing it prints carries an amount, a holding name or the context: statuses, sizes and
- * timings only. Tokens are never printed in the workflow path.
+ * timings only. On GitHub Actions the rotated token is masked before it is written anywhere,
+ * so the job's log shows `***` wherever it appears.
  */
 import { appendFileSync } from 'node:fs';
 import { setDefaultAutoSelectFamilyAttemptTimeout } from 'node:net';
@@ -217,8 +218,14 @@ export async function runProbe(
   return { calls: [listed.call, context.call], refreshToken, tools };
 }
 
-/** Hands the rotated token to the workflow, or — locally only — prints it once, marked. */
+/**
+ * Hands the rotated token to the workflow, or — locally only — prints it once, marked. On
+ * GitHub Actions it is masked first: step outputs are not masked by GitHub, and the step that
+ * stores the token prints its `env:`, so the mask must be registered before the token reaches
+ * `$GITHUB_OUTPUT`.
+ */
 export function emitRotatedToken(refreshToken: string, env: NodeJS.ProcessEnv = process.env): void {
+  if (env.GITHUB_ACTIONS === 'true') console.log(`::add-mask::${refreshToken}`);
   const output = env.GITHUB_OUTPUT;
   if (output) {
     appendFileSync(output, `refresh_token=${refreshToken}\n`);

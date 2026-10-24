@@ -1,7 +1,7 @@
 import { addDays } from '@netnet/core';
 import { and, desc, eq, gt, gte, isNull, lt, or, sql } from 'drizzle-orm';
-import type { Executor } from './client';
-import { ensureProfile } from './profiles';
+import { isForeignKeyViolation, type Executor } from './client';
+import { getProfile } from './profiles';
 import { agentConnection, reminderState } from './schema';
 
 /**
@@ -84,23 +84,41 @@ export async function createReminderState(
 
 /**
  * `touchChecked(userId)` (§7.10): the person checked NetNet, so the clock restarts from their
- * today. One upsert, writing at most once per person per day; a missing row is made. Runs after
- * the response, never before it.
+ * today. One upsert, writing at most once per person per day; a missing row is made, but only
+ * for an account that exists. It makes no profile: today is in the profile's time zone, or UTC
+ * without one. Runs after the response, never before it — for `DELETE /api/account` too, by
+ * when the account is gone (PRD J10): then it writes nothing.
  */
 export async function touchChecked(db: Executor, userId: string, at: Date): Promise<void> {
-  const profile = await ensureProfile(db, userId);
-  const today = todayInZone(profile.timeZone, at);
+  const profile = await getProfile(db, userId);
+  const today = todayInZone(profile?.timeZone ?? 'UTC', at);
   // Literal identifiers: drizzle renders column references table-qualified, which INSERT's
   // column list and the conflict target do not accept. Only the values are parameters.
-  await db.execute(sql`
-    insert into core.reminder_state (user_id, last_checked_on, next_due_on, sent_since_check)
-    values (${userId}, ${today}::date, (${today}::date + 30), 0)
-    on conflict (user_id) do update set
-      last_checked_on = excluded.last_checked_on,
-      next_due_on = excluded.next_due_on,
-      sent_since_check = 0
-    where reminder_state.last_checked_on is null
-      or reminder_state.last_checked_on < excluded.last_checked_on`);
+  await forAccount(
+    db.execute(sql`
+      insert into core.reminder_state (user_id, last_checked_on, next_due_on, sent_since_check)
+      select u.id, ${today}::date, (${today}::date + 30), 0
+      from core."user" u where u.id = ${userId}
+      on conflict (user_id) do update set
+        last_checked_on = excluded.last_checked_on,
+        next_due_on = excluded.next_due_on,
+        sent_since_check = 0
+      where reminder_state.last_checked_on is null
+        or reminder_state.last_checked_on < excluded.last_checked_on`),
+  );
+}
+
+/**
+ * Awaits `write`, an upsert that takes its row from the account's `user` row, so an id no account
+ * holds gets nothing. When the account's deletion commits while it waits on the deletion's locks,
+ * the row's foreign key refuses it: nothing either, and no error, since nobody is left to tell.
+ */
+async function forAccount(write: Promise<unknown>): Promise<void> {
+  try {
+    await write;
+  } catch (error) {
+    if (!isForeignKeyViolation(error)) throw error;
+  }
 }
 
 export interface ClaimedReminder {
@@ -232,19 +250,21 @@ export async function markReminderOpened(
   return rows.length === 1;
 }
 
-/** Turns Reminders off or back on (Settings → Notifications), making the row if missing. */
+/**
+ * Turns Reminders off or back on (Settings → Notifications), making the row if missing — for an
+ * account that exists only.
+ */
 export async function setRemindersEnabled(
   db: Executor,
   userId: string,
   on: boolean,
 ): Promise<void> {
-  await db
-    .insert(reminderState)
-    .values({ userId, enabled: on })
-    .onConflictDoUpdate({
-      target: reminderState.userId,
-      set: { enabled: on },
-    });
+  await forAccount(
+    db.execute(sql`
+      insert into core.reminder_state (user_id, enabled)
+      select u.id, ${on} from core."user" u where u.id = ${userId}
+      on conflict (user_id) do update set enabled = excluded.enabled`),
+  );
 }
 
 /**
@@ -255,15 +275,17 @@ export async function deleteReminderState(db: Executor, userId: string): Promise
   await db.delete(reminderState).where(eq(reminderState.userId, userId));
 }
 
-/** Turns email reminders off (the unsubscribe) or back on, making the row if it is missing. */
+/**
+ * Turns email reminders off (the unsubscribe) or back on, making the row if it is missing — for
+ * an account that exists only.
+ */
 export async function setEmailReminders(db: Executor, userId: string, on: boolean): Promise<void> {
-  await db
-    .insert(reminderState)
-    .values({ userId, emailEnabled: on })
-    .onConflictDoUpdate({
-      target: reminderState.userId,
-      set: { emailEnabled: on },
-    });
+  await forAccount(
+    db.execute(sql`
+      insert into core.reminder_state (user_id, email_enabled)
+      select u.id, ${on} from core."user" u where u.id = ${userId}
+      on conflict (user_id) do update set email_enabled = excluded.email_enabled`),
+  );
 }
 
 /** The connected (not revoked) agent used most recently, for the "Just ask" line. */
