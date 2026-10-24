@@ -1,10 +1,11 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SIGN_INS_PER_MINUTE, SIGN_UPS_PER_MINUTE } from '../../src/auth/routes';
 import { isId } from '../../src/lib/ids';
 import { seedLedger } from '../../src/ledger/seed';
 import type { CapturedEmail } from '../../src/notify/email';
 import { FIXED_NOW, createTestDatabase, type TestDatabase } from '../isolation/harness';
 import { Browser, ORIGIN, accountsApp, type AccountsApp } from '../support/accounts-app';
+import { LEAKS, captureLog } from '../support/failures';
 
 /**
  * Accounts against Postgres, as `netnet_app` (PRD J1, architecture §7.2, §8): sign-up asks for an
@@ -151,6 +152,40 @@ describe('sign-up', () => {
     expect((await profileOf(none.userId))?.time_zone).toBe('UTC');
     expect((await profileOf(bogus.userId))?.time_zone).toBe('UTC');
     expect((await profileOf(lowercase.userId))?.time_zone).toBe('Europe/Paris');
+  });
+
+  it('signs up when the profile cannot be made, and logs why by class only', async () => {
+    // A test-only trigger refuses one time zone's profile with a check violation whose message
+    // names a fictional holding and amount, as a real failure's message could.
+    await db.owner.query(`
+      create function core.test_refuse_profile() returns trigger language plpgsql as $$
+      begin
+        raise exception 'Kestrel Savings 98765.43 for kestrel@example.com' using errcode = '23514';
+      end $$`);
+    await db.owner.query(`
+      create trigger refuse_profile before insert on core.profile for each row
+      when (new.time_zone = 'Pacific/Chatham') execute function core.test_refuse_profile()`);
+    const log = captureLog();
+    try {
+      const { browser, userId } = await signedUp(newEmail(), { timeZone: 'Pacific/Chatham' });
+      expect(await profileOf(userId)).toBeUndefined();
+      expect(log.of('profile_create_failed')).toStrictEqual([
+        {
+          event: 'profile_create_failed',
+          userId,
+          errorCode: 'INTERNAL',
+          errorName: 'DrizzleQueryError',
+          pgCode: '23514',
+        },
+      ]);
+      expect(log.raw().join('\n')).not.toMatch(LEAKS);
+      // GET /api/me makes it with its defaults.
+      expect((await browser.send('/api/me')).status).toBe(200);
+    } finally {
+      vi.restoreAllMocks();
+      await db.owner.query('drop trigger refuse_profile on core.profile');
+      await db.owner.query('drop function core.test_refuse_profile()');
+    }
   });
 
   it('keeps no name or picture, whatever the client sends', async () => {

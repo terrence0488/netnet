@@ -14,7 +14,7 @@ import { track, type Track } from '../events/track';
 import { inBackground } from '../lib/after-response';
 import { appOrigins, publicOrigin } from '../lib/env';
 import { newId } from '../lib/ids';
-import { log } from '../lib/log';
+import { errorClass, log } from '../lib/log';
 import type { Notify } from '../notify/message';
 import { notify } from '../notify/notify';
 import { oauthPlugins } from './oauth';
@@ -102,6 +102,24 @@ function signUpTimeZone(body: unknown): string {
   return (typeof value === 'string' && canonicalTimeZone(value)) || 'UTC';
 }
 
+/**
+ * Better Auth's logger. Its messages can carry an email address, so only that something failed is
+ * kept, with the class of the error it was handed (architecture §10): the first `Error` among the
+ * message and its arguments, never their text.
+ */
+export function logAuthError(level: string, message: unknown, ...args: unknown[]): void {
+  if (level !== 'error') return;
+  const error = [message, ...args].find((value) => value instanceof Error);
+  log('auth_error', { errorCode: 'INTERNAL', ...errorClass(error) });
+}
+
+/** Runs Better Auth's work after the response; a failure is logged with the error's class. */
+export function authBackground(task: Promise<unknown>): void {
+  inBackground(task, (error) =>
+    log('auth_task_failed', { errorCode: 'INTERNAL', ...errorClass(error) }),
+  );
+}
+
 export function createAuth(deps: AuthDeps) {
   const sendVerification = (userId: string, token: string) =>
     deps.background(deps.notify(userId, { kind: 'account.verify_email', token }));
@@ -119,12 +137,7 @@ export function createAuth(deps: AuthDeps) {
     disabledPaths: ['/token'],
     // core.rate_limit does it, across every function instance (routes.ts).
     rateLimit: { enabled: false },
-    // Better Auth's messages can carry an email address: only that something failed is kept.
-    logger: {
-      log: (level) => {
-        if (level === 'error') log('auth_error', { errorCode: 'INTERNAL' });
-      },
-    },
+    logger: { log: logAuthError },
     socialProviders: {
       ...(deps.social?.google
         ? {
@@ -204,9 +217,13 @@ export function createAuth(deps: AuthDeps) {
               // Signing up counts as a check: the first reminder is due in 30 days. A failure
               // here is repaired by the first `touchChecked`, which makes the row.
               await createReminderState(deps.db, user.id, todayInZone(timeZone, deps.clock()));
-            } catch {
+            } catch (error) {
               // GET /api/me makes the profile with its defaults; the sign-up itself succeeded.
-              log('profile_create_failed', { userId: user.id, errorCode: 'INTERNAL' });
+              log('profile_create_failed', {
+                userId: user.id,
+                errorCode: 'INTERNAL',
+                ...errorClass(error),
+              });
             }
             const method = signUpMethod(ctx?.params);
             deps.background(
@@ -263,8 +280,7 @@ export function auth(): Auth {
     track,
     appVersion,
     clock: () => new Date(),
-    background: (task) =>
-      inBackground(task, () => log('auth_task_failed', { errorCode: 'INTERNAL' })),
+    background: authBackground,
     fetchClientMetadata: fetchClientMetadataResource,
     social: socialProvidersFromEnv(),
   });
