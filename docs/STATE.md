@@ -28,6 +28,6 @@ session's network refused `netnetapp.io`; `netnet-orcin.vercel.app` serves the s
 **Stage 6 checks the Reminders schedules:** none had fired yet (first slot 09:00 UTC, 2026-10-24)
 and the Founder chose not to wait. Confirm each slot (01:00, 09:00, 17:00 UTC) has a green
 `schedule` run and record the first starts in `ops/probe.md`. Nobody is due before 2026-11-14.
-Raised: architecture §7.10 and §9.3 say a run starts up to an hour late; here it is 2–6 hours
-(behaviour unaffected; the Founder's rewrite). Follow-ups: T13 `ledger_state` key, T18 other logs.
+Architecture §7.10 and §9.3 state the schedules' real lateness (2–6 hours), for the Founder's
+re-approval. Follow-ups: T13 `ledger_state` key, T18 other logs.
 PR #88 is red; `claude/design-*` are unmerged; P2-T8 waits on F11.
