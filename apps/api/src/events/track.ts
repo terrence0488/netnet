@@ -15,12 +15,22 @@ import { log } from '../lib/log';
 /**
  * `track()`: the only way an analytics event is written (architecture §6.4, §7.7). The event's
  * props must pass its strict schema in packages/contracts; `segment`, `user_id` and `app_version`
- * are attached here, never taken from props.
+ * are attached here, never taken from props. An event for a verified user is written only while
+ * their account exists, so none keeps the id of a deleted account (PRD J10).
  */
 
 export interface TrackContext {
-  /** The verified user id, when there is one. */
+  /**
+   * The verified user id, when there is one. The event is written only while that account exists;
+   * once it is deleted, nothing is.
+   */
   userId?: string | undefined;
+  /**
+   * Instead of `userId`: the random id a deleted account's events were re-keyed to
+   * (`DELETE /api/account`), for `account_deleted`. It is no account's, so the event is written
+   * as it is. Its segment is the caller's, or `unknown`.
+   */
+  rekeyedUserId?: string | undefined;
   /** The person's segment when the caller has it loaded; otherwise read from `core.profile`. */
   segment?: Segment | undefined;
   /** The deployed version (see `appVersion()`). */
@@ -67,6 +77,12 @@ function check(name: unknown, props: unknown, ctx: TrackContext): Checked | stri
   if (ctx.userId !== undefined && !isId(ctx.userId, 'usr')) {
     return 'ctx.userId must be the verified user id, a usr_ ULID';
   }
+  if (ctx.rekeyedUserId !== undefined && !isId(ctx.rekeyedUserId, 'usr')) {
+    return 'ctx.rekeyedUserId must be the re-keyed id, a usr_ ULID';
+  }
+  if (ctx.userId !== undefined && ctx.rekeyedUserId !== undefined) {
+    return 'ctx.userId and ctx.rekeyedUserId cannot both be set';
+  }
   if (ctx.segment !== undefined && !SEGMENTS.includes(ctx.segment)) {
     return 'ctx.segment is not a segment';
   }
@@ -98,17 +114,15 @@ export function createTrack(deps: () => TrackDeps): Track {
 async function write(deps: () => TrackDeps, event: Checked, ctx: TrackContext) {
   try {
     const { store, clock } = deps();
-    const at = clock();
-    const userId = ctx.userId ?? null;
-    const segment = ctx.segment ?? (userId === null ? 'unknown' : await store.segmentOf(userId));
-    await store.insert({
-      name: event.name,
-      at,
-      userId,
-      segment,
-      props: event.props,
-      appVersion: ctx.appVersion,
-    });
+    const row = { name: event.name, at: clock(), props: event.props, appVersion: ctx.appVersion };
+    const { userId } = ctx;
+    if (userId === undefined) {
+      const segment = ctx.segment ?? 'unknown';
+      await store.insert({ ...row, userId: ctx.rekeyedUserId ?? null, segment });
+    } else {
+      const segment = ctx.segment ?? (await store.segmentOf(userId));
+      await store.insertForAccount({ ...row, userId, segment });
+    }
   } catch {
     log('event_write_failed', { ...logUser(ctx), errorCode: 'INTERNAL' });
   }
