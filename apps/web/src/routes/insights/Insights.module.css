@@ -134,28 +134,6 @@
   color: var(--ink);
 }
 
-/* The summary line: the average change, or the one statement of what is needed. */
-.summary {
-  margin: var(--space-8) 0 0;
-  color: var(--ink);
-  font-size: var(--size-body);
-  font-weight: var(--weight-body);
-  line-height: var(--leading-body);
-}
-
-.figure {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.gain {
-  color: var(--gain);
-}
-
-.loss {
-  color: var(--loss);
-}
-
 .grid {
   display: block;
   padding-bottom: var(--inset-page-end);

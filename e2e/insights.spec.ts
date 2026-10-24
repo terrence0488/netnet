@@ -297,8 +297,10 @@ test.describe('rich history', () => {
 
   test('the average change, the charts, and the pagers over their window', async ({ page }) => {
     await page.goto('/app/insights');
-    await expect(page.getByText('Averaging')).toContainText('+$1K');
-    await expect(page.getByText('Averaging')).toContainText('(+233.6%)');
+    // $500 a year ago to $14,900 today: $1,200 a month over twelve, on the opening $500.
+    await expect(page.getByText('Averaging')).toHaveText(
+      'Averaging +$1K (+240%) a month over the last 12 months.',
+    );
 
     await expect(page.getByRole('heading', { name: 'Monthly growth' })).toBeVisible();
     await expect(page.getByTestId('growth-chart')).toBeVisible();
@@ -349,7 +351,11 @@ test.describe('rich history', () => {
       .getByRole('button', { name: '6M' })
       .click();
     await expect(list.getByRole('button')).toHaveCount(6);
-    await expect(page.getByText('Averaging')).toContainText('over the last 5 months');
+    // The range's oldest month has the month before it to compare with, so all six count: the
+    // $14,400 they gained, on the $500 the month before them ended at.
+    await expect(page.getByText('Averaging')).toHaveText(
+      'Averaging +$2K (+480%) a month over the last 6 months.',
+    );
 
     await page
       .getByRole('group', { name: 'Insights range' })
@@ -442,6 +448,74 @@ test.describe('rich history', () => {
     await page.goto('/app/insights');
     await expect(page.getByRole('region', { name: 'Month by month' })).toBeVisible();
     await expectSoundScreen(page, testInfo);
+  });
+});
+
+/**
+ * One savings holding valued `minor` the given number of months `ago` (today for 0), so each
+ * month ends at its own figure or the one carried from before.
+ */
+function savingsLedger(values: readonly (readonly [ago: number, minor: number])[]) {
+  return () => ({
+    dataVersion: 2,
+    baseCurrency: 'SGD',
+    packRef: [{ key: 'generic', version: 1 }],
+    prefs: {},
+    types: TYPES,
+    tags: [],
+    holdings: [holding({ id: 'hld_cash', name: 'Everyday savings', typeId: 'typ_cash' })],
+    values: {
+      hld_cash: values.map(([ago, minor], index) => [
+        ago === 0 ? todayStr() : monthDay(ago, 9),
+        minor,
+        'SGD',
+        minor,
+        'web',
+        null,
+        `val_cash_${index}`,
+      ]),
+    },
+  });
+}
+
+test.describe('the average', () => {
+  test.beforeEach(async ({ page }) => {
+    await asSignedIn(page);
+  });
+
+  test('its percent agrees with its amount: the mean change on the opening total', async ({
+    page,
+  }) => {
+    // $9,000 falls to $8,300 over five months: −$4,000, +$1,300, +$1,000, $0, +$1,000.
+    await mockLedgerWithPrefs(
+      page,
+      savingsLedger([
+        [5, 900_000],
+        [4, 500_000],
+        [3, 630_000],
+        [2, 730_000],
+        [0, 830_000],
+      ]),
+    );
+    await page.goto('/app/insights');
+    await expect(page.getByText('Averaging')).toHaveText(
+      'Averaging −$140 (−1.6%) a month over the last 5 months.',
+    );
+  });
+
+  test('an opening total of 0 states the amount alone', async ({ page }) => {
+    await mockLedgerWithPrefs(
+      page,
+      savingsLedger([
+        [2, 0],
+        [1, 50_000],
+        [0, 100_000],
+      ]),
+    );
+    await page.goto('/app/insights');
+    await expect(page.getByText('Averaging')).toHaveText(
+      'Averaging +$500 a month over the last 2 months.',
+    );
   });
 });
 
