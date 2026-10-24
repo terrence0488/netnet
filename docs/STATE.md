@@ -1,11 +1,11 @@
 # Project State
 
 ## Current
-Stage: Triage (P3)
+Stage: Build (P3)
 Phase: P3
-Status: approved
-Next action: `stage: build P3` in a fresh session, from wave 7: P3-T14 first, then T11, T13, T15, T16, T17, T18; T12 after T11.
-**Branch:** `docs-p3-triage` (PR #94, the triage), green and ready to merge before the build starts.
+Status: in-progress
+Next action: the Founder rotates the probe token and deploys production while it is idle (below), then `stage: build P3-T10` for wave 9 (the production criterion), then `stage: test P3`.
+**Branches:** waves 7–8 are merged to `main` (#95–#103).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -21,11 +21,11 @@ Next action: `stage: build P3` in a fresh session, from wave 7: P3-T14 first, th
 | P4 | not-started | | |
 
 ## Handoff note (last session)
-`stage: triage P3` ran, and the Founder approved it (architecture and plan re-approved; the PRD's
-J7, N3, M5 rewrite was approved earlier). Undo is gone and Activity is read-only. Every Founder
-item and test-report issue has a type and route in `docs/phases/P3/feedback.md`, built by briefs
-P3-T11 … T18. **T14 first**: the probe token in the latest workflow logs is live; once it merges,
-the Founder revokes the probe connection, re-runs `ops/probe.md`'s setup and deletes the old run
-logs. **T15 before ~2026-11-14**, when the first reminders fall due. T12 follows T11. Then
-deploy, close P3-T10 on production, and run `stage: test P3` again. Merge PR #94 first.
-PR #88 is red; `claude/design-*` are unmerged; P2-T8 waits on F11 (non-blocking).
+`stage: build P3` built and merged waves 7–8 (P3-T11 … T18, the zod audit patch); each brief
+holds its engineer's report, and the briefs' `Status:` lines are left to the Founder. Migrations
+0008–0010 deploy together. 0009 drops the undo columns, which is not expand-only: the Founder chose
+to drop now, so deploy while production is idle and fix forward rather than roll back. First
+revoke the probe connection, re-run `ops/probe.md`'s setup and delete the old run logs that show
+the token. Deploy before ~2026-11-14 (the reminder schedules), then dispatch Reminders once by hand.
+Open follow-ups are in the briefs' reports (T13 `ledger_state` key, T18 other logs). PR #88 is
+red; `claude/design-*` are unmerged; P2-T8 waits on F11.
