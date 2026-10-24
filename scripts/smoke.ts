@@ -5,9 +5,9 @@
  * Always: `/api/health`, the OAuth metadata, `/mcp` without a token (401 with the resource
  * metadata), and the security headers on `/`, `/app` and an API response. With
  * `PROBE_CLIENT_ID` and `PROBE_REFRESH_TOKEN` set, also the probe's authenticated path
- * (`tools/list` and `get_financial_context`), rotating the token exactly as the probe does —
- * the caller stores the `refresh_token` in `$GITHUB_OUTPUT` back as the secret. Without them
- * the authenticated checks are skipped, loudly.
+ * (`tools/list` and `get_financial_context`), rotating and masking the token exactly as the
+ * probe does — the caller stores the `refresh_token` in `$GITHUB_OUTPUT` back as the secret.
+ * Without them the authenticated checks are skipped, loudly.
  *
  * `SMOKE_FORCE_FAIL=1` fails after the unauthenticated checks: the deploy workflow's
  * `prove_rollback` input uses it to prove the rollback once.
