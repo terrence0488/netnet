@@ -79,7 +79,8 @@ let n = 0;
 
 async function signedUp(): Promise<{ browser: Browser; email: string }> {
   n += 1;
-  const browser = new Browser(target);
+  // An address each, so sign-up's limit per IP never gets in the way.
+  const browser = new Browser(target, `192.0.2.${10 + n}`);
   const email = `deleted-${n}@example.com`;
   const res = await browser.signUp(email, 'correct horse battery');
   expect(res.status).toBe(200);
@@ -269,13 +270,18 @@ function logLines(): () => Record<string, unknown>[] {
     });
 }
 
-/** Resolves when some connection to the test database is waiting on a lock. */
-async function someoneWaitsOnALock(): Promise<void> {
+/**
+ * Resolves when some connection to the test database is waiting on a lock, running a statement
+ * that contains `statement` when it is given.
+ */
+async function someoneWaitsOnALock(statement = ''): Promise<void> {
   await vi.waitFor(
     async () => {
       const { rows } = await db.owner.query<{ n: number }>(
         `select count(*)::int as n from pg_stat_activity
-         where datname = current_database() and wait_event_type = 'Lock'`,
+         where datname = current_database() and wait_event_type = 'Lock'
+           and strpos(query, $1) > 0`,
+        [statement],
       );
       expect(rows[0]?.n).toBeGreaterThan(0);
     },
@@ -299,6 +305,7 @@ describe('the erasure, after the work after the response', () => {
     await target.settle();
 
     expect(await rowsCarrying(db.owner, userId)).toStrictEqual({});
+    expect(await eventsOn(userId)).toBe(0);
     expect(lines().filter((line) => line.event === 'after_response_failed')).toStrictEqual([]);
   });
 
@@ -309,14 +316,7 @@ describe('the erasure, after the work after the response', () => {
     const lines = logLines();
 
     // The deletion runs up to its commit, and waits there.
-    let reached!: () => void;
-    const atCommit = new Promise<void>((resolve) => (reached = resolve));
-    let commit!: () => void;
-    const released = new Promise<void>((resolve) => (commit = resolve));
-    beforeCommit = () => {
-      reached();
-      return released;
-    };
+    const { atCommit, commit } = holdTheDeletion();
     const deleting = browser.send('/api/account', { method: 'DELETE' });
     await atCommit;
 
@@ -332,6 +332,118 @@ describe('the erasure, after the work after the response', () => {
 
     expect(await rowsCarrying(db.owner, userId)).toStrictEqual({});
     expect(lines().filter((line) => line.event === 'after_response_failed')).toStrictEqual([]);
+  });
+});
+
+/** How many events carry `id` as their user id, as the owner sees them. */
+async function eventsOn(id: string): Promise<number> {
+  const { rows } = await db.owner.query<{ n: number }>(
+    `select count(*)::int as n from analytics.event where user_id = $1`,
+    [id],
+  );
+  return rows[0]?.n ?? 0;
+}
+
+/** The id the latest `account_deleted` went on, after checking that no account holds it. */
+async function lastRekeyedId(): Promise<string> {
+  const { rows } = await db.owner.query<{ user_id: string }>(
+    `select user_id from analytics.event where name = 'account_deleted' order by id desc limit 1`,
+  );
+  const id = rows[0]?.user_id ?? '';
+  expect(id).toMatch(/^usr_[0-7][0-9A-HJKMNP-TV-Z]{25}$/);
+  const { rowCount } = await db.owner.query(`select 1 from core.user where id = $1`, [id]);
+  expect(rowCount).toBe(0);
+  return id;
+}
+
+/** Holds the next deletion just before its commit: `atCommit` once it is there, `commit()` lets it go. */
+function holdTheDeletion(): { atCommit: Promise<void>; commit: () => void } {
+  let reached!: () => void;
+  const atCommit = new Promise<void>((resolve) => (reached = resolve));
+  let commit!: () => void;
+  const released = new Promise<void>((resolve) => (commit = resolve));
+  beforeCommit = () => {
+    reached();
+    return released;
+  };
+  return { atCommit, commit };
+}
+
+describe('the events around the erasure', () => {
+  it('keeps none on the erased id when an event’s write waits for the deletion', async () => {
+    const { browser, email } = await signedUp();
+    const [userId = ''] = await userIds(email);
+    await target.settle();
+    const lines = logLines();
+    const { atCommit, commit } = holdTheDeletion();
+    const deleting = browser.send('/api/account', { method: 'DELETE' });
+    await atCommit;
+
+    // The page the person deletes from sends its own event as it loads: the session still holds,
+    // and the event's write, after the response, waits on the deletion's lock on the account.
+    const sent = await browser.send('/api/events', {
+      json: { name: 'session_started', props: {} },
+    });
+    expect(sent.status).toBe(204);
+    await someoneWaitsOnALock('insert into analytics.event');
+
+    commit();
+    expect((await deleting).status).toBe(200);
+    await target.settle();
+
+    expect(await eventsOn(userId)).toBe(0);
+    // The account was gone by then, so the event was not written; `account_deleted` was.
+    const rekeyed = await lastRekeyedId();
+    const { rows } = await db.owner.query<{ name: string }>(
+      `select name from analytics.event where user_id = $1 order by id`,
+      [rekeyed],
+    );
+    expect(rows.map((r) => r.name)).toStrictEqual(['account_created', 'account_deleted']);
+    expect(lines().filter((line) => line.event === 'event_write_failed')).toStrictEqual([]);
+  });
+
+  it('re-keys an event whose write held the account first', async () => {
+    const { browser, email } = await signedUp();
+    const [userId = ''] = await userIds(email);
+    await target.settle();
+    // An event's write that has locked the account and not yet committed.
+    let locked!: () => void;
+    const holding = new Promise<void>((resolve) => (locked = resolve));
+    let release!: () => void;
+    const released = new Promise<void>((resolve) => (release = resolve));
+    const writing = db.appDb.transaction(async (tx) => {
+      await eventStore(tx).insertForAccount({
+        name: 'session_started',
+        at: FIXED_NOW,
+        userId,
+        segment: 'unknown',
+        props: {},
+        appVersion: 'test123',
+      });
+      locked();
+      await released;
+    });
+    await holding;
+
+    // The deletion's delete of the user row waits for that write to commit.
+    const deleting = browser.send('/api/account', { method: 'DELETE' });
+    await someoneWaitsOnALock('delete from "core"."user"');
+    release();
+    await writing;
+    expect((await deleting).status).toBe(200);
+    await target.settle();
+
+    expect(await eventsOn(userId)).toBe(0);
+    const rekeyed = await lastRekeyedId();
+    const { rows } = await db.owner.query<{ name: string }>(
+      `select name from analytics.event where user_id = $1 order by id`,
+      [rekeyed],
+    );
+    expect(rows.map((r) => r.name)).toStrictEqual([
+      'account_created',
+      'session_started',
+      'account_deleted',
+    ]);
   });
 });
 

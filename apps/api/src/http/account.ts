@@ -71,6 +71,8 @@ export function accountRoutes(
         // accounts, the OAuth grants and the agent connections, and any row a racing request
         // wrote after the deletes above.
         await deleteUser(tx.db, userId);
+        // After the user row's delete: an event write that held the row first has committed, so
+        // this reaches it, and one that comes later finds no account and writes nothing.
         await rekeyEvents(tx.db, userId, randomId);
       },
       { write: true },
@@ -80,7 +82,7 @@ export function accountRoutes(
     await deps.track(
       'account_deleted',
       {},
-      { userId: randomId, segment: profile.segment, appVersion: deps.appVersion() },
+      { rekeyedUserId: randomId, segment: profile.segment, appVersion: deps.appVersion() },
     );
     return c.json({ erasedWithinDays: ERASED_WITHIN_DAYS });
   });
