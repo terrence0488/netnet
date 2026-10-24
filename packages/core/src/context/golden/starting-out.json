@@ -93,6 +93,7 @@
       "name": "Study loan",
       "type": "Loan",
       "tags": [],
+      "currency": "EUR",
       "access": "owed",
       "access_reason": null,
       "until": null,
@@ -117,6 +118,7 @@
       "tags": [
         "Emergency fund"
       ],
+      "currency": "EUR",
       "access": "accessible",
       "access_reason": "it’s money in the bank",
       "until": null,
@@ -139,6 +141,7 @@
       "name": "Gold coins",
       "type": "Other",
       "tags": [],
+      "currency": "EUR",
       "access": "undecided",
       "access_reason": null,
       "until": null,

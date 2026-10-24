@@ -129,6 +129,20 @@ describe('get_financial_context', () => {
     expect(JSON.stringify(context).length).toBeLessThanOrEqual(8192);
   });
 
+  it('gives each holding the currency list_holdings gives it', async () => {
+    const { agent } = await seeded();
+    const context = okOf<McpGetFinancialContextOutput>(
+      await callTool(target, agent.token, 'get_financial_context'),
+    );
+    const listed = okOf<McpListHoldingsOutput>(
+      await callTool(target, agent.token, 'list_holdings', { limit: 100 }),
+    );
+    const byId = new Map(listed.holdings.map((h) => [h.id, h.currency]));
+    expect(context.holdings).toHaveLength(3);
+    expect(new Set(context.holdings.map((h) => h.currency))).toStrictEqual(new Set(['EUR', 'GBP']));
+    for (const h of context.holdings) expect(h.currency).toBe(byId.get(h.id));
+  });
+
   it('rejects an unknown baseline', async () => {
     const { agent } = await seeded();
     const error = errOf(
