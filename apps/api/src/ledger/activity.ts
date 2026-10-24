@@ -61,7 +61,7 @@ function summary(row: AuditRow): string {
       const from = str(obj(before)?.baseCurrency);
       const to = str(obj(after)?.baseCurrency);
       return from && to && from !== to
-        ? `Changed the default currency from ${from} to ${to}`
+        ? `Changed the default currency ${from} → ${to}`
         : 'Updated the ledger';
     }
     case 'type':

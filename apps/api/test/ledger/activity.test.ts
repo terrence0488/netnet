@@ -223,7 +223,7 @@ describe('activity', () => {
       'Started tracking in USD',
     );
     const change = items.find((e) => e.entity === 'ledger' && e.action === 'update')!;
-    expect(change.summary).toBe('Changed the default currency from USD to EUR');
+    expect(change.summary).toBe('Changed the default currency USD → EUR');
     expect([change.before, change.after]).toEqual([
       { baseCurrency: 'USD' },
       { baseCurrency: 'EUR' },

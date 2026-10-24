@@ -143,14 +143,8 @@ const CASES: Record<
     ],
   },
   setPrefs: { run: (l) => l.setPrefs({ baseline: 'year_start' }), touches: [['prefs', 'create']] },
-  // The fixture's one USD value re-derived into EUR, then the base currency itself.
-  changeBaseCurrency: {
-    run: (l) => l.changeBaseCurrency('EUR'),
-    touches: [
-      ['value', 'update'],
-      ['ledger', 'update'],
-    ],
-  },
+  // The fixture's one USD value re-derived into EUR: one entry, for the ledger itself.
+  changeBaseCurrency: { run: (l) => l.changeBaseCurrency('EUR'), touches: [['ledger', 'update']] },
   applyPackTypes: {
     run: (l) => l.applyPackTypes(suite.content.ref('qz')),
     touches: [['type', 'create']],
