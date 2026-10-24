@@ -119,7 +119,14 @@ describe('GET /api/export', () => {
       source: 'web',
     });
     expect(values[0]!.baseMinor).toBeGreaterThan(0);
-    expect(values[1]).toMatchObject({ amountMinor: 20000, fxRate: '0.81', fxSource: 'user' });
+    expect(values[0]).toMatchObject({ givenRate: null, givenRateInto: null });
+    expect(values[1]).toMatchObject({
+      amountMinor: 20000,
+      fxRate: '0.81',
+      fxSource: 'user',
+      givenRate: '0.81',
+      givenRateInto: 'EUR',
+    });
   });
 
   it('exports one flat values table as CSV, under the documented header', async () => {
@@ -132,7 +139,7 @@ describe('GET /api/export', () => {
     expect(lines[0]).toBe(EXPORT_CSV_HEADER);
     const rows = lines.slice(1, -1);
     expect(rows).toHaveLength(2);
-    for (const row of rows) expect(row.split(',')).toHaveLength(17);
+    for (const row of rows) expect(row.split(',')).toHaveLength(19);
     const cells = rows.map((row) => row.split(','));
     // holding_id,holding_name,kind,type,currency,date,amount,base_amount,base_currency,…
     expect(cells[0]!.slice(0, 7)).toStrictEqual([
@@ -151,9 +158,13 @@ describe('GET /api/export', () => {
       'accessible',
       'it is money in the bank',
       expect.stringContaining('Pot tag'),
+      '',
+      '',
     ]);
     expect(cells[1]!.slice(5, 7)).toStrictEqual(['2026-07-15', '200.00']);
     expect(cells[1]!.slice(9, 12)).toStrictEqual(['0.81', '2026-07-15', 'user']);
+    // given_rate,given_rate_into: the statement's rate as given, into the default currency.
+    expect(cells[1]!.slice(17)).toStrictEqual(['0.81', 'EUR']);
   });
 
   it('exports only the caller’s own data, in both formats', async () => {

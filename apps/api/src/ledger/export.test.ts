@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { toCsv } from './export';
 
 /**
- * The CSV export's table (PRD J10): one row per value under the brief's header, amounts in major
- * units, tags `;`-separated. Pure, so no database. All data is fictional (CONVENTIONS §6).
+ * The CSV export's table (PRD J10): one row per value under architecture §7.2's header, amounts
+ * in major units, tags `;`-separated. Pure, so no database. All data is fictional (CONVENTIONS §6).
  */
 function bundle(): ExportBundle {
   return {
@@ -150,12 +150,12 @@ describe('toCsv', () => {
     expect(lines[1]).toBe(
       'hld_01K1G4KX00AAAAAAAAAAAAAAA1,Rainy day pot,asset,Cash and savings,USD,2026-07-01,' +
         '1234.56,987.65,EUR,0.8,2026-07-01,ecb,web,,accessible,it is money in the bank,' +
-        'rainy day;joint',
+        'rainy day;joint,,',
     );
-    // A liability: no access or reason, no tags, an agent's rate and name.
+    // A liability: no access or reason, no tags, an agent's rate and name, and the rate as given.
     expect(lines[2]).toBe(
       'hld_01K1G4KX00AAAAAAAAAAAAAAA2,Flat loan,liability,My shares,JPY,2026-07-15,' +
-        '-500000,-40.00,EUR,0.008,,agent,agent,Fictional agent,,,',
+        '-500000,-40.00,EUR,0.008,,agent,agent,Fictional agent,,,,0.008,EUR',
     );
     // A holding without values has no row: it is a values table.
     expect(toCsv(bundle())).not.toContain('Nothing yet');

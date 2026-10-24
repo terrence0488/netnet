@@ -11,8 +11,9 @@ import type { Scope } from './scope';
 /**
  * The person's data to take away (PRD J10, architecture §7.2, §7.3): `exportAll` reads the whole
  * ledger as one bundle, and `toCsv` flattens its values into the spreadsheet table. Both carry
- * every figure the position is built from — amounts, currencies, rates and rate dates — and the
- * accessibility outcome with the answer behind it, which rides on each holding.
+ * every figure the position is built from — amounts, currencies, rates and rate dates, and a rate
+ * the person or their agent gave as given — and the accessibility outcome with the answer behind
+ * it, which rides on each holding.
  */
 
 /** `exportAll`: everything, to rebuild a spreadsheet from. Empty before the ledger exists. */
@@ -54,8 +55,8 @@ function field(value: string): string {
 /**
  * `toCsv`: the bundle's values as one flat table under `EXPORT_CSV_HEADER`, in the bundle's order.
  * Amounts are decimals in major units (`core.fromMinor`, never floating point); tags are the
- * holding's tag names, `;`-separated. A holding without values has no row: it is a values table.
- * Pure, so its tests need no database.
+ * holding's tag names, `;`-separated; a value with no given rate leaves its two columns empty. A
+ * holding without values has no row: it is a values table. Pure, so its tests need no database.
  */
 export function toCsv(bundle: ExportBundle): string {
   const holdings = new Map<string, Holding>(bundle.holdings.map((h) => [h.id, h]));
@@ -84,6 +85,8 @@ export function toCsv(bundle: ExportBundle): string {
         holding.access ?? '',
         holding.accessReason ?? '',
         holding.tagIds.map((id) => tags.get(id) ?? '').join(';'),
+        value.givenRate ?? '',
+        value.givenRateInto ?? '',
       ]
         .map(field)
         .join(','),
