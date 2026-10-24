@@ -99,7 +99,8 @@ describe('without the VAPID keys (F19)', () => {
 
   beforeEach(() => {
     logged = [];
-    const capture = (line: string) => void logged.push(line);
+    // The log's lines only: with no Sentry DSN, an INTERNAL error's stack goes to stderr too.
+    const capture = (line: unknown) => void (typeof line === 'string' && logged.push(line));
     vi.spyOn(console, 'log').mockImplementation(capture);
     vi.spyOn(console, 'error').mockImplementation(capture);
   });

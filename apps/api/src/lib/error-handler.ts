@@ -2,8 +2,9 @@ import { ERROR_STATUS, type ErrorBody, type ErrorCode } from '@netnet/contracts'
 import type { Context, ErrorHandler, NotFoundHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { AppEnv } from './context';
+import { isProduction } from './env';
 import { AppError } from './errors';
-import { log } from './log';
+import { errorClass, log } from './log';
 import { routeOf } from './request-context';
 import { reportError } from './sentry';
 
@@ -18,6 +19,11 @@ function respond(c: Context<AppEnv>, body: ErrorBody) {
   return c.json(body, ERROR_STATUS[body.error.code]);
 }
 
+/**
+ * An unexpected error: logged with its class (never its message), reported to Sentry, answered
+ * INTERNAL. Where no Sentry DSN is set (local runs and tests, never production) the log is all
+ * that is left of it, so its stack, cause and SQL go to stderr as well (architecture §10).
+ */
 async function internal(c: Context<AppEnv>, err: unknown) {
   const requestId = c.get('requestId');
   const route = routeOf(c);
@@ -26,7 +32,9 @@ async function internal(c: Context<AppEnv>, err: unknown) {
     route,
     status: ERROR_STATUS.INTERNAL,
     errorCode: 'INTERNAL',
+    ...errorClass(err),
   });
+  if (!process.env.SENTRY_DSN && !isProduction()) console.error(err);
   await reportError(err, { requestId, route });
   return respond(c, {
     error: {
@@ -40,7 +48,7 @@ async function internal(c: Context<AppEnv>, err: unknown) {
 /**
  * Maps an AppError to its status with `{error: {code, message, fields?, …details}}`. A deliberate
  * HTTPException keeps its status (and headers, such as WWW-Authenticate). Anything unexpected
- * becomes INTERNAL with the request id; its message, stack and SQL never leave here.
+ * becomes INTERNAL with the request id; its message, stack and SQL never reach the caller.
  */
 export const handleError: ErrorHandler<AppEnv> = (err, c) => {
   if (err instanceof AppError && err.code !== 'INTERNAL') {
