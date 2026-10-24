@@ -37,5 +37,4 @@ export const upsertTagTool: ToolDef<McpUpsertTagInput, McpUpsertTagOutput> = {
     trackWriteEvents(ctx, write.events);
     return writeToMcp(write, tagToMcp(write.result));
   },
-  text: (output) => `Saved tag "${output.result.name}" (${output.result.id}).`,
 };

@@ -148,6 +148,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | A change refused by the Origin check gets `401 UNAUTHENTICATED`, with no code of its own | Either way the request lacks a session from this site, and §7.5's list stays short |
 | The OAuth endpoints are Better Auth's own paths, `/api/auth/oauth2/*` and `/api/auth/jwks` | Clients find them from the server's metadata, so a rewrite to other paths would be a route to maintain for nothing |
 | MCP is stateless Streamable HTTP across three protocol versions, with one summary tool, `get_financial_context`, of at most 8 KB | Clients migrate at different speeds; one dense call answers a question |
+| A tool result's text content is its `structuredContent` as compact JSON, errors included | MCP asks this of a tool with structured output, and Claude gives the model only the text: a short summary left it with counts and no figures |
 | `get_financial_context` says what each type of holding is once per type (`types`), not on every holding | The repeated pack text was about a quarter of each holding's bytes; more holdings fit in the 8 KB |
 | The snapshot's ETag is the data version with the version of each pack in its chain; the web app sends it back as it came | A content publish changes the snapshot (its `packRef`) without a write, so the data version alone would keep an old pack until the person's next write |
 | No charting library: d3 maths and our own SVG, with geometry shared with native | Three heavily specified chart kinds; one geometry for web and native |

@@ -44,5 +44,4 @@ export const updateValueTool: ToolDef<McpUpdateValueInput, McpUpdateValueOutput>
     trackWriteEvents(ctx, write.events);
     return writeToMcp(write, valueToMcp(write.result));
   },
-  text: (output) => `Updated the value of ${output.result.date} (${output.result.id}).`,
 };

@@ -37,5 +37,4 @@ export const deleteHoldingTool: ToolDef<McpDeleteHoldingInput, McpDeleteHoldingO
     trackWriteEvents(ctx, write.events);
     return writeToMcp(write, null);
   },
-  text: () => 'Deleted the holding.',
 };

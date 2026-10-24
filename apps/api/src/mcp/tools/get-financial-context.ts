@@ -49,6 +49,4 @@ export const getFinancialContextTool: ToolDef<
       input.baseline === undefined ? {} : { baseline: input.baseline },
     );
   },
-  text: (output) =>
-    `Context for ${output.picture.holdings} holdings as of ${output.as_of} (${output.currency}).`,
 };

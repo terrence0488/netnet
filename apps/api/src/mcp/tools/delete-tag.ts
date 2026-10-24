@@ -35,5 +35,4 @@ export const deleteTagTool: ToolDef<McpDeleteTagInput, McpDeleteTagOutput> = {
     trackWriteEvents(ctx, write.events);
     return writeToMcp(write, null);
   },
-  text: () => 'Deleted the tag.',
 };
