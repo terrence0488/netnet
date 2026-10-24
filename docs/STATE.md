@@ -4,8 +4,8 @@
 Stage: Build (P3)
 Phase: P3
 Status: in-progress
-Next action: the Founder rotates the probe token and deploys production while it is idle (below), then `stage: build P3-T10` for wave 9 (the production criterion), then `stage: test P3`.
-**Branches:** waves 7–8 are merged to `main` (#95–#103).
+Next action: `stage: build P3-T10` for wave 9 (the production criterion), then `stage: test P3`.
+**Branches:** waves 7–8 are merged to `main` (#95–#103) and deployed (deploy run #28).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -21,11 +21,11 @@ Next action: the Founder rotates the probe token and deploys production while it
 | P4 | not-started | | |
 
 ## Handoff note (last session)
-`stage: build P3` built and merged waves 7–8 (P3-T11 … T18, the zod audit patch); each brief
-holds its engineer's report, and the briefs' `Status:` lines are left to the Founder. Migrations
-0008–0010 deploy together. 0009 drops the undo columns, which is not expand-only: the Founder chose
-to drop now, so deploy while production is idle and fix forward rather than roll back. First
-revoke the probe connection, re-run `ops/probe.md`'s setup and delete the old run logs that show
-the token. Deploy before ~2026-11-14 (the reminder schedules), then dispatch Reminders once by hand.
-Open follow-ups are in the briefs' reports (T13 `ledger_state` key, T18 other logs). PR #88 is
-red; `claude/design-*` are unmerged; P2-T8 waits on F11.
+`stage: build P3` built, merged and deployed waves 7–8 (P3-T11 … T18, the zod audit patch);
+the Founder marked T11–T18 done. Migrations 0008–0010 are on production (0009's drop of the undo
+columns by the Founder's choice). The probe connection was revoked and set up again, and probe run
+#69 logged `***` for the token; the old run logs stay, by the Founder's choice (sole access).
+Reminders answered 200 by hand on production. T15's last box waits for the first scheduled
+Reminders run (01:00, 09:00, 17:00 UTC): wave 9 checks it with T10's production criterion. Open
+follow-ups are in the briefs' reports (T13 `ledger_state` key, T18 other logs). PR #88 is red;
+`claude/design-*` are unmerged; P2-T8 waits on F11.
