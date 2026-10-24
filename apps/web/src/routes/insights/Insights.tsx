@@ -3,20 +3,13 @@ import { PERIOD_VIEWS } from '@netnet/contracts';
 import { typeLabel } from '@netnet/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
 import { useMe } from '../../api/account';
 import { trackClient } from '../../api/events';
 import { useSnapshot } from '../../api/snapshot';
 import { Waiting } from '../../app/guards';
-import {
-  AssetsLiabilitiesChart,
-  ChartPlaceholder,
-  RangeBar,
-  formatSignedCompactMoney,
-} from '../../charts';
+import { AssetsLiabilitiesChart, ChartPlaceholder, RangeBar } from '../../charts';
 import { Card, ErrorState, todayIn, usePackChain } from '../../components';
 import { cx } from '../../components/cx';
-import { formatChangePct } from '../home/change';
 import { homeData, type HomeData } from '../home/home-data';
 import { DistributionChart } from './DistributionChart';
 import {
@@ -47,6 +40,7 @@ import {
 import { Pager } from './Pager';
 import { PeriodList } from './PeriodList';
 import { useInsightsPrefs } from './prefs';
+import { Summary } from './Summary';
 import styles from './Insights.module.css';
 
 /**
@@ -463,67 +457,5 @@ function LoadedInsights({
         />
       ) : null}
     </>
-  );
-}
-
-/**
- * The summary line (the prototype's stat sentence): the average change while there is history
- * to compare, else the one statement of what a comparison needs. When filters or exclusions
- * leave nothing, it says that instead, because more data would not help. Said once, never on
- * the charts.
- */
-function Summary({
-  filteredOut,
-  tracked,
-  noHistory,
-  noun,
-  plural,
-  summary,
-  currency,
-}: {
-  readonly filteredOut: boolean;
-  readonly tracked: number;
-  readonly noHistory: boolean;
-  readonly noun: string;
-  readonly plural: string;
-  readonly summary: {
-    readonly count: number;
-    readonly avgAbs: number;
-    readonly avgPct: number;
-  } | null;
-  readonly currency: string;
-}) {
-  if (filteredOut) {
-    return <p className={styles.summary}>Nothing matches these filters.</p>;
-  }
-  if (tracked === 0) {
-    return (
-      <p className={styles.summary}>
-        Nothing tracked yet. Add what you have on <Link to="/">Home</Link> to start.
-      </p>
-    );
-  }
-  if (noHistory || summary === null) {
-    return (
-      <p className={styles.summary}>
-        A {noun}-on-{noun} comparison needs two {plural} of values. It starts next {noun}, or now if
-        you add an earlier value.
-      </p>
-    );
-  }
-  return (
-    <p className={styles.summary}>
-      Averaging{' '}
-      <b
-        className={cx(
-          styles.figure,
-          summary.avgAbs > 0 ? styles.gain : summary.avgAbs < 0 ? styles.loss : undefined,
-        )}
-      >
-        {formatSignedCompactMoney(summary.avgAbs, currency)}
-      </b>{' '}
-      ({formatChangePct(summary.avgPct)}) a {noun} over the last {summary.count}{' '}
-      {summary.count === 1 ? noun : plural}.
-    </p>
   );
 }
