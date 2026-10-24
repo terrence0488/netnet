@@ -26,7 +26,7 @@ same). Verdict: **pass**, every P3 criterion; gates green (E2E 446 passed, 0 fai
 Chromium); every issue the last report raised holds fixed. Three Low issues are new (Activity's type
 keys, Insights' average percent, the sign-out after-response log) and one Info (a country move with
 no new type leaves no Activity entry). **Founder, in chat after reading the report:** route issues
-1–3 as small P3 tasks; issue 4 was not raised. **Open:** no Reminders `schedule` run had started by
-12:31 UTC (first slot 09:00); `ops/probe.md`'s Reminders row still waits for its first starts. This
-session's network refused `netnetapp.io`. PR #88 is red; `claude/design-*` are unmerged; P2-T8
-waits on F11. Follow-up: T13 `ledger_state` key.
+1–3 as small P3 tasks; issue 4 was not raised. **Reminders schedule, not blocking:** no `schedule` run
+had started by 12:31 UTC (first slot 09:00), and the Founder chose not to wait; a later session reads
+the first starts from Actions into `ops/probe.md`. This session's network refused `netnetapp.io`.
+PR #88 is red; `claude/design-*` are unmerged; P2-T8 waits on F11. Follow-up: T13 `ledger_state` key.
