@@ -4,8 +4,8 @@
 Stage: Build (P3)
 Phase: P3
 Status: in-progress
-Next action: `stage: build P3-T10` for wave 9 (the production criterion), then `stage: test P3`.
-**Branches:** waves 7–8 are merged to `main` (#95–#103) and deployed (deploy run #28).
+Next action: `stage: test P3` (fresh session).
+**Branches:** waves 7–8 are merged to `main` (#95–#103) and deployed (deploy run #28); wave 9's report is merged (#106).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -21,11 +21,13 @@ Next action: `stage: build P3-T10` for wave 9 (the production criterion), then `
 | P4 | not-started | | |
 
 ## Handoff note (last session)
-`stage: build P3` built, merged and deployed waves 7–8 (P3-T11 … T18, the zod audit patch);
-the Founder marked T11–T18 done. Migrations 0008–0010 are on production (0009's drop of the undo
-columns by the Founder's choice). The probe connection was revoked and set up again, and probe run
-#69 logged `***` for the token; the old run logs stay, by the Founder's choice (sole access).
-Reminders answered 200 by hand on production. T15's last box waits for the first scheduled
-Reminders run (01:00, 09:00, 17:00 UTC): wave 9 checks it with T10's production criterion. Open
-follow-ups are in the briefs' reports (T13 `ledger_state` key, T18 other logs). PR #88 is red;
-`claude/design-*` are unmerged; P2-T8 waits on F11.
+`stage: build P3-T10` ran wave 9 on `main`'s deployed code (deploy run #28): the full matrix green
+(E2E 446 passed / 6 skipped at both widths), the analytics audit holding with `value_corrected`,
+and production checked through Actions and the NetNet connector (`P3-T10.md`); T10 is done. This
+session's network refused `netnetapp.io`; `netnet-orcin.vercel.app` serves the same deployment.
+**Stage 6 checks the Reminders schedules:** none had fired yet (first slot 09:00 UTC, 2026-10-24)
+and the Founder chose not to wait. Confirm each slot (01:00, 09:00, 17:00 UTC) has a green
+`schedule` run and record the first starts in `ops/probe.md`. Nobody is due before 2026-11-14.
+Raised: architecture §7.10 and §9.3 say a run starts up to an hour late; here it is 2–6 hours
+(behaviour unaffected; the Founder's rewrite). Follow-ups: T13 `ledger_state` key, T18 other logs.
+PR #88 is red; `claude/design-*` are unmerged; P2-T8 waits on F11.
