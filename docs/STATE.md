@@ -22,12 +22,12 @@ Next action: the Founder merges wave 10 (#111–#113) and the production workflo
 
 ## Handoff note (last session)
 `stage: build P3` built wave 10; each brief holds its engineer's report, and the `Status:` lines
-are left to the Founder. **T19:** Activity names types by the current pack's label, and the screen
-reads value dates with `formatDate`. **T20:** the average's percent is the mean change over the
-opening total, and a ranged view counts its oldest period. **T21:** every failure log carries its
-error's class; the sign-out's failure was `sessionFromCookie` copying Better Auth's cookie-clearing
-headers onto a finalized response (P3-T13's lead), so a read after the response now never refreshes
-or writes. No migration. Follow-ups: one core helper could replace T19's two type-snapshot readers;
-the prototype's `renderInsights` still averages percents. After the deploy, P3-T10 reads the
-Reminders schedule's first starts into `ops/probe.md`. PR #88 is red; `claude/design-*` are
-unmerged; P2-T8 waits on F11. Follow-up: T13 `ledger_state` key.
+are left to the Founder. **T19:** Activity names types by the current pack's label, through one
+core helper the API and the screen share (`typeLabelOfSnapshot`), and the screen reads value dates
+with `formatDate`. **T20:** the average's percent is the mean change over the opening total, and a
+ranged view counts its oldest period. **T21:** every failure log carries its error's class; the
+sign-out's failure was `sessionFromCookie` copying Better Auth's cookie-clearing headers onto a
+finalized response (P3-T13's lead), so a read after the response now never refreshes or writes.
+No migration. After the deploy, P3-T10 reads the Reminders schedule's first starts into
+`ops/probe.md`. PR #88 is red; `claude/design-*` are unmerged; P2-T8 waits on F11. Follow-up: T13
+`ledger_state` key.
