@@ -550,7 +550,7 @@ holding is (its pack `meaning`) is given once per type in `types`, not on every 
       "meaning": "Mandatory retirement account. Counts toward net worth, never toward what can be spent this month." }
   ],
   "holdings": [
-    { "id": "hld_…", "name": "CPF Ordinary Account", "type": "CPF",
+    { "id": "hld_…", "name": "CPF Ordinary Account", "type": "CPF", "tags": [], "currency": "SGD",
       "access": "locked", "access_reason": "CPF is locked until you’re eligible to withdraw",
       "until": "until you’re eligible to withdraw",
       "value": { "amount": 117100.00, "currency": "SGD", "base": 117100.00, "as_of": "2026-08-04",
