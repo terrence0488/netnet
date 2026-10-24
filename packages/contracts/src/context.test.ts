@@ -15,6 +15,7 @@ const holding = {
   name: 'Workplace pension',
   type: 'Retirement account',
   tags: ['Joint'],
+  currency: 'SGD',
   access: 'locked',
   access_reason: 'a retirement account is locked',
   until: 'until you’re eligible to withdraw',
@@ -132,6 +133,18 @@ describe('financialContextSchema', () => {
       (d) => ({ ...d, holdings: Array.from({ length: 26 }, () => holding) }),
     ],
     ['an unknown access', (d) => ({ ...d, holdings: [{ ...holding, access: 'spendable' }] })],
+    [
+      'a holding currency in lower case',
+      (d) => ({ ...d, holdings: [{ ...holding, currency: 'sgd' }] }),
+    ],
+    [
+      'a holding with no currency',
+      (d) => {
+        const without = { ...holding } as Record<string, unknown>;
+        delete without.currency;
+        return { ...d, holdings: [without] };
+      },
+    ],
     [
       'a meaning on a holding instead of in types',
       (d) => ({ ...d, holdings: [{ ...holding, meaning: 'A retirement account.' }] }),

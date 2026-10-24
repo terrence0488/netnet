@@ -256,7 +256,7 @@ flowchart LR
 
 ### P3 — Trust, ownership, comeback and Insights
 
-Status: briefed. Briefs: `docs/phases/P3/tasks/P3-T1.md` … `P3-T18.md`.
+Status: briefed. Briefs: `docs/phases/P3/tasks/P3-T1.md` … `P3-T22.md`.
 
 #### Checkpoint
 
@@ -326,6 +326,7 @@ covers the new code), N11 (periods from a pure `core` function).
 | P3-T19 | Activity reads types by their labels, and dates as the screen does | — | yes | — |
 | P3-T20 | Insights — the average's percent agrees with its amount | — | yes | — |
 | P3-T21 | Failure logs name their cause, and a sign-out logs nothing | — | yes | — |
+| P3-T22 | The context gives each holding's currency | — | yes | — |
 
 T4's dependency on T3 is ordering only (both extend Settings); on T5 and T6 it is real (the
 tables `destroy()` clears). T7's dependency is ordering only: Insights is built last in the
@@ -346,6 +347,10 @@ a small task that touches nothing the others do. When all three are merged, the 
 workflow deploys again, P3-T10's production criterion is verified on it, and `stage: test P3`
 runs once more.
 
+T22 comes from a Founder report after P3's approval: `get_financial_context` gives no currency
+for a holding without a value. It touches nothing the others do. It merges and deploys on its
+own, with no re-test of P3.
+
 #### Order
 
 ```mermaid
@@ -361,6 +366,7 @@ flowchart LR
   T12 & T13[T13 deletion + export] & T14[T14 probe token] & T15[T15 reminder schedules] --> T10
   T16[T16 first period] & T17[T17 Home order + E2E] & T18[T18 the 500] --> T10
   T19[T19 Activity labels] & T20[T20 Insights average] & T21[T21 failure logs] --> T10
+  T22[T22 holding currency in the context]
 ```
 
 | Wave | Tasks |
@@ -375,6 +381,7 @@ flowchart LR
 | 8 | T12 |
 | 9 | T10's production criterion (deploy, then verify) |
 | 10 | T19, T20, T21, then T10's production criterion again |
+| 11 | T22, after P3's approval |
 
 #### Running the build
 
