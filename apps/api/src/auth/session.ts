@@ -1,5 +1,5 @@
 import type { Context } from 'hono';
-import type { AppEnv } from '../lib/context';
+import type { AppEnv, SessionUser } from '../lib/context';
 import { AppError } from '../lib/errors';
 import { isId } from '../lib/ids';
 import type { ResolveSession } from '../lib/session';
@@ -11,25 +11,48 @@ import { SESSION_COOKIE, type Auth } from './auth';
  * only other source (P1-T13).
  */
 
+/** What Better Auth's `getSession` answers, as far as a session is read here. */
+type SessionAnswer = {
+  user: { id: string; emailVerified: boolean };
+  session: { createdAt: Date };
+} | null;
+
+function userOf(answer: SessionAnswer): SessionUser | null {
+  if (!answer || !isId(answer.user.id, 'usr')) return null;
+  return {
+    userId: answer.user.id,
+    emailVerified: answer.user.emailVerified,
+    signedInAt: new Date(answer.session.createdAt),
+  };
+}
+
 /**
  * Reads the session cookie through Better Auth: the person, or null. A request without the cookie
  * never touches Better Auth or the database. When the session's end moves (once a day of use), the
  * refreshed cookie goes out with the response, so the browser's copy slides too.
+ *
+ * A read once the response is final (`touchCheckedOnSession` reads after it) could send no cookie,
+ * so it neither refreshes the session, whose new end the browser would never learn, nor writes to
+ * the response. The session the request carried may be gone by then, signed out by the request
+ * itself: that is null, like any other. The next read during a request refreshes it as usual.
  */
 export function sessionFromCookie(auth: () => Auth): ResolveSession {
   return async (c) => {
     if (!(c.req.header('Cookie') ?? '').includes(SESSION_COOKIE)) return null;
+    if (c.finalized) {
+      return userOf(
+        await auth().api.getSession({
+          headers: c.req.raw.headers,
+          query: { disableRefresh: true },
+        }),
+      );
+    }
     const { headers, response } = await auth().api.getSession({
       headers: c.req.raw.headers,
       returnHeaders: true,
     });
     for (const cookie of headers.getSetCookie()) c.header('Set-Cookie', cookie, { append: true });
-    if (!response || !isId(response.user.id, 'usr')) return null;
-    return {
-      userId: response.user.id,
-      emailVerified: response.user.emailVerified,
-      signedInAt: new Date(response.session.createdAt),
-    };
+    return userOf(response);
   };
 }
 

@@ -12,8 +12,11 @@ export interface TouchCheckedDeps {
 /**
  * `touchChecked` for the web (architecture §7.10): after any session-authenticated `/api/*`
  * request answers, the person's clock restarts from their today. It runs after the response, so
- * it adds no latency, and writes at most once per person per day. The reminder's own signed-link
- * routes are excluded: their tokens carry no session and do not count.
+ * it adds no latency, and writes at most once per person per day. It counts a request whose
+ * session is still there after the response, which a sign-out's is not; when the route did not
+ * read the session, this read neither refreshes it nor writes to the response (`sessionFromCookie`).
+ * The reminder's own signed-link routes are excluded: their tokens carry no session and do not
+ * count.
  */
 export function touchCheckedOnSession(
   deps: TouchCheckedDeps = { db: database, clock: () => new Date() },
