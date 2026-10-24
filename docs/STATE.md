@@ -27,4 +27,5 @@ and the two Info (two types read "Loan" after SG→GB; a carried zero month read
 and "$0" on the holding chart), none routed yet. The Reminders 17:00 and 01:00 slots had not
 started by 19:05 UTC; record their first starts in `ops/probe.md` when they land. The Founder's
 manual checks are in the test report. PR #88 is red; `claude/design-*` are unmerged; P2-T8
-waits on F11. Follow-up: T13 `ledger_state` key.
+waits on F11. Follow-up: T13 `ledger_state` key. Founder-reported bug fixed on `mcp-text-figures`:
+tool text is now the JSON of `structuredContent` (Claude saw counts, no figures); §7.4 rewritten.

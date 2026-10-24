@@ -36,5 +36,4 @@ export const getHoldingTool: ToolDef<McpGetHoldingInput, McpGetHoldingOutput> = 
       },
     };
   },
-  text: (output) => `Holding "${output.name}" with ${output.values.items.length} values shown.`,
 };

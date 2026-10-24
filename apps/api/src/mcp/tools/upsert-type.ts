@@ -40,5 +40,4 @@ export const upsertTypeTool: ToolDef<McpUpsertTypeInput, McpUpsertTypeOutput> = 
     const chain = await ctx.options.content.chain();
     return writeToMcp(write, userTypeToMcp(write.result, chain));
   },
-  text: (output) => `Saved type "${output.result.label}" (${output.result.id}).`,
 };

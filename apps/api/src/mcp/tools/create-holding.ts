@@ -57,5 +57,4 @@ export const createHoldingTool: ToolDef<McpCreateHoldingInput, McpCreateHoldingO
     trackWriteEvents(ctx, write.events);
     return writeToMcp(write, holdingToMcp(write.result));
   },
-  text: (output) => `Created holding "${output.result.name}" (${output.result.id}).`,
 };

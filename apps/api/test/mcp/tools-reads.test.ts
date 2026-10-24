@@ -285,7 +285,6 @@ describe('get_period_changes', () => {
       view: 'monthly',
     });
     const table = okOf<McpGetPeriodChangesOutput>(result);
-    expect(result.content[0]?.text).toBe('3 monthly periods in EUR.');
     expect(table.currency).toBe('EUR');
     expect(table.view).toBe('monthly');
     expect(table.periods.map((p) => [p.start, p.end])).toEqual([

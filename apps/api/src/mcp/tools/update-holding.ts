@@ -47,5 +47,4 @@ export const updateHoldingTool: ToolDef<McpUpdateHoldingInput, McpUpdateHoldingO
     trackWriteEvents(ctx, write.events);
     return writeToMcp(write, holdingToMcp(write.result));
   },
-  text: (output) => `Updated holding "${output.result.name}" (${output.result.id}).`,
 };

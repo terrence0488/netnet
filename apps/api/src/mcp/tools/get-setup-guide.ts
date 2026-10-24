@@ -51,9 +51,6 @@ export const getSetupGuideTool: ToolDef<McpGetSetupGuideInput, McpGetSetupGuideO
       other_question: otherQuestionOf(chain),
     };
   },
-  text: (output) =>
-    `Setup guide for ${output.country ?? 'no country (generic)'}: ` +
-    `${output.checklist.length} checklist items, ${output.questions.length} questions.`,
 };
 
 interface ChecklistItem {
