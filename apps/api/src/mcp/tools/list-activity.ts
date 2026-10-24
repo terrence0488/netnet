@@ -32,7 +32,4 @@ export const listActivityTool: ToolDef<McpListActivityInput, McpListActivityOutp
     const page = await ctx.ledger(ctx.userId, ctx.actor, (l) => l.activity(query));
     return { entries: page.items.map(auditEntryToMcp), next_cursor: page.nextCursor };
   },
-  text: (output) =>
-    `${output.entries.length} ${output.entries.length === 1 ? 'entry' : 'entries'}` +
-    `${output.next_cursor === null ? '' : ' (more pages follow)'}.`,
 };

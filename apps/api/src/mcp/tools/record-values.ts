@@ -50,6 +50,4 @@ export const recordValuesTool: ToolDef<McpRecordValuesInput, McpRecordValuesOutp
       warnings: write.warnings.map(warningToMcp),
     };
   },
-  text: (output) =>
-    `Recorded ${output.results.length} value${output.results.length === 1 ? '' : 's'}.`,
 };

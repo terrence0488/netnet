@@ -46,6 +46,4 @@ export interface ToolDef<In = unknown, Out = unknown> {
   outputSchema: McpSchema<Out>;
   renames: Record<string, string>;
   run(ctx: ToolCtx, input: In): Promise<Out>;
-  /** The short text rendering beside `structuredContent`: counts and names, never amounts. */
-  text(output: Out): string;
 }

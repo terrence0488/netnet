@@ -471,8 +471,9 @@ The isolation suite (§8) attacks `withUser` and the RLS policies directly.
 **Transport and protocol.** Streamable HTTP at `/mcp`, stateless. Every request is authenticated
 and served on its own, on any function instance. Protocol versions **2026-07-28, 2025-11-25,
 2025-06-18**. Tools declare `inputSchema`, `outputSchema` and annotations (`readOnlyHint`,
-`destructiveHint`, `idempotentHint`, `openWorldHint: false`), and return `structuredContent` plus
-a short text rendering. Names and parameters are `snake_case`. Amounts are decimals in major units
+`destructiveHint`, `idempotentHint`, `openWorldHint: false`), and return `structuredContent` with
+the same object as compact JSON in the text content, errors included: some clients (Claude) give
+the model only the text. Names and parameters are `snake_case`. Amounts are decimals in major units
 with their currency. Every list is paged. **Server instructions** (a few lines): call
 `get_financial_context` first for any question about the user's position; NetNet states facts and
 uncertainty, and advice is yours; look for an existing holding before creating one; for a setup
@@ -850,7 +851,7 @@ The agent's name is HTML-escaped and at most 40 characters. A DCR client's name 
 | Data at rest | Neon encrypts storage at rest; TLS to the database. No field-level encryption in v1 (§12) |
 | Privacy in pipelines (N9) | Typed `track()`, whitelisted `log()`, Sentry scrubbing; messages are built from typed parameters and carry no amount, total, or holding, type or tag name (§7.10) |
 | Untrusted agent names | An agent's registered name is third-party text. Events never carry it (§7.7); the reminder uses it only when short and plain; the security email escapes it and says when NetNet cannot verify it (§7.10) |
-| Prompt injection | Holding and tag names are user text returned to agents, always as JSON string values in `structuredContent`; tool descriptions never interpolate user data |
+| Prompt injection | Holding and tag names are user text returned to agents, always as JSON string values, in `structuredContent` and its JSON text copy; tool descriptions never interpolate user data |
 | Deletion (J10) | `DELETE /api/account` deletes the user's `ledger` rows, identity, sessions, OAuth grants (revoking every connection), notification endpoints and reminder state, so every reminder stops at once, and re-keys events. **Stated window: 30 days**, the life of our daily backups (Neon's own history is 6 hours). Shown before the user confirms |
 | Content admin (future) | `netnet_content_admin` role, no access to `ledger`, `analytics` or identity |
 | Dependencies | Lockfile, Renovate weekly, `pnpm audit` in CI; no analytics or tracking SDKs |

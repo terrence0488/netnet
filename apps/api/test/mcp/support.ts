@@ -574,10 +574,20 @@ export async function callTool(
   return (body as { result: ToolResult }).result;
 }
 
+/**
+ * Checks the text content is the `structuredContent` as JSON: a client that gives the model only
+ * the text (Claude) must still see every figure.
+ */
+function expectTextIsStructured(result: ToolResult): void {
+  expect(result.content).toHaveLength(1);
+  expect(result.content[0]?.type).toBe('text');
+  expect(JSON.parse(result.content[0]?.text ?? '')).toStrictEqual(result.structuredContent);
+}
+
 /** The successful result's `structuredContent`, after checking `isError` is unset. */
 export function okOf<T>(result: ToolResult): T {
   expect(result.isError ?? false).toBe(false);
-  expect(result.content).toHaveLength(1);
+  expectTextIsStructured(result);
   return result.structuredContent as T;
 }
 
@@ -587,6 +597,7 @@ export function errOf(
   code: string,
 ): { message: string; fields?: Record<string, string> } & Record<string, unknown> {
   expect(result.isError).toBe(true);
+  expectTextIsStructured(result);
   const error = (
     result.structuredContent as {
       error: { code: string; message: string; fields?: Record<string, string> };

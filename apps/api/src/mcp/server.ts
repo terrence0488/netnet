@@ -39,6 +39,15 @@ export const SERVER_INSTRUCTIONS =
 const byName = new Map<string, ToolDef>(TOOL_REGISTRY.map((tool) => [tool.name, tool]));
 
 /**
+ * A result's text content: its `structuredContent` as compact JSON, as MCP asks of a tool with
+ * structured output. Some clients (Claude) give the model only the text, so it must hold every
+ * figure, and names stay JSON string values (architecture §8).
+ */
+function asText(structured: object): CallToolResult['content'] {
+  return [{ type: 'text', text: JSON.stringify(structured) }];
+}
+
+/**
  * One `tools/call`: the scope, the parsed arguments, the tool, and the checked output — or the
  * failure it answers with. Never throws: anything unexpected is INTERNAL with the request id.
  * After it runs: `agent_tool_called`, and on success the connection's touch and `live`.
@@ -64,14 +73,14 @@ export async function callTool(
       );
     }
     return {
-      content: [{ type: 'text', text: tool.text(output) }],
+      content: asText(output as object),
       structuredContent: output as Record<string, unknown>,
     };
   } catch (error) {
     const failed = toMcpError(error, tool.renames, ctx.requestId, tool.name);
     outcome = failed.code;
     return {
-      content: [{ type: 'text', text: failed.body.error.message }],
+      content: asText(failed.body),
       isError: true,
       structuredContent: failed.body,
     };

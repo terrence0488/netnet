@@ -14,7 +14,7 @@ Next action: `stage: build P3-T22` (each holding's currency in the context), the
 | Discovery | **approved** | 2026-09-23 | `docs/00-discovery.md` |
 | PRD | **approved** | 2026-10-22 | `docs/01-prd.md` (J7, N3, M5 rewritten at P3 triage: no undo; Founder approved in chat) |
 | Prototype | **approved** | 2026-09-27 | `docs/02-prototype/`, design system "Poster" |
-| Architecture | **approved** | 2026-10-24 | `docs/03-architecture.md`, `CONVENTIONS.md` (re-approved at P3 triage: no undo, given rates kept, the first period's change, every schedule on GitHub Actions, error class in logs; after wave 9: the schedules' real lateness, §7.10 and §9.3; after P3: each holding's currency in §7.5) |
+| Architecture | **approved** | 2026-10-24 | `docs/03-architecture.md`, `CONVENTIONS.md` (re-approved at P3 triage: no undo, given rates kept, the first period's change, every schedule on GitHub Actions, error class in logs; after wave 9: the schedules' real lateness, §7.10 and §9.3; after P3: each tool result's JSON as its text (§7.4), each holding's currency (§7.5)) |
 | Plan | **approved** | 2026-10-23 | `docs/04-plan.md`, `docs/phases/P1/tasks/`, `docs/phases/P2/tasks/`, `docs/phases/P3/tasks/` (P3-T11 … P3-T18 added at triage, P3-T22 after P3's approval) |
 | P1 | **approved** | 2026-10-08 | Test report reviewed; Claude computer shots shipped (#61) |
 | P2 | **approved** | 2026-10-12 | Test report + hands-on; Account and date review fixups in (#76) |
@@ -28,4 +28,5 @@ and the two Info (two types read "Loan" after SG→GB; a carried zero month read
 and "$0" on the holding chart), none routed yet. The Reminders 17:00 and 01:00 slots had not
 started by 19:05 UTC; record their first starts in `ops/probe.md` when they land. The Founder's
 manual checks are in the test report. PR #88 is red; `claude/design-*` are unmerged; P2-T8
-waits on F11. Follow-up: T13 `ledger_state` key.
+waits on F11. Follow-up: T13 `ledger_state` key. Founder-reported bug fixed on `mcp-text-figures`:
+tool text is now the JSON of `structuredContent` (Claude saw counts, no figures); §7.4 rewritten.

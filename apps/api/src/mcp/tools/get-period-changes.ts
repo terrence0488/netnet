@@ -50,5 +50,4 @@ export const getPeriodChangesTool: ToolDef<McpGetPeriodChangesInput, McpGetPerio
       })),
     };
   },
-  text: (output) => `${output.periods.length} ${output.view} periods in ${output.currency}.`,
 };
