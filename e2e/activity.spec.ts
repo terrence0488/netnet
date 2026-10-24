@@ -1,15 +1,26 @@
 /// <reference lib="dom" />
+import { UNIVERSALS, type Pack, type Universal } from '@netnet/contracts';
 import { expect, test, type Page } from '@playwright/test';
-import { expectSoundScreen, recordProblems } from './accounts';
+import { readFileSync } from 'node:fs';
+import {
+  arriveAs,
+  expectSoundScreen,
+  newPerson,
+  onlyAgainstTheLocalApp,
+  recordProblems,
+  signedUp,
+} from './accounts';
 import { EMPTY_SNAPSHOT, mockConnections, mockPacks, SIGNED_IN, snapshotEtag } from './support';
 
 /**
  * The Activity screen (PRD J7), at 390 and 1280px: the log newest first grouped by agent turn,
  * each entry with old → new, who did it and when; a record only, with no Undo and nothing that
- * changes data; a former undo entry read as the change it made; the empty state; cursor paging
- * with limit ≤ 100; axe; the events (none of its own). All data is fictional.
+ * changes data; a former undo entry read as the change it made; types by their labels in the
+ * person's pack chain, and a value's date as the screen's other dates; the empty state; cursor
+ * paging with limit ≤ 100; axe; the events (none of its own). All data is fictional. Labels are
+ * read from the packs, never written here.
  */
-test.use({ timezoneId: 'UTC' });
+test.use({ timezoneId: 'UTC', locale: 'en-US' });
 
 const money = (amountMinor: number, currency = 'SGD') => ({ amountMinor, currency });
 
@@ -80,6 +91,22 @@ const REVOCATION = entry({
 interface ActivityScript {
   /** Pages of the log; the handler serves the next once the screen passes its cursor. */
   pages: Record<string, unknown>[][];
+  /** The snapshot's pack chain: generic alone unless given. */
+  packRef?: { key: string; version: number }[];
+}
+
+/** A pack as `content/packs` holds it, as `mockPacks` serves it. */
+function packFile(key: string): Pack {
+  return JSON.parse(
+    readFileSync(new URL(`../content/packs/${key}.json`, import.meta.url), 'utf8'),
+  ) as Pack;
+}
+
+/** A universal type's label in a chain: the first pack that labels it. */
+function labelIn(chain: readonly Pack[], u: Universal): string {
+  const label = chain.map((pack) => pack.labels[u]).find((found) => found !== undefined);
+  if (label === undefined) throw new Error(`The chain has no label for ${u}.`);
+  return label;
 }
 
 /**
@@ -106,10 +133,11 @@ async function asActivity(page: Page, script: ActivityScript) {
     events.push((route.request().postDataJSON() as { name: string }).name);
     return route.fulfill({ status: 204 });
   });
+  const packRef = script.packRef ?? [{ key: 'generic', version: 1 }];
   await page.route('**/api/snapshot', (route) =>
     route.fulfill({
-      json: { ...EMPTY_SNAPSHOT, dataVersion: 1 },
-      headers: { ETag: snapshotEtag(1, [{ key: 'generic', version: 1 }]) },
+      json: { ...EMPTY_SNAPSHOT, dataVersion: 1, packRef },
+      headers: { ETag: snapshotEtag(1, packRef) },
     }),
   );
   await page.route('**/api/content/current', (route) => route.fulfill({ json: {} }));
@@ -149,7 +177,7 @@ test('the log newest first, grouped by turn, with old → new, who and when', as
   await expect(page.getByRole('heading', { level: 2, name: 'Claude' })).toBeVisible();
   await expect(page.getByText('2 changes at once')).toBeVisible();
   const body = await page.locator('main').innerText();
-  expect(body.indexOf('Updated the value for 2026-10-11')).toBeLessThan(
+  expect(body.indexOf('Updated the value for Oct 11, 2026')).toBeLessThan(
     body.indexOf('Added “Brokerage account”'),
   );
   expect(body.indexOf('Added “Brokerage account”')).toBeLessThan(body.indexOf('Added “Cash”'));
@@ -194,7 +222,7 @@ test('a former undo entry reads as the change it made, old → new', async ({ pa
   const problems = recordProblems(page);
   await page.goto('/app/activity');
 
-  const rows = page.locator('main').getByText('Updated the value for 2026-10-11');
+  const rows = page.locator('main').getByText('Updated the value for Oct 11, 2026');
   await expect(rows).toHaveCount(2);
   const body = await page.locator('main').innerText();
   // Newest first: the change it made, 67,500 → 50,000, above the turn it followed.
@@ -205,6 +233,71 @@ test('a former undo entry reads as the change it made, old → new', async ({ pa
   expect(body).not.toMatch(/undo/i);
   await expect(page.getByRole('button', { name: /undo/i })).toHaveCount(0);
   expect(state.writes).toStrictEqual([]);
+  expect(problems).toStrictEqual([]);
+});
+
+test('types read by their labels in the chain, and a value’s date as the other dates', async ({
+  page,
+}, testInfo) => {
+  const country = packFile('sg');
+  const chain = [country, packFile('generic')];
+  const packType = country.types[0];
+  if (!packType) throw new Error('The country pack has no type of its own.');
+  const typeSide = (over: Record<string, unknown>) => ({
+    id: 'typ_1',
+    universal: packType.u,
+    packTypeKey: packType.key,
+    customName: null,
+    sort: 12,
+    archived: false,
+    ...over,
+  });
+  const packTypeRename = entry({
+    id: 'aud_7',
+    at: '2026-10-12T15:00:00.000Z',
+    entity: 'type',
+    entityId: 'typ_1',
+    before: typeSide({}),
+    after: typeSide({ customName: 'My car' }),
+    summary: 'Renamed type to "My car"',
+  });
+  const plainRename = entry({
+    id: 'aud_6',
+    at: '2026-10-12T14:30:00.000Z',
+    entity: 'type',
+    entityId: 'typ_2',
+    before: typeSide({ id: 'typ_2', universal: 'listed', packTypeKey: null }),
+    after: typeSide({ id: 'typ_2', universal: 'listed', packTypeKey: null, customName: 'Shares' }),
+    summary: 'Renamed type to "Shares"',
+  });
+  const recorded = entry({
+    id: 'aud_5',
+    at: '2026-10-12T14:00:00.000Z',
+    action: 'create',
+    after: { ...money(120_000), date: '2026-05-20' },
+    summary: 'Recorded a value for 2026-05-20',
+  });
+  await asActivity(page, {
+    pages: [[packTypeRename, plainRename, recorded]],
+    packRef: [
+      { key: country.id, version: 1 },
+      { key: 'generic', version: 1 },
+    ],
+  });
+  const problems = recordProblems(page);
+  await page.goto('/app/activity');
+
+  // Both sides of a rename by the chain's labels, as every other screen names the type.
+  await expect(page.getByText('Renamed type to "My car"')).toBeVisible();
+  await expect(page.getByText(`“${packType.label}” → “My car”`)).toBeVisible();
+  await expect(page.getByText(`“${labelIn(chain, 'listed')}” → “Shares”`)).toBeVisible();
+  // The value's date as the screen's other dates read, never as the agent's YYYY-MM-DD.
+  await expect(page.getByText('Recorded a value for May 20, 2026')).toBeVisible();
+  const body = await page.locator('main').innerText();
+  expect(body).not.toContain('2026-05-20');
+  expect(body).not.toContain(packType.key);
+  expect(body).not.toContain('“listed”');
+  await expectSoundScreen(page, testInfo);
   expect(problems).toStrictEqual([]);
 });
 
@@ -219,4 +312,103 @@ test('the empty log says so, with the way back', async ({ page }, testInfo) => {
   await page.getByRole('link', { name: 'Back to Home' }).click();
   await expect(page).toHaveURL(/\/app\/?$/);
   expect(problems).toStrictEqual([]);
+});
+
+/**
+ * Against the built app and its database: a new account's log names every type by its label in
+ * the live packs, and after a country move older entries read with the new chain's labels.
+ */
+test.describe('a real account’s log', () => {
+  onlyAgainstTheLocalApp();
+
+  /** The live version of a pack, as the server reads it. */
+  async function livePack(page: Page, key: string): Promise<Pack> {
+    const current = (await (await page.request.get('/api/content/current')).json()) as Record<
+      string,
+      Record<string, number>
+    >;
+    const version = current['pack']?.[key];
+    expect(version, `a live ${key} pack`).toBeDefined();
+    return (await (await page.request.get(`/api/content/pack/${key}@${version}`)).json()) as Pack;
+  }
+
+  /** The type entries the screen shows, sorted. */
+  async function typeEntries(page: Page): Promise<string[]> {
+    await page.goto('/app/activity');
+    await expect(page.getByRole('heading', { level: 1, name: 'Activity' })).toBeVisible();
+    await expect(page.getByText(/^Added type /).first()).toBeVisible();
+    const lines = (await page.locator('main').innerText()).split('\n');
+    return lines.filter((line) => /^(Added|Removed|Renamed) type/.test(line)).sort();
+  }
+
+  test('names each type by its label, and follows a move to another country', async ({
+    page,
+  }, testInfo) => {
+    const person = newPerson(testInfo);
+    await arriveAs(page, person, 'SG');
+    await signedUp(page, person, { country: 'SG', onboardingState: 'done' });
+    const problems = recordProblems(page);
+    const generic = await livePack(page, 'generic');
+    const sg = await livePack(page, 'sg');
+    const gb = await livePack(page, 'gb');
+    const keys = [...UNIVERSALS, ...sg.types.map((t) => t.key), ...gb.types.map((t) => t.key)];
+    const showsNoKey = (entries: string[]) => {
+      for (const line of entries) {
+        expect(
+          keys.some((key) => line.includes(`"${key}"`)),
+          line,
+        ).toBe(false);
+      }
+    };
+    const added = (label: string) => `Added type "${label}"`;
+
+    // A type the person makes, and a holding with a value, so the move adds types beside theirs.
+    const headers = { 'x-forwarded-for': person.ip };
+    const made = await page.request.post('/api/types', {
+      headers,
+      data: { name: 'Art', universal: 'other' },
+    });
+    expect(made.status(), 'POST /api/types').toBe(200);
+    const holding = await page.request.post('/api/holdings', {
+      headers,
+      data: {
+        name: 'Wallet',
+        kind: 'asset',
+        universal: 'cash',
+        currency: 'SGD',
+        opening: { amount: '100', date: '2026-05-20' },
+        via: 'form',
+      },
+    });
+    expect(holding.status(), 'POST /api/holdings').toBe(200);
+
+    const sgChain = [sg, generic];
+    const before = await typeEntries(page);
+    expect(before).toStrictEqual(
+      [
+        ...UNIVERSALS.map((u) => added(labelIn(sgChain, u))),
+        ...sg.types.map((t) => added(t.label)),
+        added('Art'),
+      ].sort(),
+    );
+    showsNoKey(before);
+    await expect(page.getByText('Recorded a value for May 20, 2026')).toBeVisible();
+
+    // The move: the new pack's types are added, and every entry reads with the new chain.
+    const moved = await page.request.patch('/api/me', { headers, data: { country: 'GB' } });
+    expect(moved.status(), 'PATCH /api/me').toBe(200);
+    const gbChain = [gb, generic];
+    const after = await typeEntries(page);
+    expect(after).toStrictEqual(
+      [
+        ...UNIVERSALS.map((u) => added(labelIn(gbChain, u))),
+        // The first country's own types: the new chain has no such key, so their universal type.
+        ...sg.types.map((t) => added(labelIn(gbChain, t.u))),
+        added('Art'),
+        ...gb.types.map((t) => added(t.label)),
+      ].sort(),
+    );
+    showsNoKey(after);
+    expect(problems).toStrictEqual([]);
+  });
 });

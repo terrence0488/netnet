@@ -31,7 +31,7 @@ export {
 } from './duplicates';
 export { filterHoldings } from './filter';
 export { MAX_MINOR, convert, deltaMinor, fromMinor, minorRate, toMinor } from './money';
-export { chainValue, packChain, typeLabel } from './pack-chain';
+export { chainValue, packChain, typeLabel, typeLabelOfSnapshot } from './pack-chain';
 export { compareValues, latestValues, position } from './position';
 export { periods } from './periods';
 export { summarisePeriods, type PeriodSummary } from './period-summary';

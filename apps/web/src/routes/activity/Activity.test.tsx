@@ -1,4 +1,11 @@
-import type { AuditEntry, Page, ProfileView } from '@netnet/contracts';
+import {
+  UNIVERSALS,
+  type AuditEntry,
+  type Page,
+  type ProfileView,
+  type Snapshot,
+  type VersionedPack,
+} from '@netnet/contracts';
 import { QueryClient } from '@tanstack/react-query';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createMemoryRouter } from 'react-router';
@@ -6,7 +13,10 @@ import { describe, expect, it } from 'vitest';
 import { App } from '../../App';
 import { ME_KEY } from '../../api/account';
 import { ACTIVITY_KEY } from '../../api/activity';
+import { snapshotKey } from '../../api/snapshot';
 import { BASENAME, routes } from '../../app/routes';
+import { formatDate } from '../../components/dates';
+import { packDocQuery } from '../../components/packs';
 
 const PERSON: ProfileView = {
   email: 'avery@example.com',
@@ -16,6 +26,51 @@ const PERSON: ProfileView = {
   segment: 'accumulating',
   timeZone: 'UTC',
   onboardingState: 'done',
+};
+
+const EMPTY_PACK = {
+  examples: {},
+  meaning: {},
+  cadenceDays: {},
+  defaults: {},
+  questions: {},
+  checklist: [],
+};
+
+/**
+ * The person's fictional chain: an imaginary country that adds the pack type `auto_loan`, then
+ * generic, which labels every universal type "Label <universal>".
+ */
+const CHAIN: VersionedPack[] = [
+  {
+    ...EMPTY_PACK,
+    id: 'qz',
+    version: 2,
+    locale: 'en-GB',
+    currency: 'EUR',
+    labels: {},
+    types: [{ key: 'auto_loan', u: 'loan', label: 'Auto loan' }],
+  },
+  {
+    ...EMPTY_PACK,
+    id: 'generic',
+    version: 1,
+    locale: null,
+    currency: null,
+    labels: Object.fromEntries(UNIVERSALS.map((u) => [u, `Label ${u}`])),
+    types: [],
+  },
+];
+
+const SNAPSHOT: Snapshot = {
+  dataVersion: 1,
+  baseCurrency: 'SGD',
+  packRef: CHAIN.map((pack) => ({ key: pack.id, version: pack.version })),
+  prefs: {},
+  types: [],
+  tags: [],
+  holdings: [],
+  values: {},
 };
 
 let made = 0;
@@ -39,10 +94,15 @@ function entry(over: Partial<AuditEntry> = {}): AuditEntry {
   };
 }
 
-/** Renders the Activity screen with the person signed in and the log's pages already known. */
+/**
+ * Renders the Activity screen with the person signed in, and their snapshot, pack chain and the
+ * log's pages already known.
+ */
 function render(pages: Page<AuditEntry>[]): string {
   const client = new QueryClient();
   client.setQueryData(ME_KEY, PERSON);
+  client.setQueryData(snapshotKey(null), SNAPSHOT);
+  for (const pack of CHAIN) client.setQueryData(packDocQuery(pack.id, pack.version).queryKey, pack);
   client.setQueryData(ACTIVITY_KEY, {
     pages,
     pageParams: pages.map(() => undefined),
@@ -77,8 +137,8 @@ describe('the Activity screen', () => {
       { items: [...TURN, entry({ id: 'aud_web', summary: 'Added “Cash”' })], nextCursor: null },
     ]);
     expect(markup).toContain('Activity');
-    expect(markup.indexOf('Recorded a value for 2026-10-12')).toBeLessThan(
-      markup.indexOf('Updated the value for 2026-10-11'),
+    expect(markup.indexOf(`Recorded a value for ${formatDate('2026-10-12')}`)).toBeLessThan(
+      markup.indexOf(`Updated the value for ${formatDate('2026-10-11')}`),
     );
     expect(markup).toContain('Claude');
     expect(markup).toContain('2 changes at once');
@@ -178,8 +238,66 @@ describe('the Activity screen', () => {
     expect(markup).toContain('NetNet');
     expect(markup).not.toContain('changes at once');
     expect(markup).toContain('Changed the default currency USD → SGD');
-    expect(markup).toContain('Updated the value for 2026-09-30');
+    expect(markup).toContain(`Updated the value for ${formatDate('2026-09-30')}`);
     expect(markup).toMatch(/23,700\S* → \S*23,700 SGD/);
+  });
+
+  it('reads a value’s date as the screen’s other dates, never as the agent’s YYYY-MM-DD', () => {
+    const markup = render([
+      {
+        items: [
+          entry({
+            id: 'aud_value',
+            action: 'create',
+            before: null,
+            after: { amountMinor: 120_000, currency: 'SGD', date: '2026-05-20' },
+            summary: 'Recorded a value for 2026-05-20',
+          }),
+        ],
+        nextCursor: null,
+      },
+    ]);
+    expect(markup).toContain(`Recorded a value for ${formatDate('2026-05-20')}`);
+    expect(markup).not.toContain('2026-05-20');
+  });
+
+  it('names a renamed type by its label in the chain, both sides', () => {
+    const side = (packTypeKey: string | null, customName: string | null) => ({
+      id: 'typ_1',
+      universal: 'loan',
+      packTypeKey,
+      customName,
+      sort: 12,
+      archived: false,
+    });
+    const markup = render([
+      {
+        items: [
+          entry({
+            id: 'aud_pack_type',
+            entity: 'type',
+            entityId: 'typ_1',
+            before: side('auto_loan', null),
+            after: side('auto_loan', 'My car'),
+            summary: 'Renamed type to "My car"',
+          }),
+          entry({
+            id: 'aud_plain_type',
+            entity: 'type',
+            entityId: 'typ_2',
+            before: { ...side(null, null), id: 'typ_2', universal: 'listed' },
+            after: { ...side(null, 'Shares'), id: 'typ_2', universal: 'listed' },
+            summary: 'Renamed type to "Shares"',
+          }),
+        ],
+        nextCursor: null,
+      },
+    ]);
+    expect(markup).toContain('Renamed type to &quot;My car&quot;');
+    expect(markup).toContain('“Auto loan” → “My car”');
+    expect(markup).toContain('“Label listed” → “Shares”');
+    expect(markup).not.toContain('auto_loan');
+    expect(markup).not.toMatch(/“listed”/);
   });
 
   it('leaves a lone turn entry without a turn header', () => {
@@ -187,7 +305,7 @@ describe('the Activity screen', () => {
       { items: [entry({ id: 'aud_1', batchId: 'bat_1' })], nextCursor: null },
     ]);
     expect(markup).not.toContain('changes at once');
-    expect(markup).toContain('Updated the value for 2026-10-12');
+    expect(markup).toContain(`Updated the value for ${formatDate('2026-10-12')}`);
   });
 
   it('escapes the name the agent wrote under', () => {

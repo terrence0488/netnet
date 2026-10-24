@@ -1,4 +1,6 @@
-import type { AuditEntry } from '@netnet/contracts';
+import type { AuditEntry, Pack } from '@netnet/contracts';
+import { typeLabelOfSnapshot } from '@netnet/core';
+import { formatDate } from '../../components/dates';
 import { formatMoney } from '../../components/money';
 
 /**
@@ -72,11 +74,6 @@ function moneyOf(side: unknown): MoneySide | undefined {
     : undefined;
 }
 
-/** A type's label as the log reads it: its own name, else the pack's, else the universal. */
-function typeLabelOf(side: unknown): string | undefined {
-  return textOf(side, 'customName') ?? textOf(side, 'packTypeKey') ?? textOf(side, 'universal');
-}
-
 function valueChange(entry: AuditEntry): string | null {
   const before = entry.before === null ? undefined : moneyOf(entry.before);
   const after = entry.after === null ? undefined : moneyOf(entry.after);
@@ -123,10 +120,11 @@ function ledgerChange(entry: AuditEntry): string | null {
 
 /**
  * The old → new beneath an entry's summary, or null when the summary already says it (a creation,
- * a deletion, a revocation). Sides that are not shaped as expected read as no detail rather than
- * a guess.
+ * a deletion, a revocation). A type reads by its label in `chain`, the person's pack chain, as
+ * the summary names it. Sides that are not shaped as expected read as no detail rather than a
+ * guess.
  */
-export function describeChange(entry: AuditEntry): string | null {
+export function describeChange(entry: AuditEntry, chain: readonly Pack[]): string | null {
   switch (entry.entity) {
     case 'value':
       return valueChange(entry);
@@ -138,7 +136,10 @@ export function describeChange(entry: AuditEntry): string | null {
         : null;
     case 'type':
       return entry.action === 'update'
-        ? renamedChange(typeLabelOf(entry.before), typeLabelOf(entry.after))
+        ? renamedChange(
+            typeLabelOfSnapshot(chain, entry.before),
+            typeLabelOfSnapshot(chain, entry.after),
+          )
         : null;
     case 'tag':
       return entry.action === 'update'
@@ -149,6 +150,27 @@ export function describeChange(entry: AuditEntry): string | null {
     default:
       return null;
   }
+}
+
+/** A value's date at the end of its summary: "Recorded a value for 2026-05-20". */
+const TRAILING_DATE = / (\d{4}-\d{2}-\d{2})$/;
+
+/** Whether `date` is a real `YYYY-MM-DD` calendar date. */
+function isCalendarDate(date: string): boolean {
+  const at = Date.parse(`${date}T00:00:00Z`);
+  return !Number.isNaN(at) && new Date(at).toISOString().slice(0, 10) === date;
+}
+
+/**
+ * The entry's first line: its summary, with a value's date read as the screen reads every other
+ * date (`formatDate`: "Recorded a value for May 20, 2026" in an en-US browser). The summary itself
+ * keeps `YYYY-MM-DD`, as every date an agent is given does.
+ */
+export function entrySummary(entry: AuditEntry, locale?: string): string {
+  if (entry.entity !== 'value') return entry.summary;
+  const date = TRAILING_DATE.exec(entry.summary)?.[1];
+  if (date === undefined || !isCalendarDate(date)) return entry.summary;
+  return `${entry.summary.slice(0, -date.length)}${formatDate(date, locale)}`;
 }
 
 /** Who the entry's meta line names: the agent, the person, NetNet, or the disconnected agent. */
