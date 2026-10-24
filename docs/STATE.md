@@ -4,9 +4,9 @@
 Stage: P3
 Phase: P3
 Status: approved
-Next action: `stage: build P3-T22` (each holding's currency in the context), then `stage: plan`
-(P4 task briefs).
-**Branches:** P3 is merged to `main` and deployed (deploy run #29).
+Next action: `stage: plan` (P4 task briefs).
+**Branches:** P3 and P3-T22 merged to `main` (T22 in #119); P3 deployed (deploy run #29),
+T22's deploy follows on the production workflow.
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -22,11 +22,12 @@ Next action: `stage: build P3-T22` (each holding's currency in the context), the
 | P4 | not-started | | |
 
 ## Handoff note (last session)
-P3 approved 2026-10-24 on the third Stage 6 run (pass, `main` at `4e0a4ff`, production `67db806`).
-Carry into P4 planning: the Low issue (an MCP error message says `holdingId` for `holding_id`)
-and the two Info (two types read "Loan" after SG→GB; a carried zero month reads "—" in Insights
-and "$0" on the holding chart), none routed yet. The Reminders 17:00 and 01:00 slots had not
-started by 19:05 UTC; record their first starts in `ops/probe.md` when they land. The Founder's
-manual checks are in the test report. PR #88 is red; `claude/design-*` are unmerged; P2-T8
-waits on F11. Follow-up: T13 `ledger_state` key. Founder-reported bug fixed on `mcp-text-figures`:
-tool text is now the JSON of `structuredContent` (Claude saw counts, no figures); §7.4 rewritten.
+P3-T22 merged to `main` (#119): every `get_financial_context` holding carries its own
+`currency` (PRD J8); goldens purely additive (37 lines, no budget drops); lint, typecheck,
+1549 unit and 751 integration tests green. No P3 re-test (plan wave 11). T22 deploys on the
+production workflow after the merge.
+Next: `stage: plan` (P4 task briefs) in a fresh session.
+Carries: the P3 test report's Low + two Info (unrouted); the Reminders 17:00/01:00 slots'
+first starts still to record in `ops/probe.md`; PR #88 (deps) still open; P2-T8 waits on F11.
+`origin/claude/design-a-two-inks` and `origin/claude/design-c-soft` still unmerged; T13's
+`ledger_state` key follow-up stands in its brief.
