@@ -16,6 +16,13 @@ export function exportFilename(format: ExportFormat): string {
   return `netnet-export.${format}`;
 }
 
+/**
+ * How long the saved file's object URL lives after the click. Revoking it in the click's own task
+ * has cancelled the download in Safari, which may also ask before it saves (iOS): a minute later
+ * the download is under way. Leaving the page frees it too.
+ */
+export const EXPORT_URL_LIFETIME_MS = 60_000;
+
 /** The response's MIME type: JSON parses, CSV saves as text. */
 function mimeOf(format: ExportFormat): string {
   return format === 'json' ? 'application/json' : 'text/csv';
@@ -46,7 +53,8 @@ export async function downloadExport(format: ExportFormat): Promise<void> {
     link.download = exportFilename(format);
     link.click();
   } finally {
-    URL.revokeObjectURL(url);
+    // In a later task, once the download has started: never in the click's.
+    setTimeout(() => URL.revokeObjectURL(url), EXPORT_URL_LIFETIME_MS);
   }
 }
 

@@ -19,9 +19,12 @@ import { newId } from '../lib/ids';
 /**
  * `DELETE /api/account` (architecture §7.2, §8, PRD J10): the account, gone. It needs a sign-in
  * from the last 10 minutes (`REAUTH_REQUIRED` otherwise), then, in one operation: every agent
- * connection revoked, the ledger rows, identity, sessions, OAuth grants, endpoints and reminder
- * state deleted, the analytics events re-keyed to a random id, and `account_deleted` fired — with
- * no `push_disabled`. The user is the session's, never one named in the request (CONVENTIONS §3).
+ * connection revoked, the ledger rows, identity, sessions, OAuth grants, connections, endpoints
+ * and reminder state deleted, the analytics events re-keyed to a random id, and `account_deleted`
+ * fired — with no `push_disabled`. No row in `core` or `ledger` carries the id afterwards, and
+ * none can come back: every `core` table keyed by a person's id references the user row, so a
+ * request that races the deletion (this one's own `touchChecked`, after the response) cannot
+ * write one. The user is the session's, never one named in the request (CONVENTIONS §3).
  */
 
 export interface AccountDeps {
@@ -64,8 +67,12 @@ export function accountRoutes(
         await deleteReminderState(tx.db, userId);
         await deleteAttemptsForUser(tx.db, userId);
         await deleteProfile(tx.db, userId);
-        // The sessions and the OAuth grants go with the user row, by its foreign keys.
+        // The rest goes with the user row, by the foreign keys on it: the sessions, the sign-in
+        // accounts, the OAuth grants and the agent connections, and any row a racing request
+        // wrote after the deletes above.
         await deleteUser(tx.db, userId);
+        // After the user row's delete: an event write that held the row first has committed, so
+        // this reaches it, and one that comes later finds no account and writes nothing.
         await rekeyEvents(tx.db, userId, randomId);
       },
       { write: true },
@@ -75,7 +82,7 @@ export function accountRoutes(
     await deps.track(
       'account_deleted',
       {},
-      { userId: randomId, segment: profile.segment, appVersion: deps.appVersion() },
+      { rekeyedUserId: randomId, segment: profile.segment, appVersion: deps.appVersion() },
     );
     return c.json({ erasedWithinDays: ERASED_WITHIN_DAYS });
   });

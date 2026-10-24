@@ -1,6 +1,7 @@
 import type { OnboardingState, Segment } from '@netnet/contracts';
-import { and, eq, like, or } from 'drizzle-orm';
-import type { Executor } from './client';
+import { and, eq, like, or, sql } from 'drizzle-orm';
+import { AppError } from '../lib/errors';
+import { isForeignKeyViolation, type Executor } from './client';
 import { profile, user, verification } from './schema';
 
 /**
@@ -20,9 +21,21 @@ export interface Account {
   emailVerified: boolean;
 }
 
-/** The profile as it is when an account is created: nothing asked yet. */
+/**
+ * The profile as it is when an account is created: nothing asked yet. Made only for an account
+ * that exists, so a request whose session outlived its account (deleted a moment ago, PRD J10)
+ * makes nothing.
+ */
 export async function createProfile(db: Executor, userId: string, timeZone: string): Promise<void> {
-  await db.insert(profile).values({ userId, timeZone }).onConflictDoNothing();
+  try {
+    await db.execute(sql`
+      insert into core.profile (user_id, time_zone)
+      select u.id, ${timeZone} from core."user" u where u.id = ${userId}
+      on conflict (user_id) do nothing`);
+  } catch (error) {
+    // The account's deletion committed while this waited on its locks: nothing to make.
+    if (!isForeignKeyViolation(error)) throw error;
+  }
 }
 
 const PROFILE_COLUMNS = {
@@ -43,14 +56,15 @@ export async function getProfile(db: Executor, userId: string): Promise<Profile 
 
 /**
  * The profile, made with its defaults if sign-up did not get as far as making it (its after-commit
- * hook failed), so a person is never stuck without one.
+ * hook failed), so a person is never stuck without one. `UNAUTHENTICATED` when the account no
+ * longer exists: its session outlived it, which is the same as no session.
  */
 export async function ensureProfile(db: Executor, userId: string): Promise<Profile> {
   const found = await getProfile(db, userId);
   if (found) return found;
   await createProfile(db, userId, 'UTC');
   const made = await getProfile(db, userId);
-  if (!made) throw new Error('ensureProfile(): the profile could not be made');
+  if (!made) throw new AppError('UNAUTHENTICATED', 'Sign in first: there is no such account.');
   return made;
 }
 
@@ -106,9 +120,10 @@ export async function deleteProfile(db: Executor, userId: string): Promise<void>
 
 /**
  * Deletes the identity (`DELETE /api/account`, PRD J10): the `user` row, whose foreign keys
- * delete the sessions, the sign-in accounts and the OAuth grants (refresh and access tokens,
- * consents) with it, plus any password-reset token waiting for the person. OAuth clients stay:
- * they are shared between accounts.
+ * delete with it the sessions, the sign-in accounts, the OAuth grants (refresh and access tokens,
+ * consents) and every `core` row keyed by the person's id (profile, reminder state, agent
+ * connections, connection attempts, push devices), plus any password-reset token waiting for the
+ * person. OAuth clients stay: they are shared between accounts.
  */
 export async function deleteUser(db: Executor, userId: string): Promise<void> {
   await db

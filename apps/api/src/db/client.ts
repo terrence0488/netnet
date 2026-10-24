@@ -46,6 +46,18 @@ export function database(): Database {
   return shared;
 }
 
+/**
+ * Whether `error` is Postgres refusing a row whose foreign key points at nothing (SQLSTATE
+ * `23503`), such as a row for an account deleted a moment ago. Drizzle wraps the driver's error
+ * in `cause`.
+ */
+export function isForeignKeyViolation(error: unknown): boolean {
+  for (let e: unknown = error; e instanceof Error; e = e.cause) {
+    if ((e as { code?: unknown }).code === '23503') return true;
+  }
+  return false;
+}
+
 /** Runs `fn` on one direct connection, then closes it: for the owner's scripts (`db:*`). */
 export async function withClient<T>(
   connectionString: string,

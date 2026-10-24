@@ -11,7 +11,7 @@ import {
   type LedgerOptions,
 } from '../../src/ledger/ledger';
 import type { Actor } from '../../src/ledger/with-user';
-import { FIXED_NOW, type TestDatabase } from '../isolation/harness';
+import { FIXED_NOW, ensureAccount, type TestDatabase } from '../isolation/harness';
 
 /**
  * What the Ledger suites share: fictional packs (an imaginary country "qz" and generic), fake
@@ -276,6 +276,7 @@ export function ledgerSuite(db: TestDatabase): LedgerSuite {
     async connect(userId, client = 'other') {
       connections += 1;
       const id = `con_01K1G4KX00TEST${String(connections).padStart(12, '0')}`;
+      await ensureAccount(db, userId);
       await db.appDb.insert(agentConnection).values({
         id,
         userId,
