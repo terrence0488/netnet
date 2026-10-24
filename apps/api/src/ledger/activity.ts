@@ -1,9 +1,13 @@
 import {
   activityQuerySchema,
+  UNIVERSALS,
   type ActivityQuery,
   type AuditEntry,
   type Page,
+  type Pack,
+  type UserTypeIn,
 } from '@netnet/contracts';
+import { typeLabel } from '@netnet/core';
 import { and, desc, eq, lt, or } from 'drizzle-orm';
 import { CONNECTION_ENTITY } from './connections';
 import { parseInput } from './input';
@@ -36,9 +40,30 @@ function holdingName(side: unknown): string {
   return str(obj(side)?.name) ?? 'a holding';
 }
 
-function typeLabel(side: unknown): string {
+/** A snapshot's text or null field: absent reads as null, anything else as unreadable. */
+function nullableStr(value: unknown): string | null | undefined {
+  return value === undefined || value === null ? null : str(value);
+}
+
+/**
+ * A type snapshot as `typeLabel` reads it, or undefined when it cannot be read as one: its
+ * universal type must be one, and its pack key and name text when present.
+ */
+function typeOf(side: unknown): UserTypeIn | undefined {
   const t = obj(side);
-  return str(t?.customName) ?? str(t?.packTypeKey) ?? str(t?.universal) ?? 'a type';
+  const universal = UNIVERSALS.find((u) => u === t?.universal);
+  const packTypeKey = nullableStr(t?.packTypeKey);
+  const customName = nullableStr(t?.customName);
+  if (universal === undefined || packTypeKey === undefined || customName === undefined) {
+    return undefined;
+  }
+  return { universal, packTypeKey, customName };
+}
+
+/** A type's name as every screen gives it: `typeLabel` over the person's current pack chain. */
+function typeName(chain: readonly Pack[], side: unknown): string {
+  const type = typeOf(side);
+  return type ? typeLabel(chain, type) : 'a type';
 }
 
 const PREF_LABELS: Record<string, string> = {
@@ -48,8 +73,12 @@ const PREF_LABELS: Record<string, string> = {
   sort: 'sort',
 };
 
-/** How an entry reads: the action, the entity and the name or date on its sides. */
-function summary(row: AuditRow): string {
+/**
+ * How an entry reads: the action, the entity and the name or date on its sides. A type is named
+ * through `chain`, the person's pack chain now, so an older entry follows a country move as every
+ * other screen does (PRD J2).
+ */
+function summary(row: AuditRow, chain: readonly Pack[]): string {
   if (row.entity === CONNECTION_ENTITY) return 'Agent disconnected';
   const { action, before, after } = row;
   switch (row.entity) {
@@ -65,9 +94,9 @@ function summary(row: AuditRow): string {
         : 'Updated the ledger';
     }
     case 'type':
-      if (action === 'create') return `Added type "${typeLabel(after)}"`;
-      if (action === 'delete') return `Removed type "${typeLabel(before)}"`;
-      return `Renamed type to "${typeLabel(after)}"`;
+      if (action === 'create') return `Added type "${typeName(chain, after)}"`;
+      if (action === 'delete') return `Removed type "${typeName(chain, before)}"`;
+      return `Renamed type to "${typeName(chain, after)}"`;
     case 'tag': {
       const name = str(obj(action === 'delete' ? before : after)?.name) ?? 'a tag';
       if (action === 'create') return `Added tag "${name}"`;
@@ -107,7 +136,7 @@ function clientNameOf(row: AuditRow): string | null {
   return null;
 }
 
-function toEntry(row: AuditRow): AuditEntry {
+function toEntry(row: AuditRow, chain: readonly Pack[]): AuditEntry {
   return {
     id: row.id,
     at: row.at.toISOString(),
@@ -120,13 +149,14 @@ function toEntry(row: AuditRow): AuditEntry {
     entityId: row.entityId,
     before: row.before,
     after: row.after,
-    summary: summary(row),
+    summary: summary(row, chain),
   };
 }
 
 /**
  * `activity`: the audit log, newest first, optionally one agent turn. Another user's entries are
- * unreachable: every query names this user, under row-level security.
+ * unreachable: every query names this user, under row-level security. The pack chain that names
+ * types is read once for the page, and only when the page has a type entry.
  */
 export async function activity(s: Scope, p: ActivityQuery): Promise<Page<AuditEntry>> {
   const q = parseInput(activityQuerySchema, p);
@@ -152,8 +182,9 @@ export async function activity(s: Scope, p: ActivityQuery): Promise<Page<AuditEn
     .limit(limit + 1);
   const items = rows.slice(0, limit);
   const last = items.at(-1);
+  const chain = items.some((row) => row.entity === 'type') ? await s.chain() : [];
   return {
-    items: items.map(toEntry),
+    items: items.map((row) => toEntry(row, chain)),
     nextCursor: rows.length > limit && last ? encodeCursor([last.at.toISOString(), last.id]) : null,
   };
 }

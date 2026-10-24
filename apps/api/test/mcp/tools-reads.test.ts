@@ -8,6 +8,7 @@ import type {
   McpGetTaxonomyOutput,
   McpListActivityOutput,
   McpListHoldingsOutput,
+  McpUpsertTypeOutput,
 } from '@netnet/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestDatabase, type TestDatabase } from '../isolation/harness';
@@ -501,6 +502,37 @@ describe('list_activity', () => {
     const walked = [...first.entries, ...second.entries];
     const all = okOf<McpListActivityOutput>(await callTool(target, agent.token, 'list_activity'));
     expect(walked.map((e) => e.id)).toEqual(all.entries.map((e) => e.id));
+  });
+
+  it('names each type by its label in the person’s pack chain, never by a key', async () => {
+    const { agent } = await seeded();
+    okOf<McpUpsertTypeOutput>(
+      await callTool(target, agent.token, 'upsert_type', { name: 'Art', universal_type: 'other' }),
+    );
+    const all = okOf<McpListActivityOutput>(
+      await callTool(target, agent.token, 'list_activity', { limit: 100 }),
+    );
+    const types = all.entries
+      .filter((e) => e.entity === 'type')
+      .map((e) => e.summary)
+      .reverse();
+    // QZ's chain: its own cash label and pack type `auto_loan`, generic's labels for the rest.
+    expect(types).toStrictEqual([
+      'Added type "Current account"',
+      'Added type "Label listed"',
+      'Added type "Label retirement"',
+      'Added type "Label property"',
+      'Added type "Label vehicle"',
+      'Added type "Label equity"',
+      'Added type "Label crypto"',
+      'Added type "Label mortgage"',
+      'Added type "Label loan"',
+      'Added type "Label wrapper"',
+      'Added type "Label card"',
+      'Added type "Label other"',
+      'Added type "Auto loan"',
+      'Added type "Art"',
+    ]);
   });
 
   it('filters to one agent turn', async () => {
