@@ -28,7 +28,7 @@ const MAX_AGE_DAYS = 36_500;
 
 const key = (holdingId: string, date: string) => `${holdingId}|${date}`;
 
-/** `value_corrected`, for a change to `old`'s amount, date or currency (§7.7). */
+/** `value_corrected`, for a change to `old`'s amount, date or currency, or its deletion (§7.7). */
 function corrected(w: WriteScope, old: Value): DomainEvent | undefined {
   if (!w.eventSource) return undefined;
   const days = Math.floor((w.s.now().getTime() - Date.parse(old.enteredAt)) / DAY_MS);
@@ -300,12 +300,13 @@ export function updateValue(s: Scope, id: string, patch: ValuePatch): Promise<Wr
   });
 }
 
-/** `deleteValue` (`delete_value`). */
+/** `deleteValue` (`delete_value`): a correction too, so it fires `value_corrected` (§6.8). */
 export function deleteValue(s: Scope, id: string): Promise<Write<void>> {
   return runWrite(s, 'deleteValue', async (w) => {
     const current = await loadValue(s, id);
     if (!current) throw notFound('value', id);
     await s.db.delete(value).where(and(eq(value.userId, s.userId), eq(value.id, id)));
     await w.audit('value', id, 'delete', current, null);
+    fire(w, corrected(w, current));
   });
 }

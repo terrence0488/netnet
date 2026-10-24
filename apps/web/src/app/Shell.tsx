@@ -53,7 +53,7 @@ export function Shell() {
   const me = useMe().data;
 
   // Only navigation moves the page (design-system §7): a new screen starts at the top, while
-  // anything that updates the screen in place (a range, a sheet, undo) leaves it where it was.
+  // anything that updates the screen in place (a range, a sheet, a save) leaves it where it was.
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);

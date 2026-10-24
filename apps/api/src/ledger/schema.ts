@@ -304,8 +304,6 @@ export const audit = ledger.table(
     entityId: text('entity_id'),
     before: jsonb('before'),
     after: jsonb('after'),
-    undoes: text('undoes'),
-    undoneBy: text('undone_by'),
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.id] }),
@@ -315,16 +313,6 @@ export const audit = ledger.table(
       name: 'audit_batch_fk',
       columns: [t.userId, t.batchId],
       foreignColumns: [batch.userId, batch.id],
-    }),
-    foreignKey({
-      name: 'audit_undoes_fk',
-      columns: [t.userId, t.undoes],
-      foreignColumns: [t.userId, t.id],
-    }),
-    foreignKey({
-      name: 'audit_undone_by_fk',
-      columns: [t.userId, t.undoneBy],
-      foreignColumns: [t.userId, t.id],
     }),
     index('audit_user_id_at_idx').on(t.userId, t.at),
     index('audit_user_id_batch_id_idx').on(t.userId, t.batchId),

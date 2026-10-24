@@ -33,7 +33,6 @@ export const AGENT_TOOLS = [
   'delete_type',
   'upsert_tag',
   'delete_tag',
-  'undo',
 ] as const;
 export type AgentTool = (typeof AGENT_TOOLS)[number];
 
@@ -85,7 +84,6 @@ export const eventSchemas = {
     original_source: z.enum(['web', 'agent', 'system']),
     age_at_correction: bounded(0, MAX_AGE_DAYS),
   }),
-  value_undone: noProps,
   agent_connection_started: connection,
   agent_connection_completed: connection,
   agent_connection_failed: z.strictObject({

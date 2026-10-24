@@ -24,15 +24,13 @@ import {
   type Tag,
   type TagInput,
   type TypeInput,
-  type UndoResult,
-  type UndoTarget,
   type UserType,
   type Value,
   type ValuePatch,
   type ValueResult,
   type Write,
 } from '@netnet/contracts';
-import { activity, undo } from './activity';
+import { activity } from './activity';
 import { changeBaseCurrency } from './currency';
 import { destroy } from './destroy';
 import { exportAll } from './export';
@@ -61,7 +59,7 @@ export type { LedgerContent, LedgerOptions } from './scope';
  * implementation behind REST and MCP. Every write is one transaction with its audit rows,
  * `data_version + 1`, its batch, its warnings and its domain events; the edge `track()`s the
  * events. `destroy` is the one exception: it deletes the audit log itself, so it writes none.
- * Activity, undo, the base currency change, export, erasure and periods come with P3.
+ * Activity, the base currency change, export, erasure and periods come with P3.
  */
 export interface Ledger {
   /** The ledger in `baseCurrency`, with every universal type and the pack chain's types. Once. */
@@ -87,8 +85,6 @@ export interface Ledger {
   deleteType(id: string, moveTo?: string): Promise<Write<void>>;
   upsertTag(i: TagInput): Promise<Write<Tag>>;
   deleteTag(id: string, mergeInto?: string): Promise<Write<void>>;
-  /** Undoes one entry, or a whole agent turn newest first and all or nothing. */
-  undo(t: UndoTarget): Promise<Write<UndoResult>>;
   setPrefs(p: PrefsPatch): Promise<Write<Prefs>>;
   /**
    * Another default currency: every value re-derived from the stored rates at its own rate date,
@@ -138,7 +134,6 @@ export const LEDGER_WRITES = [
   'deleteType',
   'upsertTag',
   'deleteTag',
-  'undo',
   'setPrefs',
   'changeBaseCurrency',
   'applyPackTypes',
@@ -168,7 +163,6 @@ export function openLedger(tx: LedgerTx, options: LedgerOptions): Ledger {
     deleteType: (id, moveTo) => deleteType(s, id, moveTo),
     upsertTag: (i) => upsertTag(s, i),
     deleteTag: (id, mergeInto) => deleteTag(s, id, mergeInto),
-    undo: (t) => undo(s, t),
     setPrefs: (p) => setPrefs(s, p),
     changeBaseCurrency: (ccy) => changeBaseCurrency(s, ccy),
     applyPackTypes: (pack) => applyPackTypes(s, pack),

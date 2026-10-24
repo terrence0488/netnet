@@ -333,10 +333,18 @@ export const ATTEMPT_CAUSES = [
 ] as const;
 export const FX_SOURCES = ['ecb', 'fallback'] as const;
 
+/*
+ * Every `core` table keyed by a person's id references their `user` row with `on delete cascade`:
+ * deleting the account deletes them with it, and the database refuses a row for an id no account
+ * holds, even from a request that races the deletion (PRD J10).
+ */
+
 export const profile = core.table(
   'profile',
   {
-    userId: text('user_id').primaryKey(),
+    userId: text('user_id')
+      .primaryKey()
+      .references(() => user.id, { onDelete: 'cascade' }),
     /** ISO 3166-1 alpha-2 (plus XK); null until the person says where they live. */
     country: text('country'),
     /** IANA; the browser's at sign-up, `UTC` when it gives none. Decides "today" (J12). */
@@ -361,7 +369,9 @@ export const agentConnection = core.table(
   {
     /** `con_` */
     id: text('id').primaryKey(),
-    userId: text('user_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
     clientId: text('client_id').notNull(),
     /** Untrusted third-party text: never in an event, escaped wherever it is shown. */
     clientName: text('client_name').notNull(),
@@ -394,7 +404,9 @@ export const agentConnection = core.table(
 export const reminderState = core.table(
   'reminder_state',
   {
-    userId: text('user_id').primaryKey(),
+    userId: text('user_id')
+      .primaryKey()
+      .references(() => user.id, { onDelete: 'cascade' }),
     enabled: boolean('enabled').notNull().default(true),
     emailEnabled: boolean('email_enabled').notNull().default(true),
     lastCheckedOn: date('last_checked_on', { mode: 'string' }),
@@ -424,7 +436,9 @@ export const notificationEndpoint = core.table(
   {
     /** `nep_` */
     id: text('id').primaryKey(),
-    userId: text('user_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
     /** `webpush`; `expo` joins with the native apps. */
     channel: text('channel', { enum: ['webpush'] })
       .notNull()
@@ -463,7 +477,9 @@ export const connectionAttempt = core.table(
   {
     /** `att_` */
     id: text('id').primaryKey(),
-    userId: text('user_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
     client: text('client', { enum: CLIENTS }).notNull(),
     entry: text('entry', { enum: ATTEMPT_ENTRIES }).notNull(),
     platform: text('platform', { enum: ATTEMPT_PLATFORMS }).notNull(),

@@ -45,22 +45,22 @@ function hydrate(s) {
   s.holdings.forEach(h => {
     log.push({ id:'lg-c-'+h.id, at:h.values[0] ? h.values[0].enteredAt : TODAY+'T12:00:00Z',
       kind:'holding.create', holdingId:h.id, source:'web', client:null, turn:null,
-      before:null, after:{ name:h.name }, undone:false });
+      before:null, after:{ name:h.name } });
     h.values.forEach(v => log.push({
       id:'lg-v-'+v.id, at:v.enteredAt, kind:'value.create', holdingId:h.id, valueId:v.id,
       source:v.source, client:v.client, turn:v.turn,
-      before:null, after:{ amount:v.amount, ccy:v.ccy, date:v.date }, undone:false }));
+      before:null, after:{ amount:v.amount, ccy:v.ccy, date:v.date } }));
   });
   if (s.holdings.find(h => h.id === 'h-sold'))
     log.push({ id:'lg-arch-sold', at:'2025-08-14T10:22:00Z', kind:'holding.archive', holdingId:'h-sold',
-      source:'web', client:null, turn:null, before:{archived:false}, after:{archived:true}, undone:false });
+      source:'web', client:null, turn:null, before:{archived:false}, after:{archived:true} });
   const btc = s.holdings.find(h => h.id === 'h-btc');
   if (btc && btc.values.length) {
     const v = btc.values[btc.values.length - 1];
     log.push({ id:'lg-corr-btc', at:'2026-08-05T08:05:00Z', kind:'value.edit', holdingId:'h-btc',
       valueId:v.id, source:'web', client:null, turn:null, originalSource:'agent',
       before:{ amount:Math.round(v.amount*1.09/10)*10, ccy:v.ccy, date:v.date },
-      after:{ amount:v.amount, ccy:v.ccy, date:v.date }, undone:false });
+      after:{ amount:v.amount, ccy:v.ccy, date:v.date } });
   }
   s.log = log.sort((a, b) => b.at.localeCompare(a.at));
   return s;
@@ -1361,7 +1361,7 @@ function renderAgent() {
     </div>
     <div class="g5">
       <div class="section-h"><h2>What it can do</h2></div>
-      <p class="summary" style="margin-top:0">Anything you can do here — and you can undo anything it changes.
+      <p class="summary" style="margin-top:0">Anything you can do here — and every change it makes shows in Activity.
         Your statements stay with your agent; NetNet only receives the numbers.</p>
       <div class="list-foot" style="justify-content:flex-start"><button class="link" data-go="#/activity">Activity log ›</button></div>
     </div>
@@ -1412,7 +1412,7 @@ function renderConnect(id, step) {
       <h1>${c.generic ? 'Your AI agent' : esc(c.name)} wants to connect to your NetNet</h1>
       <p class="auth-sub">Signed in as ${esc(S.account.email)}</p>
       <p class="consent">It will be able to see your holdings and their history, and add or update them.
-        Every change it makes is logged, and you can undo it.</p>
+        Every change it makes shows in Activity.</p>
       <button class="btn" data-act="connect-allow" data-v="${id}">Allow</button>
       <button class="link-sm consent-cancel" data-act="connect-cancel" data-v="${id}">Cancel</button>`);
     return;
@@ -1480,14 +1480,16 @@ function renderChat() {
     ${step < SCRIPT.length ? `<button class="btn" data-act="chat-next">${step ? 'Continue' : 'Play'}</button>` : ''}
     ${step ? '<button class="btn sec" data-act="chat-reset">Replay</button>' : ''}
   </div>
-  ${step >= 5 ? `<div class="note">The update is on Home now, and you can undo it.
+  ${step >= 5 ? `<div class="note">The update is on Home now, and shows in Activity.
     <button class="btn ghost sm auto" data-go="#/activity">Activity log</button></div>` : ''}`;
 }
 
-/* ================= ACTIVITY / AUDIT (J7) ================= */
+/* ================= ACTIVITY / AUDIT (J7) =================
+   A record only: nothing here changes data. A mistake is corrected by another change,
+   on the web or through the agent, and that change is logged like any other. */
 function renderActivity() {
   const turns = {};
-  S.log.forEach(e => { if (e.turn && !e.undone) (turns[e.turn] = turns[e.turn] || []).push(e); });
+  S.log.forEach(e => { if (e.turn) (turns[e.turn] = turns[e.turn] || []).push(e); });
   const seen = {};
   const html = S.log.slice(0, 80).map(e => {
     const h = holdingOf(e.holdingId);
@@ -1495,14 +1497,11 @@ function renderActivity() {
     if (e.turn && turns[e.turn] && turns[e.turn].length > 1 && !seen[e.turn]) {
       seen[e.turn] = true;
       head = `<div class="turn-h">
-        <span>${esc(e.client)} · ${turns[e.turn].length} changes at once</span>
-        <button class="btn ghost sm auto" data-act="undo-turn" data-v="${esc(e.turn)}">Undo all</button></div>`;
+        <span>${esc(e.client)} · ${turns[e.turn].length} changes at once</span></div>`;
     }
-    return head + `<div class="row ${e.source === 'agent' && !e.undone ? 'by-agent' : ''}" style="${e.undone ? 'opacity:.45' : ''}">
-      <span class="grow"><span class="name">${esc(describeLog(e, h))}
-        ${e.undone ? '<span class="chip">undone</span>' : ''}</span>
+    return head + `<div class="row ${e.source === 'agent' ? 'by-agent' : ''}">
+      <span class="grow"><span class="name">${esc(describeLog(e, h))}</span>
         <span class="sub">${e.source === 'agent' ? esc(e.client) : 'You'} · ${esc(fmtDT(e.at))}</span></span>
-      ${!e.undone && e.kind !== 'holding.create' ? `<button class="btn ghost sm auto" data-act="undo" data-v="${e.id}">Undo</button>` : ''}
     </div>`;
   }).join('');
   $('#s-activity').innerHTML = `
@@ -1971,7 +1970,7 @@ function paintAccess(h) {
 
 
 /* ================= mutations ================= */
-function logIt(e) { S.log.unshift(Object.assign({ id:uid('lg'), at:new Date().toISOString(), undone:false }, e)); }
+function logIt(e) { S.log.unshift(Object.assign({ id:uid('lg'), at:new Date().toISOString() }, e)); }
 function recomputeBase(v) { v.rate = rateFor(v.ccy, v.date, S.settings.defaultCcy); v.rateDate = v.date; v.base = Math.round(v.amount * v.rate); }
 
 function saveHolding(kind, editId) {
@@ -2054,28 +2053,6 @@ function saveValue(hid, vid) {
     fire('value_recorded', { source:'web' });
   }
   closeSheet(); save(); render();
-}
-
-function undoEntry(e) {
-  const h = holdingOf(e.holdingId);
-  if (!h && e.kind !== 'connection.revoke') return;
-  if (e.kind === 'value.create') { h.values = h.values.filter(v => v.id !== e.valueId); }
-  else if (e.kind === 'value.edit') {
-    const v = h.values.find(x => x.id === e.valueId);
-    if (v) { Object.assign(v, e.before); recomputeBase(v); h.values.sort((a, b) => a.date.localeCompare(b.date)); }
-  } else if (e.kind === 'value.delete') {
-    h.values.push(Object.assign({ id:e.valueId, source:'web', 
-      enteredAt:new Date().toISOString() }, e.before));
-    const v = h.values[h.values.length - 1]; recomputeBase(v);
-    h.values.sort((a, b) => a.date.localeCompare(b.date));
-  } else if (e.kind === 'holding.archive') { h.archived = false; }
-  else if (e.kind === 'holding.unarchive') { h.archived = true; }
-  else if (e.kind === 'holding.edit') { Object.assign(h, e.before); }
-  else if (e.kind === 'holding.delete') { S.holdings.push(e.before.holding); }
-  e.undone = true;
-  logIt({ kind:e.kind === 'value.create' ? 'value.delete' : 'holding.edit', holdingId:e.holdingId,
-          source:'web', client:null, turn:null, before:e.after, after:e.before, undone:false, isUndo:true });
-  fire('value_undone', {});
 }
 
 /* ================= sheets ================= */
@@ -2201,7 +2178,7 @@ function sheetAskAgent(hid) {
   sheet(`<h3 style="padding:0 22px 10px;text-align:center">Ask your agent</h3>
     <div class="sh-body">
       <p class="muted" style="font-size:max(var(--fs-min),calc(14px * var(--fs)));margin:0">Paste this into ${conns.length ? esc(conns.map(c => c.client).join(' or '))
-        : 'Claude or ChatGPT'}. ${conns.length ? 'It can read this holding, work it out with you, and set the answer — and you can undo anything it changes.'
+        : 'Claude or ChatGPT'}. ${conns.length ? 'It can read this holding, work it out with you, and set the answer — and every change it makes shows in Activity.'
         : 'Connect it first, so it can see this holding.'}</p>
       ${promptCard(text, true)}
       ${conns.length ? '' : '<button class="btn" style="margin-top:14px" data-act="connect-start" data-v="holding">Connect your agent</button>'}
@@ -2259,7 +2236,7 @@ function protoReminder() {
 const TABS = [['#/home','Home',ICON.home],['#/insights','Insights',ICON.insights],
               ['#/agent','Agent',ICON.agent],['#/account','Account',ICON.account]];
 /* A render is either a navigation (the route changed) or an in-place update of the same
-   route (a chart pager, a range, undo). Only navigation moves the page to the top or counts
+   route (a chart pager, a range, a save). Only navigation moves the page to the top or counts
    as a screen view; an in-place update must leave the reader exactly where they were. */
 let lastRoute = null, lastInsightsView = null, sessionStarted = false, nudgeSeen = null;
 const AUTH_ROUTES = ['signup', 'login', 'welcome'];
@@ -2490,7 +2467,7 @@ document.addEventListener('click', ev => {
     }
     case 'delete-holding': {
       const h = holdingOf(v);
-      if (!confirm('Delete "' + h.name + '" and all ' + h.values.length + ' values? This appears in your activity log and can be undone there.')) return;
+      if (!confirm('Delete "' + h.name + '" and all ' + h.values.length + ' values? This appears in your activity log.')) return;
       logIt({ kind:'holding.delete', holdingId:h.id, source:'web', client:null, turn:null,
               before:{ holding:JSON.parse(JSON.stringify(h)) }, after:null });
       S.holdings = S.holdings.filter(x => x.id !== v);
@@ -2501,12 +2478,9 @@ document.addEventListener('click', ev => {
       if (!confirm('Delete this value?')) return;
       logIt({ kind:'value.delete', holdingId:h.id, valueId:val.id, source:'web', client:null, turn:null,
               before:{ amount:val.amount, ccy:val.ccy, date:val.date }, after:null });
+      fire('value_corrected', { original_source: val.source === 'agent' ? 'agent' : 'web',
+                                age_at_correction: daysBetween(val.date, TODAY) });
       h.values = h.values.filter(x => x.id !== val.id); rerender(); return;
-    }
-    case 'undo': { const e = S.log.find(x => x.id === v); if (e) undoEntry(e); rerender(); return; }
-    case 'undo-turn': {
-      S.log.filter(e => e.turn === v && !e.undone).forEach(undoEntry);
-      rerender(); return;
     }
 
     case 'copy-url': navigator.clipboard && navigator.clipboard.writeText(MCP_URL); el.textContent = 'Copied'; return;

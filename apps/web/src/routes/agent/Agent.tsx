@@ -133,7 +133,7 @@ function ConnectionCard({
       >
         <p className={styles.sheetBody}>
           {connection.clientName} will no longer see or change your NetNet. What it added stays, and
-          you can undo it.
+          every change it made shows in Activity.
         </p>
         {problem ? (
           <FormProblem>
@@ -223,8 +223,8 @@ export function Agent() {
               What it can do
             </h2>
             <p className={styles.summary}>
-              Anything you can do here — and you can undo anything it changes. Your statements stay
-              with your agent; NetNet only receives the numbers.
+              Anything you can do here — and every change it makes shows in Activity. Your
+              statements stay with your agent; NetNet only receives the numbers.
             </p>
           </section>
         </div>

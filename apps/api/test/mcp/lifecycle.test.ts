@@ -245,7 +245,7 @@ describe('handshake and list', () => {
     },
   };
 
-  it('negotiates 2025-11-25 and lists the nineteen tools', async () => {
+  it('negotiates 2025-11-25 and lists the eighteen tools, undo not among them', async () => {
     const userId = await onboarded(target);
     const agent = await connectAgent(target, userId);
     const hello = await rpcOf(
@@ -266,23 +266,30 @@ describe('handshake and list', () => {
     expect(listed.status).toBe(200);
     const tools = (listed.body.result as { tools: { name: string; description: string }[] }).tools;
     expect(tools.map((t) => t.name).sort()).toStrictEqual(TOOL_REGISTRY.map((t) => t.name).sort());
-    expect(tools).toHaveLength(19);
-    for (const tool of tools) expect(tool.description.length).toBeGreaterThan(0);
+    expect(tools).toHaveLength(18);
+    expect(tools.map((t) => t.name)).not.toContain('undo');
+    for (const tool of tools) {
+      expect(tool.description.length).toBeGreaterThan(0);
+      expect(tool.description).not.toMatch(/undo/i);
+    }
   });
 
-  it('answers an unknown tool with InvalidParams, and no event', async () => {
+  it.each([
+    { name: 'mend_the_books', args: {} },
+    { name: 'undo', args: { entry_id: 'aud_01K1G4KX00ZZZZZZZZZZZZZZZZ' } },
+  ])('answers an unknown tool ($name) with InvalidParams, and no event', async ({ name, args }) => {
     const userId = await onboarded(target);
     const agent = await connectAgent(target, userId);
     const res = await mcpRequest(target, agent.token, {
       jsonrpc: '2.0',
       id: 3,
       method: 'tools/call',
-      params: { name: 'mend_the_books', arguments: {} },
+      params: { name, arguments: args },
     });
     const { body } = await rpcOf(res);
     const error = body.error as { code: number; message: string };
     expect(error.code).toBe(-32602);
-    expect(error.message).toContain('mend_the_books');
+    expect(error.message).toContain(name);
     await target.settle();
     expect(
       (await eventsOf(target, userId)).filter((e) => e.name === 'agent_tool_called'),

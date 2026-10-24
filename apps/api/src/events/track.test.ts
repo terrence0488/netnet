@@ -161,7 +161,7 @@ describe('track()', () => {
 
   it('never rejects when the write fails: it logs, and what the person was doing goes on', async () => {
     failWrites = true;
-    await expect(track('value_undone', {}, { ...ctx, userId: USER })).resolves.toBe(undefined);
+    await expect(track('session_started', {}, { ...ctx, userId: USER })).resolves.toBe(undefined);
     expect(logged.map((line) => JSON.parse(line) as unknown)).toStrictEqual([
       { event: 'event_write_failed', userId: USER, errorCode: 'INTERNAL' },
     ]);

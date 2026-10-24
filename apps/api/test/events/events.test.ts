@@ -13,6 +13,7 @@ import {
   USER_A,
   USER_B,
   createTestDatabase,
+  ensureAccount,
   sqlState,
   type TestDatabase,
 } from '../isolation/harness';
@@ -34,6 +35,7 @@ beforeAll(async () => {
     count: (key, windowStart) => countHit(db.appDb, key, windowStart),
     clock: () => now,
   }));
+  await ensureAccount(db, USER_A);
   await db.appDb.insert(profile).values({ userId: USER_A, segment: 'accumulating' });
 }, 60_000);
 
@@ -97,7 +99,7 @@ describe('track() as netnet_app', () => {
   });
 
   it('cannot select, change or delete what it wrote', async () => {
-    await track('value_undone', {}, { userId: USER_A, appVersion: 'dev' });
+    await track('session_started', {}, { userId: USER_A, appVersion: 'dev' });
     expect(await sqlState(db.appDb.select().from(event))).toBe('42501');
     expect(await sqlState(db.app.query(`update analytics.event set segment = 'unknown'`))).toBe(
       '42501',

@@ -1,17 +1,6 @@
 import type { AuditEntry } from '@netnet/contracts';
 import { describe, expect, it } from 'vitest';
-import { ApiError } from '../../api/client';
-import {
-  actorLabel,
-  conflictBlockers,
-  conflictCopy,
-  describeChange,
-  formatInstant,
-  groupActivity,
-  turnClient,
-  undoableOf,
-  undoFailureCopy,
-} from './activity';
+import { actorLabel, describeChange, formatInstant, groupActivity, turnClient } from './activity';
 
 let made = 0;
 
@@ -29,8 +18,6 @@ function entry(over: Partial<AuditEntry> = {}): AuditEntry {
     entityId: `val_test_${made}`,
     before: null,
     after: null,
-    undoes: null,
-    undoneBy: null,
     summary: 'Updated the value for 2026-10-12',
     ...over,
   };
@@ -63,14 +50,14 @@ describe('groupActivity', () => {
     expect(groups.map((g) => g.kind)).toStrictEqual(['turn', 'single', 'turn']);
   });
 
-  it('names the turn’s writer and counts what still stands', () => {
+  it('names the turn’s writer', () => {
     const group = groupActivity([
       entry({ batchId: 'bat_1', actor: 'agent', clientName: 'Claude' }),
-      entry({ batchId: 'bat_1', actor: 'agent', clientName: 'Claude', undoneBy: 'aud_x' }),
+      entry({ batchId: 'bat_1', actor: 'agent', clientName: 'Claude' }),
     ])[0];
     if (group?.kind !== 'turn') throw new Error('misgrouped');
     expect(turnClient(group)).toBe('Claude');
-    expect(undoableOf(group)).toHaveLength(1);
+    expect(group.entries).toHaveLength(2);
   });
 });
 
@@ -170,73 +157,5 @@ describe('formatInstant', () => {
     expect(text).toMatch(/2026/);
     expect(text).toMatch(/12/);
     expect(text).not.toMatch(/ago/);
-  });
-});
-
-describe('conflictBlockers', () => {
-  const conflict = (blockers: unknown) =>
-    new ApiError({ code: 'UNDO_CONFLICT', status: 409, message: 'blocked', details: { blockers } });
-
-  it('reads the later changes newest first', () => {
-    expect(
-      conflictBlockers(
-        conflict([
-          { entry_id: 'aud_new', action: 'update', at: '2026-10-12T13:00:00.000Z' },
-          { entry_id: 'aud_old', action: 'update', at: '2026-10-12T12:00:00.000Z' },
-        ]),
-      ),
-    ).toStrictEqual(['aud_new', 'aud_old']);
-  });
-
-  it('reads nothing from anything else', () => {
-    expect(
-      conflictBlockers(new ApiError({ code: 'NETWORK', status: 0, message: 'down' })),
-    ).toStrictEqual([]);
-    expect(conflictBlockers(conflict(undefined))).toStrictEqual([]);
-    expect(conflictBlockers(conflict([{ entry_id: 7 }]))).toStrictEqual([]);
-  });
-});
-
-describe('conflictCopy', () => {
-  it('names the later change and offers to undo it first, never an id', () => {
-    const copy = conflictCopy(entry({ id: 'aud_9', summary: 'Updated the value for 2026-10-12' }));
-    expect(copy.title).toContain('Updated the value for 2026-10-12');
-    expect(copy.title).toContain('Undo that first');
-    expect(copy.action).toContain('Updated the value for 2026-10-12');
-    expect(copy.title).not.toContain('aud_9');
-    expect(copy.action).not.toContain('aud_9');
-  });
-
-  it('falls back to a newer change when it is not on the loaded page', () => {
-    const copy = conflictCopy(undefined);
-    expect(copy.title).toContain('a newer change');
-    expect(copy.action).toBe('Undo the newer change first');
-  });
-});
-
-describe('undoFailureCopy', () => {
-  it('says a disconnection stays, with the way back', () => {
-    const copy = undoFailureCopy(
-      new ApiError({ code: 'VALIDATION_FAILED', status: 400, message: 'no' }),
-      entry({ entity: 'connection' }),
-    );
-    expect(copy.title).toBe('This change can’t be undone.');
-    expect(copy.detail).toContain('Agent tab');
-  });
-
-  it('says other unundoable changes stay as they are', () => {
-    const copy = undoFailureCopy(
-      new ApiError({ code: 'VALIDATION_FAILED', status: 400, message: 'no' }),
-      entry({ entity: 'ledger' }),
-    );
-    expect(copy.detail).toContain('stay as they are');
-  });
-
-  it('leaves anything else to the shared words', () => {
-    const copy = undoFailureCopy(
-      new ApiError({ code: 'NETWORK', status: 0, message: 'down' }),
-      entry(),
-    );
-    expect(copy.title).toBe('NetNet can’t be reached.');
   });
 });
