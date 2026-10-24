@@ -1,11 +1,11 @@
 # Project State
 
 ## Current
-Stage: Build (P3)
+Stage: Test (P3)
 Phase: P3
-Status: in-progress
-Next action: `stage: build P3-T10` for wave 9 (the production criterion), then `stage: test P3`.
-**Branches:** waves 7–8 are merged to `main` (#95–#103) and deployed (deploy run #28).
+Status: awaiting-approval
+Next action: the Founder reviews `docs/phases/P3/test-report.md` and uses the product hands-on, then `stage: triage P3` (three Low issues to route) or records P3's approval.
+**Branches:** waves 7–8 are merged to `main` (#95–#103) and deployed (deploy run #28); wave 9's report is merged (#106).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -21,11 +21,12 @@ Next action: `stage: build P3-T10` for wave 9 (the production criterion), then `
 | P4 | not-started | | |
 
 ## Handoff note (last session)
-`stage: build P3` built, merged and deployed waves 7–8 (P3-T11 … T18, the zod audit patch);
-the Founder marked T11–T18 done. Migrations 0008–0010 are on production (0009's drop of the undo
-columns by the Founder's choice). The probe connection was revoked and set up again, and probe run
-#69 logged `***` for the token; the old run logs stay, by the Founder's choice (sole access).
-Reminders answered 200 by hand on production. T15's last box waits for the first scheduled
-Reminders run (01:00, 09:00, 17:00 UTC): wave 9 checks it with T10's production criterion. Open
-follow-ups are in the briefs' reports (T13 `ledger_state` key, T18 other logs). PR #88 is red;
-`claude/design-*` are unmerged; P2-T8 waits on F11.
+`stage: test P3` re-ran Stage 6 on `main` at `2f2293a` (production runs `de44516`, docs aside the
+same). Verdict: **pass**, every P3 criterion. Gates green: unit 1506, integration 737, E2E 446
+passed and 0 failed in a push-capable Chromium, audit clean. Every issue the last report raised
+holds fixed. Three Low issues are new: Activity's type keys, Insights' average percent, and the
+sign-out after-response log (the "T18 other logs" follow-up). One Info: a country move with no new
+type leaves no Activity entry. **Open:** no Reminders `schedule` run had started by 12:35 UTC
+(merged 04:12, first slot 09:00); `ops/probe.md`'s Reminders row still waits for its first starts.
+This session's network refused `netnetapp.io`; `netnet-orcin.vercel.app` serves the same deployment.
+PR #88 is red; `claude/design-*` are unmerged; P2-T8 waits on F11. Follow-up: T13 `ledger_state` key.
