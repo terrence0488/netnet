@@ -4,8 +4,8 @@
 Stage: Build (P3)
 Phase: P3
 Status: in-progress
-Next action: the Founder merges #106 and sets P3-T10's `Status:`, then `stage: test P3` (fresh session).
-**Branches:** waves 7–8 are merged to `main` (#95–#103) and deployed (deploy run #28); wave 9's report is #106 (`p3-t10`).
+Next action: `stage: test P3` (fresh session).
+**Branches:** waves 7–8 are merged to `main` (#95–#103) and deployed (deploy run #28); wave 9's report is merged (#106).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -23,7 +23,7 @@ Next action: the Founder merges #106 and sets P3-T10's `Status:`, then `stage: t
 ## Handoff note (last session)
 `stage: build P3-T10` ran wave 9 on `main`'s deployed code (deploy run #28): the full matrix green
 (E2E 446 passed / 6 skipped at both widths), the analytics audit holding with `value_corrected`,
-and production checked through Actions and the NetNet connector (`P3-T10.md`'s report). This
+and production checked through Actions and the NetNet connector (`P3-T10.md`); T10 is done. This
 session's network refused `netnetapp.io`; `netnet-orcin.vercel.app` serves the same deployment.
 **Stage 6 checks the Reminders schedules:** none had fired yet (first slot 09:00 UTC, 2026-10-24)
 and the Founder chose not to wait. Confirm each slot (01:00, 09:00, 17:00 UTC) has a green
