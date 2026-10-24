@@ -7,7 +7,7 @@ name: Daily backup
 # Dispatch by hand for a backup on demand (and the restore proof's source).
 on:
   schedule:
-    # Daily at 02:30 UTC, clear of the 01:00 and 17:00 cron wakes.
+    # Daily at 02:30 UTC, clear of the 01:00, 09:00 and 17:00 cron wakes.
     - cron: '30 2 * * *'
   workflow_dispatch:
 

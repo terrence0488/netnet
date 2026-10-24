@@ -120,14 +120,17 @@ The brief asks for two green runs in a row, rotating the token.
 ## Cron schedule log
 
 Vercel's scheduler never fired the production crons: the jobs registered and manual triggers
-answered 200, but two days showed zero scheduled executions ("No data found"). So the daily
-and fx runs moved to GitHub Actions schedules calling the same handlers with `CRON_SECRET`
-(architecture §9.3; `cron-daily.yml`, `cron-fx.yml`), and `vercel.json` carries no crons.
-GitHub starts schedules late (minutes to hours, as the probe and backup runs show); both
-jobs tolerate delay — the fx sync fills gaps, the daily retries span days — so lateness
-needs no action. First scheduled starts, read from each workflow's runs:
+answered 200, but two days showed zero scheduled executions ("No data found"). So every
+scheduled job is a GitHub Actions schedule calling its handler with `CRON_SECRET`
+(architecture §9.3; `cron-daily.yml`, `cron-fx.yml`, `cron-reminders.yml`), and `vercel.json`
+carries no crons. GitHub starts schedules late (minutes to hours, as the probe and backup runs
+show); every job tolerates delay — the fx sync fills gaps, the daily retries span days, and a
+reminder run sends only to people in their daytime whenever it starts, with three runs eight
+hours apart (§7.10) — so lateness needs no action. First scheduled starts, read from each
+workflow's runs:
 
 | Job (workflow) | Scheduled (UTC) | First start observed (UTC) |
 |---|---|---|
 | daily (`cron-daily.yml`) | daily 01:00 | — |
 | fx (`cron-fx.yml`) | daily 17:00 | — |
+| reminders (`cron-reminders.yml`) | daily 01:00, 09:00, 17:00 | — |
