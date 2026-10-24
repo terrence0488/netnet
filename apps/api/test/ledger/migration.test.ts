@@ -97,8 +97,10 @@ async function auditShape(client: Client) {
     `select attname as name from pg_attribute
       where attrelid = 'ledger.audit'::regclass and attnum > 0 and not attisdropped order by attnum`,
   );
+  // Postgres 18 lists each NOT NULL as a constraint (`contype = 'n'`); the columns cover those.
   const constraints = await client.query<{ name: string }>(
-    `select conname as name from pg_constraint where conrelid = 'ledger.audit'::regclass order by 1`,
+    `select conname as name from pg_constraint
+      where conrelid = 'ledger.audit'::regclass and contype <> 'n' order by 1`,
   );
   return {
     columns: columns.rows.map((r) => r.name),
