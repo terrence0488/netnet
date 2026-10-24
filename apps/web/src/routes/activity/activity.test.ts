@@ -134,8 +134,28 @@ describe('describeChange', () => {
     ).toBeNull();
   });
 
+  it('reads a default-currency change as the number of values it recalculated', () => {
+    const change = (after: unknown) =>
+      describeChange(
+        entry({
+          entity: 'ledger',
+          action: 'update',
+          before: { baseCurrency: 'SGD' },
+          after,
+          summary: 'Changed the default currency SGD → USD',
+        }),
+      );
+    expect(change({ baseCurrency: 'USD', valuesRederived: 12 })).toBe('12 values recalculated');
+    expect(change({ baseCurrency: 'USD', valuesRederived: 1 })).toBe('1 value recalculated');
+    // Nothing to recalculate, or an entry from before the count was kept: the summary says it.
+    expect(change({ baseCurrency: 'USD', valuesRederived: 0 })).toBeNull();
+    expect(change({ baseCurrency: 'USD' })).toBeNull();
+    expect(change({ baseCurrency: 'USD', valuesRederived: 'many' })).toBeNull();
+  });
+
   it('leaves what the summary already says to the summary', () => {
     expect(describeChange(entry({ entity: 'ledger', action: 'update' }))).toBeNull();
+    expect(describeChange(entry({ entity: 'ledger', action: 'create' }))).toBeNull();
     expect(describeChange(entry({ entity: 'connection', action: 'create' }))).toBeNull();
     expect(describeChange(entry({ entity: 'holding', action: 'create' }))).toBeNull();
   });

@@ -137,6 +137,51 @@ describe('the Activity screen', () => {
     expect(markup).not.toMatch(/undo/i);
   });
 
+  it('reads a default-currency change as one row, and an earlier change entry by entry', () => {
+    const markup = render([
+      {
+        items: [
+          entry({
+            id: 'aud_currency',
+            actor: 'system',
+            entity: 'ledger',
+            entityId: 'usr_1',
+            before: { baseCurrency: 'SGD' },
+            after: { baseCurrency: 'USD', valuesRederived: 12 },
+            summary: 'Changed the default currency SGD → USD',
+          }),
+          // An earlier change, as it was logged then: the ledger and each value it re-derived.
+          entry({
+            id: 'aud_earlier',
+            at: '2026-10-01T09:00:00.000Z',
+            actor: 'system',
+            entity: 'ledger',
+            entityId: 'usr_1',
+            before: { baseCurrency: 'USD' },
+            after: { baseCurrency: 'SGD' },
+            summary: 'Changed the default currency USD → SGD',
+          }),
+          entry({
+            id: 'aud_earlier_value',
+            at: '2026-10-01T09:00:00.000Z',
+            actor: 'system',
+            before: { amountMinor: 2_370_000, currency: 'SGD' },
+            after: { amountMinor: 2_370_000, currency: 'SGD' },
+            summary: 'Updated the value for 2026-09-30',
+          }),
+        ],
+        nextCursor: null,
+      },
+    ]);
+    expect(markup.match(/Changed the default currency SGD → USD/g)).toHaveLength(1);
+    expect(markup).toContain('12 values recalculated');
+    expect(markup).toContain('NetNet');
+    expect(markup).not.toContain('changes at once');
+    expect(markup).toContain('Changed the default currency USD → SGD');
+    expect(markup).toContain('Updated the value for 2026-09-30');
+    expect(markup).toMatch(/23,700\S* → \S*23,700 SGD/);
+  });
+
   it('leaves a lone turn entry without a turn header', () => {
     const markup = render([
       { items: [entry({ id: 'aud_1', batchId: 'bat_1' })], nextCursor: null },
