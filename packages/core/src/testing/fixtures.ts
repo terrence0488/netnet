@@ -143,3 +143,28 @@ export function value(
     ...overrides,
   };
 }
+
+/**
+ * A year and a half of fictional history in odd cents: savings from November 2024, a car loan
+ * from December, a fund first valued in May 2025 — so every period view has later periods to pin.
+ */
+export const PERIOD_HOLDINGS = [
+  holding('cash', { name: 'Everyday pot' }),
+  holding('fund', {
+    name: 'World fund',
+    typeId: 'typ_listed',
+    universal: 'listed',
+    tagIds: ['tag_hot'],
+  }),
+  liability('loan', { name: 'Car loan' }),
+];
+export const PERIOD_VALUES = [
+  value('cash', '2024-11-20', 5_000_37),
+  value('loan', '2024-12-05', 8_000_00),
+  value('cash', '2025-02-10', 6_120_55),
+  value('fund', '2025-05-18', 3_000_01),
+  value('loan', '2025-08-31', 7_250_00),
+  value('cash', '2025-12-31', 6_480_19),
+  value('fund', '2026-01-15', 3_310_47),
+  value('cash', '2026-03-01', 7_015_00),
+];

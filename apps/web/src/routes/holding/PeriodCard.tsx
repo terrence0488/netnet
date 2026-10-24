@@ -58,13 +58,12 @@ export function PeriodCard({
   const showing = pageOf(periods, safePage, PERIOD_PAGE_SIZE);
   const noEarlier = (safePage + 1) * PERIOD_PAGE_SIZE >= periods.length;
   const noLater = safePage === 0;
-  const first = periods[0];
   const data: BarDatum[] = showing.map((period) => ({
     key: period.start,
     label: periodLabel(view, period),
     short: periodShort(view, period),
-    // The oldest period has no earlier period to compare with: a tick, never a bar.
-    value: period === first ? null : period.change,
+    // Core gives the first period no change, since nothing earlier compares: a tick, never a bar.
+    value: period.change,
     endValue: period.endValue,
     carried: period.carried,
   }));

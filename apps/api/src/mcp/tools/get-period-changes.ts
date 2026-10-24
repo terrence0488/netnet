@@ -16,7 +16,9 @@ export const getPeriodChangesTool: ToolDef<McpGetPeriodChangesInput, McpGetPerio
   description:
     'Net-worth change per calendar month, quarter or year in the base currency: each ' +
     'period-end value, its change, and the holdings that drove it. Each period says whether ' +
-    'it is carried or observed.',
+    'it is carried or observed. The first period has nothing earlier to compare with, so its ' +
+    'change and % are null and nothing drove it: its end value is where the record starts, ' +
+    'not a gain or a loss.',
   kind: 'read',
   scope: 'ledger.read',
   annotations: { readOnlyHint: true, openWorldHint: false },
@@ -37,7 +39,7 @@ export const getPeriodChangesTool: ToolDef<McpGetPeriodChangesInput, McpGetPerio
         start: p.start,
         end: p.end,
         end_value: major(p.endValue, table.currency),
-        change: major(p.change, table.currency),
+        change: p.change === null ? null : major(p.change, table.currency),
         change_pct: p.changePct,
         carried: p.carried,
         drivers: p.drivers.map((d) => ({

@@ -167,13 +167,21 @@ describe('isolation', () => {
 
   it('get_period_changes answers B, never A', async () => {
     const p = await pair();
+    // A later value of B's own: the first period has no drivers, so the second names one.
+    okOf(
+      await callTool(target, p.b.agent.token, 'record_values', {
+        values: [{ holding_id: p.b.holdingId, amount: '1300.00' }],
+      }),
+    );
+    await target.settle();
     await unchanged(p, async () => {
       const table = okOf<McpGetPeriodChangesOutput>(
         await callTool(target, p.b.agent.token, 'get_period_changes', { view: 'monthly' }),
       );
       expect(table.currency).toBe('GBP');
       expect(table.periods.map((period) => period.start)).toEqual(['2026-08-01', '2026-07-01']);
-      expect(table.periods[1]?.drivers.map((d) => d.name)).toStrictEqual(['Beta pot']);
+      expect(table.periods[0]?.drivers.map((d) => d.name)).toStrictEqual(['Beta pot']);
+      expect(table.periods[1]).toMatchObject({ end_value: 1200, change: null, drivers: [] });
       seesOnlyOwn(table, p.a);
     });
   });

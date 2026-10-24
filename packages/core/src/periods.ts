@@ -39,12 +39,15 @@ function byContribution(a: Driver, b: Driver): number {
 /**
  * Change per calendar period (PRD J11): each bucket from the earliest value's to today's — the
  * last ends at today, while it is still open — with its end value, its change against the
- * previous period's end (0 before the first), and the holdings that moved it, ranked by
- * contribution. Every figure uses each value's recorded `baseMinor`, negative for a liability,
- * so later FX never distorts a closed period; back-dated values recompute the periods they fall
- * in, since only value dates decide. A period is `carried` when a holding counted in it has no
- * value dated inside it. The filter recomputes every figure over the filtered set; exclusions
- * drop holdings, types and tags from these figures only. Oldest first.
+ * previous period's end, and the holdings that moved it, ranked by contribution. The first
+ * period, the earliest carrying data in the counted set, has nothing earlier to compare with:
+ * no change, no % and no drivers, so its opening value never reads as a gain or loss. A holding
+ * first valued in a later period counts toward that period's change. Every figure uses each
+ * value's recorded `baseMinor`, negative for a liability, so later FX never distorts a closed
+ * period; back-dated values recompute the periods they fall in, since only value dates decide. A
+ * period is `carried` when a holding counted in it has no value dated inside it. The filter
+ * recomputes every figure over the filtered set; exclusions drop holdings, types and tags from
+ * these figures only. Oldest first.
  */
 export function periods(
   values: readonly ValueIn[],
@@ -76,7 +79,7 @@ export function periods(
   if (earliest === undefined) return [];
 
   const out: Period[] = [];
-  let previousTotal = 0;
+  let previousTotal: number | null = null;
   for (let start = bucketStart(earliest, interval); start <= today;) {
     const fullEnd = bucketEnd(start, interval);
     const end = fullEnd <= today ? fullEnd : today;
@@ -98,17 +101,21 @@ export function periods(
         drivers.push({ holdingId: track.holding.id, name: track.holding.name, contribution });
       }
     }
-    drivers.sort(byContribution);
-    const change = endValue - previousTotal;
-    out.push({
-      start,
-      end,
-      endValue,
-      change,
-      changePct: previousTotal === 0 ? null : (change / Math.abs(previousTotal)) * 100,
-      carried,
-      drivers,
-    });
+    if (previousTotal === null) {
+      // The first period: nothing earlier to compare with, so no change and nothing drove it.
+      out.push({ start, end, endValue, change: null, changePct: null, carried, drivers: [] });
+    } else {
+      const change = endValue - previousTotal;
+      out.push({
+        start,
+        end,
+        endValue,
+        change,
+        changePct: previousTotal === 0 ? null : (change / Math.abs(previousTotal)) * 100,
+        carried,
+        drivers: drivers.sort(byContribution),
+      });
+    }
     previousTotal = endValue;
     start = addDays(fullEnd, 1);
   }

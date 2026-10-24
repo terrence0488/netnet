@@ -16,10 +16,12 @@ import {
   connectAgent,
   errOf,
   ledgerOf,
+  mcpRequest,
   mcpTestApp,
   newPerson,
   okOf,
   onboarded,
+  rpcOf,
   type ConnectedAgent,
   type McpTestApp,
 } from './support';
@@ -272,7 +274,7 @@ describe('get_net_worth_history', () => {
 
 describe('get_period_changes', () => {
   it('returns each period newest first, with its change and ranked drivers', async () => {
-    const { agent, freshHolding, staleHolding, gbpHolding } = await seeded();
+    const { agent, freshHolding, gbpHolding } = await seeded();
     const gbp = okOf<McpGetHoldingOutput>(
       await callTool(target, agent.token, 'get_holding', { holding_id: gbpHolding }),
     );
@@ -290,18 +292,21 @@ describe('get_period_changes', () => {
       ['2026-07-01', '2026-07-31'],
       ['2026-06-01', '2026-06-30'],
     ]);
+    // The first period has nothing earlier to compare with: its end value, no change.
     expect(table.periods[2]).toStrictEqual({
       start: '2026-06-01',
       end: '2026-06-30',
       end_value: 50,
-      change: 50,
+      change: null,
       change_pct: null,
       carried: false,
-      drivers: [{ holding_id: staleHolding, name: 'Old tin', contribution: 50 }],
+      drivers: [],
     });
+    // Holdings first valued in July count toward July's change.
     const july = table.periods[1]!;
     expect(july.end_value).toBe(1250 + 50 + gbpBase);
     expect(july.change).toBe(1250 + gbpBase);
+    expect(july.change_pct).toBeCloseTo(((1250 + gbpBase) / 50) * 100, 9);
     expect(july.carried).toBe(true);
     expect(july.drivers).toStrictEqual([
       { holding_id: freshHolding, name: 'Everyday pot', contribution: 1250 },
@@ -316,6 +321,29 @@ describe('get_period_changes', () => {
     });
   });
 
+  it('declares the change nullable, and says why', async () => {
+    const userId = await onboarded(target);
+    const agent = await connectAgent(target, userId);
+    const listed = await rpcOf(
+      await mcpRequest(target, agent.token, { jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+    );
+    const tools = (
+      listed.body.result as {
+        tools: { name: string; description: string; outputSchema: Record<string, unknown> }[];
+      }
+    ).tools;
+    const tool = tools.find((t) => t.name === 'get_period_changes')!;
+    expect(tool.description).toContain('The first period has nothing earlier to compare with');
+    const period = (
+      tool.outputSchema as {
+        properties: { periods: { items: { properties: Record<string, unknown> } } };
+      }
+    ).properties.periods.items.properties;
+    expect(period.end_value).toStrictEqual({ type: 'number' });
+    expect(period.change).toStrictEqual({ type: ['number', 'null'] });
+    expect(period.change_pct).toStrictEqual({ type: ['number', 'null'] });
+  });
+
   it('pages the newest periods with each one’s top drivers', async () => {
     const { agent, freshHolding } = await seeded();
     const table = okOf<McpGetPeriodChangesOutput>(
@@ -326,6 +354,8 @@ describe('get_period_changes', () => {
       }),
     );
     expect(table.periods.map((p) => p.start)).toEqual(['2026-08-01', '2026-07-01']);
+    // A page that stops short of the first period keeps its oldest period's change.
+    expect(table.periods[1]?.change).toBe(table.periods[1]!.end_value - 50);
     expect(table.periods[1]?.drivers).toStrictEqual([
       { holding_id: freshHolding, name: 'Everyday pot', contribution: 1250 },
     ]);

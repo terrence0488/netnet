@@ -7,7 +7,7 @@ import { deleteValueInputSchema } from './delete-value';
 import { getFinancialContextInputSchema } from './get-financial-context';
 import { getHoldingInputSchema } from './get-holding';
 import { getNetWorthHistoryInputSchema } from './get-net-worth-history';
-import { getPeriodChangesInputSchema } from './get-period-changes';
+import { getPeriodChangesInputSchema, getPeriodChangesOutputSchema } from './get-period-changes';
 import { getSetupGuideInputSchema } from './get-setup-guide';
 import { getTaxonomyInputSchema } from './get-taxonomy';
 import { listActivityInputSchema } from './list-activity';
@@ -218,6 +218,47 @@ describe('mcp error shape', () => {
     });
     expect(withFields.success).toBe(true);
     expect(mcpErrorSchema.safeParse({ error: { code: 'NOPE', message: 'x' } }).success).toBe(false);
+  });
+});
+
+describe('get_period_changes output', () => {
+  const period = (over: Record<string, unknown>) => ({
+    start: '2026-02-01',
+    end: '2026-02-28',
+    end_value: 2500.5,
+    change: 250.25,
+    change_pct: 11.1,
+    carried: false,
+    drivers: [{ holding_id: 'hld_01J', name: 'Everyday pot', contribution: 250.25 }],
+    ...over,
+  });
+
+  it('gives the first period an end value but no change, % or drivers', () => {
+    const ok = getPeriodChangesOutputSchema.safeParse({
+      currency: 'EUR',
+      view: 'monthly',
+      periods: [period({}), period({ change: null, change_pct: null, drivers: [] })],
+    });
+    expect(ok.success).toBe(true);
+  });
+
+  it('still states the change, never leaves it out', () => {
+    const missing: Record<string, unknown> = period({});
+    delete missing.change;
+    expect(
+      getPeriodChangesOutputSchema.safeParse({
+        currency: 'EUR',
+        view: 'monthly',
+        periods: [missing],
+      }).success,
+    ).toBe(false);
+    expect(
+      getPeriodChangesOutputSchema.safeParse({
+        currency: 'EUR',
+        view: 'monthly',
+        periods: [period({ change: '250.25' })],
+      }).success,
+    ).toBe(false);
   });
 });
 
