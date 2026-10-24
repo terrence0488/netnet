@@ -20,7 +20,7 @@ blocking. One check is still open: no Reminders schedule has fired yet.**
   `listed`). Insights' average can pair a falling amount with a rising percent. Every sign-out
   logs an after-response failure with no cause (issues 1–3).
 - **Open.** The Reminders workflow merged at 04:12 UTC today, so 09:00 UTC was its first
-  slot. No scheduled run had started by 12:35 UTC. GitHub starts this repository's schedules two
+  slot. No scheduled run had started by 12:31 UTC. GitHub starts this repository's schedules two
   to six hours late, so the slot is still within range (Suggested check 1). The manual run at
   07:00 UTC passed.
 

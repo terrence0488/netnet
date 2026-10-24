@@ -26,7 +26,7 @@ same). Verdict: **pass**, every P3 criterion. Gates green: unit 1506, integratio
 passed and 0 failed in a push-capable Chromium, audit clean. Every issue the last report raised
 holds fixed. Three Low issues are new: Activity's type keys, Insights' average percent, and the
 sign-out after-response log (the "T18 other logs" follow-up). One Info: a country move with no new
-type leaves no Activity entry. **Open:** no Reminders `schedule` run had started by 12:35 UTC
+type leaves no Activity entry. **Open:** no Reminders `schedule` run had started by 12:31 UTC
 (merged 04:12, first slot 09:00); `ops/probe.md`'s Reminders row still waits for its first starts.
 This session's network refused `netnetapp.io`; `netnet-orcin.vercel.app` serves the same deployment.
 PR #88 is red; `claude/design-*` are unmerged; P2-T8 waits on F11. Follow-up: T13 `ledger_state` key.
