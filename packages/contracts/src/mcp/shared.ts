@@ -142,6 +142,13 @@ export const mcpValueSchema = z.strictObject({
   fx_rate: z.string(),
   fx_rate_date: outputDate.nullable(),
   fx_source: z.enum(VALUE_FX_SOURCES),
+  /**
+   * A rate the person or an agent gave, as given: 1 of `currency` in `given_rate_into`, the
+   * default currency when it was given. `fx_rate` starts from it whatever the default currency
+   * is now. Null when none was given.
+   */
+  given_rate: z.string().nullable(),
+  given_rate_into: majorCurrency.nullable(),
   source: z.enum(VALUE_SOURCES),
   /** The agent's name as shown when an agent wrote it: third-party text, shown escaped. */
   client_name: z.string().nullable(),

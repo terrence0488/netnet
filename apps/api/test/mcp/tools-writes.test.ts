@@ -263,6 +263,39 @@ describe('record_values', () => {
     expect(await valuesOf(agent, second.result.id)).toStrictEqual([55]);
   });
 
+  it('keeps a rate the agent gives as given, into the default currency, and get_holding carries it', async () => {
+    const { agent, cashType } = await seeded();
+    const created = await createHolding(agent, {
+      name: 'Dollar pot',
+      kind: 'asset',
+      type_id: cashType,
+      currency: 'USD',
+    });
+    const recorded = okOf<McpRecordValuesOutput>(
+      await callTool(target, agent.token, 'record_values', {
+        values: [
+          { holding_id: created.result.id, amount: '100.00', date: '2026-07-27', fx_rate: '0.91' },
+          { holding_id: created.result.id, amount: '120.00', date: '2026-07-28' },
+        ],
+      }),
+    );
+    expect(recorded.results.map((r) => r.value)).toMatchObject([
+      { fx_rate: '0.91', fx_source: 'agent', given_rate: '0.91', given_rate_into: 'EUR' },
+      { fx_source: 'ecb', given_rate: null, given_rate_into: null },
+    ]);
+    const valueId = recorded.results[0]!.value.id;
+    okOf<McpUpdateValueOutput>(
+      await callTool(target, agent.token, 'update_value', { value_id: valueId, amount: '105.00' }),
+    );
+    const holding = okOf<McpGetHoldingOutput>(
+      await callTool(target, agent.token, 'get_holding', { holding_id: created.result.id }),
+    );
+    expect(holding.values.items.map((v) => [v.id, v.given_rate, v.given_rate_into])).toStrictEqual([
+      [recorded.results[1]!.value.id, null, null],
+      [valueId, '0.91', 'EUR'],
+    ]);
+  });
+
   it('takes 200 values, and refuses 201', async () => {
     const { agent, cashType } = await seeded();
     const created = await createHolding(agent, {

@@ -41,6 +41,8 @@ export function valueToMcp(value: Value): McpValue {
     fx_rate: value.fxRate,
     fx_rate_date: value.fxRateDate,
     fx_source: value.fxSource,
+    given_rate: value.givenRate,
+    given_rate_into: value.givenRateInto,
     source: value.source,
     client_name: value.clientName,
     entered_at: value.enteredAt,

@@ -466,6 +466,13 @@ export interface Value {
   fxRate: string;
   fxRateDate: string | null;
   fxSource: ValueFxSource;
+  /**
+   * A rate the person or their agent gave, as given: 1 of `currency` in `givenRateInto`, the
+   * default currency when it was given. Every change of the default currency starts from it
+   * (§6.6). Null when none was given.
+   */
+  givenRate: string | null;
+  givenRateInto: string | null;
   source: ValueSource;
   /** The agent's name as shown: untrusted text, escaped wherever it is shown. */
   clientName: string | null;

@@ -110,7 +110,8 @@ const TABLES: Record<string, string> = {
     'user_id text, id text, holding_id text, date date, amount_minor bigint, currency text, ' +
     'base_minor bigint, base_currency text, fx_rate numeric, fx_rate_date date, fx_source text, ' +
     'source text, client_name text, connection_id text, batch_id text, entered_at timestamptz, ' +
-    'updated_at timestamptz, row_version integer',
+    'updated_at timestamptz, row_version integer, given_rate numeric, ' +
+    'given_rate_into character(3), given_rate_by text',
   'ledger.prefs': 'user_id text, key text, value jsonb',
   'ledger.audit':
     'user_id text, id text, at timestamptz, actor text, client_name text, connection_id text, ' +
