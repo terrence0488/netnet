@@ -1,11 +1,11 @@
 # Project State
 
 ## Current
-Stage: Triage (P3)
+Stage: Build (P3)
 Phase: P3
-Status: approved
-Next action: `stage: build P3` (fresh session), wave 10: P3-T19, T20 and T21, in parallel. Then deploy, close P3-T10 on production, and `stage: test P3` again.
-**Branch:** `docs-p3-retest-triage` (the triage pull request, #110; the Founder merges it before the build). Waves 7–8 are merged to `main` (#95–#103) and deployed (deploy run #28); the re-test's report is merged (#108, #109).
+Status: in-progress
+Next action: the Founder merges wave 10 (#111–#113) and the production workflow deploys; then `stage: build P3-T10` for its production criterion, then `stage: test P3` in a fresh session.
+**Branches:** wave 10 is in review: `p3-t19` (#112), `p3-t20` (#111), `p3-t21` (#113). Waves 7–8 are merged to `main` (#95–#103) and deployed (deploy run #28).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -21,12 +21,13 @@ Next action: `stage: build P3` (fresh session), wave 10: P3-T19, T20 and T21, in
 | P4 | not-started | | |
 
 ## Handoff note (last session)
-`stage: triage P3` ran on the re-test's report, and the Founder approved it. `feedback.md` routes:
-issue 1 to **P3-T19** (Activity names types by the current pack's label, and the screen shows a
-value's date like its other dates), issue 2 to **P3-T20** (the average's percent is the mean change
-over the opening total, and a ranged view counts its oldest period: both Founder-confirmed), and
-issue 3 to **P3-T21** (every failure log carries its error's class per architecture §10; then the
-sign-out's after-response failure is fixed). Issue 4 meets its criterion and was not raised. No PRD
-or architecture change. The plan adds wave 10. Then deploy, close P3-T10 on production (the
-Reminders schedule's first starts go into `ops/probe.md`), and run `stage: test P3` again.
-PR #88 is red; `claude/design-*` are unmerged; P2-T8 waits on F11. Follow-up: T13 `ledger_state` key.
+`stage: build P3` built wave 10; each brief holds its engineer's report, and the `Status:` lines
+are left to the Founder. **T19:** Activity names types by the current pack's label, and the screen
+reads value dates with `formatDate`. **T20:** the average's percent is the mean change over the
+opening total, and a ranged view counts its oldest period. **T21:** every failure log carries its
+error's class; the sign-out's failure was `sessionFromCookie` copying Better Auth's cookie-clearing
+headers onto a finalized response (P3-T13's lead), so a read after the response now never refreshes
+or writes. No migration. Follow-ups: one core helper could replace T19's two type-snapshot readers;
+the prototype's `renderInsights` still averages percents. After the deploy, P3-T10 reads the
+Reminders schedule's first starts into `ops/probe.md`. PR #88 is red; `claude/design-*` are
+unmerged; P2-T8 waits on F11. Follow-up: T13 `ledger_state` key.
