@@ -254,13 +254,30 @@ describe('distributionColumns', () => {
 });
 
 describe('insightSummary', () => {
-  it('averages the comparable periods, and is null with only one', () => {
+  it('averages every period but the first in full, as a share of the opening total', () => {
     const oldestFirst = [...insightPeriods(ledger(), 'monthly', TODAY, {}, {})].reverse();
-    const summary = insightSummary(oldestFirst);
-    expect(summary?.count).toBe(5);
-    expect(summary?.avgAbs).toBe(8_000);
-    expect(summary?.avgPct).toBeCloseTo(7.45, 2);
+    // $1,000 in January to $1,400 by June: $400 over five months on the opening $1,000.
+    expect(insightSummary(oldestFirst)).toStrictEqual({
+      count: 5,
+      avgAbs: 8_000,
+      avgPct: expect.closeTo(8, 10) as number,
+    });
+    // The first period alone has nothing to compare with.
     expect(insightSummary(oldestFirst.slice(0, 1))).toBeNull();
+  });
+
+  it('averages a range’s oldest period too, against the period before it', () => {
+    const all = insightPeriods(ledger(), 'monthly', TODAY, {}, {});
+    const ranged = (range: number) =>
+      insightSummary([...rangedPeriods(all, range, 'monthly', TODAY)].reverse());
+    // March to June: +$300, then three flat months, on February's $1,100.
+    expect(ranged(4)).toStrictEqual({
+      count: 4,
+      avgAbs: 7_500,
+      avgPct: expect.closeTo((75 / 1_100) * 100, 10) as number,
+    });
+    expect(ranged(2)).toStrictEqual({ count: 2, avgAbs: 0, avgPct: 0 });
+    expect(ranged(-1)).toStrictEqual(ranged(0));
   });
 });
 

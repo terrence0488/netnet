@@ -156,7 +156,6 @@ function LoadedInsights({
   const ranged = useMemo(() => rangedPeriods(all, capped, view, today), [all, capped, view, today]);
   const oldestFirst = useMemo(() => [...ranged].reverse(), [ranged]);
   const summary = useMemo(() => insightSummary(oldestFirst), [oldestFirst]);
-  const fullSummary = useMemo(() => insightSummary([...all].reverse()), [all]);
   const { page: clampedPage, windowed } = useMemo(
     () => periodWindow(oldestFirst, page),
     [oldestFirst, page],
@@ -263,13 +262,15 @@ function LoadedInsights({
     [data.holdings],
   );
   const filteredOut = counted === 0 && (filterActive || exclusionsActive);
+  // A range always holds the newest period, which has a change whenever there are two, so the
+  // range has an average whenever any view of this set would. Only the line chart, which needs
+  // two period ends, can still ask for a longer range.
   const noHistory = summary === null;
-  const rangedTooSmall = noHistory && fullSummary !== null && !filteredOut;
   const placeholderLabel = filteredOut
     ? 'Nothing to show'
-    : rangedTooSmall
-      ? 'Pick a longer range'
-      : 'Need more data';
+    : noHistory
+      ? 'Need more data'
+      : 'Pick a longer range';
 
   const noun = VIEW_NOUN[view].toLowerCase();
   const plural = VIEW_PLURAL[view];
@@ -301,7 +302,7 @@ function LoadedInsights({
             </button>
           ))}
         </div>
-        {!noHistory || rangedTooSmall ? (
+        {!noHistory ? (
           <RangeBar label="Insights" options={options} value={capped} onChange={setRange} />
         ) : null}
       </div>

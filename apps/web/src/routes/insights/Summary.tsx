@@ -7,9 +7,9 @@ import styles from './Summary.module.css';
 
 /**
  * The summary line (the prototype's stat sentence): the average change while there is history
- * to compare, else the one statement of what a comparison needs. When filters or exclusions
- * leave nothing, it says that instead, because more data would not help. Said once, never on
- * the charts.
+ * to compare — with its share of the opening total, unless that total was 0 — else the one
+ * statement of what a comparison needs. When filters or exclusions leave nothing, it says that
+ * instead, because more data would not help. Said once, never on the charts.
  */
 export function Summary({
   filteredOut,
@@ -56,9 +56,9 @@ export function Summary({
         )}
       >
         {formatSignedCompactMoney(summary.avgAbs, currency)}
-      </b>{' '}
-      ({formatChangePct(summary.avgPct)}) a {noun} over the last {summary.count}{' '}
-      {summary.count === 1 ? noun : plural}.
+      </b>
+      {summary.avgPct === null ? null : ` (${formatChangePct(summary.avgPct)})`} a {noun} over the
+      last {summary.count} {summary.count === 1 ? noun : plural}.
     </p>
   );
 }
