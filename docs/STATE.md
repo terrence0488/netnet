@@ -1,11 +1,11 @@
 # Project State
 
 ## Current
-Stage: Test (P3)
+Stage: Triage (P3)
 Phase: P3
 Status: awaiting-approval
-Next action: `stage: triage P3` (fresh session). The Founder's feedback: route the test report's issues 1–3 to P3 as small tasks.
-**Branches:** waves 7–8 are merged to `main` (#95–#103) and deployed (deploy run #28); wave 9's report is merged (#106).
+Next action: the Founder reviews the triage and replies `approve triage P3`; then `stage: build P3` runs wave 10 (P3-T19, T20, T21, in parallel).
+**Branch:** `docs-p3-retest-triage` (the triage pull request). Waves 7–8 are merged to `main` (#95–#103) and deployed (deploy run #28); the re-test's report is merged (#108, #109).
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -17,16 +17,16 @@ Next action: `stage: triage P3` (fresh session). The Founder's feedback: route t
 | Plan | **approved** | 2026-10-23 | `docs/04-plan.md`, `docs/phases/P1/tasks/`, `docs/phases/P2/tasks/`, `docs/phases/P3/tasks/` (P3-T11 … P3-T18 added at triage) |
 | P1 | **approved** | 2026-10-08 | Test report reviewed; Claude computer shots shipped (#61) |
 | P2 | **approved** | 2026-10-12 | Test report + hands-on; Account and date review fixups in (#76) |
-| P3 | triage approved | 2026-10-23 | Test report: fail; every item routed (`docs/phases/P3/feedback.md`). T11–T18 to build; T10 open until production; then Stage 6 again |
+| P3 | triage approved | 2026-10-23 | First run: fail, every item routed and T11–T18 built. Re-test: pass, issues 1–3 routed to T19–T21 (awaiting confirmation). T10 open until production; then Stage 6 again |
 | P4 | not-started | | |
 
 ## Handoff note (last session)
-`stage: test P3` re-ran Stage 6 on `main` at `2f2293a` (production runs `de44516`, docs aside the
-same). Verdict: **pass**, every P3 criterion; gates green (E2E 446 passed, 0 failed, push-capable
-Chromium); every issue the last report raised holds fixed. Three Low issues are new (Activity's type
-keys, Insights' average percent, the sign-out after-response log) and one Info (a country move with
-no new type leaves no Activity entry). **Founder, in chat after reading the report:** route issues
-1–3 as small P3 tasks; issue 4 was not raised. **Reminders schedule, not blocking:** no `schedule` run
-had started by 12:31 UTC (first slot 09:00), and the Founder chose not to wait; a later session reads
-the first starts from Actions into `ops/probe.md`. This session's network refused `netnetapp.io`.
+`stage: triage P3` ran on the re-test's report (pass, three Low issues). `feedback.md` routes each:
+issue 1 to **P3-T19** (Activity names types by the current pack's label, and the screen shows a
+value's date like its other dates), issue 2 to **P3-T20** (the average's percent is the mean change
+over the opening total, and a ranged view counts its oldest period; rule in `decisions.md`), and
+issue 3 to **P3-T21** (every failure log carries its error's class per architecture §10; then the
+sign-out's after-response failure is fixed). Issue 4 meets its criterion and was not raised. No PRD
+or architecture change. The plan adds wave 10. Then deploy, close P3-T10 on production (the
+Reminders schedule's first starts go into `ops/probe.md`), and run `stage: test P3` again.
 PR #88 is red; `claude/design-*` are unmerged; P2-T8 waits on F11. Follow-up: T13 `ledger_state` key.

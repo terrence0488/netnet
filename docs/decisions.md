@@ -72,6 +72,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | A change against a baseline is worked out per holding and summed; a holding first valued after the baseline counts from its first value | Adding a holding is not growth, and the total and every row are measured against the same thing |
 | The calendar baselines are month ends: last month is the end of last month, last quarter the end of the month three months back, last year the end of the same month last year; Jan 1 is 1 January | Statements are dated at month ends, so the comparison is like with like, and "since 31 Aug" reads as a fixed point |
 | The first period in Insights and `get_period_changes` has an end value but no change | Nothing comes before it to compare with; its opening value read as a gain or loss that never happened |
+| Insights' average is the mean change over the periods shown that have one, and its percent is that mean as a share of the opening total (in absolute value), with no percent when that total is 0 | The amount and the percent then describe the same window and always agree in sign; a mean of the periods' percents can rise while net worth falls |
 | The empty Home links to Archived whenever anything is archived | Archiving everything would otherwise strand the account: the prototype's empty Home offers no way back |
 
 ## Onboarding and agents
