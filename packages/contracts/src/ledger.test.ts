@@ -320,7 +320,7 @@ describe('packRefSchema', () => {
 });
 
 describe('exportFormatSchema and EXPORT_CSV_HEADER', () => {
-  it('takes json or csv, and the header is the brief’s column list, exactly', () => {
+  it('takes json or csv, and the header is architecture §7.2’s column list, exactly', () => {
     expect(exportFormatSchema.parse('json')).toBe('json');
     expect(exportFormatSchema.parse('csv')).toBe('csv');
     expect(exportFormatSchema.safeParse('xml').success).toBe(false);
@@ -328,7 +328,7 @@ describe('exportFormatSchema and EXPORT_CSV_HEADER', () => {
     expect(EXPORT_CSV_HEADER).toBe(
       'holding_id,holding_name,kind,type,currency,date,amount,' +
         'base_amount,base_currency,fx_rate,fx_rate_date,fx_source,source,client,' +
-        'access,access_reason,tags',
+        'access,access_reason,tags,given_rate,given_rate_into',
     );
   });
 });

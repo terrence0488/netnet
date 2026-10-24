@@ -87,8 +87,9 @@ export interface Ledger {
   deleteTag(id: string, mergeInto?: string): Promise<Write<void>>;
   setPrefs(p: PrefsPatch): Promise<Write<Prefs>>;
   /**
-   * Another default currency: every value re-derived from the stored rates at its own rate date,
-   * in one write. Called with the system actor, so the log reads one system change.
+   * Another default currency: every value re-derived at its own date, a rate the person or their
+   * agent gave kept as given, in one write with one audit entry. Called with the system actor, so
+   * the log reads one system change.
    */
   changeBaseCurrency(ccy: string): Promise<Write<void>>;
   applyPackTypes(pack: PackRef): Promise<Write<UserType[]>>;

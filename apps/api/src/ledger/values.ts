@@ -11,8 +11,15 @@ import {
 } from '@netnet/contracts';
 import { and, eq, inArray } from 'drizzle-orm';
 import { FieldErrors, notFound, parseInput } from './input';
-import { majorAmount, prepareValue, type PreparedValue } from './money';
-import { loadHoldings, loadValue, toValue, type ValueRow } from './rows';
+import {
+  givenRateOf,
+  majorAmount,
+  prepareValue,
+  sameGivenRate,
+  type PreparedValue,
+  type ValueRate,
+} from './money';
+import { loadHoldings, loadValue, loadValueRow, toValue, type ValueRow } from './rows';
 import { value } from './schema';
 import type { Scope } from './scope';
 import { runWrite, type WriteScope } from './write';
@@ -62,6 +69,9 @@ async function written(w: WriteScope, prepared: PreparedValue) {
     fxRate: prepared.fxRate,
     fxRateDate: prepared.fxRateDate,
     fxSource: prepared.fxSource,
+    givenRate: prepared.givenRate?.rate ?? null,
+    givenRateInto: prepared.givenRate?.into ?? null,
+    givenRateBy: prepared.givenRate?.by ?? null,
     ...(await w.provenance()),
     updatedAt: now,
   };
@@ -206,45 +216,46 @@ export function recordValues(s: Scope, items: readonly NewValue[]): Promise<Writ
 }
 
 /**
- * `updateValue` (`update_value`): a correction. The rate is looked up again only when the date or
- * currency changes; a rate the caller gave stays until they drop it (`fxRate: null`). Moving to a
- * date that already has a value replaces it, with a warning.
+ * `updateValue` (`update_value`): a correction. A rate given now becomes the value's given rate
+ * (architecture §6.6); one given earlier stays through edits to the amount and date, until the
+ * caller drops it (`fxRate: null`) or moves the value to another currency without a new one. A
+ * published rate is looked up again only when the date or currency changes. Moving to a date that
+ * already has a value replaces it, with a warning.
  */
 export function updateValue(s: Scope, id: string, patch: ValuePatch): Promise<Write<Value>> {
   const p = parseInput(valuePatchSchema, patch);
   return runWrite(s, 'updateValue', async (w) => {
-    const current = await loadValue(s, id);
-    if (!current) throw notFound('value', id);
+    const stored = await loadValueRow(s, id);
+    if (!stored) throw notFound('value', id);
+    const current = toValue(stored);
+    const currentGiven = givenRateOf(stored);
     const errors = new FieldErrors();
     const currency = p.currency ?? current.currency;
     const date = p.date ?? current.date;
-    const sameRateBasis =
-      currency === current.currency && current.baseCurrency === w.state.baseCurrency;
-    const given = current.fxSource === 'user' || current.fxSource === 'agent';
-    const fxRate =
-      p.fxRate !== undefined
-        ? p.fxRate
-        : sameRateBasis && (given || (date === current.date && current.fxSource !== 'same'))
-          ? current.fxRate
-          : undefined;
+    const sameCurrency = currency === current.currency;
+    const keptRate: ValueRate | undefined =
+      p.fxRate === undefined &&
+      sameCurrency &&
+      date === current.date &&
+      current.fxSource !== 'same' &&
+      current.baseCurrency === w.state.baseCurrency
+        ? { rate: current.fxRate, rateDate: current.fxRateDate, source: current.fxSource }
+        : undefined;
     const prepared = await prepareValue(
       w,
       {
         amount: p.amount ?? majorAmount(current.amountMinor, current.currency),
         currency,
         date,
-        fxRate,
+        fxRate: p.fxRate,
+        given: sameCurrency && p.fxRate !== null ? currentGiven : null,
+        stored: keptRate,
       },
       '',
       errors,
     );
     errors.throwIfAny();
     if (!prepared) throw new Error('unreachable: a value that failed has errors');
-    // A stored rate kept as it was keeps its source; a published one its own date too.
-    if (p.fxRate === undefined && fxRate !== undefined) {
-      prepared.fxSource = current.fxSource;
-      if (!given) prepared.fxRateDate = current.fxRateDate;
-    }
 
     const unchanged =
       prepared.amountMinor === current.amountMinor &&
@@ -253,7 +264,8 @@ export function updateValue(s: Scope, id: string, patch: ValuePatch): Promise<Wr
       prepared.baseMinor === current.baseMinor &&
       prepared.fxRate === current.fxRate &&
       prepared.fxRateDate === current.fxRateDate &&
-      prepared.fxSource === current.fxSource;
+      prepared.fxSource === current.fxSource &&
+      sameGivenRate(prepared.givenRate, currentGiven);
     if (unchanged) return current;
 
     if (prepared.date !== current.date) {

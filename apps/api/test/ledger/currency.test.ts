@@ -1,3 +1,4 @@
+import type { Value } from '@netnet/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createFx, type RateReader } from '../../src/content/fx';
 import type { StoredRate } from '../../src/db/fx-rates';
@@ -18,9 +19,11 @@ import {
 } from './support';
 
 /**
- * Changing the default currency (architecture §6.6, P3-T3): every value's `base_minor` re-derived
- * from the stored rates at its own `fx_rate_date`, as one `system` write. The rates below move
- * between July and August, so a value re-derived at the wrong date reads wrong.
+ * Changing the default currency (architecture §6.6): every value's `base_minor` re-derived at the
+ * value's own date, as one `system` write with one audit entry. A rate the person or their agent
+ * gave stays as given, so a round trip lands back on it exactly; every other value reads as a
+ * ledger recorded fresh in the new currency. The rates below move between July and August, so a
+ * value re-derived at the wrong date reads wrong.
  */
 let db: TestDatabase;
 let suite: LedgerSuite;
@@ -33,6 +36,7 @@ const RATES: Record<string, Record<string, string>> = {
   EUR: { '2026-07-01': '0.8', '2026-08-01': '0.9' },
   GBP: { '2026-07-01': '0.75', '2026-08-01': '0.78' },
   JPY: { '2026-07-01': '150', '2026-08-01': '160' },
+  SGD: { '2026-07-01': '1.3', '2026-08-01': '1.28' },
 };
 
 function datedRates(): RateReader {
@@ -106,6 +110,87 @@ async function valuesOf(userId: string, holdingId: string) {
   return [...detail.values.items].sort((a, b) => a.date.localeCompare(b.date));
 }
 
+/** The fields a re-derivation leaves alone: what was entered, by whom and when. */
+function provenanceOf(v: Value) {
+  return {
+    id: v.id,
+    date: v.date,
+    amountMinor: v.amountMinor,
+    currency: v.currency,
+    source: v.source,
+    clientName: v.clientName,
+    connectionId: v.connectionId,
+    batchId: v.batchId,
+    enteredAt: v.enteredAt,
+  };
+}
+
+/** The given rate as stored, with who gave it, or null. */
+async function givenOf(valueId: string) {
+  const [row] = await suite.rows<{
+    rate: string | null;
+    into: string | null;
+    by: string | null;
+  }>(
+    `select given_rate as rate, given_rate_into as into, given_rate_by as by
+       from ledger.value where id = $1`,
+    [valueId],
+  );
+  if (!row) throw new Error(`No value ${valueId}`);
+  return row.rate === null ? null : row;
+}
+
+/** What each holding of the three-currency ledger is given, in its own currency. */
+const DRAFTS = {
+  sgd: [{ amount: '5000', date: '2026-07-15' }],
+  // The person's own rate from a statement: 1 USD = 1.35 SGD.
+  usd: [
+    { amount: '1000', date: '2026-07-25', fxRate: '1.35' },
+    { amount: '1200', date: '2026-08-01' },
+  ],
+  // The agent's: 1 EUR = 1.42 SGD.
+  eur: [
+    { amount: '2000', date: '2026-07-10', fxRate: '1.42' },
+    { amount: '2100', date: '2026-08-02' },
+  ],
+};
+
+type Holdings = Record<keyof typeof DRAFTS, string>;
+
+/**
+ * A ledger in `baseCurrency` holding SGD, USD and EUR, with a rate the person gave and one an
+ * agent gave (into SGD) when `rated`, and the values with no rate either way.
+ */
+async function threeCurrencyLedger(baseCurrency = 'SGD', rated = true) {
+  const userId = await newUser(baseCurrency);
+  const connection = await suite.connect(userId);
+  const pick = (drafts: { amount: string; date: string; fxRate?: string }[]) =>
+    rated ? drafts : drafts.filter((d) => d.fxRate === undefined);
+  const holdings: Holdings = {
+    sgd: await holdingWith(userId, 'Savings', 'SGD', pick(DRAFTS.sgd)),
+    usd: await holdingWith(userId, 'Brokerage', 'USD', pick(DRAFTS.usd)),
+    eur: await holdingWith(userId, 'Euro fund', 'EUR', pick(DRAFTS.eur), agentActor(connection)),
+  };
+  return { userId, holdings, connection };
+}
+
+/** Every value of the ledger, holding by holding, oldest first. */
+async function everyValue(userId: string, holdings: Holdings): Promise<Value[]> {
+  const lists = await Promise.all(
+    [holdings.sgd, holdings.usd, holdings.eur].map((id) => valuesOf(userId, id)),
+  );
+  return lists.flat();
+}
+
+/** Each value without a given rate reads exactly as a ledger recorded fresh in `code`. */
+async function expectFresh(userId: string, holdings: Holdings, code: string): Promise<void> {
+  const fresh = await threeCurrencyLedger(code, false);
+  const unrated = (await everyValue(userId, holdings)).filter((v) => v.givenRate === null);
+  expect(unrated.map(baseOf)).toStrictEqual(
+    (await everyValue(fresh.userId, fresh.holdings)).map(baseOf),
+  );
+}
+
 /** The base fields a re-derivation may change. */
 function baseOf(v: {
   baseMinor: number;
@@ -124,7 +209,7 @@ function baseOf(v: {
 }
 
 describe('changeBaseCurrency', () => {
-  it('re-derives every value at its own rate date, as if the new currency had always been the base', async () => {
+  it('re-derives every value at its own date, as if the new currency had always been the base', async () => {
     const drafts = {
       eur: [
         { amount: '1000', date: '2026-07-15' },
@@ -201,103 +286,157 @@ describe('changeBaseCurrency', () => {
     expect((await as(changed).read((l) => l.snapshot())).baseCurrency).toBe('GBP');
   });
 
-  it('keeps a caller-given rate, carried into the new currency, with its provenance', async () => {
-    const userId = await newUser('USD');
-    const userHolding = await holdingWith(userId, 'Euro savings', 'EUR', [
-      { amount: '1000', date: '2026-07-25', fxRate: '1.31' },
-    ]);
-    const connection = await suite.connect(userId);
-    const agentHolding = await holdingWith(
-      userId,
-      'Euro fund',
-      'EUR',
-      [{ amount: '2000', date: '2026-07-10', fxRate: '1.24' }],
-      agentActor(connection),
-    );
-    const [beforeUser] = await valuesOf(userId, userHolding);
-    const [beforeAgent] = await valuesOf(userId, agentHolding);
-    expect(beforeUser).toMatchObject({ fxSource: 'user', fxRateDate: '2026-07-25' });
-    expect(beforeAgent).toMatchObject({ fxSource: 'agent', fxRateDate: '2026-07-10' });
-
-    await as(userId, SYSTEM).write((l) => l.changeBaseCurrency('GBP'));
-
-    // 1.31 × July's dollar-to-pound (0.75); 1.24 × the same.
-    const [user] = await valuesOf(userId, userHolding);
-    expect(baseOf(user!)).toStrictEqual({
-      baseMinor: 98250,
-      baseCurrency: 'GBP',
-      fxRate: '0.9825',
+  it('keeps the person’s and the agent’s own rates through SGD → USD → SGD, exactly', async () => {
+    const { userId, holdings, connection } = await threeCurrencyLedger();
+    const before = await everyValue(userId, holdings);
+    const [usdGiven] = await valuesOf(userId, holdings.usd);
+    const [eurGiven] = await valuesOf(userId, holdings.eur);
+    expect(baseOf(usdGiven!)).toStrictEqual({
+      baseMinor: 135000,
+      baseCurrency: 'SGD',
+      fxRate: '1.35',
       fxRateDate: '2026-07-25',
       fxSource: 'user',
     });
-    expect(user).toMatchObject({
-      source: 'web',
-      clientName: null,
-      connectionId: null,
-      batchId: null,
-      enteredAt: beforeUser!.enteredAt,
+    expect(await givenOf(usdGiven!.id)).toStrictEqual({ rate: '1.35', into: 'SGD', by: 'user' });
+    expect(await givenOf(eurGiven!.id)).toStrictEqual({ rate: '1.42', into: 'SGD', by: 'agent' });
+
+    await as(userId, SYSTEM).write((l) => l.changeBaseCurrency('USD'));
+
+    // The dollar value is in the default currency now: 1, with its own rate kept, unused.
+    const [usdInUsd] = await valuesOf(userId, holdings.usd);
+    expect(baseOf(usdInUsd!)).toStrictEqual({
+      baseMinor: 100000,
+      baseCurrency: 'USD',
+      fxRate: '1',
+      fxRateDate: null,
+      fxSource: 'same',
     });
-    const [agent] = await valuesOf(userId, agentHolding);
-    expect(baseOf(agent!)).toStrictEqual({
-      baseMinor: 186000,
-      baseCurrency: 'GBP',
-      fxRate: '0.93',
+    expect(usdInUsd).toMatchObject({ givenRate: '1.35', givenRateInto: 'SGD' });
+    expect(await givenOf(usdInUsd!.id)).toStrictEqual({ rate: '1.35', into: 'SGD', by: 'user' });
+    // The agent's 1.42 into SGD, carried at July's SGD-to-USD (1 ÷ 1.3 = 0.769230769231), on the
+    // value's own date: 2000 × 1.09230769230802 = 2184.61538461604.
+    const [eurInUsd] = await valuesOf(userId, holdings.eur);
+    expect(baseOf(eurInUsd!)).toStrictEqual({
+      baseMinor: 218462,
+      baseCurrency: 'USD',
+      fxRate: '1.09230769230802',
       fxRateDate: '2026-07-10',
       fxSource: 'agent',
     });
-    expect(agent).toMatchObject({
+    expect(eurInUsd).toMatchObject({
+      givenRate: '1.42',
+      givenRateInto: 'SGD',
       source: 'agent',
-      clientName: beforeAgent!.clientName,
       connectionId: connection,
-      batchId: beforeAgent!.batchId,
-      enteredAt: beforeAgent!.enteredAt,
     });
+    await expectFresh(userId, holdings, 'USD');
+
+    await as(userId, SYSTEM).write((l) => l.changeBaseCurrency('SGD'));
+
+    const after = await everyValue(userId, holdings);
+    expect(after.map(baseOf)).toStrictEqual(before.map(baseOf));
+    expect(after.map(provenanceOf)).toStrictEqual(before.map(provenanceOf));
+    expect(after.map((v) => [v.givenRate, v.givenRateInto])).toStrictEqual(
+      before.map((v) => [v.givenRate, v.givenRateInto]),
+    );
   });
 
-  it('logs one system change, each row carrying before and after', async () => {
-    const userId = await newUser('USD');
-    const first = await holdingWith(userId, 'Euro savings', 'EUR', [
-      { amount: '1000', date: '2026-07-15' },
-    ]);
-    const second = await holdingWith(userId, 'Dollar savings', 'USD', [
-      { amount: '300', date: '2026-08-01' },
-    ]);
-    const lists = await Promise.all([first, second].map((id) => valuesOf(userId, id)));
-    const before = new Map(lists.flat().map((v) => [v.id, v] as const));
+  it('keeps them exactly through SGD → EUR → USD → SGD, the rest as recorded fresh at each step', async () => {
+    const { userId, holdings } = await threeCurrencyLedger();
+    const before = await everyValue(userId, holdings);
+
+    await as(userId, SYSTEM).write((l) => l.changeBaseCurrency('EUR'));
+    // 1.35 × July's SGD-to-EUR (0.8 ÷ 1.3 = 0.615384615385) = 0.83076923076975, at the value's date.
+    const [usdInEur] = await valuesOf(userId, holdings.usd);
+    expect(baseOf(usdInEur!)).toStrictEqual({
+      baseMinor: 83077,
+      baseCurrency: 'EUR',
+      fxRate: '0.83076923076975',
+      fxRateDate: '2026-07-25',
+      fxSource: 'user',
+    });
+    const [eurInEur] = await valuesOf(userId, holdings.eur);
+    expect(baseOf(eurInEur!)).toStrictEqual({
+      baseMinor: 200000,
+      baseCurrency: 'EUR',
+      fxRate: '1',
+      fxRateDate: null,
+      fxSource: 'same',
+    });
+    await expectFresh(userId, holdings, 'EUR');
+
+    await as(userId, SYSTEM).write((l) => l.changeBaseCurrency('USD'));
+    await expectFresh(userId, holdings, 'USD');
+
+    await as(userId, SYSTEM).write((l) => l.changeBaseCurrency('SGD'));
+    await expectFresh(userId, holdings, 'SGD');
+    const after = await everyValue(userId, holdings);
+    expect(after.map(baseOf)).toStrictEqual(before.map(baseOf));
+    expect(after.map(provenanceOf)).toStrictEqual(before.map(provenanceOf));
+  });
+
+  it('re-derives a three-currency ledger into a fourth and back, without compounding', async () => {
+    const { userId, holdings } = await threeCurrencyLedger();
+    const before = await everyValue(userId, holdings);
+
+    // There and back again, twice over: a carried rate never builds on the last carry.
+    for (const code of ['GBP', 'EUR', 'GBP', 'USD', 'EUR', 'SGD']) {
+      await as(userId, SYSTEM).write((l) => l.changeBaseCurrency(code));
+      await expectFresh(userId, holdings, code);
+    }
+    // 1.35 × July's SGD-to-GBP (0.75 ÷ 1.3 = 0.576923076923) = 0.77884615384605, whenever GBP
+    // comes round.
+    await as(userId, SYSTEM).write((l) => l.changeBaseCurrency('GBP'));
+    const [usdInGbp] = await valuesOf(userId, holdings.usd);
+    expect(baseOf(usdInGbp!)).toStrictEqual({
+      baseMinor: 77885,
+      baseCurrency: 'GBP',
+      fxRate: '0.77884615384605',
+      fxRateDate: '2026-07-25',
+      fxSource: 'user',
+    });
+    await as(userId, SYSTEM).write((l) => l.changeBaseCurrency('SGD'));
+    expect((await everyValue(userId, holdings)).map(baseOf)).toStrictEqual(before.map(baseOf));
+  });
+
+  it('logs one system entry with the number of values re-derived, and no entry per value', async () => {
+    const { userId, holdings } = await threeCurrencyLedger();
+    const count = (await everyValue(userId, holdings)).length;
     const version = await dataVersion(suite, userId);
     const seen = (await auditRows(suite, userId)).length;
 
-    const write = await as(userId, SYSTEM).write((l) => l.changeBaseCurrency('EUR'));
+    const write = await as(userId, SYSTEM).write((l) => l.changeBaseCurrency('USD'));
 
     expect(write.dataVersion).toBe(version! + 1);
+    expect(await dataVersion(suite, userId)).toBe(version! + 1);
     const audits = (await auditRows(suite, userId)).slice(seen);
-    expect(audits.map((r) => [r.entity, r.action])).toEqual([
-      ['value', 'update'],
-      ['value', 'update'],
-      ['ledger', 'update'],
-    ]);
-    for (const row of audits) {
-      expect(row).toMatchObject({
+    expect(audits).toStrictEqual([
+      {
+        id: expect.stringMatching(/^aud_/) as string,
         actor: 'system',
         client_name: null,
         connection_id: null,
         batch_id: null,
-      });
-    }
-    for (const row of audits.slice(0, 2)) {
-      const was = before.get(row.entity_id!);
-      expect(was).toBeDefined();
-      // `before` is the value as it was, `after` as it is: old → new in the log.
-      expect(row.before).toStrictEqual(JSON.parse(JSON.stringify(was)));
-      const [now] = (await valuesOf(userId, was!.holdingId)).filter((v) => v.id === was!.id);
-      expect(row.after).toStrictEqual(JSON.parse(JSON.stringify(now)));
-      expect((row.after as { rowVersion: number }).rowVersion).toBe(was!.rowVersion + 1);
-    }
-    expect(audits[2]).toMatchObject({
-      entity_id: userId,
-      before: { baseCurrency: 'USD' },
-      after: { baseCurrency: 'EUR' },
-    });
+        action: 'update',
+        entity: 'ledger',
+        entity_id: userId,
+        before: { baseCurrency: 'SGD' },
+        after: { baseCurrency: 'USD', valuesRederived: count },
+      },
+    ]);
+    expect(count).toBe(5);
+    const { items } = await as(userId).read((l) => l.activity({ limit: 1 }));
+    expect(items.map((e) => e.summary)).toStrictEqual(['Changed the default currency SGD → USD']);
+  });
+
+  it('keeps each value’s provenance and entry time, and moves its row version on', async () => {
+    const { userId, holdings } = await threeCurrencyLedger();
+    const before = await everyValue(userId, holdings);
+    await as(userId, SYSTEM).write((l) => l.changeBaseCurrency('EUR'));
+    const after = await everyValue(userId, holdings);
+    expect(after.map(provenanceOf)).toStrictEqual(before.map(provenanceOf));
+    expect(after.map((v) => v.rowVersion)).toStrictEqual(before.map((v) => v.rowVersion + 1));
   });
 
   it('changes nothing when the currency is already the base', async () => {
@@ -340,7 +479,14 @@ describe('changeBaseCurrency', () => {
 
     expect(write.dataVersion).toBe(version! + 1);
     const audits = (await auditRows(suite, userId)).slice(seen);
-    expect(audits.map((r) => [r.entity, r.action])).toEqual([['ledger', 'update']]);
+    expect(audits).toMatchObject([
+      {
+        entity: 'ledger',
+        action: 'update',
+        before: { baseCurrency: 'USD' },
+        after: { baseCurrency: 'EUR', valuesRederived: 0 },
+      },
+    ]);
     expect((await as(userId).read((l) => l.snapshot())).baseCurrency).toBe('EUR');
   });
 

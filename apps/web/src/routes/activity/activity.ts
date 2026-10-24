@@ -110,14 +110,28 @@ function prefsChange(entry: AuditEntry): string | null {
 }
 
 /**
+ * A change of the default currency is one entry however many values it re-derived (architecture
+ * §6.8): beneath its summary, how many. An entry logged before the count was kept, or one that
+ * recalculated nothing, leaves the summary to say it.
+ */
+function ledgerChange(entry: AuditEntry): string | null {
+  if (entry.action !== 'update') return null;
+  const count = recordOf(entry.after)?.valuesRederived;
+  if (typeof count !== 'number' || !Number.isSafeInteger(count) || count < 1) return null;
+  return `${count.toLocaleString()} ${count === 1 ? 'value' : 'values'} recalculated`;
+}
+
+/**
  * The old → new beneath an entry's summary, or null when the summary already says it (a creation,
- * a deletion, a revocation, the default currency). Sides that are not shaped as expected read as
- * no detail rather than a guess.
+ * a deletion, a revocation). Sides that are not shaped as expected read as no detail rather than
+ * a guess.
  */
 export function describeChange(entry: AuditEntry): string | null {
   switch (entry.entity) {
     case 'value':
       return valueChange(entry);
+    case 'ledger':
+      return ledgerChange(entry);
     case 'holding':
       return entry.action === 'update'
         ? renamedChange(textOf(entry.before, 'name'), textOf(entry.after, 'name'))

@@ -466,6 +466,13 @@ export interface Value {
   fxRate: string;
   fxRateDate: string | null;
   fxSource: ValueFxSource;
+  /**
+   * A rate the person or their agent gave, as given: 1 of `currency` in `givenRateInto`, the
+   * default currency when it was given. Every change of the default currency starts from it
+   * (§6.6). Null when none was given.
+   */
+  givenRate: string | null;
+  givenRateInto: string | null;
   source: ValueSource;
   /** The agent's name as shown: untrusted text, escaped wherever it is shown. */
   clientName: string | null;
@@ -636,8 +643,9 @@ export interface ExportBundle {
 }
 
 /**
- * The CSV export's header (P3-T4, an additive detail under plan rule 4): one row per value, in the
- * bundle's order. Amounts are decimals in major units; tags are `;`-separated names.
+ * The CSV export's header (architecture §7.2): one row per value, in the bundle's order. Amounts
+ * are decimals in major units; tags are `;`-separated names; a value with no given rate leaves
+ * the last two empty.
  */
 export const EXPORT_CSV_HEADER =
-  'holding_id,holding_name,kind,type,currency,date,amount,base_amount,base_currency,fx_rate,fx_rate_date,fx_source,source,client,access,access_reason,tags';
+  'holding_id,holding_name,kind,type,currency,date,amount,base_amount,base_currency,fx_rate,fx_rate_date,fx_source,source,client,access,access_reason,tags,given_rate,given_rate_into';

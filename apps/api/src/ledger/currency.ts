@@ -1,34 +1,33 @@
-import type { Value, ValueFxSource, Write } from '@netnet/contracts';
+import type { Write } from '@netnet/contracts';
 import { currencyExponent } from '@netnet/contracts/currencies';
-import { MAX_MINOR, convert, minorRate } from '@netnet/core';
 import { and, eq } from 'drizzle-orm';
-import { multiplyDecimal } from '../content/decimal';
 import { AppError } from '../lib/errors';
 import { FieldErrors, type FieldErrorCode } from './input';
-import { loadValues, toValue } from './rows';
+import { convertInto, givenRateOf, rateInto, type ValueRate } from './money';
+import { loadValueRows, type ValueRow } from './rows';
 import { ledgerState, value } from './schema';
 import type { Scope } from './scope';
 import { runWrite, type WriteScope } from './write';
 
 /**
- * Changing the default currency (architecture §6.6): every value's `base_minor` re-derived from
- * the stored rates at each value's own `fx_rate_date`, in one write, so every period reads exactly
- * as if the new currency had always been the base (J11 stays undistorted).
+ * Changing the default currency (architecture §6.6): every value's `base_minor` re-derived at the
+ * value's own date, in one write, so every period reads as if the new currency had always been the
+ * base (J11 stays undistorted).
  *
- * What each value becomes in `code`:
- * - in `code` already: the rate is 1, as a value recorded in the base currency is;
- * - with a rate the person or their agent gave (a statement's): the rate is kept and carried into
- *   the new currency at the old base's stored rate for the value's own rate date, so the
- *   statement's rate is never swapped for a published one;
- * - otherwise: the stored rate from the value's currency into the new one at the value's own rate
- *   date, like a value recorded when the new currency was already the base.
+ * What each value becomes in `code` (`money.rateInto`):
+ * - in `code` already: the rate is 1, as a value recorded in the base currency is; a rate the
+ *   person or their agent gave is kept, unused;
+ * - with a given rate into `code`: that rate, as given;
+ * - with a given rate into another currency: that rate times the stored cross rate from that
+ *   currency into `code`, so every change starts from the rate as given and none compounds;
+ * - otherwise: the stored published rate from the value's currency into `code`, like a value
+ *   recorded when `code` was already the base.
  *
- * Provenance (`source`, `clientName`, `connectionId`, `batchId`) and `entered_at` stay as they
- * were; `row_version` moves on, so undoing an older change afterwards conflicts instead of reading
- * the old base back over the new one. One audit row per re-derived value plus the `ledger`
- * base-currency update, in the normal write-path shape, so P3-T1's generic undo reverses it entry
- * by entry. The caller acts as `system` (me.ts), so the log reads one system change. A write that
- * changes nothing writes nothing: the same currency again is a no-op.
+ * No amount, date or rate anyone entered changes, so the log reads one `system` entry for the whole
+ * change (§6.8): the `ledger` row, old currency → new with the number of values re-derived, and no
+ * row per value. Provenance and `entered_at` stay; `updated_at` and `row_version` move on, as for
+ * any change to a row. A missing rate or a value too large in `code` fails the whole change, naming
+ * the value. The same currency again is a no-op.
  */
 export function changeBaseCurrency(s: Scope, ccy: string): Promise<Write<void>> {
   const code = typeof ccy === 'string' ? ccy.trim().toUpperCase() : '';
@@ -45,85 +44,71 @@ export function changeBaseCurrency(s: Scope, ccy: string): Promise<Write<void>> 
     const from = w.state.baseCurrency;
     if (code === from) return;
     const errors = new FieldErrors();
-    const values = await loadValues(s);
-    const ready: { value: Value; next: Rederived }[] = [];
-    for (const v of values) {
-      const next = await rederive(w, v, from, code, errors);
-      if (next) ready.push({ value: v, next });
+    const rows = await loadValueRows(s);
+    const ready: { row: ValueRow; next: Rederived }[] = [];
+    for (const row of rows) {
+      const next = await rederive(w, row, code, errors);
+      if (next) ready.push({ row, next });
     }
     errors.throwIfAny();
     const now = s.now();
-    for (const { value: v, next } of ready) {
-      const [row] = await s.db
+    for (const { row, next } of ready) {
+      const [updated] = await s.db
         .update(value)
         .set({
           baseMinor: next.baseMinor,
           baseCurrency: code,
-          fxRate: next.fxRate,
-          fxRateDate: next.fxRateDate,
-          fxSource: next.fxSource,
+          fxRate: next.rate,
+          fxRateDate: next.rateDate,
+          fxSource: next.source,
           updatedAt: now,
-          rowVersion: v.rowVersion + 1,
+          rowVersion: row.rowVersion + 1,
         })
-        .where(and(eq(value.userId, s.userId), eq(value.id, v.id)))
-        .returning();
-      if (!row) throw new Error('A value vanished inside its own re-derivation.');
-      await w.audit('value', v.id, 'update', v, toValue(row));
+        .where(and(eq(value.userId, s.userId), eq(value.id, row.id)))
+        .returning({ id: value.id });
+      if (!updated) throw new Error('A value vanished inside its own re-derivation.');
     }
     await s.db
       .update(ledgerState)
       .set({ baseCurrency: code })
       .where(eq(ledgerState.userId, s.userId));
-    await w.audit('ledger', s.userId, 'update', { baseCurrency: from }, { baseCurrency: code });
+    await w.audit(
+      'ledger',
+      s.userId,
+      'update',
+      { baseCurrency: from },
+      { baseCurrency: code, valuesRederived: rows.length },
+    );
   });
 }
 
-/** A value's base fields re-derived, or undefined with the reason added to `errors`. */
-interface Rederived {
+/** A value's base fields re-derived. */
+interface Rederived extends ValueRate {
   baseMinor: number;
-  fxRate: string;
-  fxRateDate: string | null;
-  fxSource: ValueFxSource;
 }
 
+/** `row` re-derived into `code`, or undefined with the reason added to `errors`. */
 async function rederive(
   w: WriteScope,
-  v: Value,
-  from: string,
+  row: ValueRow,
   code: string,
   errors: FieldErrors,
 ): Promise<Rederived | undefined> {
-  const at = `values.${v.id}`;
-  if (v.currency === code) {
-    return { baseMinor: v.amountMinor, fxRate: '1', fxRateDate: null, fxSource: 'same' };
-  }
-  const date = v.fxRateDate ?? v.date;
-  let rate: { rate: string; rateDate: string | null; source: ValueFxSource };
+  const at = `values.${row.id}`;
+  let rate: ValueRate;
   try {
-    if (v.fxSource === 'user' || v.fxSource === 'agent') {
-      const cross = await w.crossRate(from, code, date);
-      rate = {
-        rate: multiplyDecimal(v.fxRate, cross.rate),
-        rateDate: v.fxRateDate,
-        source: v.fxSource,
-      };
-    } else {
-      const cross = await w.crossRate(v.currency, code, date);
-      rate = { rate: cross.rate, rateDate: cross.rateDate, source: cross.source };
-    }
+    rate = await rateInto(
+      w,
+      { currency: row.currency, date: row.date, given: givenRateOf(row) },
+      code,
+    );
   } catch (error) {
     if (!(error instanceof AppError)) throw error;
     errors.add(error.code as FieldErrorCode, at, error.message);
     return undefined;
   }
-  let baseMinor: number;
-  try {
-    baseMinor = convert(v.amountMinor, minorRate(rate.rate, v.currency, code));
-  } catch (error) {
-    if (!(error instanceof RangeError)) throw error;
-    baseMinor = Number.POSITIVE_INFINITY;
-  }
-  if (Math.abs(baseMinor) > MAX_MINOR) {
+  const baseMinor = convertInto(row.amountMinor, row.currency, rate.rate, code);
+  if (baseMinor === undefined) {
     errors.add(
       'OUT_OF_RANGE',
       at,
@@ -131,5 +116,5 @@ async function rederive(
     );
     return undefined;
   }
-  return { baseMinor, fxRate: rate.rate, fxRateDate: rate.rateDate, fxSource: rate.source };
+  return { ...rate, baseMinor };
 }

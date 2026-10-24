@@ -161,7 +161,8 @@ test('changing the country saves it', async ({ page }, testInfo) => {
   await page.goto('/app/account/general');
   await countrySelect(page).selectOption('DE');
   await expect(countrySelect(page)).toHaveValue('DE');
-  expect(patches).toStrictEqual([{ country: 'DE' }]);
+  // The select shows the choice from local state before its PATCH leaves, so wait for the PATCH.
+  await expect.poll(() => patches).toStrictEqual([{ country: 'DE' }]);
   // An empty ledger starts over in the new country's currency.
   await expect(currencySelect(page)).toHaveValue('EUR');
 

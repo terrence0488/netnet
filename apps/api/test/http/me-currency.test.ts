@@ -113,9 +113,8 @@ describe('PATCH /api/me {baseCurrency}', () => {
     expect(values[dollar.result.id]).toStrictEqual([
       ['2026-07-15', 30000, 'USD', 30000, 'web', null, anyString],
     ]);
+    // One entry for the whole change, however many values it re-derived.
     expect((await auditsOf(p.userId)).slice(seen)).toStrictEqual([
-      { actor: 'system', entity: 'value', action: 'update' },
-      { actor: 'system', entity: 'value', action: 'update' },
       { actor: 'system', entity: 'ledger', action: 'update' },
     ]);
   });
