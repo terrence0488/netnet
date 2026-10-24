@@ -1,17 +1,21 @@
 import { Hono } from 'hono';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  LEAKS,
+  captureLog,
+  drizzleFailure,
+  plainFailure,
+  type CapturedLog,
+} from '../../test/support/failures';
 import { captureWaitUntil, type CapturedWaitUntil } from '../../test/support/wait-until';
-import { afterResponse } from './after-response';
+import { afterResponse, inBackground } from './after-response';
 import type { AppEnv } from './context';
 import { requestContext } from './request-context';
 
-let logged: string[];
+let log: CapturedLog;
 
 beforeEach(() => {
-  logged = [];
-  const capture = (line: string) => void logged.push(line);
-  vi.spyOn(console, 'log').mockImplementation(capture);
-  vi.spyOn(console, 'error').mockImplementation(capture);
+  log = captureLog();
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -55,22 +59,56 @@ describe('afterResponse()', () => {
     expect(done).toBe(true);
   });
 
-  it('logs a failed task with the request id and never rejects', async () => {
-    const res = await appRunning(() =>
-      Promise.reject(new Error('relation does not exist')),
-    ).request('/work', { method: 'POST' });
+  it('logs a failed task with the request id and the error’s class, and never rejects', async () => {
+    const res = await appRunning(() => Promise.reject(plainFailure())).request('/work', {
+      method: 'POST',
+    });
     await vercel.settle();
     expect(res.status).toBe(204);
-    const failure = logged
-      .map((line) => JSON.parse(line) as Record<string, unknown>)
-      .find((line) => line.event === 'after_response_failed');
-    expect(failure).toStrictEqual({
-      event: 'after_response_failed',
-      requestId: res.headers.get('X-Request-Id'),
-      route: 'POST /work',
-      errorCode: 'INTERNAL',
+    expect(log.of('after_response_failed')).toStrictEqual([
+      {
+        event: 'after_response_failed',
+        requestId: res.headers.get('X-Request-Id'),
+        route: 'POST /work',
+        errorCode: 'INTERNAL',
+        errorName: 'TypeError',
+      },
+    ]);
+    expect(log.raw().join('\n')).not.toMatch(LEAKS);
+  });
+
+  it('names a Postgres failure’s SQLSTATE, and never its message, SQL or values', async () => {
+    const res = await appRunning(() => Promise.reject(drizzleFailure())).request('/work', {
+      method: 'POST',
     });
-    expect(logged.join('\n')).not.toContain('relation');
+    await vercel.settle();
+    expect(log.of('after_response_failed')).toStrictEqual([
+      {
+        event: 'after_response_failed',
+        requestId: res.headers.get('X-Request-Id'),
+        route: 'POST /work',
+        errorCode: 'INTERNAL',
+        errorName: 'DrizzleQueryError',
+        pgCode: '23505',
+      },
+    ]);
+    expect(log.raw().join('\n')).not.toMatch(LEAKS);
+  });
+});
+
+describe('inBackground()', () => {
+  it('hands the rejection to the failure callback, once', async () => {
+    const vercel = captureWaitUntil();
+    try {
+      const error = new Error('boom');
+      const seen: unknown[] = [];
+      inBackground(Promise.reject(error), (failure) => void seen.push(failure));
+      inBackground(Promise.resolve('fine'), (failure) => void seen.push(failure));
+      await vercel.settle();
+      expect(seen).toStrictEqual([error]);
+    } finally {
+      vercel.restore();
+    }
   });
 });
 

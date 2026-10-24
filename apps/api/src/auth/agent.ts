@@ -5,7 +5,7 @@ import { track } from '../events/track';
 import { withUser } from '../ledger/with-user';
 import { inBackground } from '../lib/after-response';
 import { publicOrigin } from '../lib/env';
-import { log } from '../lib/log';
+import { errorClass, log } from '../lib/log';
 import { notify } from '../notify/notify';
 import { createApproval, type Approval, type ApprovalDeps } from './approval';
 import { createAttempts, type Attempts } from './attempts';
@@ -33,6 +33,13 @@ export function createAgent(deps: AgentServiceDeps): Agent {
   return { attempts, connections, approval };
 }
 
+/** Runs the service's work after the response; a failure is logged with the error's class. */
+export function agentBackground(task: Promise<unknown>): void {
+  inBackground(task, (error) =>
+    log('agent_task_failed', { errorCode: 'INTERNAL', ...errorClass(error) }),
+  );
+}
+
 let shared: Agent | undefined;
 
 /** The running app's service. Built on first use, so nothing connects until a request needs it. */
@@ -42,8 +49,7 @@ export function agent(): Agent {
     clock: () => new Date(),
     track,
     appVersion,
-    background: (task) =>
-      inBackground(task, () => log('agent_task_failed', { errorCode: 'INTERNAL' })),
+    background: agentBackground,
     auth,
     origin: publicOrigin,
     guides: guideHostsFrom(contentStore),

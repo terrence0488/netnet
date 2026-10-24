@@ -2,7 +2,7 @@ import type { Candidate, ErrorCode, McpCandidate, McpError } from '@netnet/contr
 import { fromMinor } from '@netnet/core';
 import { ConnectionRevoked } from '../ledger/with-user';
 import { AppError, type ErrorDetails } from '../lib/errors';
-import { log } from '../lib/log';
+import { errorClass, log } from '../lib/log';
 
 /**
  * What a failed tool call answers (architecture §7.5): `isError: true` with
@@ -88,8 +88,8 @@ export interface ToolFailure {
 
 /**
  * Any error a tool raises as the failure it answers with. Deliberate errors keep their code,
- * message and details; anything else is logged with the request id and answered INTERNAL, and its
- * message, stack and SQL never leave here (CONVENTIONS §11).
+ * message and details; anything else is logged with the request id and its class (architecture
+ * §10) and answered INTERNAL, and its message, stack and SQL never leave here (CONVENTIONS §11).
  */
 export function toMcpError(
   error: unknown,
@@ -117,7 +117,7 @@ export function toMcpError(
     const failed = revoked();
     return { code: failed.code, body: { error: failed } };
   }
-  log('tool_failed', { requestId, tool, errorCode: 'INTERNAL' });
+  log('tool_failed', { requestId, tool, errorCode: 'INTERNAL', ...errorClass(error) });
   const failed = internal(requestId);
   return { code: failed.code, body: { error: failed } };
 }
