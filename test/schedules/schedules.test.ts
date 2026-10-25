@@ -44,4 +44,17 @@ describe('scheduled work', () => {
       expect(workflow).not.toMatch(/^\s*environment:/m);
     });
   });
+
+  describe('the health check (cron-health.yml)', () => {
+    const workflow = read('.github/workflows/cron-health.yml');
+
+    it('runs daily at 01:00 UTC, in the reminder run’s wake, and by hand', () => {
+      expect(schedules(workflow)).toStrictEqual(['0 1 * * *']);
+      expect(workflow).toMatch(/^ {2}workflow_dispatch:$/m);
+    });
+
+    it('waits for no reviewer: no `environment:`', () => {
+      expect(workflow).not.toMatch(/^\s*environment:/m);
+    });
+  });
 });

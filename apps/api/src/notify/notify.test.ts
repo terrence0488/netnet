@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../db/profiles';
 import type { EmailChannel, PushChannel, PushEndpoint, RenderedPush } from './channel';
-import { captureChannel, type CaptureChannel } from './email';
-import type { Message } from './message';
-import { createNotify, type ReminderDeps } from './notify';
+import { captureChannel, countedChannel, type CaptureChannel } from './email';
+import type { HealthFigures } from './health-alert';
+import type { Message, MessageOf } from './message';
+import { createNotify, createNotifyOperator, type ReminderDeps } from './notify';
 
 const USER = 'usr_01K1G4KX00AAAAAAAAAAAAAAAA';
 const ADDRESS = 'person@example.com';
@@ -13,6 +14,23 @@ const VERIFY: Message = {
 };
 const RESET: Message = { kind: 'account.reset_password', token: 'Qm9vazEyQ2hhcHRlcjM0WFla' };
 const REMINDER: Message = { kind: 'reminder.comeback', agentName: 'Claude' };
+
+/** A fictional day's figures for the operator's test alert. */
+const FIGURES: HealthFigures = {
+  neon: { computeCuHours: 10, storageGb: 0.1 },
+  slo: { calls: 100, successRate: 99.9, p95Ms: 800 },
+  emails: { today: 0, yesterday: 1, month: 10 },
+  reminderCapReachedYesterday: false,
+  securityEmailsUnsent24h: 0,
+  fxLatest: { ecb: '2026-08-09', fallback: '2026-08-09' },
+  opsEmailConfigured: true,
+};
+const ALERT: MessageOf<'ops.health_alert'> = {
+  kind: 'ops.health_alert',
+  triggers: ['emails_day'],
+  figures: FIGURES,
+  test: false,
+};
 const SENT_AT = new Date('2026-08-01T10:00:00.000Z');
 const TOKEN = 'r1.test-payload.test-signature';
 
@@ -305,5 +323,111 @@ describe('the comeback reminder', () => {
     });
     expect(missing.email.captured).toEqual([]);
     expect(unclaimed.email.captured).toEqual([]);
+  });
+});
+
+describe('notifyOperator()', () => {
+  const OPS = 'founder@example.com';
+
+  it('sends the alert to OPS_EMAIL only', async () => {
+    const email = captureChannel();
+    const send = createNotifyOperator(() => ({
+      address: OPS,
+      email,
+      origin: 'https://netnet.example',
+    }));
+    expect(await send(ALERT)).toEqual({ channel: 'email' });
+    expect(email.captured.map((message) => message.to)).toEqual([OPS]);
+    expect(email.captured[0]?.rendered.subject).toBe('NetNet health: 1 to act on');
+  });
+
+  it('sends nothing without OPS_EMAIL, and never touches the channel', async () => {
+    const email = captureChannel();
+    const send = createNotifyOperator(() => ({
+      address: '  ',
+      email,
+      origin: 'https://netnet.example',
+    }));
+    expect(await send(ALERT)).toEqual({ channel: null, reason: 'nowhere' });
+    expect(email.captured).toEqual([]);
+    expect(logged).toEqual(['{"event":"ops_email_not_configured","errorCode":"INTERNAL"}']);
+  });
+
+  it('reports a failed send without throwing, and logs no address', async () => {
+    const refusing: EmailChannel = {
+      id: 'email',
+      send: () => Promise.resolve({ ok: false, status: 503 }),
+    };
+    const send = createNotifyOperator(() => ({
+      address: OPS,
+      email: refusing,
+      origin: 'https://netnet.example',
+    }));
+    expect(await send(ALERT)).toEqual({ channel: null, reason: 'failed' });
+    expect(logged).toEqual(['{"event":"ops_alert_failed","errorCode":"INTERNAL","status":503}']);
+  });
+
+  it('gives notify() no way to send an operator alert to a person', async () => {
+    const email = captureChannel();
+    expect(await notifyWith({ email: ADDRESS, emailVerified: true }, email)(USER, ALERT)).toEqual({
+      channel: null,
+      reason: 'nowhere',
+    });
+    expect(email.captured).toEqual([]);
+  });
+});
+
+describe('the email counter', () => {
+  it('counts each kind once when the channel accepts it', async () => {
+    const recorded: Date[] = [];
+    const channel = countedChannel(
+      { id: 'email', send: () => Promise.resolve({ ok: true }) },
+      (at) => {
+        recorded.push(at);
+        return Promise.resolve();
+      },
+      () => SENT_AT,
+    );
+    const notify = notifyWith({ email: ADDRESS, emailVerified: true }, channel);
+    await notify(USER, VERIFY);
+    await notify(USER, RESET);
+    await notify(USER, {
+      kind: 'security.agent_connected',
+      agentName: 'Claude',
+      nameVerified: true,
+      connectedAt: '2026-08-04T21:32:00.000Z',
+      timeZone: 'Asia/Singapore',
+    });
+    await notify(USER, REMINDER);
+    const operator = createNotifyOperator(() => ({
+      address: 'founder@example.com',
+      email: channel,
+      origin: 'https://netnet.example',
+    }));
+    await operator(ALERT);
+    expect(recorded).toHaveLength(5);
+  });
+
+  it('counts nothing when the channel captures or refuses', async () => {
+    const recorded: Date[] = [];
+    const record = (at: Date) => {
+      recorded.push(at);
+      return Promise.resolve();
+    };
+    const capturing = notifyWith(
+      { email: ADDRESS, emailVerified: true },
+      countedChannel(captureChannel(), record, () => SENT_AT),
+    );
+    await capturing(USER, VERIFY);
+    const refusing = notifyWith(
+      { email: ADDRESS, emailVerified: true },
+      countedChannel(
+        { id: 'email', send: () => Promise.resolve({ ok: false, status: 503 }) },
+        record,
+        () => SENT_AT,
+      ),
+    );
+    await refusing(USER, VERIFY);
+    expect(recorded).toEqual([]);
   });
 });

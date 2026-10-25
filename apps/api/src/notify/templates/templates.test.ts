@@ -26,6 +26,17 @@ const CONNECTED_AT = '2026-08-04T21:32:00.000Z';
 /** A signed `?r=` token's shape; rendering never verifies it. */
 const TOKEN = 'r1.c29tZS1wYXlsb2Fk.c29tZS1zaWduYXR1cmU';
 
+/** A fictional day's figures: all readable, below every threshold except the two the sample fires. */
+const HEALTH_FIGURES: MessageOf<'ops.health_alert'>['figures'] = {
+  neon: { computeCuHours: 62.4, storageGb: 0.2 },
+  slo: { calls: 120, successRate: 99.9, p95Ms: 900 },
+  emails: { today: 2, yesterday: 3, month: 40 },
+  reminderCapReachedYesterday: false,
+  securityEmailsUnsent24h: 1,
+  fxLatest: { ecb: '2026-08-01', fallback: '2026-08-02' },
+  opsEmailConfigured: true,
+};
+
 const SAMPLES: { [K in MessageKind]: MessageOf<K>[] } = {
   'account.verify_email': [{ kind: 'account.verify_email', token: JWT }],
   'account.reset_password': [{ kind: 'account.reset_password', token: RESET_TOKEN }],
@@ -58,10 +69,27 @@ const SAMPLES: { [K in MessageKind]: MessageOf<K>[] } = {
     { kind: 'reminder.comeback', agentName: 'Claude' },
     { kind: 'reminder.comeback', agentName: 'My agent 2.0' },
   ],
+  'ops.health_alert': [
+    {
+      kind: 'ops.health_alert',
+      triggers: ['neon_compute', 'security_email_unsent'],
+      figures: HEALTH_FIGURES,
+      test: false,
+    },
+    {
+      kind: 'ops.health_alert',
+      triggers: [],
+      figures: HEALTH_FIGURES,
+      test: true,
+    },
+  ],
 };
 
+/** The person-facing kinds: the health alert has its own shape (a list, no button). */
+type PersonalMessage = Exclude<Message, { kind: 'ops.health_alert' }>;
+
 /** The line each kind's footer starts with: why it was sent. */
-const REASON: Record<MessageKind, string> = {
+const REASON: Record<PersonalMessage['kind'], string> = {
   'account.verify_email': 'You’re getting this because',
   'account.reset_password': 'You’re getting this because',
   'security.agent_connected': 'We send this every time an agent is connected.',
@@ -69,7 +97,7 @@ const REASON: Record<MessageKind, string> = {
 };
 
 /** How many links each kind's email carries: the button, and the reminder's unsubscribe. */
-const LINKS: Record<MessageKind, number> = {
+const LINKS: Record<PersonalMessage['kind'], number> = {
   'account.verify_email': 1,
   'account.reset_password': 1,
   'security.agent_connected': 1,
@@ -82,6 +110,7 @@ function ctxOf(msg: Message) {
 }
 
 const ALL: Message[] = Object.values(SAMPLES).flat();
+const PERSONAL = ALL.filter((msg): msg is PersonalMessage => msg.kind !== 'ops.health_alert');
 
 /** What a person might have written: fictional holding, type and tag names, and their address. */
 const THEIR_WORDS = [
@@ -102,7 +131,7 @@ describe('every message template', () => {
     },
   );
 
-  it.each(ALL.map((msg) => [msg.kind, msg] as const))(
+  it.each(PERSONAL.map((msg) => [msg.kind, msg] as const))(
     '%s is one line, repeated as the subject, with one button and a reason it was sent',
     (_kind, msg) => {
       const { subject, html, text } = renderEmail(msg, ctxOf(msg));
@@ -124,6 +153,40 @@ describe('every message template', () => {
       expect(() =>
         renderEmail({ kind: 'account.verify_email', token }, { origin: ORIGIN }),
       ).toThrow(/malformed/);
+    }
+  });
+});
+
+describe('the health alert', () => {
+  const [alert, test] = SAMPLES['ops.health_alert'] as [
+    MessageOf<'ops.health_alert'>,
+    MessageOf<'ops.health_alert'>,
+  ];
+
+  it('counts the triggers in the subject, with one line each carrying its figure and action', () => {
+    const { subject, text, html } = renderEmail(alert, { origin: ORIGIN });
+    expect(subject).toBe('NetNet health: 2 to act on');
+    expect(text).toContain(
+      'Neon compute: 62.4 of 100 CU-hours this month. Move netnet-prod to Neon Launch',
+    );
+    expect(text).toContain(
+      'Security emails unsent: 1 unsent for over 24 hours. Check Resend and the reminder runs',
+    );
+    expect(html).toContain(escapeHtml(subject));
+    expect(html.match(/<li /g)).toHaveLength(2);
+  });
+
+  it('says test, and nothing fired, for a dispatched test with no trigger', () => {
+    const { subject, text } = renderEmail(test, { origin: ORIGIN });
+    expect(subject).toBe('NetNet health: test');
+    expect(text).toContain('Nothing fired.');
+  });
+
+  it('carries no user id, address, name or amount', () => {
+    for (const msg of [alert, test]) {
+      const rendered = renderEmail(msg, { origin: ORIGIN });
+      expect(privacyProblems({ ...rendered }, THEIR_WORDS)).toEqual([]);
+      expect(JSON.stringify(rendered)).not.toMatch(/usr_|@|MARKER|Fictional Person/);
     }
   });
 });

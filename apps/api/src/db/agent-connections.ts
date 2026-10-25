@@ -197,6 +197,29 @@ export async function unsentSecurityEmails(db: Executor, from: Date, to: Date): 
 }
 
 /**
+ * How many security emails have waited longer than `before` (24 hours, say) and are younger than
+ * `after` (7 days): the health check's `security_email_unsent` (architecture §10, P4-T4). Unsent
+ * means `security_email_sent_at` is still null, whatever happened to the connection since.
+ */
+export async function countUnsentSecurityEmails(
+  db: Executor,
+  after: Date,
+  before: Date,
+): Promise<number> {
+  const rows = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(agentConnection)
+    .where(
+      and(
+        isNull(agentConnection.securityEmailSentAt),
+        gt(agentConnection.createdAt, after),
+        lt(agentConnection.createdAt, before),
+      ),
+    );
+  return rows[0]?.n ?? 0;
+}
+
+/**
  * Sends connection `id`'s security email at most once: holds the row while `send` runs, skipping it
  * if another run holds it, and sets `security_email_sent_at` when `send` says it was accepted. The
  * row it sent for, or null when there was nothing to send.

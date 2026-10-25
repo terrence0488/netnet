@@ -2,7 +2,12 @@
  * Every message NetNet sends a person (architecture §7.10, CONVENTIONS §6): typed parameters,
  * never free text, so no field exists that an amount, a total, or a holding, type or tag name could
  * be put in. A new kind is added here with its template and its privacy-test samples.
+ *
+ * `ops.health_alert` is the one kind that goes to the operator, not to a person: it names no
+ * user, and `notifyOperator` sends it to `OPS_EMAIL` (architecture §9.3, P4-T4).
  */
+import type { HealthFigures, HealthTriggerId } from './health-alert';
+
 export type Message =
   /** The link that verifies a new account's email (PRD J1). `token` is Better Auth's. */
   | { kind: 'account.verify_email'; token: string }
@@ -27,6 +32,19 @@ export type Message =
       nameVerified: boolean;
       connectedAt: string;
       timeZone: string;
+    }
+  /**
+   * The Founder's daily health alert (architecture §9.3, §9.4; P4-T4), sent by `notifyOperator`
+   * to `OPS_EMAIL` only. It names no user: counts, sizes, percentages and dates only.
+   */
+  | {
+      kind: 'ops.health_alert';
+      /** The triggers that fired, in `HEALTH_TRIGGER_IDS` order. */
+      triggers: HealthTriggerId[];
+      /** What the check read: counts, sizes, percentages and dates only. */
+      figures: HealthFigures;
+      /** A dispatched test: the subject says so, and the alert may go out with no trigger. */
+      test: boolean;
     };
 
 export type MessageKind = Message['kind'];
@@ -45,3 +63,9 @@ export interface Delivery {
 
 /** The only way to reach a person (architecture §7.10). It never throws: see `Delivery`. */
 export type Notify = (userId: string, msg: Message) => Promise<Delivery>;
+
+/**
+ * The operator's alert (architecture §9.3): the sibling of `notify` that goes to `OPS_EMAIL` and
+ * nowhere else. It takes no user id, because the day's figures belong to no account.
+ */
+export type NotifyOperator = (msg: MessageOf<'ops.health_alert'>) => Promise<Delivery>;

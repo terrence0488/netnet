@@ -88,6 +88,7 @@ const NO_USER_DATA: Record<string, string> = {
   'GET /api/cron/fx': 'the cron secret, and exchange rates only',
   'GET /api/cron/daily': 'the cron secret; answers counts only',
   'GET /api/cron/reminders': 'the cron secret; answers counts only',
+  'POST /api/cron/health': 'the cron secret; answers counts, sizes, percentages and dates only',
   'GET /.well-known/oauth-authorization-server': 'OAuth metadata, the same for everyone',
   'GET /.well-known/oauth-protected-resource': 'OAuth metadata, the same for everyone',
   'GET /.well-known/oauth-protected-resource/mcp': 'OAuth metadata, the same for everyone',

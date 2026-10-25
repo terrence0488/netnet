@@ -76,5 +76,6 @@ Node 22 and pnpm. A SessionStart hook runs `pnpm install --frozen-lockfile`.
 | `pnpm db:generate` | A new migration from the Drizzle schema (drizzle-kit, then Prettier) |
 | `pnpm demo:load --env <env> --email <address>` | Loads the fictional demo household (`content/demo/`) into that verified account if it has no holdings, as `netnet_app` (`DATABASE_URL`); prints counts only |
 | `pnpm metrics --env <local\|preview\|production> --from <date> [--to <date>]` | Prints M1–M11 and M13 per segment (M13 per channel), the M10 funnel and the N1 SLO, as `netnet_metrics` (`DATABASE_METRICS_URL`); `METRICS_EXCLUDE_USERS` omits ids; aggregates only |
+| `pnpm health --env <local\|preview\|production> [--test-alert]` | The daily health check (architecture §9.3, §9.4; `ops/health.md`): reads Neon's consumption and the N1 SLO, posts them to `/api/cron/health`, and prints the triggers; exits 1 when any fired. `--test-alert` sends the test alert |
 | `pnpm smoke --origin <url>` | Post-deploy checks against any origin: health, OAuth metadata, the `/mcp` 401, security headers, and the probe's authenticated path when the probe secrets are set |
 | `pnpm probe --origin <url>` | The MCP probe (`PROBE_CLIENT_ID`, `PROBE_REFRESH_TOKEN`): refresh, `tools/list`, `get_financial_context`, timed; rotates the token into `$GITHUB_OUTPUT` |

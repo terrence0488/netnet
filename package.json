@@ -26,6 +26,7 @@
     "demo:load": "tsx scripts/demo-load.ts",
     "m12": "tsx ops/m12/src/index.ts",
     "fx:backfill": "tsx scripts/fx-backfill.ts",
+    "health": "tsx scripts/health.ts",
     "metrics": "tsx scripts/metrics.ts",
     "smoke": "tsx scripts/smoke.ts",
     "probe": "tsx scripts/probe.ts"

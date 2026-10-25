@@ -711,11 +711,13 @@ No `Date.now()`, no randomness and no I/O in `core`. `today` and ids are passed 
 
 ### 7.10 Notifications — the comeback reminder and the security email
 
-**Scope (PRD J5, J9, J12).** v1 sends exactly two messages. The **comeback reminder** goes to
+**Scope (PRD J5, J9, J12).** v1 sends exactly two messages to people, and one to the operator. The **comeback reminder** goes to
 someone who has not checked NetNet for 30 days, then once a month while they stay away, **at most
 three times** (days 30, 60, 90; PRD J12): by web push to the devices where push is on, by email
 otherwise. The **security email** goes out when an agent
-is connected, by email only. **There is no scheduled stale-holding email**: staleness is shown in
+is connected, by email only. The **health alert** goes to the operator address `OPS_EMAIL` (F25)
+when a §9.4 trigger fires or a figure cannot be read (§9.3): it is not a person's message and
+carries no account data. **There is no scheduled stale-holding email**: staleness is shown in
 the app and handed to the agent (J9). Native push joins with the Expo apps as a second push channel.
 Threshold alerts stay reserved (PRD §4.2).
 
@@ -726,25 +728,33 @@ type Message =                                     // typed parameters, never fr
       connectedAt: string /* ISO instant */; timeZone: string }                 // J5
   | { kind: 'account.verify_email'; token: string }                             // J1
   | { kind: 'account.reset_password'; token: string };                          // §8
+  | { kind: 'ops.health_alert'; triggers: TriggerId[]; figures: HealthFigures;
+      test: boolean }                                                          // §9.3, the operator
   // later: 'agent.wrote' (candidate after launch), 'threshold.crossed' (reserved, PRD §4.2)
 
 type Delivery = { channel: 'push' | 'email' | null; devices?: number; reason?: 'off' | 'nowhere' | 'failed' };
 function notify(userId: string, msg: Message): Promise<Delivery>;   // the only way to reach a person
+// The operator's alert (never a person): email to OPS_EMAIL only, and no user id.
+function notifyOperator(msg: MessageOf<'ops.health_alert'>): Promise<Delivery>;
 interface Channel { id: 'email' | 'webpush' | 'expo'; send(to: Endpoint | Address, r: Rendered): Promise<Result> }
 ```
 
 Templates (`apps/api/src/notify/templates/`) render a `Message` for each channel: push `{title,
 body, url}`, email `{subject, html, text, headers}`. The wording is the PRD's, verbatim. Because a
-message is typed parameters, there is no field an amount could be put in.
+message is typed parameters, there is no field an amount could be put in. `notifyOperator` is the
+sibling that reaches the operator: it takes no user id and sends only to `OPS_EMAIL`. `TriggerId` is
+a §9.4 trigger's id (`unreadable_<source>` included), and `HealthFigures` is their readings: counts,
+sizes, percentages and dates only.
 
 | Kind | Channels, in order | Reminders switches apply? | What it says |
 |---|---|---|---|
 | `reminder.comeback` | **Push** to every active device. **Email** only when there is none, or every push failed; only to a verified address with email reminders on | **Yes.** Reminders off: nothing by any channel. Email off: no reminder email | Title "NetNet". "Your net worth is due for an update." + "Just ask {agent}." when an agent is connected. The email: that line as its subject, one button **Open NetNet**, the footer and one-click unsubscribe (as in the prototype) |
 | `security.agent_connected` | **Email only, never push** | **No.** Always sent (J5) | "{agent} was connected to your NetNet", when (in their time zone), what it may do, "Not you? **Revoke it**" → `/app/agent`, "We send this every time an agent is connected. It can't be turned off." |
+| `ops.health_alert` | **Email only**, to `OPS_EMAIL` (the operator, never a person) | **No.** The alert is the point | Subject "NetNet health: N to act on" (or "NetNet health: test"), one line per trigger with its figure and the §9.4 action. Counts, sizes, percentages and dates only: no user id, name, address or amount |
 
 | Channel | When | How it reaches the person | Cost |
 |---|---|---|---|
-| **Email** | **v1** | Resend, to the verified account email | $0 to 3,000/month and 100/day, shared with sign-up and reset emails (§9.4) |
+| **Email** | **v1** | Resend, to the verified account email | $0 to 3,000/month and 100/day, shared with sign-up, reset, security and reminder emails and the health alert (§9.4) |
 | **Web push** | **v1** | The **Web Push** standard (below). The browser vendor's own push service delivers: Google's for Chrome and Android, Mozilla's, Microsoft's, Apple's for Safari | $0 |
 | **Native push** | With the Expo apps | `expo-notifications` gets an Expo push token; the function sends through **Expo's push service** → **APNs** (iOS; key from the Apple Developer account) and **FCM** (Android; free Firebase project). A native device counts as a push device like any other | $0 (no fees, 600/s) |
 
@@ -788,6 +798,12 @@ it, delays some people by a day at most.
 use the same allowance. Reminder emails stop at **60 per UTC day**; anyone past that is released
 and sent by the first daytime run after the day turns. The §9.4 trigger moves to Resend's paid plan
 long before this bites.
+
+**The day's email count.** Every email Resend accepts — verification, reset, security, reminder and
+the health alert — increments that UTC day's counter in `core.rate_limit`
+(`email:sent:YYYY-MM-DD`), and only an accepted send counts: a captured or refused one does not.
+Rows are kept, so the check reads yesterday, today and the month (§9.3); the §9.4 triggers are 70
+in a day and 2,100 in a month. A failed count never fails the send.
 
 **The agent named** in "Just ask {agent}." is the connected (not revoked) agent used most recently.
 For `claude` and `chatgpt` it is the guide's name. For `other` it is the name the agent registered,
@@ -844,6 +860,8 @@ The agent's name is HTML-escaped and at most 40 characters. A DCR client's name 
 - **Never an amount, a total, or a holding, type or tag name** (N9). Lock screens and inboxes are
   public. A test renders every template and rejects digits with a currency and any of the user's
   names.
+- **The health alert** goes only to `OPS_EMAIL`, through `notifyOperator`, and carries counts,
+  sizes, percentages and dates — never a user id, address, name or amount.
 - **Permission is asked only in the tap that turns push on**, never on load, never during sign-up
   or the basics (J1).
 - **Reminders off means nothing by any channel; email off means no reminder email**, until the
@@ -909,7 +927,7 @@ Jobs at the same hour share one database wake.
 |---|---|---|---|
 | **Comeback reminders** (J12) + security-email retries | GitHub Actions → `/api/cron/reminders`, **three schedules** | daily at **01:00, 09:00 and 17:00** (09:00, 17:00 and 01:00 in Singapore). Each run sends only to people for whom it is 08:00–21:00 (§7.10) | ~5 min each |
 | Connection-attempt timeout sweep, and past visitor salts deleted (§6.4) | GitHub Actions → `/api/cron/daily` | daily at 01:00 | — |
-| Usage and SLO check | GitHub Actions → `/api/cron/health` | daily at 01:00, in the same wake. Reads Neon's consumption API, N1 from events and the day's email count; emails the Founder only on a trigger (§9.4) | — |
+| Usage and SLO check | GitHub Actions (`.github/workflows/cron-health.yml`) → `POST /api/cron/health` | daily at 01:00, in the same wake. The workflow reads Neon's consumption API and the N1 SLO (`ops/metrics/n1-slo.sql`, as `netnet_metrics`) and posts them; the function adds the day's email count, the reminder cap, unsent security emails and the FX dates, evaluates every trigger and emails the Founder only on a trigger or an unreadable figure (§9.4, `ops/health.md`) | — |
 | FX rates | GitHub Actions → `/api/cron/fx` | daily at 17:00, after the ECB publishes (~16:00 CET) | — |
 | Backup | GitHub Actions | daily. `pg_dump` → encrypted to a key only the Founder holds → stored 30 days (Actions artifact; R2 free tier if it outgrows 500 MB) | ~5 min |
 | MCP probe | GitHub Actions | **every 6 hours on Free**, hourly after Neon Launch | ~5 min each |
@@ -951,13 +969,13 @@ paid plans.
 | What | How |
 |---|---|
 | Logs | Vercel runtime logs (short retention on Hobby); JSON through `log(event, fields)`, whitelisted fields only (request id, route, tool, status, latency, user id, connection id, error code, an unexpected error's class (its name and Postgres SQLSTATE, never its message), and a response's size and value count for §7.2's snapshot trigger). **Never** amounts, names, emails or bodies. Where no Sentry DSN is set (local runs and tests, never production), an unexpected error's stack also goes to stderr |
-| Notification delivery | Per channel: reminders sent, fallen back to email, released unsent; endpoints revoked; security emails pending past 10 minutes (counts only), from `reminder_sent {channel}`, `push_disabled {by: browser}` and the run's log line. The health check emails the Founder if a security email is still unsent after 24 hours |
+| Notification delivery | Per channel: reminders sent, fallen back to email, released unsent; endpoints revoked; security emails pending past 10 minutes (counts only), from `reminder_sent {channel}`, `push_disabled {by: browser}` and the run's log line. The health check reports a security email still unsent after 24 hours as its own trigger |
 | Errors | Sentry (`@sentry/node` in the function, `@sentry/react` in the web app); `sendDefaultPii: false`; `beforeSend` drops bodies, query strings and breadcrumb text; **no session replay** |
 | Product analytics | `analytics.event` + `ops/metrics/*.sql` → `pnpm metrics --env production` prints M1–M11 and M13 per segment (M13 per channel), the M10 funnel and the N1 SLO, as `netnet_metrics` (`DATABASE_METRICS_URL`), and `.github/workflows/metrics.yml` dispatches the same command and writes the tables to its job summary |
-| N1 SLO | From `agent_tool_called` over 7 days (`ops/metrics/n1-slo.sql`): success rate and p95; the daily health check reads the same file and emails on breach |
-| Free-tier limits | The daily health cron reads Neon usage (compute, storage) and emails at the §9.4 triggers |
+| N1 SLO | From `agent_tool_called` over 7 days (`ops/metrics/n1-slo.sql`): success rate and p95; the daily health check reads the same file and emails on breach: p95 over 1,500 ms, or success under 99.5% over at least 50 calls |
+| Free-tier limits | The daily health cron reads Neon usage (compute and storage), the day's email count and the reminder cap, and emails the Founder at the §9.4 triggers; Vercel's Hobby usage has no documented API, so it is checked on the dashboard, weekly |
 | Uptime | An external free monitor on `/api/health` (shallow, never wakes the database) and the OAuth metadata; the 6-hourly MCP probe covers the full path |
-| FX fetch | A failed fetch alerts; values keep the last rate with its date |
+| FX fetch | A failed fetch alerts; values keep the last rate with its date. The health check reads the latest date each source has: the ECB over 4 days old, the fallback over 2, or a source with no rate at all |
 
 ## 11. Native path, and the three native-build rules
 
