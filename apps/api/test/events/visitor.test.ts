@@ -1,4 +1,6 @@
+import { Hono } from 'hono';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import type { Agent } from '../../src/auth/agent';
 import { eventStore } from '../../src/db/analytics';
 import { createDatabase } from '../../src/db/client';
 import { countHit } from '../../src/db/rate-limits';
@@ -13,7 +15,8 @@ import {
 } from '../../src/db/visitor';
 import { EVENTS_PER_MINUTE_PER_IP } from '../../src/http/events';
 import { createTrack } from '../../src/events/track';
-import type { SessionUser } from '../../src/lib/context';
+import { dailyJob } from '../../src/jobs/daily';
+import type { AppEnv, SessionUser } from '../../src/lib/context';
 import { createRateLimit } from '../../src/lib/rate-limit';
 import { eventsApp } from '../support/events-app';
 import { captureWaitUntil, type CapturedWaitUntil } from '../support/wait-until';
@@ -123,6 +126,26 @@ describe('the daily salt', () => {
         Buffer.alloc(SALT_BYTES),
       ]),
     ).rejects.toMatchObject({ code: '23505' });
+  });
+});
+
+describe('the daily sweep', () => {
+  it('deletes the past salts on a day nobody viewed the page, and says how many', async () => {
+    for (const day of ['2026-07-30', '2026-07-31']) {
+      await db.appDb.insert(visitorSalt).values({ day, salt: Buffer.alloc(SALT_BYTES, 3) });
+    }
+    const agent = { attempts: { sweep: () => Promise.resolve(0) } } as unknown as Agent;
+    const app = new Hono<AppEnv>().get(
+      '/api/cron/daily',
+      dailyJob(
+        () => agent,
+        () => deleteSaltsBefore(db.appDb, utcDay(now)),
+      ),
+    );
+    const res = await app.request('/api/cron/daily');
+    expect(res.status).toBe(200);
+    expect(await res.json()).toStrictEqual({ attemptsFailed: 0, saltsDeleted: 2 });
+    expect(await salts()).toStrictEqual([]);
   });
 });
 
