@@ -11,3 +11,5 @@ test-results/
 .pnpm-store/
 # compileContext golden files: byte for byte what the code writes, never reformatted
 packages/core/src/context/golden/
+# The demo household's pinned context (P4-T1): byte for byte what the golden test writes
+content/demo/household.context.json
