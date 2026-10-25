@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { AgentGuide, Countries } from '@netnet/contracts';
+import { PUSH_SERVICE_HOSTS, type AgentGuide, type Countries } from '@netnet/contracts';
 import { Hono } from 'hono';
 import webpush from 'web-push';
 import { createAgent, type Agent } from '../../src/auth/agent';
@@ -71,6 +71,13 @@ export const TEST_VAPID: VapidConfig = {
   ...webpush.generateVAPIDKeys(),
   subject: 'mailto:push@netnet.example',
 };
+
+/**
+ * The push services the test routes and channels take: the real list, plus the fictional fake
+ * push service the suites subscribe at (`https://push.example.net/push/…`). Production passes
+ * `PUSH_SERVICE_HOSTS` alone.
+ */
+export const TEST_PUSH_HOSTS: readonly string[] = [...PUSH_SERVICE_HOSTS, 'push.example.net'];
 
 /** The named guides' `matchHosts`, read from the repo's own `content/agents/`. */
 export function repoGuideHosts(): GuideHosts[] {
@@ -240,6 +247,7 @@ export function accountsApp(db: TestDatabase, options: AccountsAppOptions = {}):
       appVersion: () => 'test123',
       clock: () => clock.now,
       vapid: () => TEST_VAPID,
+      pushHosts: TEST_PUSH_HOSTS,
     }),
   );
   app.use(

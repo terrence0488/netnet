@@ -2,12 +2,23 @@ import { createECDH, randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import webpush from 'web-push';
 import { eventStore } from '../../src/db/analytics';
-import { activePushTargets, recordPushFailure, recordPushSuccess } from '../../src/db/endpoints';
+import {
+  activePushTargets,
+  recordPushFailure,
+  recordPushSuccess,
+  revokeEndpoint,
+} from '../../src/db/endpoints';
 import { createTrack } from '../../src/events/track';
 import type { PushEndpoint } from '../../src/notify/channel';
 import { webPushChannel, type VapidConfig, type WebPushPost } from '../../src/notify/webpush';
 import { FIXED_NOW, createTestDatabase, type TestDatabase } from '../isolation/harness';
-import { CRON_SECRET, ORIGIN, accountsApp, type AccountsApp } from '../support/accounts-app';
+import {
+  CRON_SECRET,
+  ORIGIN,
+  TEST_PUSH_HOSTS,
+  accountsApp,
+  type AccountsApp,
+} from '../support/accounts-app';
 import { signUpPerson, type Person } from '../support/oauth-client';
 
 /**
@@ -15,7 +26,8 @@ import { signUpPerson, type Person } from '../support/oauth-client';
  * any other failure counts, and the fifth in a row revokes; a success resets the count. Each rule
  * against the real rows, and a `410` through a real reminder run — with the real channel, real
  * encryption and the test VAPID keys — revoking the device, firing `push_disabled {by: browser}`
- * and falling back to email.
+ * and falling back to email. An endpoint stored off the push services' list is revoked the same
+ * way, without being sent to.
  */
 let db: TestDatabase;
 let target: AccountsApp;
@@ -56,10 +68,13 @@ beforeAll(async () => {
         store: {
           success: (id, at) => recordPushSuccess(db.appDb, id, at),
           failure: (id, status, at) => recordPushFailure(db.appDb, id, status, at),
+          revoke: async (id, userId, at) =>
+            (await revokeEndpoint(db.appDb, userId, id, at)) !== null,
         },
         track,
         appVersion: () => 'test123',
         clock: () => target.clock.now,
+        pushHosts: TEST_PUSH_HOSTS,
       }),
     },
   });
@@ -102,6 +117,24 @@ async function subscribe(person: Person, n: number): Promise<string> {
   });
   expect(res.status).toBe(200);
   return ((await res.json()) as { id: string }).id;
+}
+
+/** Makes the reminder due today (FIXED_NOW), as if the person last checked 30 days ago. */
+async function makeDue(userId: string): Promise<void> {
+  await db.owner.query(
+    `update core.reminder_state set last_checked_on = '2026-07-02', next_due_on = '2026-08-01'
+     where user_id = $1`,
+    [userId],
+  );
+}
+
+async function runReminders() {
+  const res = await target.app.request(`${ORIGIN}/api/cron/reminders`, {
+    headers: { Authorization: `Bearer ${CRON_SECRET}` },
+  });
+  await target.settle();
+  expect(res.status).toBe(200);
+  return res.json();
 }
 
 async function rowOf(id: string) {
@@ -211,5 +244,56 @@ describe('a 410 through a reminder run', () => {
     ]);
     const prefs = await person.browser.send('/api/notifications/prefs');
     expect(((await prefs.json()) as { devices: unknown[] }).devices).toEqual([]);
+  });
+});
+
+describe('an endpoint stored off the push services’ list', () => {
+  it('is revoked at the next run instead of sent to, and the reminder goes by email', async () => {
+    const person = await newPerson();
+    const id = await subscribe(person, 1);
+    await target.settle();
+    // A row stored before the list: the route refuses such a URL now, so it is written directly.
+    await db.owner.query(`update core.notification_endpoint set endpoint = $2 where id = $1`, [
+      id,
+      `https://push.example.org/push/stored-before-the-list-${serial}`,
+    ]);
+    await makeDue(person.userId);
+    answers = [{ ok: true, status: 201 }];
+
+    expect(await runReminders()).toMatchObject({ reminders: { push: 0, email: 1, released: 0 } });
+    expect(sent).toEqual([]);
+    expect((await rowOf(id))?.revoked_at).not.toBeNull();
+    expect(await events(person.userId, 'push_disabled')).toEqual([
+      { name: 'push_disabled', props: { platform: 'android', by: 'browser' } },
+    ]);
+    expect(await events(person.userId, 'reminder_sent')).toEqual([
+      { name: 'reminder_sent', props: { channel: 'email' } },
+    ]);
+  });
+
+  it('leaves the person’s other devices to carry the reminder', async () => {
+    const person = await newPerson();
+    const off = await subscribe(person, 1);
+    const on = await subscribe(person, 2);
+    await target.settle();
+    await db.owner.query(`update core.notification_endpoint set endpoint = $2 where id = $1`, [
+      off,
+      `https://push.example.org/push/stored-before-the-list-${serial}`,
+    ]);
+    await makeDue(person.userId);
+    answers = [{ ok: true, status: 201 }];
+
+    expect(await runReminders()).toMatchObject({ reminders: { push: 1, email: 0, released: 0 } });
+    expect(sent.map((request) => request.url)).toEqual([
+      `https://push.example.net/push/revoke-${serial}-2`,
+    ]);
+    expect((await rowOf(off))?.revoked_at).not.toBeNull();
+    expect((await rowOf(on))?.revoked_at).toBeNull();
+    expect(await events(person.userId, 'push_disabled')).toEqual([
+      { name: 'push_disabled', props: { platform: 'android', by: 'browser' } },
+    ]);
+    expect(await events(person.userId, 'reminder_sent')).toEqual([
+      { name: 'reminder_sent', props: { channel: 'push' } },
+    ]);
   });
 });

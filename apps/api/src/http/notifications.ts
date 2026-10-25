@@ -1,7 +1,7 @@
 import {
+  PUSH_SERVICE_HOSTS,
   endpointRevokeBySchema,
-  notificationEndpointCreateSchema,
-  notificationEndpointUpdateSchema,
+  notificationEndpointSchemasFor,
   notificationPrefsPatchSchema,
   type NotificationPrefs,
 } from '@netnet/contracts';
@@ -35,6 +35,11 @@ export interface NotificationsDeps {
   clock: () => Date;
   /** The VAPID keys (F19): unset until the Founder sets them, so push fails closed. */
   vapid: () => VapidConfig | undefined;
+  /**
+   * The push services a subscription may name (architecture §7.10): `PUSH_SERVICE_HOSTS` in
+   * production, never read from the environment; tests pass a fake service's host.
+   */
+  pushHosts: readonly string[];
 }
 
 /** A subscription is a long URL plus two keys; a prefs patch is two booleans. */
@@ -118,9 +123,11 @@ export function notificationsRoutes(
     appVersion,
     clock: () => new Date(),
     vapid: vapidConfig,
+    pushHosts: PUSH_SERVICE_HOSTS,
   },
 ): Hono<AppEnv> {
   const routes = new Hono<AppEnv>();
+  const subscriptions = notificationEndpointSchemasFor(deps.pushHosts);
   const subscriptionBody = bodyLimit({
     maxSize: MAX_SUBSCRIPTION_BYTES,
     onError: () => {
@@ -163,7 +170,7 @@ export function notificationsRoutes(
   routes.post('/endpoints', subscriptionBody, async (c) => {
     const { userId } = await requireSession(c);
     if (deps.vapid() === undefined) throw vapidNotConfigured(c);
-    const parsed = notificationEndpointCreateSchema.safeParse(await readJson(c));
+    const parsed = subscriptions.create.safeParse(await readJson(c));
     if (!parsed.success) throw invalid(fieldsOf(parsed.error));
     const saved = await saveEndpoint(deps.db(), userId, parsed.data, deps.clock());
     if (saved.created || saved.reactivated) {
@@ -181,7 +188,7 @@ export function notificationsRoutes(
 
   routes.put('/endpoints/:id', subscriptionBody, async (c) => {
     const { userId } = await requireSession(c);
-    const parsed = notificationEndpointUpdateSchema.safeParse(await readJson(c));
+    const parsed = subscriptions.update.safeParse(await readJson(c));
     if (!parsed.success) throw invalid(fieldsOf(parsed.error));
     const touched = await touchEndpoint(
       deps.db(),
