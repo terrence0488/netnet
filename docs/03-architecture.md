@@ -988,7 +988,7 @@ paid plans.
 | 6 | **Auth library maturity** (OAuth provider + CIMD in Better Auth are recent) | Our resource server is standard JWT checks; a fallback library; the spike decides |
 | 7 | An RLS mistake would be a leak | `FORCE` RLS, composite keys, one entry point, a schema test for every `ledger` table, and the isolation suite in CI |
 | 8 | Cost rises past ~100 users (~$35–45/month at 1,000) | Accepted; still under the $50 ceiling (§9.4) |
-| 9 | **M12 (context lift) needs a harness and paid model calls** | Built in a later phase; the Founder approves each run's API spend |
+| 9 | **M12 (context lift) needs a harness and paid model calls** | The harness is `ops/m12` (the `@netnet/m12` workspace package), a tool the Founder runs with `pnpm m12 --approve-spend <usd>` — never part of the product (N2), so the Anthropic SDK is its dependency alone and a lint rule refuses it in `apps/*` and `packages/*`. It counts a dry pass's tokens, prints the price from its own config, and stops at the approved figure; the Founder approves each run's spend |
 | 10 | The agent-turn heuristic (≤120 s gap) may split or merge turns | One `record_values` call is always one batch; tuned with M5 |
 | 11 | **No undo: a wrong write stays until it is corrected** | Activity shows every change old → new, so a correction is one more change, on the web or through the agent; M5 measures how often agent writes need one |
 | 12 | Pseudonymised events after deletion | Stage 8 legal pass |
