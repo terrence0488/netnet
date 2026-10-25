@@ -243,6 +243,23 @@ describe('get_holding', () => {
       'NOT_FOUND',
     );
   });
+
+  it('names a values cursor it did not give by the tool’s own field', async () => {
+    const { agent, freshHolding } = await seeded();
+    const error = errOf(
+      await callTool(target, agent.token, 'get_holding', {
+        holding_id: freshHolding,
+        values_cursor: 'not-a-cursor',
+      }),
+      'VALIDATION_FAILED',
+    );
+    expect(error.fields).toStrictEqual({
+      values_cursor: 'Pass the next_cursor of the previous page as it was.',
+    });
+    expect(error.message).toBe(
+      'values_cursor: Pass the next_cursor of the previous page as it was.',
+    );
+  });
 });
 
 describe('get_net_worth_history', () => {
