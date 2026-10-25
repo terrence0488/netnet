@@ -13,6 +13,8 @@ import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   agentGuideSchema,
+  demoHouseholdSchema,
+  m12QuestionsSchema,
   packSchema,
   reviewsSchema,
   validateContent,
@@ -197,6 +199,62 @@ export function checkDemo(docs: readonly ContentDoc[], dir: string = CONTENT_DIR
   return validateDemoHousehold(DEMO_FILE, body, docs);
 }
 
+/** The M12 question set (PRD M12): read by `content:check`, never published or loaded into an account. */
+export const QUESTIONS_FILE = 'demo/m12-questions.json';
+
+/**
+ * The M12 question set in `dir`, against the household it asks about: its schema, then the
+ * household's end date and currency as its `asOf` and `currency`, and every holding it names.
+ * The set is data, so `readContent` never reads it and `content:publish` never publishes it.
+ */
+export function checkQuestions(dir: string = CONTENT_DIR): ContentError[] {
+  if (!existsSync(join(dir, QUESTIONS_FILE))) {
+    return [
+      {
+        doc: QUESTIONS_FILE,
+        path: '',
+        message: 'There is no M12 question set: the harness has nothing to ask.',
+      },
+    ];
+  }
+  const parsed = parseJson(dir, QUESTIONS_FILE);
+  if ('error' in parsed) return [parsed.error];
+  const set = m12QuestionsSchema.safeParse(parsed.body);
+  if (!set.success) {
+    return set.error.issues.map((issue) => ({
+      doc: QUESTIONS_FILE,
+      path: issue.path.join('.'),
+      message: issue.message,
+    }));
+  }
+  const householdText = parseJson(dir, DEMO_FILE);
+  if ('error' in householdText) return [];
+  const household = demoHouseholdSchema.safeParse(householdText.body);
+  if (!household.success) return [];
+  const errors: ContentError[] = [];
+  const report = (path: string, message: string) =>
+    errors.push({ doc: QUESTIONS_FILE, path, message });
+  if (set.data.asOf !== household.data.endDate) {
+    report(
+      'asOf',
+      `The ground truth is computed at the household's end date, ${household.data.endDate}.`,
+    );
+  }
+  if (set.data.currency !== household.data.baseCurrency) {
+    report('currency', `The household's base currency is ${household.data.baseCurrency}.`);
+  }
+  const names = new Set(household.data.holdings.map((h) => h.name));
+  set.data.questions.forEach((question, i) => {
+    if (question.holding !== undefined && !names.has(question.holding)) {
+      report(
+        `questions.${i}.holding`,
+        `There is no holding "${question.holding}" in the household.`,
+      );
+    }
+  });
+  return errors;
+}
+
 const line = ({ doc, path, message }: ContentError) =>
   `  content/${doc}${path ? ` ${path}` : ''}: ${message}`;
 
@@ -214,7 +272,7 @@ function main(args: readonly string[]): number {
   errors.push(...misnamedFiles(docs));
   const drafts = readDrafts();
   errors.push(...drafts.errors, ...draftErrors(docs, drafts.docs), ...readReviews(docs).errors);
-  errors.push(...checkDemo(docs));
+  errors.push(...checkDemo(docs), ...checkQuestions());
   const missing = missingImages(docs).map(({ doc, path, image }) => ({
     doc,
     path,

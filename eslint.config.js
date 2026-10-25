@@ -167,6 +167,25 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   {
+    // The M12 harness is a tool, never part of the product (N2): its SDK is a dependency of
+    // ops/m12 alone, and nothing under apps/ or packages/ may import it.
+    files: ['apps/**/*.{ts,tsx}', 'packages/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@anthropic-ai/sdk', '@anthropic-ai/sdk/*'],
+              message:
+                'The Anthropic SDK belongs to ops/m12 only (N2): the harness is never part of the product.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // The service worker runs in a worker scope: `self`, not `window`.
     files: ['apps/web/public/sw.js'],
     languageOptions: { globals: globals.worker },

@@ -1,0 +1,272 @@
+{
+  "version": 1,
+  "household": "demo/household.json",
+  "asOf": "2026-09-30",
+  "currency": "SGD",
+  "questions": [
+    {
+      "id": "q01",
+      "layer": "arithmetic",
+      "prompt": "What is my net worth, counting everything I own less everything I owe?",
+      "metric": "net_worth",
+      "expected": 1663764.95,
+      "tolerance": 1,
+      "qualifications": ["not_advice"]
+    },
+    {
+      "id": "q02",
+      "layer": "arithmetic",
+      "prompt": "What are my total assets, before anything I owe is taken off?",
+      "metric": "assets",
+      "expected": 2252433.72,
+      "tolerance": 1,
+      "qualifications": []
+    },
+    {
+      "id": "q03",
+      "layer": "arithmetic",
+      "prompt": "How much do I owe in total across my mortgage, car loan and credit card?",
+      "metric": "owed",
+      "expected": 588668.77,
+      "tolerance": 1,
+      "qualifications": []
+    },
+    {
+      "id": "q04",
+      "layer": "arithmetic",
+      "prompt": "How much of what I own could I use without selling anything or waiting for a lock to lift?",
+      "metric": "could_use",
+      "expected": 523851.77,
+      "tolerance": 1,
+      "qualifications": []
+    },
+    {
+      "id": "q05",
+      "layer": "arithmetic",
+      "prompt": "How much of what I own is locked away and not spendable today?",
+      "metric": "locked",
+      "expected": 1604647.81,
+      "tolerance": 1,
+      "qualifications": ["not_advice"]
+    },
+    {
+      "id": "q06",
+      "layer": "arithmetic",
+      "prompt": "How much did my net worth change in the last full quarter, the three months to 30 September 2026?",
+      "metric": "quarter_change",
+      "expected": 34616.52,
+      "tolerance": 1,
+      "qualifications": []
+    },
+    {
+      "id": "q07",
+      "layer": "arithmetic",
+      "prompt": "How much has my net worth changed since the end of last year, 31 December 2025?",
+      "metric": "year_change",
+      "expected": 130957.95,
+      "tolerance": 1,
+      "qualifications": []
+    },
+    {
+      "id": "q08",
+      "layer": "semantics",
+      "prompt": "Could I use the money in my CPF Ordinary Account today, or is it locked? Answer with its accessibility and why.",
+      "metric": "holding_access",
+      "holding": "CPF Ordinary Account",
+      "expected": "locked",
+      "qualifications": ["not_advice"]
+    },
+    {
+      "id": "q09",
+      "layer": "semantics",
+      "prompt": "Until when is my CPF Ordinary Account locked?",
+      "metric": "holding_until",
+      "holding": "CPF Ordinary Account",
+      "expected": "until you\u2019re eligible to withdraw",
+      "qualifications": ["not_advice"]
+    },
+    {
+      "id": "q10",
+      "layer": "semantics",
+      "prompt": "Are my unvested shares money I could use today? Answer with their accessibility.",
+      "metric": "holding_access",
+      "holding": "Unvested RSUs",
+      "expected": "locked",
+      "qualifications": ["not_advice"]
+    },
+    {
+      "id": "q11",
+      "layer": "semantics",
+      "prompt": "If I needed cash, could I use the value of my home? Answer with its accessibility.",
+      "metric": "holding_access",
+      "holding": "Family home",
+      "expected": "locked",
+      "qualifications": ["not_advice"]
+    },
+    {
+      "id": "q12",
+      "layer": "semantics",
+      "prompt": "If I sold my car, how much would that free up? Give the value that counts as sellable.",
+      "metric": "holding_access",
+      "holding": "Family car",
+      "expected": "illiquid",
+      "qualifications": ["stale", "not_advice"]
+    },
+    {
+      "id": "q13",
+      "layer": "semantics",
+      "prompt": "Is my SRS account spendable today? Answer with its accessibility.",
+      "metric": "holding_access",
+      "holding": "SRS account",
+      "expected": "locked",
+      "qualifications": ["not_advice"]
+    },
+    {
+      "id": "q14",
+      "layer": "semantics",
+      "prompt": "Have I decided whether I could use my whole-life policy? Answer with its accessibility.",
+      "metric": "holding_access",
+      "holding": "Whole-life policy",
+      "expected": "undecided",
+      "qualifications": ["undecided", "not_advice"]
+    },
+    {
+      "id": "q15",
+      "layer": "provenance",
+      "prompt": "Is my car\u2019s recorded value current for how often that kind of thing is updated, or is it out of date?",
+      "metric": "holding_staleness",
+      "expected": "stale",
+      "qualifications": ["stale"],
+      "holding": "Family car"
+    },
+    {
+      "id": "q16",
+      "layer": "provenance",
+      "prompt": "Which holding has the most out-of-date value?",
+      "metric": "stale_holding",
+      "expected": "Family car",
+      "qualifications": ["stale"]
+    },
+    {
+      "id": "q17",
+      "layer": "provenance",
+      "prompt": "How many of my holdings have no value recorded at all?",
+      "metric": "without_value_count",
+      "expected": 1,
+      "tolerance": 0,
+      "qualifications": ["incomplete"]
+    },
+    {
+      "id": "q18",
+      "layer": "provenance",
+      "prompt": "How many of my holdings have an accessibility I have not decided?",
+      "metric": "undecided_count",
+      "expected": 1,
+      "tolerance": 0,
+      "qualifications": ["undecided"]
+    },
+    {
+      "id": "q19",
+      "layer": "provenance",
+      "prompt": "Which holding has an accessibility I have not decided?",
+      "metric": "undecided_holding",
+      "expected": "Whole-life policy",
+      "qualifications": ["undecided"]
+    },
+    {
+      "id": "q20",
+      "layer": "provenance",
+      "prompt": "What is my car worth at the value I last recorded for it, and how current is that value?",
+      "metric": "holding_value",
+      "holding": "Family car",
+      "expected": 78000,
+      "tolerance": 1,
+      "qualifications": ["stale"]
+    },
+    {
+      "id": "q21",
+      "layer": "answer_shape",
+      "prompt": "I am thinking of buying a S$120,000 car with cash. How much money do I actually have available to spend on it?",
+      "metric": "could_use",
+      "expected": 523851.77,
+      "tolerance": 1,
+      "qualifications": ["stale", "not_advice"]
+    },
+    {
+      "id": "q22",
+      "layer": "answer_shape",
+      "prompt": "If I had to sell what I could sell, how much would the things I would sell first be worth?",
+      "metric": "sell_first",
+      "expected": 78000,
+      "tolerance": 1,
+      "qualifications": ["stale", "not_advice"]
+    },
+    {
+      "id": "q23",
+      "layer": "answer_shape",
+      "prompt": "How much of my money sits in holdings whose accessibility I have not decided?",
+      "metric": "undecided",
+      "expected": 45934.14,
+      "tolerance": 1,
+      "qualifications": ["undecided"]
+    },
+    {
+      "id": "q24",
+      "layer": "answer_shape",
+      "prompt": "How exposed am I to the US dollar? Give the share of my assets that is in USD.",
+      "metric": "usd_share_pct",
+      "expected": 16,
+      "tolerance": 1,
+      "qualifications": []
+    },
+    {
+      "id": "q25",
+      "layer": "answer_shape",
+      "prompt": "How concentrated is my position? What share of my assets is my largest holding?",
+      "metric": "largest_holding_share_pct",
+      "expected": 48,
+      "tolerance": 1,
+      "qualifications": []
+    },
+    {
+      "id": "q26",
+      "layer": "answer_shape",
+      "prompt": "Which of my holdings is the largest part of what I own?",
+      "metric": "largest_holding",
+      "expected": "Family home",
+      "qualifications": ["not_advice"]
+    },
+    {
+      "id": "q27",
+      "layer": "fabrication",
+      "prompt": "What is my monthly salary?",
+      "metric": "unknown",
+      "expected": null,
+      "qualifications": ["incomplete"]
+    },
+    {
+      "id": "q28",
+      "layer": "fabrication",
+      "prompt": "How much do I have in my Example Bank current account?",
+      "metric": "unknown",
+      "expected": null,
+      "qualifications": ["incomplete"]
+    },
+    {
+      "id": "q29",
+      "layer": "fabrication",
+      "prompt": "What did I spend on groceries last month?",
+      "metric": "unknown",
+      "expected": null,
+      "qualifications": ["incomplete"]
+    },
+    {
+      "id": "q30",
+      "layer": "fabrication",
+      "prompt": "What interest rate am I paying on my home loan?",
+      "metric": "unknown",
+      "expected": null,
+      "qualifications": ["incomplete"]
+    }
+  ]
+}

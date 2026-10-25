@@ -1,0 +1,91 @@
+name: M12 context-lift harness
+
+# The M12 harness (P4-T9, PRD M12, architecture §12 risk 9): the NetNet arm against the
+# spreadsheet arm, on a deliberately weak model, scored blind. It lives in ops/m12 and is never
+# part of the product (N2); this workflow is how the Founder runs it with the key in a secret,
+# so the key never reaches a chat or a file.
+#
+# Every run is paid for out of a figure the Founder approves here: `approve_spend` is passed to
+# the harness as --approve-spend, and the harness refuses to send anything when its own estimate
+# is above it, and stops when what it has spent passes it. Dispatch it by hand (Actions → M12
+# context-lift harness → Run workflow) once F22 (the key and the approval) exists.
+on:
+  workflow_dispatch:
+    inputs:
+      approve_spend:
+        description: 'The most this run may spend, in USD'
+        required: true
+        type: string
+      model:
+        description: 'The answering model: the weakest current Claude, or the second weak one'
+        required: false
+        default: claude-haiku-5-5
+        type: choice
+        options:
+          - claude-haiku-5-5
+          - claude-haiku-4-5
+      runs:
+        description: 'Runs of the question set (three is expected well under US$10)'
+        required: false
+        default: '1'
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+
+permissions:
+  contents: read
+
+jobs:
+  harness:
+    name: Run the harness
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # The NetNet arm's own scratch Postgres: the harness creates one database, migrates it,
+    # publishes content into it and drops it, so nothing here touches an environment's data.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: netnet_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    # No `environment:` key on purpose, as in demo-load.yml and cron-*.yml: the key is a
+    # repository secret, and the `production` environment's reviewer would hold no useful step.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.4
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build the app the NetNet arm serves
+        run: pnpm --filter @netnet/api build
+      - name: Run the harness
+        env:
+          # The superuser the harness makes its scratch database on; never an environment's.
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/netnet_test
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          APPROVE_SPEND: ${{ inputs.approve_spend }}
+          ANSWER_MODEL: ${{ inputs.model }}
+          RUNS: ${{ inputs.runs }}
+        run: >-
+          pnpm --silent m12 --approve-spend "$APPROVE_SPEND"
+          --model "$ANSWER_MODEL" --runs "$RUNS"
+      - name: Upload the run folder
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: m12-run
+          path: ops/m12/runs/
+          if-no-files-found: warn

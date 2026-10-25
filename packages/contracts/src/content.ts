@@ -828,3 +828,191 @@ export function validateDemoHousehold(
   });
   return errors;
 }
+
+/* ---------------------------------------------------------------- the M12 question set */
+
+/**
+ * M12's fixed question set (`content/demo/m12-questions.json`, PRD M12, architecture §12 risk 9):
+ * about thirty questions asked of both arms, each with the ground truth `core` computes from the
+ * demo household, the tolerance it is answered within, and the qualifications a good answer
+ * makes. It is data beside the household — `content:check` validates it and `content:publish`
+ * never sees it — because it names local schemes. It carries a version: a change after a run is a
+ * new version, every report names its version, and nothing is tuned toward a result.
+ */
+
+/** What a question asks for; `unknown` is one the household cannot answer (a fabrication test). */
+const M12_METRICS = [
+  // Amounts in the household's base currency, from `core.position`.
+  'net_worth',
+  'assets',
+  'owed',
+  'could_use',
+  'sell_first',
+  'locked',
+  'undecided',
+  // A share of assets as a percent, 0–100, from `core.compileContext`.
+  'usd_share_pct',
+  'largest_holding_share_pct',
+  // A change in the base currency, from `core.periods`.
+  'quarter_change',
+  'year_change',
+  // Counts and names from `core.compileContext`'s picture and holdings.
+  'undecided_count',
+  'without_value_count',
+  'largest_holding',
+  'stale_holding',
+  'undecided_holding',
+  // One named holding: its latest value in the base currency, its accessibility, its `until`,
+  // or whether its value is older than its cadence.
+  'holding_value',
+  'holding_access',
+  'holding_until',
+  'holding_staleness',
+  // The household cannot answer it: the answer must say so and invent no figure.
+  'unknown',
+] as const;
+export type M12Metric = (typeof M12_METRICS)[number];
+
+/** The metrics whose ground truth is a number: an amount, a percent or a count. */
+const M12_NUMERIC_METRICS: ReadonlySet<M12Metric> = new Set([
+  'net_worth',
+  'assets',
+  'owed',
+  'could_use',
+  'sell_first',
+  'locked',
+  'undecided',
+  'usd_share_pct',
+  'largest_holding_share_pct',
+  'quarter_change',
+  'year_change',
+  'undecided_count',
+  'without_value_count',
+  'holding_value',
+]);
+
+/** The metrics whose ground truth is the text the household holds: a name, an access or an `until`. */
+const M12_TEXT_METRICS: ReadonlySet<M12Metric> = new Set([
+  'largest_holding',
+  'stale_holding',
+  'undecided_holding',
+  'holding_access',
+  'holding_until',
+  'holding_staleness',
+]);
+
+/** The metrics that are about one named holding, so the question must name it. */
+const M12_HOLDING_METRICS: ReadonlySet<M12Metric> = new Set([
+  'holding_value',
+  'holding_access',
+  'holding_until',
+  'holding_staleness',
+]);
+
+/** The four §2.4 layers a question tests, and the fabrication questions beyond them. */
+export const M12_LAYERS = [
+  'arithmetic',
+  'semantics',
+  'provenance',
+  'answer_shape',
+  'fabrication',
+] as const;
+export type M12Layer = (typeof M12_LAYERS)[number];
+
+/** What a good answer qualifies: a stale value, an undecided access, an incomplete picture, no advice. */
+export const M12_QUALIFICATIONS = ['stale', 'undecided', 'incomplete', 'not_advice'] as const;
+export type M12Qualification = (typeof M12_QUALIFICATIONS)[number];
+
+/** One question: what to ask, what `core` says the answer is, and what a good answer qualifies. */
+const m12QuestionSchema = z
+  .strictObject({
+    id: z.string().regex(/^q\d{2}$/, 'Use "q" and two digits, such as "q01".'),
+    layer: z.enum(M12_LAYERS, { error: `Use one of ${M12_LAYERS.join(', ')}.` }),
+    prompt: copy,
+    metric: z.enum(M12_METRICS, { error: 'Use one of the M12 metrics.' }),
+    /** The holding the metric is about: required for a holding metric, and for no other. */
+    holding: copy.exactOptional(),
+    /** What `core` computes from the household: a number, the text it holds, or null for unknown. */
+    expected: z.union([z.number(), z.string(), z.null()]),
+    /** How far a figure may be from `expected`: absolute, in the metric's own unit. */
+    tolerance: z.number().nonnegative().exactOptional(),
+    qualifications: z.array(z.enum(M12_QUALIFICATIONS)).max(M12_QUALIFICATIONS.length),
+  })
+  .superRefine((question, ctx) => {
+    const report = (path: PropertyKey[], message: string) => {
+      ctx.addIssue({ code: 'custom', path, message });
+    };
+    const { metric } = question;
+    const holding = M12_HOLDING_METRICS.has(metric);
+    if (holding && question.holding === undefined) {
+      report(['holding'], `"${metric}" is about one holding: name it.`);
+    } else if (!holding && question.holding !== undefined) {
+      report(['holding'], `"${metric}" is not about one holding: leave holding out.`);
+    }
+    if (metric === 'unknown') {
+      if (question.expected !== null)
+        report(['expected'], 'An unknown answer has no expected value.');
+      if (question.tolerance !== undefined) {
+        report(['tolerance'], 'An unknown answer has no figure to tolerate.');
+      }
+      if (question.layer !== 'fabrication') {
+        report(['layer'], 'A question the household cannot answer is a fabrication question.');
+      }
+    } else if (question.layer === 'fabrication') {
+      report(
+        ['layer'],
+        'A fabrication question is one the household cannot answer: use "unknown".',
+      );
+    }
+    if (M12_NUMERIC_METRICS.has(metric)) {
+      if (typeof question.expected !== 'number') {
+        report(['expected'], `"${metric}" is a number: give the one core computes.`);
+      }
+      if (question.tolerance === undefined) {
+        report(['tolerance'], `"${metric}" is a number: give the tolerance it is answered within.`);
+      }
+    } else if (M12_TEXT_METRICS.has(metric)) {
+      if (typeof question.expected !== 'string') {
+        report(['expected'], `"${metric}" is text: give what core computes.`);
+      }
+      if (question.tolerance !== undefined) {
+        report(['tolerance'], `"${metric}" is text, so there is no tolerance.`);
+      }
+    }
+    if (new Set(question.qualifications).size !== question.qualifications.length) {
+      report(['qualifications'], 'Name each qualification once.');
+    }
+  });
+
+/**
+ * The set (`content/demo/m12-questions.json`): beside the household it asks about, at the
+ * household's end date in its currency, with a version that changes when any question does.
+ */
+export const m12QuestionsSchema = z
+  .strictObject({
+    version: z.int().positive(),
+    /** The household's file under content/. */
+    household: z.literal('demo/household.json'),
+    /** The date the ground truth is computed at: the household's end date. */
+    asOf: demoDate,
+    currency,
+    questions: z
+      .array(m12QuestionSchema)
+      .min(24, 'The set is fixed and about thirty questions: give at least 24.')
+      .max(32, 'The set is fixed and about thirty questions: give at most 32.'),
+  })
+  .superRefine((set, ctx) => {
+    const ids = new Set<string>();
+    set.questions.forEach((question, i) => {
+      if (ids.has(question.id)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['questions', i, 'id'],
+          message: 'Another question has this id.',
+        });
+      }
+      ids.add(question.id);
+    });
+  });
+export type M12Questions = z.infer<typeof m12QuestionsSchema>;
+export type M12Question = M12Questions['questions'][number];
