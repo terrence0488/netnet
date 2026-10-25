@@ -52,6 +52,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Analytics is a v1 deliverable equal to the MCP layer; events never carry amounts, names or text (N9) | Instrumentation is the experiment; a pipeline that leaks the balance sheet is an incident |
 | Every event carries `segment`; `client`, `entry`, `method`, `via` and `channel` ride where they apply | Each splits a metric that would otherwise be misread, e.g. one client's broken flow looking like A1 failing |
 | Distribution (landing page, demo recording, directory listings, launch note, funnel analytics) is v1 work. The pitch: "you can't get useful advice from an AI that doesn't know where you stand" | Sign-ups are the kill metric and there is no channel; the line is true for all three personas |
+| A signup is a verified account: an `account_created` by Google or Apple, or an `email_verified` for an email sign-up | §3.2 counts verified accounts, and the metrics read events alone, which recorded no verification before |
 
 ## Holdings, accessibility and packs
 
@@ -118,6 +119,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | A history row's change reads signed, so a growing debt reads negative like the Home rows | Signed amounts are the production convention everywhere else; the prototype's magnitude reading would contradict the row beside it |
 | The trend's range and the allocation's $/% are session-local, not saved prefs | Prefs carry baseline, sort and filters; a fix session does not extend that contract |
 | On Home the stale note sits directly beneath Position, and the push card below it | The note qualifies the figures above it; the card is an offer, and J12 asks only that it sit below Position |
+| The landing page is its own page, in Poster's brand at poster scale, built from its own HTML and CSS | G-D1 asks for a marketing page, not a screen in the product; one brand from the first screen to the app |
 
 ## Delivery
 
@@ -131,6 +133,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | CI checks every push, plus reopened and closed pull requests (but not opening: the branch push already ran the same head). Previews deploy from CI with the Vercel CLI, only for a branch with an open pull request (or a manual run); Vercel's own Git deployments are off | Production comes only from the manual workflow, and previews stay one per pull request, within Neon's branch limit |
 | CI runs in parallel lanes (quick, integration, E2E) behind one `Checks` verdict; pushes touching only docs, `ops/` or the deploy/backup/probe/cron workflows skip the browser suite and the preview; previews smoke-test instead of re-running E2E | One sequential job spent ~14 minutes per PR, most of it re-proving the browser; nothing skipped can break what the lanes still prove |
 | Vercel's scheduler never fired the production crons (jobs registered, manual triggers 200, zero scheduled executions in two days), so every scheduled job (the three reminder runs, the daily sweep, FX, and P4's health check) is a GitHub Actions schedule calling its handler with `CRON_SECRET`, and `vercel.json` carries no crons | GitHub's schedules demonstrably fire in this repository, and every job tolerates their lateness (architecture §9.3) |
+| P4 drafts the privacy policy and terms from the architecture's facts; the Founder has them reviewed by someone qualified before they are final or used in a listing | They must say what NetNet actually does, and P-B and P-C read them before signing up (A7) |
 | Production deploys trust the merged pull request's green Checks instead of waiting for main CI; when all phases are delivered, revisit: re-enable the main-green gate or take GitHub's merge queue | One PR lands at a time, so the merged tree is the tested tree; main CI still runs as the backstop |
 
 ## Architecture
@@ -144,7 +147,8 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Per-user isolation by Postgres row-level security with `FORCE`, composite keys and one `withUser()` entry | Enforced by the database, not by remembering a filter (N4) |
 | One ISO 4217 table, in contracts; core imports it by its zod-free path, `@netnet/contracts/currencies`, the one value core takes from contracts | One list to keep current, and core stays free of zod |
 | Better Auth for accounts and the agents' OAuth 2.1 server (CIMD and DCR); our own MCP token check | No hand-rolled security code; protocol support stays in our hands |
-| In P1, sign-up says when an email already has an account (422); P4's security review revisits it | Sign-up is limited to 5 a minute per IP and the reset flow reveals nothing; hiding it would mean sending an "already registered" email instead |
+| Sign-up says when an email already has an account (422) | J1 lets a new person carry on unverified at once, so the flow itself shows whether an address was new; sign-up is limited to 5 a minute per IP and the reset flow reveals nothing |
+| The daily health check is split: its GitHub workflow reads Neon's usage (with the GitHub-held key) and the analytics (as `netnet_metrics`) and posts them to `/api/cron/health`, which adds what `core` holds and emails the Founder through `notifyOperator()` | The Neon key could delete the database, so it stays out of the function; `netnet_app` keeps no read on analytics; every email still leaves through the notification module |
 | A change refused by the Origin check gets `401 UNAUTHENTICATED`, with no code of its own | Either way the request lacks a session from this site, and §7.5's list stays short |
 | The OAuth endpoints are Better Auth's own paths, `/api/auth/oauth2/*` and `/api/auth/jwks` | Clients find them from the server's metadata, so a rewrite to other paths would be a route to maintain for nothing |
 | MCP is stateless Streamable HTTP across three protocol versions, with one summary tool, `get_financial_context`, of at most 8 KB | Clients migrate at different speeds; one dense call answers a question |
