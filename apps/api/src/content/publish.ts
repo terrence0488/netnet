@@ -172,7 +172,7 @@ export async function publishContent(
       });
       const refused = options.admit(changed);
       if (refused.length > 0) {
-        throw new ContentRejected(`${refused.length} refused: nothing was published.`, refused);
+        throw new ContentRejected(`${refused.length} errors: nothing was published.`, refused);
       }
     }
     const outcomes: DocOutcome[] = [];
