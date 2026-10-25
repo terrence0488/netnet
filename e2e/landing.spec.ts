@@ -118,6 +118,16 @@ test.describe('the landing page', () => {
     expect(await page.content()).not.toMatch(/chatgpt|openai/i);
   });
 
+  test('holds the recording’s place until the Founder records it', async ({ page }) => {
+    await page.goto('/');
+    const slot = page.locator('[data-recording="F21"]');
+    await expect(slot).toBeVisible();
+    await expect(
+      slot.locator('video, [data-placeholder="F21"]'),
+      'the slot holds F21’s placeholder or its video',
+    ).toHaveCount(1);
+  });
+
   test('opens sign-up from its call to action, and sign-in quietly', async ({ page }) => {
     await page.goto('/');
     const start = page.getByRole('link', { name: 'Get started' });

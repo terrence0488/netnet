@@ -456,7 +456,7 @@ the seven new markets), and the security review across all of them.
 | Task | Title | Depends on | Parallel-safe | Founder items first |
 |---|---|---|---|---|
 | P4-T1 | The demo household — a fictional balance sheet any account can load | — | yes | — |
-| P4-T2 | The landing page, and `landing_view` | — | yes | F21 (the recording, on T1's household) |
+| P4-T2 | The landing page, and `landing_view` | — | yes | F21 (the recording, on T1's household; a placeholder holds its place until it lands) |
 | P4-T3 | The metrics, per segment | T2 (ordering) | yes | F24 |
 | P4-T4 | The daily health check, and the Founder's alert | T3 | yes | F24, F25 |
 | P4-T5 | The seven remaining launch packs, and the review record | — | yes | — |
@@ -472,9 +472,9 @@ the seven new markets), and the security review across all of them.
 | P4-T15 | ChatGPT, once OpenAI lists NetNet | OpenAI's listing, T7 | yes | F11 (ChatGPT's shots) |
 
 T1 comes first because three tasks show the same fictional household: the landing page's
-recording (F21), the directory reviewers' test account (T7) and M12 (T9). T3 follows T2 because
-both change the event contract and M10 reads `landing_view`; T4 follows T3 for the metrics role's
-login and the N1 query. T7, T8 and T10 follow T2 only so that the listings, the legal pages and the
+recording (F21, with a placeholder until it lands), the directory reviewers' test account (T7) and
+M12 (T9). T3 follows T2 because both change the event contract and M10 reads `landing_view`; T4
+follows T3 for the metrics role's login and the N1 query. T7, T8 and T10 follow T2 only so that the listings, the legal pages and the
 launch note use the landing page as shipped. T11 and T12 are small fixes with nothing in common
 with the rest: T11 is the push-endpoint limit named for the security review, fixed first because
 the fix is clear, and T12 is the Low issue from P3's last test report, which a weak model (M12)
@@ -581,7 +581,7 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | F18 | Sign in with Apple (needs F1): a Services ID, domain verification, a key. Vercel env: `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` | P2 |
 | F19 | VAPID keys, on your own computer: `npx web-push generate-vapid-keys`. Vercel env: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:` your address), and `LINK_SIGNING_SECRET` (generated) | P3 |
 | F20 | The reviewers from F3 engaged, one per pack, each sent P4-T6's review sheet for their market | P4-T6 |
-| F21 | The landing page's screen recording: Claude answering a real question from P4-T1's fictional household, recorded to P4-T2's script | P4-T2 |
+| F21 | The landing page's screen recording: Claude answering a real question from P4-T1's fictional household, recorded to P4-T2's script. The page carries a placeholder until it lands | P4-T2 (placeholder), launch |
 | F22 | An Anthropic API key, with a monthly spend limit set in the Claude Console, as GitHub secret `ANTHROPIC_API_KEY` (or in your own shell); approve each M12 run's spend | P4-T9 |
 | F23 | Have P4-T8's drafts of the privacy policy and terms reviewed by someone qualified, then tell the build what changed; needed before directory listings are submitted (Stage 8's legal basics) | P4-T8 → Stage 8 |
 | F24 | **Metrics role:** `openssl rand -hex 32` → GitHub secret `NETNET_METRICS_DB_PASSWORD_PROD`, before P4-T3 deploys. After that deploy: GitHub secrets `DATABASE_METRICS_URL` (the pooled connection string for `netnet_metrics`, in the form of `DATABASE_URL`) and `METRICS_EXCLUDE_USERS` (the probe account's user id and your own test accounts', comma-separated) | P4-T3, P4-T4 |

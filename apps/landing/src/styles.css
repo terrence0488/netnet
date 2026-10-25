@@ -385,6 +385,72 @@ main,
   }
 }
 
+/* ---------------------------------------------------------------- the recording */
+
+.recording {
+  margin-top: var(--poster-gap);
+}
+
+.recording > h2 {
+  margin-bottom: var(--space-12);
+  font-size: var(--poster-title);
+}
+
+/* F21's slot: the 16:9 frame the recording fills. Until it lands, a dashed placeholder holds
+   the frame, as a missing screenshot does in the app (design-system §6). */
+.frame {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  padding: clamp(var(--space-5), 3vw, var(--space-10));
+  border: var(--border-edge) dashed var(--rule-strong);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.placeholder {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+}
+
+.play {
+  display: grid;
+  place-items: center;
+  width: clamp(44px, 8vw, 80px);
+  aspect-ratio: 1;
+  margin-bottom: var(--space-2);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: var(--shadow-icon);
+}
+
+.play::after {
+  content: '';
+  width: 34%;
+  aspect-ratio: 1;
+  margin-left: 10%;
+  background: var(--brand-on);
+  clip-path: polygon(18% 0, 100% 50%, 18% 100%);
+}
+
+.placeholder-title {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--poster-point);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-heading-card);
+  line-height: var(--leading-body-sm);
+}
+
+.placeholder .meta {
+  max-width: 34em;
+}
+
 /* ---------------------------------------------------------------- the trust points */
 
 .points li {

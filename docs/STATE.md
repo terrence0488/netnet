@@ -4,8 +4,10 @@
 Stage: Build (P4)
 Phase: P4
 Status: in-progress
-Next action: `stage: build P4` (wave 2: T3, T7, T8, T9, T10). F21 (T2's recording) is still
-outstanding; T2 stays in-progress. GitHub Actions is healthy again and main's CI is green.
+Next action: `stage: build P4` (wave 2: T3, T7, T8, T9, T10). The landing page now carries a
+placeholder in F21's recording slot for the Founder's review; F21 itself is deferred, and T2 stays
+in-progress until the recording replaces it. GitHub Actions is healthy again and main's CI is
+green.
 **Branches:** one branch and one PR per task, from `main` (CONVENTIONS §15); wave 1 merged
 (#121–#125), wave 2 branches start from `main`.
 
@@ -20,12 +22,14 @@ outstanding; T2 stays in-progress. GitHub Actions is healthy again and main's CI
 | P1 | **approved** | 2026-10-08 | Test report reviewed; Claude computer shots shipped (#61) |
 | P2 | **approved** | 2026-10-12 | Test report + hands-on; Account and date review fixups in (#76) |
 | P3 | **approved** | 2026-10-24 | Third test run: pass, one Low and two Info (`docs/phases/P3/test-report.md`); the Reminders 17:00 and 01:00 slots' first starts still to record in `ops/probe.md` |
-| P4 | in-progress | | Wave 1 merged 2026-10-25 (#121–#125); T2 stays in-progress on F21's recording; #88 deps merged; wave 2 next |
+| P4 | in-progress | | Wave 1 merged 2026-10-25 (#121–#125); T2's page carries F21's placeholder, the recording is deferred and T2 stays in-progress; #88 deps merged; wave 2 next |
 
 ## Handoff note (last session)
 Wave 1 merged to `main` on 2026-10-25: T1 (#121), T2 (#122), T5 (#123), T11 (#124), T12 (#125);
 T12's read-tool follow-up #127 and the Renovate dependency PR #88 are merged too. T2 is
-in-progress: the page and `landing_view` are in the tree, but F21's recording is missing, so its
-last done criterion is open; `p4-t2-recording` adds it. Main CI is green after the Actions billing
-fix. Wave 2 starts from `main`: T3, T7, T8, T9, T10. F21/F24/F25 still gate T2–T4; F20/F22/F23
-remain; T6/T15 run alongside. Renovate has #128–#131 open (major bumps), untouched.
+in-progress: the page and `landing_view` are in the tree, and the recording's 16:9 slot now carries
+a `Recording coming soon` placeholder (`data-recording="F21"`) for the Founder to review. F21 is
+deferred, so the MP4/WebM, poster and reduced-motion behavior still follow on `p4-t2-recording`
+before launch. Main CI is green. Wave 2 starts from `main`: T3, T7, T8, T9, T10. F24/F25 gate
+T3–T4; F20/F22/F23 remain; T6/T15 run alongside. Renovate has #128–#131 open (major bumps),
+untouched.
