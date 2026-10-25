@@ -53,3 +53,9 @@ docs/reference/mockups/*.pdf
 coverage/
 playwright-report/
 test-results/
+
+# M12 harness runs (ops/m12): transcripts, scores and the blind sheet stay local; only the report
+# of a real run is committed, and the folder itself must be unignored for that to work.
+ops/m12/runs/**
+!ops/m12/runs/**/
+!ops/m12/runs/**/report.md
