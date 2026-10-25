@@ -796,7 +796,12 @@ The agent's name is HTML-escaped and at most 40 characters. A DCR client's name 
    `pushManager.subscribe()`, so the browser's own prompt follows the tap. Granted: the subscription
    (an endpoint URL plus two keys) is `POST`ed to `/api/notifications/endpoints` and `push_enabled`
    fires. Denied: the switch stays off and says where to allow it, and NetNet never asks again on
-   its own. `push_prompt_result` fires either way.
+   its own. `push_prompt_result` fires either way. The server takes an endpoint only at the
+   browsers' push services (`PUSH_SERVICE_HOSTS`: `fcm.googleapis.com`,
+   `updates.push.services.mozilla.com`, `*.notify.windows.com`, `*.push.apple.com`; https on port
+   443, no userinfo or IP literal) and never follows their redirects: any other is refused, so
+   reminders go by email, and one stored earlier is revoked at its next send (`push_disabled {by:
+   browser}`).
 2. **Where it can't work.** "Can receive push" is decided in the browser: a service worker,
    `PushManager` (or `window.pushManager`, Declarative Web Push) and `Notification`. Where one is
    missing, including an iPhone or iPad in a Safari tab, **no push option appears anywhere** and
