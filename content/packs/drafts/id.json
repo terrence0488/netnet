@@ -1,0 +1,100 @@
+{
+  "id": "id",
+  "locale": "en-ID",
+  "currency": "IDR",
+  "labels": {
+    "retirement": "JHT",
+    "mortgage": "Home loan"
+  },
+  "examples": {
+    "cash": "e.g. Savings, deposito, e-wallet",
+    "listed": "e.g. Reksa dana, stocks",
+    "retirement": "e.g. BPJS Ketenagakerjaan JHT",
+    "property": "e.g. House",
+    "vehicle": "e.g. Motorbike",
+    "mortgage": "e.g. KPR",
+    "loan": "e.g. Motorbike financing"
+  },
+  "meaning": {},
+  "cadenceDays": {},
+  "defaults": {
+    "retirement": {
+      "access": "locked",
+      "reason": "JHT and DPLK savings are locked until you’re eligible to withdraw",
+      "until": "until you’re eligible to withdraw"
+    }
+  },
+  "questions": {},
+  "types": [
+    {
+      "key": "vehicle_loan",
+      "u": "loan",
+      "label": "Vehicle financing",
+      "example": "e.g. Motorbike on credit"
+    }
+  ],
+  "checklist": [
+    {
+      "id": "bank",
+      "u": "cash",
+      "name": "Bank accounts",
+      "ask": "Do you have money in a bank account or an e-wallet?",
+      "amount": "Roughly how much, across all of them?"
+    },
+    {
+      "id": "jht",
+      "u": "retirement",
+      "name": "JHT",
+      "ask": "Do you have JHT savings with BPJS Ketenagakerjaan?",
+      "amount": "Roughly how much?",
+      "hint": "The JMO app shows your JHT balance."
+    },
+    {
+      "id": "invest",
+      "u": "listed",
+      "name": "Investments",
+      "ask": "Any investments — reksa dana, stocks, an investing app?",
+      "amount": "Roughly what are they worth today?"
+    },
+    {
+      "id": "home",
+      "u": "property",
+      "name": "Home",
+      "ask": "Do you own the home you live in?",
+      "amount": "Roughly what would it sell for?",
+      "answer": "yes"
+    },
+    {
+      "id": "home_loan",
+      "u": "mortgage",
+      "name": "Home loan",
+      "ask": "Is there a KPR or other home loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "home",
+      "hint": "Your latest loan statement shows what’s outstanding."
+    },
+    {
+      "id": "vehicle",
+      "u": "vehicle",
+      "name": "Vehicle",
+      "ask": "Do you own a car or a motorbike?",
+      "amount": "Roughly what would it sell for?"
+    },
+    {
+      "id": "vehicle_loan",
+      "u": "loan",
+      "type": "vehicle_loan",
+      "name": "Vehicle financing",
+      "ask": "Is there financing on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "vehicle"
+    },
+    {
+      "id": "owed",
+      "u": "loan",
+      "name": "Other loans",
+      "ask": "Anything else you owe — a personal loan or a card balance?",
+      "amount": "Roughly how much, all together?"
+    }
+  ]
+}
