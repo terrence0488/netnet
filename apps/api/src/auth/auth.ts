@@ -180,6 +180,15 @@ export function createAuth(deps: AuthDeps) {
         sendVerification(user.id, token);
         return Promise.resolve();
       },
+      // Better Auth calls this only when it marks an unverified address verified: a second click
+      // on the link returns before it, so `email_verified` fires once per account. It is a signup
+      // (PRD §3.5), and `track()` attaches the account's segment from its profile.
+      afterEmailVerification: (user) => {
+        deps.background(
+          deps.track('email_verified', {}, { userId: user.id, appVersion: deps.appVersion() }),
+        );
+        return Promise.resolve();
+      },
     },
     session: { expiresIn: SESSION_DAYS * DAY_S, updateAge: DAY_S },
     hooks: {

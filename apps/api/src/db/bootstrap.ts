@@ -3,8 +3,9 @@ import { escapeIdentifier, escapeLiteral, type ClientBase } from 'pg';
 /**
  * The roles the migrations grant to (architecture §6.1). Roles made in Neon's console inherit
  * `neon_superuser`, which bypasses row-level security, so these are made here, by SQL, as
- * `netnet_owner`. No password is ever stored in the repo: `netnet_app`'s comes from the
- * environment at run time. The other two cannot log in until a later task needs them to.
+ * `netnet_owner`. No password is ever stored in the repo: `netnet_app`'s and, when set,
+ * `netnet_metrics`'s come from the environment at run time. `netnet_content_admin` cannot log in
+ * until a later task needs it to; `netnet_metrics` stays `nologin` until its password is set.
  */
 export const APP_ROLE = 'netnet_app';
 export const METRICS_ROLE = 'netnet_metrics';
@@ -23,6 +24,11 @@ const LOCK_KEY = 'netnet.db.bootstrap';
 export interface BootstrapOptions {
   /** `netnet_app`'s password: `NETNET_APP_DB_PASSWORD`. */
   appPassword: string;
+  /**
+   * `netnet_metrics`'s password: `NETNET_METRICS_DB_PASSWORD`. Set, the role gets `login` and this
+   * password; unset, it is left `nologin`.
+   */
+  metricsPassword?: string | undefined;
 }
 
 /**
@@ -31,10 +37,9 @@ export interface BootstrapOptions {
  * forbidden attribute or a membership that bypasses row-level security: that needs a person.
  */
 export async function bootstrapRoles(client: ClientBase, options: BootstrapOptions): Promise<void> {
-  if (!PASSWORD.test(options.appPassword)) {
-    throw new Error(
-      'NETNET_APP_DB_PASSWORD must be 32 to 128 letters and digits (use `openssl rand -hex 32`).',
-    );
+  assertPassword('NETNET_APP_DB_PASSWORD', options.appPassword);
+  if (options.metricsPassword !== undefined) {
+    assertPassword('NETNET_METRICS_DB_PASSWORD', options.metricsPassword);
   }
   await client.query('begin');
   try {
@@ -52,10 +57,24 @@ export async function bootstrapRoles(client: ClientBase, options: BootstrapOptio
     await client.query(
       `alter role ${escapeIdentifier(APP_ROLE)} with login password ${escapeLiteral(options.appPassword)}`,
     );
+    if (options.metricsPassword !== undefined) {
+      await client.query(
+        `alter role ${escapeIdentifier(METRICS_ROLE)} with login password ${escapeLiteral(options.metricsPassword)}`,
+      );
+    } else {
+      await client.query(`alter role ${escapeIdentifier(METRICS_ROLE)} nologin`);
+    }
     await client.query('commit');
   } catch (error) {
     await client.query('rollback');
     throw error;
+  }
+}
+
+/** A connection-string-safe password, named in the error so the missing secret is obvious. */
+function assertPassword(name: string, password: string): void {
+  if (!PASSWORD.test(password)) {
+    throw new Error(`${name} must be 32 to 128 letters and digits (use \`openssl rand -hex 32\`).`);
   }
 }
 

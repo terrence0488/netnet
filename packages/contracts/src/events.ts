@@ -71,6 +71,11 @@ export const eventSchemas = {
   landing_view: noProps,
   signup_started: z.strictObject({ method }),
   account_created: z.strictObject({ method }),
+  /**
+   * Fires once when an email sign-up's address is verified (PRD §3.5): a signup is then this or
+   * an `account_created` by Google or Apple.
+   */
+  email_verified: noProps,
   session_started: noProps,
   holding_created: z
     .strictObject({ source, via: z.enum(['guided', 'form']).optional() })

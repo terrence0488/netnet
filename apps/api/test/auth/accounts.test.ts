@@ -69,6 +69,22 @@ function linkIn(message: CapturedEmail | undefined): string {
   return url.slice(ORIGIN.length);
 }
 
+interface StoredEvent {
+  name: string;
+  props: unknown;
+  segment: string;
+  app_version: string;
+}
+
+/** Every event of the account, in the order it was written. */
+async function eventsOf(userId: string): Promise<StoredEvent[]> {
+  const { rows } = await db.owner.query<StoredEvent>(
+    'select name, props, segment, app_version from analytics.event where user_id = $1 order by id',
+    [userId],
+  );
+  return rows;
+}
+
 interface ProfileRow {
   country: string | null;
   time_zone: string;
@@ -219,11 +235,48 @@ describe('sign-up', () => {
     const res = await new Browser(target).send(linkIn(sent[0]));
     expect(res.status).toBe(302);
     expect(res.headers.get('Location')).toBe('/app/verify');
+    await target.settle();
     const { rows } = await db.owner.query('select email_verified from core.user where id = $1', [
       userId,
     ]);
     expect(rows).toEqual([{ email_verified: true }]);
     expect(await (await browser.send('/api/me')).json()).toMatchObject({ emailVerified: true });
+
+    // The verification is the signup: one event, no props, the account's (unknown) segment.
+    expect(await eventsOf(userId)).toStrictEqual([
+      {
+        name: 'account_created',
+        props: { method: 'email' },
+        segment: 'unknown',
+        app_version: 'test123',
+      },
+      {
+        name: 'email_verified',
+        props: {},
+        segment: 'unknown',
+        app_version: 'test123',
+      },
+    ]);
+
+    // Clicking the link again changes nothing and fires no second event.
+    expect((await new Browser(target).send(linkIn(sent[0]))).status).toBe(302);
+    await target.settle();
+    expect((await eventsOf(userId)).filter((e) => e.name === 'email_verified')).toHaveLength(1);
+  });
+
+  it('fires email_verified with the account’s segment from its profile', async () => {
+    const { email, userId } = await signedUp();
+    await db.owner.query(`update core.profile set segment = 'accumulating' where user_id = $1`, [
+      userId,
+    ]);
+
+    await new Browser(target).send(linkIn(emailsTo(email)[0]));
+    await target.settle();
+    const { rows } = await db.owner.query(
+      `select name, props, segment from analytics.event where user_id = $1 and name = 'email_verified'`,
+      [userId],
+    );
+    expect(rows).toStrictEqual([{ name: 'email_verified', props: {}, segment: 'accumulating' }]);
   });
 
   it('sends the verification email again when asked', async () => {
