@@ -4,9 +4,8 @@ Status: **approved** · Stage owner: Software engineering manager
 Inputs: `docs/01-prd.md` (§6 acceptance criteria), `docs/03-architecture.md`, `CONVENTIONS.md`
 
 > Phases are vertical slices, each ending in a checkpoint deployed to production that the Founder
-> can use. P1, P2 and P3 have task briefs (`docs/phases/P1/tasks/`, `docs/phases/P2/tasks/`,
-> `docs/phases/P3/tasks/`). P4 stays an outline until it is reached, and is planned then
-> (WORKFLOW Stage 4).
+> can use. Every phase has task briefs: `docs/phases/P1/tasks/`, `docs/phases/P2/tasks/`,
+> `docs/phases/P3/tasks/` and `docs/phases/P4/tasks/`.
 
 ---
 
@@ -155,7 +154,7 @@ its deviations are in `decisions.md`, and T11, T13, T15 and T18 build on them.
 
 ## 4. P2 and later phases
 
-P2 and P3 are planned in detail below, with task briefs. P4 stays an outline until it is reached.
+P2, P3 and P4 are planned in detail below, with task briefs.
 
 ### P2 — Worth using on its own
 
@@ -402,36 +401,140 @@ flowchart LR
 
 ### P4 — Ready to launch
 
-**Checkpoint:** everything the launch needs except the go-live itself (Stage 8): the landing page
-live, the metrics readable per segment, the free-tier limits watched, ten packs reviewed, and the
-listings and launch note ready to submit and post.
+Status: briefed. Briefs: `docs/phases/P4/tasks/P4-T1.md` … `P4-T15.md`.
 
-**Criteria:** PRD §3.4 G-D1–G-D4, §3.5 `landing_view`, the M12 comparison in J8, §2.3's ten packs.
+#### Checkpoint
 
-**Tasks (outline):**
-- The landing page (G-D1): its own design, §2.5's statement with both proofs, the screen recording
-  (fictional data), the call to action straight to sign-up; `landing_view` with the cookie-less
-  `visitor` hash.
-- Measurement (G-D4): `ops/metrics/*.sql` for M1–M11 and M13 per segment (M13 per channel), run as
-  `netnet_metrics`; `pnpm metrics --env production`; the M10 funnel.
-- Operations: the daily health cron (Neon usage, the N1 SLO from events, the day's email count, a
-  security email unsent for 24 hours), emailed to the Founder at the architecture §9.4 triggers; the
-  FX failure alert. Before launch, one green CI run and a working backup are confirmed, and the
-  Actions budget sits well above the schedules' use (architecture §9.3).
-- The seven remaining launch packs (ID, PH, TH, VN, HK, IN, AU), and all ten reviewed by someone who
-  knows each market, the reviewer named in each publish message.
-- Agent guides checked against the clients' current screens; listing materials for Claude's and
-  ChatGPT's directories and the public MCP registries (G-D2). Once OpenAI lists NetNet, ChatGPT is
-  tested on a free account and its guide is listed in the connect flow. Submitting them needs the privacy
-  policy and terms (Stage 8's legal basics).
-- A security review before launch, starting with whether sign-up keeps saying that an email already
-  has an account (P1 answers 422; the reset flow reveals nothing), and limiting push endpoints to
-  the known push services' hosts (any `https:` host is accepted today).
-- The launch note (G-D3): one text, the proof varied per audience.
-- The M12 harness: a fixed fictional dataset and question set, a deliberately weak model, NetNet
-  versus a spreadsheet upload, scored blind. Each run's API spend is approved by the Founder first.
+On `https://‹domain›`, deployed by the production workflow, still unannounced (`noindex` until
+Stage 8):
 
-**Founder items:** F20–F23.
+1. `/` is the landing page: §2.5's statement first, both proofs, a recording of Claude answering
+   from a fictional household, the trust facts, and sign-up one tap away; `/privacy` and `/terms`
+   beside it. Each visit fires `landing_view` with a cookie-less `visitor`.
+2. The Founder reads M1–M11 and M13 per segment (M13 per channel), the kill readings on P-B and
+   P-C, and the M10 funnel, from one workflow run as `netnet_metrics`.
+3. A daily health check reads Neon's usage, the N1 SLO, the email allowance, unsent security emails
+   and the exchange rates, and emails the Founder when a §9.4 trigger fires or a figure cannot be
+   read.
+4. All ten launch packs are live, each reviewed by someone who knows the market and recorded
+   against the document reviewed.
+5. The connect guides match Claude's screens today. The listing materials for Claude's and
+   OpenAI's directories, the MCP Registry and the public lists are ready to submit once the privacy
+   policy and terms are approved.
+6. The launch note is ready to post. The M12 harness has run, and its result is stated against the
+   80% line.
+7. The security review is done and its Critical, High and Medium findings are fixed; a backup has
+   been restored; the deploy waits for `main`'s green CI.
+
+#### Acceptance criteria in P4
+
+Stage 6 tests P4 against these criteria (PRD §3–§6), and re-checks the P1, P2 and P3 criteria for
+regressions.
+
+| Item | In P4 |
+|---|---|
+| **G-D1** | The landing page states §2.5's line first, never "you don't know your net worth" · both proofs, P-A's and P-B/P-C's · an agent answering a real question from a real balance sheet (recording, no audio, fictional data) · its own design · the call to action straight to sign-up · every claim true of the product |
+| **G-D2** | Listing materials complete for Claude's directory, OpenAI's directory, the MCP Registry and the public lists, each against its published requirements; submission waits for the legal pages (Stage 8) |
+| **G-D3** | One launch note, led by §2.5's statement, the proof varied per audience, for 3+ communities that between them reach all three personas, P-B and P-C at least twice each |
+| **G-D4** | `landing_view` with a cookie-less `visitor` on every load · the M10 funnel readable before launch |
+| **§3.2, §3.3** | M1–M11 and M13 readable per segment (M13 per channel), from events alone, as `netnet_metrics` · the kill readings on P-B and P-C, never on the blend · signups are verified accounts (`email_verified`) |
+| **J8 (M12)** | The blind comparison: NetNet against a spreadsheet upload of identical data, on a deliberately weak model, scored on numeric correctness, qualification and fabrication; the result stated against "≥ 80% of pairs, never worse on fabrication" |
+| **§2.3** | Packs for all ten launch countries, each reviewed by someone who knows the market before it is live in production; every other country still gets the generic pack |
+| **J5** | Claude's guide, phone and computer, matches today's screens, every step with its screenshot |
+| **J6** | A tool's error names only the tool's own fields |
+| **J12** | Push is sent only to the browsers' push services |
+
+Non-functional requirements in P4: N2 (the M12 harness is outside the product), N4 (the isolation
+and RLS suites cover the new routes and scripts), N5 (the new secrets live only in GitHub and
+Vercel settings), N6 and N8 (the health triggers watch every free-tier limit), N7 (the landing
+page at phone width), N9 (`landing_view` sets no cookie and stores nothing in the browser; the
+health alert, the metrics and the M12 reports carry no personal data), N10 (the deny-list covers
+the seven new markets), and the security review across all of them.
+
+#### Tasks
+
+| Task | Title | Depends on | Parallel-safe | Founder items first |
+|---|---|---|---|---|
+| P4-T1 | The demo household — a fictional balance sheet any account can load | — | yes | — |
+| P4-T2 | The landing page, and `landing_view` | — | yes | F21 (the recording, on T1's household) |
+| P4-T3 | The metrics, per segment | T2 (ordering) | yes | F24 |
+| P4-T4 | The daily health check, and the Founder's alert | T3 | yes | F24, F25 |
+| P4-T5 | The seven remaining launch packs, and the review record | — | yes | — |
+| P4-T6 | All ten packs reviewed | T5 | yes | F20 |
+| P4-T7 | Agent guides checked against today's screens, and the listings ready | T1, T8 (ordering) | yes | F11 |
+| P4-T8 | The privacy policy and terms — drafts for legal review, and their pages | T2 (ordering) | yes | F23 (to finalise) |
+| P4-T9 | The M12 harness — NetNet against a spreadsheet, on a weak model, scored blind | T1 | yes | F22 |
+| P4-T10 | The launch note | T2 (ordering) | yes | — |
+| P4-T11 | Push endpoints only at the browsers' own push services | — | yes | — |
+| P4-T12 | An agent's error names the tool's own fields | — | yes | — |
+| P4-T13 | The security review before launch | T1–T4, T8, T9, T11, T12 | no | — |
+| P4-T14 | Launch readiness, and the P4 checkpoint | T1–T13, the review's fixes | no | the restore drill, the Actions budget |
+| P4-T15 | ChatGPT, once OpenAI lists NetNet | OpenAI's listing, T7 | yes | F11 (ChatGPT's shots) |
+
+T1 comes first because three tasks show the same fictional household: the landing page's
+recording (F21), the directory reviewers' test account (T7) and M12 (T9). T3 follows T2 because
+both change the event contract and M10 reads `landing_view`; T4 follows T3 for the metrics role's
+login and the N1 query. T7, T8 and T10 follow T2 only so that the listings, the legal pages and the
+launch note use the landing page as shipped. T11 and T12 are small fixes with nothing in common
+with the rest: T11 is the push-endpoint limit named for the security review, fixed first because
+the fix is clear, and T12 is the Low issue from P3's last test report, which a weak model (M12)
+would trip on.
+
+T13 runs in a fresh session once the code tasks are merged and deployed, reviews without changing
+code, and its findings are triaged into new P4 tasks (P4-T16 onward). T6 runs as each reviewer
+reports, one small change per pack; its last review is the long pole of the phase. T15 waits on
+OpenAI's review, which NetNet does not control: it is outside the checkpoint and may land after
+launch.
+
+P3's report also left two Info notes; both follow the PRD and stay as they are: a type a pack does
+not know reads by its universal label after a country move (J2, §6.7), and a carried month with no
+change reads "—" in Insights and "$0" on the holding chart.
+
+#### Order
+
+```mermaid
+flowchart LR
+  T1[T1 demo household] --> T7[T7 guides + listings] & T9[T9 M12 harness]
+  T2[T2 landing + landing_view] --> T3[T3 metrics] & T8[T8 privacy + terms] & T10[T10 launch note]
+  T3 --> T4[T4 health check]
+  T8 --> T7
+  T5[T5 seven packs + review record] --> T6[T6 ten reviews]
+  T11[T11 push hosts] & T12[T12 error fields] --> T13[T13 security review]
+  T1 & T3 & T4 & T8 & T9 --> T13
+  T13 --> T14[T14 readiness + checkpoint]
+  T6 & T7 & T10 --> T14
+  T7 -.-> T15[T15 ChatGPT, once listed]
+```
+
+| Wave | Tasks |
+|---|---|
+| 1 | T1, T2, T5, T11, T12 |
+| 2 | T3, T7, T8, T9, T10 |
+| 3 | T4 |
+| 4 | T13 (a fresh session), then the fix tasks its triage writes |
+| 5 | T14 |
+| alongside | T6, as each review comes back; T15, when OpenAI lists NetNet |
+
+#### Running the build
+
+- `stage: build P4` in a new session. The build session works wave by wave, dispatching one
+  engineer subagent per task, and hands off to a new session between waves when its context runs
+  heavy (STATE names the next wave). `stage: build P4-Tn` runs a single task.
+- One branch and one pull request per task (`p4-tn`, CONVENTIONS §15; T6 one per pack,
+  `p4-t6-<pack>`), each with its own preview and Neon branch. A preview's `DATABASE_URL` is
+  injected per-deployment by its Preview job: never redeploy from the Vercel dashboard; re-run the
+  Preview job instead.
+- T13 is not a build task: `stage: build P4-T13` starts a fresh review session, and its report goes
+  to the Founder before any fix is written.
+- After T14, `stage: test P4` in a fresh session (WORKFLOW Stage 6), against the criteria above
+  plus the P1–P3 criteria. Suggested manual checks for Stage 6: the landing page on a real phone
+  and its link preview in a messaging app; the recording under reduced motion; a test health alert
+  in the inbox; the metrics workflow's summary; one pack read by its reviewer on production.
+
+**Founder items:** F20 reviewers, F21 the recording, F22 the API key, F23 the legal review, F24 the
+metrics role, F25 the alert address, F11 (fresh Claude screenshots for T7; ChatGPT's six for T15),
+the MCP Registry's DNS record (at submission, T7), and T14's restore drill and Actions budget
+check.
 
 ## 5. Founder setup checklist
 
@@ -477,10 +580,12 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | F17 | Google OAuth client (Google Cloud console: consent screen, web client, the redirect URIs P2's brief lists). Vercel env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | P2 |
 | F18 | Sign in with Apple (needs F1): a Services ID, domain verification, a key. Vercel env: `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` | P2 |
 | F19 | VAPID keys, on your own computer: `npx web-push generate-vapid-keys`. Vercel env: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:` your address), and `LINK_SIGNING_SECRET` (generated) | P3 |
-| F20 | The reviewers from F3 engaged, one per pack | P4 |
-| F21 | The landing page's screen recording: an agent answering a real question from a fictional balance sheet (P4's brief gives the script) | P4 |
-| F22 | An Anthropic API key with a spend limit, for the M12 harness; approve each run's spend | P4 |
-| F23 | A privacy policy and terms (Stage 8's legal basics), needed before directory listings are submitted | P4 → Stage 8 |
+| F20 | The reviewers from F3 engaged, one per pack, each sent P4-T6's review sheet for their market | P4-T6 |
+| F21 | The landing page's screen recording: Claude answering a real question from P4-T1's fictional household, recorded to P4-T2's script | P4-T2 |
+| F22 | An Anthropic API key, with a monthly spend limit set in the Claude Console, as GitHub secret `ANTHROPIC_API_KEY` (or in your own shell); approve each M12 run's spend | P4-T9 |
+| F23 | Have P4-T8's drafts of the privacy policy and terms reviewed by someone qualified, then tell the build what changed; needed before directory listings are submitted (Stage 8's legal basics) | P4-T8 → Stage 8 |
+| F24 | **Metrics role:** `openssl rand -hex 32` → GitHub secret `NETNET_METRICS_DB_PASSWORD_PROD`, before P4-T3 deploys. After that deploy: GitHub secrets `DATABASE_METRICS_URL` (the pooled connection string for `netnet_metrics`, in the form of `DATABASE_URL`) and `METRICS_EXCLUDE_USERS` (the probe account's user id and your own test accounts', comma-separated) | P4-T3, P4-T4 |
+| F25 | Vercel env (Production) `OPS_EMAIL`: the address the daily health alert goes to | P4-T4 |
 
 ## 6. Coverage
 
@@ -490,14 +595,14 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | J2 | P1, P2, P3 |
 | J3 | P1, P2 (edit), P3 (in the log) |
 | J4 | P2, P3 (holding bar chart) |
-| J5 | P1, P2 (other entries, handoff) |
-| J6 | P1 |
+| J5 | P1, P2 (other entries, handoff), P4 (guides re-checked) |
+| J6 | P1, P4 (error fields) |
 | J7 | P3 |
 | J8 | P1 (M12 in P4) |
 | J9 | P2 |
 | J10 | P1 (isolation), P3 |
 | J11 | P3 |
-| J12 | P3 |
+| J12 | P3, P4 (push services only) |
 | G-D1–G-D4 | P4 |
 | §2.3 packs | P1 (machinery; generic, SG, MY, GB), P4 (the other seven; all ten reviewed) |
 
@@ -508,6 +613,7 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | `reminder_sent`, `reminder_opened`, `push_prompt_shown`, `push_prompt_result`, `push_enabled`, `push_disabled`, `account_deleted` | P3 |
 | `landing_view` | P4 |
 | `insights_viewed` | P3 |
+| `email_verified` | P4 (added to §3.5 so that M1's verified signups are countable) |
 
 ## 7. Delivery risks
 
@@ -520,4 +626,7 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | Pack reviewers are the long pole for launch | F3 starts now; packs are content, so they can be written from P1-T3 onward, beside the build |
 | Directory listings need legal pages that belong to Stage 8 | P4 prepares the materials; submission follows the legal basics |
 | Provider setup (F17, F18; F1's Apple enrolment has a lead time) holds up P2-T1 | T1 is wave 1 but standalone: the email flow is unaffected and the other wave-1 tasks proceed; the providers land when the Founder's setup does |
-| The phone shots arrive late | P2-T8 is content-only and off the critical path: the sweep and checkpoint (T7) never wait for it |
+| The phone shots arrive late | P2-T8 is content-only and off the critical path: the sweep and checkpoint (T7) never wait for it; P4-T7 completes it |
+| The directories' reviews (Claude's, OpenAI's) take time NetNet does not control, and need the legal pages first | P4 prepares every listing; submission follows F23; launch never waits for ChatGPT (P4-T15 is outside the checkpoint) |
+| M12 shows no lift | It is the experiment, not a build failure: the question set and rubric are fixed before the first paid run, the result goes to the Founder as evidence about A13, and nothing is tuned toward a pass |
+| P4 leans on the Founder's hands (reviewers, the recording, screenshots, legal review, the restore drill) | Each is named at the task that needs it; waves 1–3 build while they are in progress |
