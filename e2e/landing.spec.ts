@@ -53,7 +53,13 @@ async function visitor(
   return { context, page: await context.newPage(), ip, userAgent };
 }
 
-/** The `POST /api/events` requests the page sends while `during` runs and the page settles. */
+/** How long a load is watched after its `load` event for any further event. */
+const SETTLE_MS = 750;
+
+/**
+ * The `POST /api/events` requests the page sends while `during` runs, its `load` event fires and
+ * a little after, answered. Not `networkidle`: a media element can hold a request open.
+ */
 async function eventsSent(page: Page, during: () => Promise<unknown>) {
   const sent: { body: unknown; cookie: string | undefined; status: Promise<number> }[] = [];
   const listener = (request: Request) => {
@@ -66,8 +72,10 @@ async function eventsSent(page: Page, during: () => Promise<unknown>) {
   };
   page.on('request', listener);
   await during();
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
+  await page.waitForTimeout(SETTLE_MS);
   page.off('request', listener);
+  await Promise.all(sent.map((event) => event.status));
   return sent;
 }
 
@@ -170,30 +178,41 @@ test.describe('the landing page', () => {
     await eventsSent(a.page, () => a.page.reload());
     await eventsSent(b.page, () => b.page.goto('/'));
 
-    const { rows } = await withClient(process.env.DATABASE_URL ?? '', async (client) => {
-      const salt = await client.query<{ salt: Buffer }>(
-        `select salt from core.visitor_salt where day = (now() at time zone 'utc')::date`,
-      );
-      const key = salt.rows[0]?.salt ?? Buffer.alloc(0);
-      const hash = (ip: string, ua: string) =>
-        createHash('sha256').update(key).update(ip).update('\0').update(ua).digest('hex');
-      const ofA = hash(a.ip, a.userAgent).slice(0, 16);
-      const ofB = hash(b.ip, b.userAgent).slice(0, 16);
-      return client.query<{ visitor: string; views: number; users: number; segments: string[] }>(
-        `select visitor, count(*)::int as views, count(user_id)::int as users,
-                array_agg(distinct segment) as segments
-           from analytics.event
-          where name = 'landing_view' and visitor = any($1)
-          group by visitor order by views desc`,
-        [[ofA, ofB]],
-      );
-    });
-    // Browser A's two loads share one visitor; browser B is another. No user, segment unknown.
-    expect(rows.map((r) => [r.views, r.users, r.segments])).toStrictEqual([
-      [2, 0, ['unknown']],
-      [1, 0, ['unknown']],
-    ]);
-    for (const row of rows) expect(row.visitor).toMatch(/^[0-9a-f]{16}$/);
+    /** Today's landing_view rows for the two browsers' hashes, worked out from today's salt. */
+    const recorded = () =>
+      withClient(process.env.DATABASE_URL ?? '', async (client) => {
+        const salt = await client.query<{ salt: Buffer }>(
+          `select salt from core.visitor_salt where day = (now() at time zone 'utc')::date`,
+        );
+        const key = salt.rows[0]?.salt ?? Buffer.alloc(0);
+        const hash = (ip: string, ua: string) =>
+          createHash('sha256').update(key).update(ip).update('\0').update(ua).digest('hex');
+        const ofA = hash(a.ip, a.userAgent).slice(0, 16);
+        const ofB = hash(b.ip, b.userAgent).slice(0, 16);
+        const { rows } = await client.query<{
+          visitor: string;
+          views: number;
+          users: number;
+          segments: string[];
+        }>(
+          `select visitor, count(*)::int as views, count(user_id)::int as users,
+                  array_agg(distinct segment) as segments
+             from analytics.event
+            where name = 'landing_view' and visitor = any($1)
+            group by visitor order by views desc`,
+          [[ofA, ofB]],
+        );
+        return rows;
+      });
+    // Written after the response: wait for them. Browser A's two loads share one visitor; browser
+    // B is another. No user, segment unknown.
+    await expect
+      .poll(async () => (await recorded()).map((r) => [r.views, r.users, r.segments]))
+      .toStrictEqual([
+        [2, 0, ['unknown']],
+        [1, 0, ['unknown']],
+      ]);
+    for (const row of await recorded()) expect(row.visitor).toMatch(/^[0-9a-f]{16}$/);
     await a.context.close();
     await b.context.close();
   });
@@ -248,7 +267,7 @@ test.describe('the landing page', () => {
       weighed.push(response.body().then((body) => [response.url(), body.length]));
     });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     const weights = new Map(await Promise.all(weighed));
     await expect(page.getByRole('heading', { level: 1 })).toBeInViewport();
     await expect(page.getByRole('link', { name: 'Get started' }).first()).toBeInViewport();
