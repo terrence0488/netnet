@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.netnetapp/netnet",
+  "title": "NetNet",
+  "description": "Where you stand — what you own and what you owe — kept current for your own AI agent.",
+  "version": "1.0.0",
+  "websiteUrl": "https://netnetapp.io",
+  "icons": [
+    {
+      "src": "https://netnetapp.io/app/icons/icon-512.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://netnetapp.io/mcp"
+    }
+  ]
+}

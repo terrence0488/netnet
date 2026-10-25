@@ -15,3 +15,6 @@ packages/core/src/context/golden/
 content/demo/household.context.json
 # M12 harness output: written by a run, formatted as it is
 ops/m12/runs/
+# The MCP Registry's published schema, vendored byte for byte (its hash is pinned in
+# test/launch/server-json.test.ts)
+ops/launch/server.schema.json
