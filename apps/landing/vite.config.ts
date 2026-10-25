@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from 'vite';
+import { resolve } from 'node:path';
 
 /**
  * The origin link previews name (`og:url`, `og:image`), which must be absolute: production's
@@ -21,12 +22,22 @@ function origin(): Plugin {
   };
 }
 
-/** The static page at `/`. It builds first and owns the root of dist/; the web app adds dist/app. */
+/**
+ * The static pages: `/` (the landing page), `/privacy` and `/terms`. The landing page builds first
+ * and owns the root of dist/; the web app adds dist/app.
+ */
 export default defineConfig({
   plugins: [origin()],
   build: {
     outDir: '../../dist',
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        index: resolve(import.meta.dirname, 'index.html'),
+        privacy: resolve(import.meta.dirname, 'privacy.html'),
+        terms: resolve(import.meta.dirname, 'terms.html'),
+      },
+    },
     // Never inline a file as a data: URL: the CSP allows fonts and media only from 'self'.
     assetsInlineLimit: 0,
     // One module script and no dynamic imports: the modulepreload polyfill would be dead weight.

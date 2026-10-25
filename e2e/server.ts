@@ -11,6 +11,11 @@ import { extname, join, normalize, resolve } from 'node:path';
 const DIST = resolve(import.meta.dirname, '..', 'dist');
 const PORT = Number(process.env.PORT ?? 3100);
 const FUNCTION_ROUTE = /^\/(api(\/|$)|mcp$|\.well-known\/)/;
+/** The clean-URL rewrites in vercel.json, so `/privacy` and `/terms` load as they do on Vercel. */
+const REWRITES: Record<string, string> = {
+  '/privacy': 'privacy.html',
+  '/terms': 'terms.html',
+};
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -40,8 +45,12 @@ async function file(path: string): Promise<Response | undefined> {
 async function route(request: Request): Promise<Response> {
   const { pathname } = new URL(request.url);
   if (FUNCTION_ROUTE.test(pathname)) return fn[request.method as Method](request);
+  const rewritten = REWRITES[pathname];
   const direct = pathname.endsWith('/') ? `${pathname}index.html` : pathname;
-  const found = (await file(direct)) ?? (await file(`${pathname}/index.html`));
+  const found =
+    (rewritten ? await file(rewritten) : undefined) ??
+    (await file(direct)) ??
+    (await file(`${pathname}/index.html`));
   if (found) return found;
   if (pathname === '/app' || pathname.startsWith('/app/')) {
     return (await file('app/index.html')) ?? new Response('Not built', { status: 500 });
