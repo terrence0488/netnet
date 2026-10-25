@@ -1,12 +1,13 @@
 # Project State
 
 ## Current
-Stage: Plan (P4)
+Stage: Build (P4)
 Phase: P4
-Status: approved
-Next action: `stage: build P4` (wave 1: T1, T2, T5, T11, T12).
-**Branches:** the P4 plan merged to `main` (#120); P4 task branches come from it
-(CONVENTIONS §15).
+Status: in-progress
+Next action: merge wave 1 — #121 (T1), #123 (T5), #124 (T11), #125 (T12); give F21 for #122
+(T2, in-progress). Then `stage: build P4` (wave 2: T3, T7, T8, T9, T10).
+**Branches:** one branch and one PR per task, from `main` (CONVENTIONS §15); wave 1 is
+`p4-t1`, `p4-t2`, `p4-t5`, `p4-t11`, `p4-t12`.
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -19,14 +20,12 @@ Next action: `stage: build P4` (wave 1: T1, T2, T5, T11, T12).
 | P1 | **approved** | 2026-10-08 | Test report reviewed; Claude computer shots shipped (#61) |
 | P2 | **approved** | 2026-10-12 | Test report + hands-on; Account and date review fixups in (#76) |
 | P3 | **approved** | 2026-10-24 | Third test run: pass, one Low and two Info (`docs/phases/P3/test-report.md`); the Reminders 17:00 and 01:00 slots' first starts still to record in `ops/probe.md` |
-| P4 | not-started | | Briefed; build next |
+| P4 | in-progress | | Wave 1 PRs #121–#125; T2 waits on F21's recording; CI green on each head |
 
 ## Handoff note (last session)
-P4 plan approved 2026-10-25 and merged (#120): 15 briefs, five waves (`docs/04-plan.md` §P4).
-Its five decisions are in `decisions.md` (`email_verified` for M1; the health check's split;
-the landing page in Poster's brand; P4 drafts the legal pages; sign-up's 422 settled). T2, T3
-and T4 rewrite PRD §3.5 and architecture §6.4, §7.7, §9.3, §10 as their briefs say. Next:
-`stage: build P4`, wave 1 (T1, T2, T5, T11, T12), one branch per task from `main`. Founder
-items: F24 before T3 deploys, F25 before T4; F20 (reviewers) and F21 (recording) are the long
-poles. Carries: PR #88 (deps) and `ledger_state`'s key in T13's scope; P2-T8 completes in T7;
-the Reminders 17:00/01:00 first starts in T14.
+Wave 1 is built and open as one PR per task: #121 T1 (done), #122 T2 (in-progress: F21's
+recording is the one unmet criterion), #123 T5 (done), #124 T11 (done), #125 T12 (done). Each
+task brief carries its report; the PRs carry the per-pack and push-service sources. CI is green
+on each code head, and manual runs deployed and smoke-tested a preview for every branch. Founder next:
+merge the four done PRs, give F21 for T2, then wave 2 (T3, T7, T8, T9, T10). F24/F25 still gate
+T3/T4; F20/F22/F23 remain Founder items; T6/T15 run alongside.
