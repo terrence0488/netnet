@@ -1,13 +1,14 @@
-import type { ContentDoc, Pack } from '@netnet/contracts';
+import type { AgentGuide, ContentDoc, Pack, Reviews } from '@netnet/contracts';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { readContent } from '../../../../scripts/content-check';
+import { readContent, readDrafts } from '../../../../scripts/content-check';
 import { CONTENT_ADMIN_ROLE } from '../../src/db/bootstrap';
 import { createDatabase } from '../../src/db/client';
 import {
   bodyHash,
   ContentRejected,
   publishContent,
+  requireReviews,
   rollbackContent,
 } from '../../src/content/publish';
 import { createContentStore, databaseContent } from '../../src/content/store';
@@ -286,6 +287,104 @@ describe('the store over the database', () => {
     expect((await store.getPackChain('SG')).map((p) => p.id)).toStrictEqual(['sg', 'generic']);
     expect((await store.getPackChain('MY')).map((p) => p.id)).toStrictEqual(['my', 'generic']);
     expect((await store.getPackChain('FR')).map((p) => p.id)).toStrictEqual(['generic']);
+  });
+});
+
+describe('the production review guard (CONVENTIONS §8)', () => {
+  const editSg = (p: Pack) => {
+    p.cadenceDays = { ...p.cadenceDays, cash: 14 };
+  };
+  const hashOf = (docs: ContentDoc[], id: string) =>
+    bodyHash(docs.find((d) => d.kind === 'pack' && (d.body as Pack).id === id)?.body);
+  const reviewOf = (sha256: string) => ({ sha256, reviewer: 'F. Reviewer', on: '2026-10-25' });
+
+  /** Publishes as production does, with `reviews` as the review record. */
+  const publishReviewed = (docs: ContentDoc[], reviews: Reviews) =>
+    publishContent(db.appDb, docs, META, { admit: requireReviews(reviews) });
+
+  async function snapshot() {
+    return {
+      docs: await table('content_doc'),
+      current: await table('content_current'),
+      audit: await table('content_audit'),
+    };
+  }
+
+  async function refusal(docs: ContentDoc[], reviews: Reviews) {
+    const before = await snapshot();
+    const error = await publishReviewed(docs, reviews).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ContentRejected);
+    expect(await snapshot()).toStrictEqual(before);
+    return (error as ContentRejected).errors;
+  }
+
+  it('refuses a new pack with no review, naming it and saying a review is needed', async () => {
+    const errors = await refusal(content(), {});
+    expect(errors.map((e) => e.doc)).toStrictEqual([
+      'packs/gb.json',
+      'packs/generic.json',
+      'packs/my.json',
+      'packs/sg.json',
+    ]);
+    expect(errors.find((e) => e.doc === 'packs/sg.json')?.message).toBe(
+      'pack/sg is new and has no review. A review by someone who knows the market is needed ' +
+        'before it is published to production; record it against this version, sha256 ' +
+        `${hashOf(content(), 'sg')}.`,
+    );
+  });
+
+  it('publishes unchanged packs with no review: what is live stays as it is', async () => {
+    await publishContent(db.appDb, content(), META);
+    const outcomes = await publishReviewed(content(), {});
+    expect(outcomes.every((o) => o.change === 'unchanged')).toBe(true);
+  });
+
+  it('refuses, whole, a changed pack with no review, beside a change that needs none', async () => {
+    await publishContent(db.appDb, content(), META);
+    const docs = withPack(content(), 'sg', editSg).map((doc) =>
+      doc.doc === 'agents/other.json'
+        ? { ...doc, body: { ...(doc.body as AgentGuide), order: 9 } }
+        : doc,
+    );
+    const errors = await refusal(docs, {});
+    expect(errors.map((e) => e.message)).toStrictEqual([
+      expect.stringMatching(/^pack\/sg has changed since version 1 and has no review\. /),
+    ]);
+  });
+
+  it('refuses a changed pack whose review is of another version', async () => {
+    await publishContent(db.appDb, content(), META);
+    const reviews = { sg: reviewOf(hashOf(content(), 'sg')) };
+    const errors = await refusal(withPack(content(), 'sg', editSg), reviews);
+    expect(errors.map((e) => e.message)).toStrictEqual([
+      expect.stringMatching(
+        /^pack\/sg has changed since its review by F\. Reviewer on 2026-10-25\. /,
+      ),
+    ]);
+  });
+
+  it('refuses the whole publish when one of two changed packs is reviewed', async () => {
+    await publishContent(db.appDb, content(), META);
+    const docs = withPack(withPack(content(), 'sg', editSg), 'my', editSg);
+    const errors = await refusal(docs, { sg: reviewOf(hashOf(docs, 'sg')) });
+    expect(errors.map((e) => e.doc)).toStrictEqual(['packs/my.json']);
+  });
+
+  it('publishes a changed pack with a review of exactly that version', async () => {
+    await publishContent(db.appDb, content(), META);
+    const docs = withPack(content(), 'sg', editSg);
+    const outcomes = await publishReviewed(docs, { sg: reviewOf(hashOf(docs, 'sg')) });
+    expect(outcomes.filter((o) => o.change !== 'unchanged')).toStrictEqual([
+      { kind: 'pack', key: 'sg', version: 2, from: 1, change: 'new' },
+    ]);
+  });
+
+  it('never publishes a draft: content:publish reads none, so none reaches any environment', async () => {
+    const drafts = readDrafts().docs.map((d) => (d.body as Pack).id);
+    expect(drafts).toHaveLength(7);
+    await publishContent(db.appDb, content(), META);
+    const keys = (await table('content_doc')).map((r) => r.key);
+    expect(keys.filter((key) => drafts.includes(String(key)))).toStrictEqual([]);
   });
 });
 

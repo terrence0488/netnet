@@ -5,6 +5,7 @@ import {
   type ContentDoc,
   type ContentError,
   type ContentKind,
+  type Reviews,
 } from '@netnet/contracts';
 import type { Database, Transaction } from '../db/client';
 import {
@@ -76,15 +77,67 @@ export interface DocOutcome extends ContentRef {
   change: 'new' | 'reused' | 'unchanged';
 }
 
+/** A document whose body is not what is live: new (`from` null), or changed. */
+export interface ChangedDoc {
+  kind: ContentKind;
+  key: string;
+  /** The document as `validateContent` names it: its path under content/. */
+  doc: string;
+  sha256: string;
+  from: number | null;
+}
+
+export interface PublishOptions {
+  /**
+   * Runs inside the publish's transaction, under the content lock, with every document that is
+   * new or changed, before anything is written. Any error it returns rejects the whole publish.
+   * A production publish passes `requireReviews` (CONVENTIONS §8).
+   */
+  admit?: (changed: readonly ChangedDoc[]) => ContentError[];
+}
+
+/**
+ * The review guard: every new or changed pack needs a review of exactly the version being
+ * published, recorded by its hash. Unchanged packs and other kinds of document pass.
+ */
+export function requireReviews(
+  reviews: Reviews,
+): (changed: readonly ChangedDoc[]) => ContentError[] {
+  return (changed) =>
+    changed.flatMap(({ kind, key, doc, sha256, from }) => {
+      const review = reviews[key];
+      if (kind !== 'pack' || review?.sha256 === sha256) return [];
+      const what =
+        review !== undefined
+          ? `has changed since its review by ${review.reviewer} on ${review.on}`
+          : from === null
+            ? 'is new and has no review'
+            : `has changed since version ${from} and has no review`;
+      return [
+        {
+          doc,
+          path: '',
+          message:
+            `pack/${key} ${what}. A review by someone who knows the market is needed before it ` +
+            `is published to production; record it against this version, sha256 ${sha256}.`,
+        },
+      ];
+    });
+}
+
 function isKind(kind: string): kind is ContentKind {
   return (CONTENT_KINDS as readonly string[]).includes(kind);
 }
 
-/** Publishes `docs`, all of them or none. Throws ContentRejected when any document is invalid. */
+/**
+ * Publishes `docs`, all of them or none. Throws ContentRejected when any document is invalid, or
+ * when `options.admit` refuses any that is new or changed.
+ */
 export async function publishContent(
   db: Database,
   docs: readonly ContentDoc[],
   meta: PublishMeta,
+  options: PublishOptions = {},
 ): Promise<DocOutcome[]> {
   const result = validateContent(docs);
   if (!result.ok) {
@@ -98,6 +151,7 @@ export async function publishContent(
     key: contentKey(doc),
     body: doc.body,
     sha256: bodyHash(doc.body),
+    source: doc.doc,
   }));
   const seen = new Set<string>();
   for (const { kind, key } of keyed) {
@@ -110,6 +164,17 @@ export async function publishContent(
   return db.transaction(async (tx) => {
     await lockContent(tx);
     const live = new Map((await currentDocs(tx)).map((d) => [`${d.kind}/${d.key}`, d]));
+    if (options.admit) {
+      const changed = keyed.flatMap(({ kind, key, source, sha256 }) => {
+        const current = live.get(`${kind}/${key}`);
+        if (current?.sha256 === sha256) return [];
+        return [{ kind, key, doc: source, sha256, from: current?.version ?? null }];
+      });
+      const refused = options.admit(changed);
+      if (refused.length > 0) {
+        throw new ContentRejected(`${refused.length} refused: nothing was published.`, refused);
+      }
+    }
     const outcomes: DocOutcome[] = [];
     for (const doc of keyed) {
       const current = live.get(`${doc.kind}/${doc.key}`);
@@ -128,7 +193,10 @@ export async function publishContent(
       const version =
         existing ??
         (await insertVersion(tx, {
-          ...doc,
+          kind: doc.kind,
+          key: doc.key,
+          body: doc.body,
+          sha256: doc.sha256,
           author: meta.author,
           sourceCommit: meta.sourceCommit,
         }));
