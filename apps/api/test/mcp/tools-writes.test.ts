@@ -151,6 +151,22 @@ describe('create_holding', () => {
     expect(error.fields).toHaveProperty('type_id');
   });
 
+  it('names the currency when there is no rate for its first value', async () => {
+    const { agent, cashType } = await seeded();
+    const error = errOf(
+      await callTool(target, agent.token, 'create_holding', {
+        name: 'Franc pot',
+        kind: 'asset',
+        type_id: cashType,
+        currency: 'CHF',
+        opening_value: { amount: '100.00', date: '2026-07-28' },
+      }),
+      'CURRENCY_UNSUPPORTED',
+    );
+    expect(Object.keys(error.fields ?? {})).toStrictEqual(['currency']);
+    expect(error.message).toMatch(/^currency: "CHF" is not an ISO 4217 currency NetNet has /);
+  });
+
   it('names a field it does not have as the agent sent it, even a Ledger name', async () => {
     const { agent, cashType } = await seeded();
     const error = errOf(

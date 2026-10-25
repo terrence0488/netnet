@@ -26,11 +26,13 @@ function snake(segment: string): string {
 }
 
 /**
- * One Ledger path as this tool names it: `renames` maps the segments whose MCP name is not the
- * snake_case of the Ledger's (`access` → `access_answer`); every other segment is snake_cased,
- * and an index is left as it is.
+ * One Ledger path as this tool names it: `renames` maps a whole path, or a segment, whose MCP
+ * name is not the snake_case of the Ledger's (`opening.currency` → `currency`, `access` →
+ * `access_answer`); every other segment is snake_cased, and an index is left as it is.
  */
 function renamePath(path: string, renames: Record<string, string>): string {
+  const whole = renames[path];
+  if (whole !== undefined) return whole;
   const segments = path.match(/[A-Za-z0-9_]+|\[\d+\]/g) ?? [];
   let out = '';
   for (const segment of segments) {

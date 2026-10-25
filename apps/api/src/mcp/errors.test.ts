@@ -143,6 +143,13 @@ describe('renameText()', () => {
     expect(renameText('tagIds[0]: There is no tag.', {})).toBe('tag_ids[0]: There is no tag.');
   });
 
+  it('renames a whole path the tool names otherwise, and only that path', () => {
+    const renames = { ...holding, 'opening.currency': 'currency' };
+    expect(renameText('opening.currency: No rate. opening.date: Too late.', renames)).toBe(
+      'currency: No rate. opening_value.date: Too late.',
+    );
+  });
+
   it('renames a path named further on, bare or in backticks', () => {
     expect(renameText('Its rate is 1: leave fxRate out.', {})).toBe(
       'Its rate is 1: leave fx_rate out.',
