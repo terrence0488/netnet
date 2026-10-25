@@ -11,14 +11,14 @@
   },
   "dependencies": {
     "@netnet/contracts": "workspace:*",
-    "d3-array": "^3.2.4",
-    "d3-scale": "^4.0.2",
-    "d3-shape": "^3.2.0"
+    "d3-array": "3.2.4",
+    "d3-scale": "4.0.2",
+    "d3-shape": "3.2.0"
   },
   "devDependencies": {
-    "@types/d3-array": "^3.2.2",
-    "@types/d3-scale": "^4.0.9",
-    "@types/d3-shape": "^3.2.0",
+    "@types/d3-array": "3.2.2",
+    "@types/d3-scale": "4.0.9",
+    "@types/d3-shape": "3.2.0",
     "fast-check": "4.10.2",
     "typescript": "6.0.3"
   }
