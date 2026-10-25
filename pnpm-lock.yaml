@@ -42,6 +42,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 5.0.5
         version: 5.0.5(vitest@5.0.5)
+      ajv:
+        specifier: 8.6.3
+        version: 8.6.3
       drizzle-kit:
         specifier: 0.31.11
         version: 0.31.11
