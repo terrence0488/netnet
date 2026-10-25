@@ -4,12 +4,10 @@
 Stage: Build (P4)
 Phase: P4
 Status: in-progress
-Next action: `stage: build P4` (wave 2: T3, T7, T8, T9, T10). The landing page now carries a
-placeholder in F21's recording slot for the Founder's review; F21 itself is deferred, and T2 stays
-in-progress until the recording replaces it. GitHub Actions is healthy again and main's CI is
-green.
-**Branches:** one branch and one PR per task, from `main` (CONVENTIONS §15); wave 1 merged
-(#121–#125), wave 2 branches start from `main`.
+Next action: `stage: build P4` (wave 3: T4, then T7; T6 waits on F20). Wave 2 is merged on a green
+main. T2 stays in-progress until F21's recording replaces the placeholder.
+**Branches:** one branch and one PR per task, from `main` (CONVENTIONS §15); waves 1 and 2 merged,
+wave 3 branches start from `main`.
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -22,14 +20,16 @@ green.
 | P1 | **approved** | 2026-10-08 | Test report reviewed; Claude computer shots shipped (#61) |
 | P2 | **approved** | 2026-10-12 | Test report + hands-on; Account and date review fixups in (#76) |
 | P3 | **approved** | 2026-10-24 | Third test run: pass, one Low and two Info (`docs/phases/P3/test-report.md`); the Reminders 17:00 and 01:00 slots' first starts still to record in `ops/probe.md` |
-| P4 | in-progress | | Wave 1 merged 2026-10-25 (#121–#125); T2's page carries F21's placeholder, the recording is deferred and T2 stays in-progress; #88 deps merged; wave 2 next |
+| P4 | in-progress | | Wave 1 merged 2026-10-25 (#121–#125); wave 2 merged 2026-10-26 (T3 #140, T8 #138, T9 #139, T10 #137), main green; T2 and T6 stay open (F21, F20) |
 
 ## Handoff note (last session)
-Wave 1 merged to `main` on 2026-10-25: T1 (#121), T2 (#122), T5 (#123), T11 (#124), T12 (#125);
-T12's read-tool follow-up #127 and the Renovate dependency PR #88 are merged too. T2 is
-in-progress: the page and `landing_view` are in the tree, and the recording's 16:9 slot now carries
-a `Recording coming soon` placeholder (`data-recording="F21"`) for the Founder to review. F21 is
-deferred, so the MP4/WebM, poster and reduced-motion behavior still follow on `p4-t2-recording`
-before launch. Main CI is green. Wave 2 starts from `main`: T3, T7, T8, T9, T10. F24/F25 gate
-T3–T4; F20/F22/F23 remain; T6/T15 run alongside. Renovate has #128–#131 open (major bumps),
-untouched.
+Wave 2 merged on 2026-10-26: T3 (#140, metrics and `email_verified`, full CI green after rebase),
+T8 (#138, draft `/privacy` and `/terms`, F23 open), T9 (#139, M12 harness, dry run only, F22
+open), T10 (#137, launch note). Main CI is green on the merged tree (40240791721).
+F24 is set (metrics password, URL and exclusions); F25 could not be verified from this session;
+F22, F23 and F20 are open; F11's six Claude images are present; F21 is still deferred.
+Next: T4 (after T3; check F25) then T7 (after T8 and F11). T6 is blocked on F20: `content/reviews.json`
+is empty. T13 and T14 follow.
+Flake: `test/http/me-init.test.ts`'s two-first-confirmations case failed once under load and passed
+on re-run at the same commit; T13 should check whether the `/api/me` init race is real.
+T2 stays in-progress (F21); Renovate #128–#131, #134 and #135 are open and untouched.
