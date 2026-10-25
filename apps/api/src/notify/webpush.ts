@@ -90,7 +90,11 @@ export interface WebPushPost {
 
 const TIMEOUT_MS = 10_000;
 
-/** POSTs a built push request with `fetch`. */
+/**
+ * POSTs a built push request with `fetch`. A redirect is never followed (architecture §7.10): it
+ * rejects, so the send counts as failed, and the push service cannot send NetNet's function on to
+ * an address of its choosing.
+ */
 export function fetchPost(post: typeof fetch = fetch, timeoutMs = TIMEOUT_MS): WebPushPost {
   return async (url, init) => {
     const res = await post(url, {
@@ -98,6 +102,7 @@ export function fetchPost(post: typeof fetch = fetch, timeoutMs = TIMEOUT_MS): W
       headers: init.headers,
       // A plain view: `fetch` takes it under every lib, where `Buffer` quibbles.
       body: new Uint8Array(init.body),
+      redirect: 'error',
       signal: AbortSignal.timeout(timeoutMs),
     });
     await res.body?.cancel();
