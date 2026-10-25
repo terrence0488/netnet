@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { AgentGuide, Countries } from '@netnet/contracts';
+import { PUSH_SERVICE_HOSTS, type AgentGuide, type Countries } from '@netnet/contracts';
 import { Hono } from 'hono';
 import webpush from 'web-push';
 import { createAgent, type Agent } from '../../src/auth/agent';
@@ -20,6 +20,7 @@ import {
   getReminderState,
   recordReminderSent,
 } from '../../src/db/reminders';
+import { createVisitor, deleteSaltsBefore, utcDay } from '../../src/db/visitor';
 import { createTrack } from '../../src/events/track';
 import { agentRoutes } from '../../src/http/agent';
 import { eventsRoutes } from '../../src/http/events';
@@ -70,6 +71,13 @@ export const TEST_VAPID: VapidConfig = {
   ...webpush.generateVAPIDKeys(),
   subject: 'mailto:push@netnet.example',
 };
+
+/**
+ * The push services the test routes and channels take: the real list, plus the fictional fake
+ * push service the suites subscribe at (`https://push.example.net/push/…`). Production passes
+ * `PUSH_SERVICE_HOSTS` alone.
+ */
+export const TEST_PUSH_HOSTS: readonly string[] = [...PUSH_SERVICE_HOSTS, 'push.example.net'];
 
 /** The named guides' `matchHosts`, read from the repo's own `content/agents/`. */
 export function repoGuideHosts(): GuideHosts[] {
@@ -215,7 +223,11 @@ export function accountsApp(db: TestDatabase, options: AccountsAppOptions = {}):
     }),
   );
   app.route('/api/geo', geoRoutes(countries));
-  app.route('/api/events', eventsRoutes({ track, rateLimit, appVersion: () => 'test123' }));
+  const visitor = createVisitor(() => ({ db: () => db.appDb, clock: () => clock.now }));
+  app.route(
+    '/api/events',
+    eventsRoutes({ track, rateLimit, appVersion: () => 'test123', visitor }),
+  );
   app.route(
     '/api/reminders',
     remindersRoutes({
@@ -235,6 +247,7 @@ export function accountsApp(db: TestDatabase, options: AccountsAppOptions = {}):
       appVersion: () => 'test123',
       clock: () => clock.now,
       vapid: () => TEST_VAPID,
+      pushHosts: TEST_PUSH_HOSTS,
     }),
   );
   app.use(
@@ -243,7 +256,10 @@ export function accountsApp(db: TestDatabase, options: AccountsAppOptions = {}):
   );
   app.get(
     '/api/cron/daily',
-    dailyJob(() => agent),
+    dailyJob(
+      () => agent,
+      () => deleteSaltsBefore(db.appDb, utcDay(clock.now)),
+    ),
   );
   app.get(
     '/api/cron/reminders',

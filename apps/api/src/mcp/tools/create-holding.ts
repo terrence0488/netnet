@@ -28,7 +28,13 @@ export const createHoldingTool: ToolDef<McpCreateHoldingInput, McpCreateHoldingO
   },
   inputSchema: createHoldingInputSchema,
   outputSchema: createHoldingOutputSchema,
-  renames: { access: 'access_answer', opening: 'opening_value', universal: 'universal_type' },
+  // The first value is in the holding's currency, so a rate missing for it is `currency`'s.
+  renames: {
+    access: 'access_answer',
+    opening: 'opening_value',
+    'opening.currency': 'currency',
+    universal: 'universal_type',
+  },
   run: async (ctx: ToolCtx, input) => {
     const create: CreateHolding = {
       name: input.name,
@@ -57,5 +63,4 @@ export const createHoldingTool: ToolDef<McpCreateHoldingInput, McpCreateHoldingO
     trackWriteEvents(ctx, write.events);
     return writeToMcp(write, holdingToMcp(write.result));
   },
-  text: (output) => `Created holding "${output.result.name}" (${output.result.id}).`,
 };

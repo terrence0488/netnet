@@ -169,6 +169,7 @@ describe('compileContext', () => {
         name: 'Everyday account',
         type: 'Current account',
         tags: ['Emergency fund'],
+        currency: 'EUR',
         access: 'accessible',
         access_reason: 'it’s money in the bank',
         until: null,
@@ -183,6 +184,49 @@ describe('compileContext', () => {
         },
         change: { amount: 470.5, pct: 17.75 },
       });
+    });
+
+    it('carry the holding’s own currency, between tags and access, value or none', () => {
+      const ctx = compile(
+        input({
+          holdings: [
+            holding('valued', { currency: 'USD' }),
+            holding('unvalued', { currency: 'JPY' }),
+            holding('loan', {
+              kind: 'liability',
+              currency: 'GBP',
+              access: null,
+              accessReason: null,
+            }),
+          ],
+          values: [
+            value('valued', '2026-09-20', 10_000, { currency: 'USD', amountMinor: 10_000 }),
+            value('loan', '2026-09-20', 50_000, { currency: 'GBP', amountMinor: 50_000 }),
+          ],
+        }),
+      );
+      const byId = new Map(ctx.holdings.map((h) => [h.id, h]));
+      expect(byId.get('valued')).toMatchObject({ currency: 'USD' });
+      expect(byId.get('unvalued')).toMatchObject({ currency: 'JPY', value: null });
+      expect(byId.get('loan')).toMatchObject({ currency: 'GBP', access: 'owed' });
+      for (const entry of ctx.holdings) {
+        const keys = Object.keys(entry);
+        expect(keys.slice(keys.indexOf('tags'), keys.indexOf('access') + 1)).toStrictEqual([
+          'tags',
+          'currency',
+          'access',
+        ]);
+      }
+    });
+
+    it('keep the holding’s currency at the top when its latest value is in another', () => {
+      const ctx = compile(
+        input({
+          holdings: [holding('a', { currency: 'USD' })],
+          values: [value('a', '2026-09-20', 92, { amountMinor: 100, currency: 'EUR' })],
+        }),
+      );
+      expect(ctx.holdings[0]).toMatchObject({ currency: 'USD', value: { currency: 'EUR' } });
     });
 
     it('list a liability as owed, its change being its contribution to net worth', () => {

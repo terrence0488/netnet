@@ -5,7 +5,7 @@ import type { AppEnv } from '../lib/context';
 
 /**
  * Every `/api/cron/*` route requires `Authorization: Bearer $CRON_SECRET` (CONVENTIONS §7, F9),
- * which Vercel Cron sends when the project has CRON_SECRET. With no secret set, nothing gets in.
+ * which the GitHub Actions schedules send (architecture §9.3). With no secret set, nothing gets in.
  */
 function digest(value: string): Buffer {
   return createHash('sha256').update(value).digest();

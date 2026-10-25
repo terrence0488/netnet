@@ -3,6 +3,7 @@ import {
   bigint,
   boolean,
   check,
+  customType,
   date,
   foreignKey,
   index,
@@ -333,10 +334,18 @@ export const ATTEMPT_CAUSES = [
 ] as const;
 export const FX_SOURCES = ['ecb', 'fallback'] as const;
 
+/*
+ * Every `core` table keyed by a person's id references their `user` row with `on delete cascade`:
+ * deleting the account deletes them with it, and the database refuses a row for an id no account
+ * holds, even from a request that races the deletion (PRD J10).
+ */
+
 export const profile = core.table(
   'profile',
   {
-    userId: text('user_id').primaryKey(),
+    userId: text('user_id')
+      .primaryKey()
+      .references(() => user.id, { onDelete: 'cascade' }),
     /** ISO 3166-1 alpha-2 (plus XK); null until the person says where they live. */
     country: text('country'),
     /** IANA; the browser's at sign-up, `UTC` when it gives none. Decides "today" (J12). */
@@ -361,7 +370,9 @@ export const agentConnection = core.table(
   {
     /** `con_` */
     id: text('id').primaryKey(),
-    userId: text('user_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
     clientId: text('client_id').notNull(),
     /** Untrusted third-party text: never in an event, escaped wherever it is shown. */
     clientName: text('client_name').notNull(),
@@ -394,7 +405,9 @@ export const agentConnection = core.table(
 export const reminderState = core.table(
   'reminder_state',
   {
-    userId: text('user_id').primaryKey(),
+    userId: text('user_id')
+      .primaryKey()
+      .references(() => user.id, { onDelete: 'cascade' }),
     enabled: boolean('enabled').notNull().default(true),
     emailEnabled: boolean('email_enabled').notNull().default(true),
     lastCheckedOn: date('last_checked_on', { mode: 'string' }),
@@ -424,7 +437,9 @@ export const notificationEndpoint = core.table(
   {
     /** `nep_` */
     id: text('id').primaryKey(),
-    userId: text('user_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
     /** `webpush`; `expo` joins with the native apps. */
     channel: text('channel', { enum: ['webpush'] })
       .notNull()
@@ -463,7 +478,9 @@ export const connectionAttempt = core.table(
   {
     /** `att_` */
     id: text('id').primaryKey(),
-    userId: text('user_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
     client: text('client', { enum: CLIENTS }).notNull(),
     entry: text('entry', { enum: ATTEMPT_ENTRIES }).notNull(),
     platform: text('platform', { enum: ATTEMPT_PLATFORMS }).notNull(),
@@ -581,6 +598,24 @@ export const rateLimit = core.table(
   (t) => [primaryKey({ columns: [t.key, t.windowStart] })],
 );
 
+/** Raw bytes; `pg` reads `bytea` as a Buffer. */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
+
+/**
+ * The landing page's daily salt (§6.4): one random value per UTC day, made on that day's first
+ * `landing_view` and deleted once the day has passed, so a past day's `visitor` hashes can never
+ * be recomputed. In the database rather than in memory so every function instance hashes one
+ * visitor alike.
+ */
+export const visitorSalt = core.table(
+  'visitor_salt',
+  {
+    day: date('day', { mode: 'string' }).primaryKey(),
+    salt: bytea('salt').notNull(),
+  },
+  (t) => [check('visitor_salt_salt_check', sql`octet_length(${t.salt}) = 32`)],
+);
+
 /**
  * First-party analytics events, written only through the typed `track()` (§7.7). The app may
  * insert and nothing else; `netnet_metrics` reads.
@@ -592,7 +627,10 @@ export const event = analytics.table(
     name: text('name').notNull(),
     at: instant('at').notNull().defaultNow(),
     userId: text('user_id'),
-    /** sha256(daily salt ‖ ip ‖ user agent), truncated; the salt is never stored (M10). */
+    /**
+     * `landing_view`'s only: sha256(daily salt ‖ ip ‖ user agent), 16 hex characters, with the
+     * salt kept only for its day (`visitor_salt`), so M10 counts visitors without a cookie.
+     */
     visitor: text('visitor'),
     segment: text('segment', { enum: SEGMENTS }).notNull(),
     props: jsonb('props').notNull().default({}),

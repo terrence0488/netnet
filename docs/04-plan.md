@@ -4,9 +4,8 @@ Status: **approved** · Stage owner: Software engineering manager
 Inputs: `docs/01-prd.md` (§6 acceptance criteria), `docs/03-architecture.md`, `CONVENTIONS.md`
 
 > Phases are vertical slices, each ending in a checkpoint deployed to production that the Founder
-> can use. P1, P2 and P3 have task briefs (`docs/phases/P1/tasks/`, `docs/phases/P2/tasks/`,
-> `docs/phases/P3/tasks/`). P4 stays an outline until it is reached, and is planned then
-> (WORKFLOW Stage 4).
+> can use. Every phase has task briefs: `docs/phases/P1/tasks/`, `docs/phases/P2/tasks/`,
+> `docs/phases/P3/tasks/` and `docs/phases/P4/tasks/`.
 
 ---
 
@@ -36,7 +35,7 @@ is built last within P3 (PRD §4.1).
 |---|---|---|---|
 | **P1** | **Ask your agent about your real position** | Sign up by email, confirm the country, add holdings by hand and see what you could use; connect Claude (or any MCP agent through "Other agent") in one flow; the agent answers from `get_financial_context` and writes values that appear in the app, marked as its own. Instrumented, isolated, backed up, probed | J1–J3 (core), J5, J6, J8; J10 isolation |
 | **P2** | **Worth using on its own** | Google and Apple sign-in; onboarding's start screen and the basics; the full Home (trend, allocation, baseline, filters, staleness, the agent handoff); the full holding page; types and tags | J1–J5 (rest), J9 |
-| **P3** | **Trust, ownership, comeback and Insights** | Activity with undo of an entry or an agent turn; settings (currency, country); export and account deletion; the comeback reminder by web push or email; the security email's retries; monthly, quarterly and yearly change with drivers, filters and exclusions; `get_period_changes` | J2 (country change), J7, J10, J12, J11 |
+| **P3** | **Trust, ownership, comeback and Insights** | Activity, a read-only log of every change; settings (currency, country); export and account deletion; the comeback reminder by web push or email; the security email's retries; monthly, quarterly and yearly change with drivers, filters and exclusions; `get_period_changes` | J2 (country change), J7, J10, J12, J11 |
 | **P4** | **Ready to launch** | The landing page; the metrics per segment; usage and SLO alerts; all ten packs reviewed; guides and directory listings ready; the launch note; the M12 harness | G-D1–G-D4, M12, packs |
 
 ## 3. P1 — Ask your agent about your real position
@@ -73,12 +72,12 @@ Stage 6 tests P1 against these criteria (PRD §6). The rest of each job waits fo
 | **J2** | Add an asset or liability (name, type, currency, value, date; tags wait) · liabilities subtract · accessibility recorded in one of four states · asked as a fact, never a category · no-doubt types set with the pack's reason, overridable · generic pack for unpacked markets · country inferred, confirmed, alphabetical, currency default · pack types added on confirmation · instruments from any country · consequence shown, changeable from the holding · never blocks saving, asking the agent offered · "Not sure" → undecided, marked, with a way to decide · foreign currency stores original, conversion, rate and rate date | Tags; add, rename, merge and delete types and tags; archive; delete from the web (P2) · changing country afterwards (P3) · a delete shown in the audit log (P3) |
 | **J3** | Add a dated value, back-dated allowed, latest by date drives the total · same date: last write wins, with a warning · `value_recorded {source}`; `value_corrected` when an agent corrects a value | Editing a value on the web (P2) · the edit shown in the audit log (P3) |
 | **J5** | Everything except the handoff prompts: steps per client and platform with screenshots and the connector URL, no token · "Other agent" · Back step by step · the Connect button's logos · the same flow from the Agent tab and the empty Home · verify first, with resend, moving on by itself · approval moves NetNet on by itself · connection shown active with client name and time · failures fire `agent_connection_failed` and show a plain cause and retry · revoke rejects later calls · the security email · M9 readable | Entries from onboarding and a holding (P2) · the prompt handoff for an empty or stale Home (P2) · the revocation shown in Activity (P3) |
-| **J6** | All, except undo (P3) | — |
+| **J6** | All | — |
 | **J8** | All, except the blind comparison (M12, P4) | — |
 | **J10** | No screen or API response carries another user's data, verified by test | Export and deletion (P3) |
 
 Non-functional requirements from P1: N1 measured (`latency_ms`) and probed, N2, N3 (audit rows on
-every write; undo in P3), N4, N5, N7, N8, N9, N10, N11.
+every write; Activity shows them in P3), N4, N5, N7, N8, N9, N10, N11.
 
 ### 3.3 Tasks
 
@@ -155,7 +154,7 @@ its deviations are in `decisions.md`, and T11, T13, T15 and T18 build on them.
 
 ## 4. P2 and later phases
 
-P2 and P3 are planned in detail below, with task briefs. P4 stays an outline until it is reached.
+P2, P3 and P4 are planned in detail below, with task briefs.
 
 ### P2 — Worth using on its own
 
@@ -256,24 +255,25 @@ flowchart LR
 
 ### P3 — Trust, ownership, comeback and Insights
 
-Status: briefed. Briefs: `docs/phases/P3/tasks/P3-T1.md` … `P3-T10.md`.
+Status: briefed. Briefs: `docs/phases/P3/tasks/P3-T1.md` … `P3-T22.md`.
 
 #### Checkpoint
 
 On `https://‹domain›`, deployed by the production workflow:
 
 1. Activity shows every change newest-first, grouped by agent turn, with what changed, old → new,
-   client and time — and undo of one entry or a whole turn, with conflicts naming the blocker.
-   Revocation reads there too.
-2. Settings changes the default currency (every value re-derived from its stored rate, one
-   undoable `system` change) and the country (the new pack's types added, none removed), and
-   signs out.
+   client and time. It is a read-only log: a mistake is corrected by another change. Revocation
+   reads there too.
+2. Settings changes the default currency (every value re-derived from its stored rate, a
+   person's own rates kept as given, one `system` entry in Activity) and the country (the new
+   pack's types added, none removed), and signs out.
 3. Export downloads everything as JSON or CSV; deletion states the 30-day window first, then
    erases `ledger`, identity, sessions, grants, endpoints and reminder state, revokes every
    connection, and stops every reminder at once.
 4. Someone away for 30 days gets one gentle reminder, at most three per absence and only in
    their daytime — by push to every device they turned on, by email otherwise, with one-click
-   unsubscribe and opened tracking. The security-email retries run inside the same runs.
+   unsubscribe and opened tracking. The security-email retries run inside the same runs, which
+   are GitHub Actions schedules.
 5. Insights shows Monthly, Quarterly and Yearly change with drivers, through its own persisted
    filters and exclusions; the holding page grows its period bar chart with the M/Q/Y switch
    and paging; the agent gets `get_period_changes`.
@@ -290,13 +290,13 @@ for regressions.
 | **J3** | An edit shown in the audit log |
 | **J4** | The holding page's second card: the bar chart of its period changes with the monthly / quarterly / yearly switch and paging, carried marking, the shared placeholder when history is short |
 | **J5** | Revocation shown in Activity |
-| **J7** | All: newest-first log with what changed, old → new, client and time, web changes in the same log · undo of an entry, exact and itself logged · undo of a batch, together · `value_corrected` / `value_undone` on agent-written values |
+| **J7** | All: newest-first log with what changed, old → new, client and time, web changes in the same log · one agent turn read together · a record only, nothing in it changes data · `value_corrected` when an agent-written value is edited or deleted |
 | **J10** | Export as JSON and CSV complete enough to rebuild a spreadsheet from · deletion (a recent sign-in, the 30-day window stated first, everything erased, connections revoked, reminders stopped, events re-keyed, `account_deleted`) · no screen or response carries another user's data, re-verified by test |
-| **J11** | All, built last in the phase (PRD §4.1): three views with period rows newest-first · drivers per period · own filters recomputing every figure · Don't Show exclusions persisting and leaving Home alone · placeholders with the single what's-needed statement · periods from value dates, carried marking, stored conversions · `insights_viewed {view}` |
+| **J11** | All, built last in the phase (PRD §4.1): three views with period rows newest-first, the first period with no change · drivers per period · own filters recomputing every figure · Don't Show exclusions persisting and leaving Home alone · placeholders with the single what's-needed statement · periods from value dates, carried marking, stored conversions · `insights_viewed {view}` |
 | **J12** | All: due at 30/60/90 with no check, never a fourth, any check restarts the clock · daytime only · push where on, email otherwise, verified addresses only · the exact wording, no amounts or names · the Home card rules · Settings → Notifications · the device lifecycle · unsubscribe and opened tracking |
 
 Non-functional requirements in P3: N1 (the new tool carries `outcome` and `latency_ms`), N3
-(undo completes the auditability P1 started), N7 (the sweep), N9 (every new event prop an
+(Activity completes the auditability P1 started), N7 (the sweep), N9 (every new event prop an
 enum; every `notify()` message free of amounts, totals and names), N10 (the deny-list scan
 covers the new code), N11 (periods from a pure `core` function).
 
@@ -313,7 +313,19 @@ covers the new code), N11 (periods from a pure `core` function).
 | P3-T7 | Periods — core, Ledger and the agent tool | T2, T4, T6 | yes | — |
 | P3-T8 | The holding page's period bar chart | T7 | yes | — |
 | P3-T9 | The Insights screen | T7 | yes | — |
-| P3-T10 | Responsive sweep and the P3 checkpoint | T2, T4, T6, T8, T9 | no | — |
+| P3-T10 | Responsive sweep and the P3 checkpoint | T2, T4, T6, T8, T9; T11–T21 for production | no | — |
+| P3-T11 | Remove undo; Activity is a read-only log | — | yes | — |
+| P3-T12 | The default-currency change — one entry, a person's own rates kept | T11 | yes | — |
+| P3-T13 | Account deletion leaves nothing behind; the export survives Safari | — | yes | — |
+| P3-T14 | The probe's refresh token never reaches a log | — | yes | — |
+| P3-T15 | The reminder runs on GitHub Actions schedules | — | yes | — |
+| P3-T16 | Insights — the first period has no change | — | yes | — |
+| P3-T17 | Home — the stale note under Position, and E2E with push | — | yes | — |
+| P3-T18 | The intermittent 500 on `GET /api/me` — diagnosable, then fixed | — | yes | — |
+| P3-T19 | Activity reads types by their labels, and dates as the screen does | — | yes | — |
+| P3-T20 | Insights — the average's percent agrees with its amount | — | yes | — |
+| P3-T21 | Failure logs name their cause, and a sign-out logs nothing | — | yes | — |
+| P3-T22 | The context gives each holding's currency | — | yes | — |
 
 T4's dependency on T3 is ordering only (both extend Settings); on T5 and T6 it is real (the
 tables `destroy()` clears). T7's dependency is ordering only: Insights is built last in the
@@ -321,6 +333,22 @@ phase so a slip shows against the phase rather than eating the trust work (PRD �
 T9 run in one wave from the same engine and share nothing new — common needs go through
 `core`. The reminder backfill starts every existing user's clock on deploy day (P3-T5), so
 nobody gets a surprise reminder.
+
+T11–T18 come from triaging Stage 6's report (`docs/phases/P3/feedback.md`). T14 goes first,
+because the token in the latest workflow logs is live; once it merges, the Founder rotates the
+token (its brief lists the steps). T15 must reach production before the first reminders fall due,
+around 2026-11-14. T12 follows T11 because both change the audit write path. When all eight are
+merged, the production workflow deploys, P3-T10's open criterion is verified there (the
+checkpoint, and the reminder schedule's first runs), and `stage: test P3` runs again.
+
+T19–T21 come from triaging the re-test's report (the same `feedback.md`): three Low issues, each
+a small task that touches nothing the others do. When all three are merged, the production
+workflow deploys again, P3-T10's production criterion is verified on it, and `stage: test P3`
+runs once more.
+
+T22 comes from a Founder report after P3's approval: `get_financial_context` gives no currency
+for a holding without a value. It touches nothing the others do. It merges and deploys on its
+own, with no re-test of P3.
 
 #### Order
 
@@ -333,6 +361,11 @@ flowchart LR
   T2 & T4 & T6 --> T7[T7 periods]
   T7 --> T8[T8 holding chart] & T9[T9 Insights]
   T2 & T4 & T6 & T8 & T9 --> T10[T10 sweep + checkpoint]
+  T11[T11 remove undo] --> T12[T12 currency entry + rates]
+  T12 & T13[T13 deletion + export] & T14[T14 probe token] & T15[T15 reminder schedules] --> T10
+  T16[T16 first period] & T17[T17 Home order + E2E] & T18[T18 the 500] --> T10
+  T19[T19 Activity labels] & T20[T20 Insights average] & T21[T21 failure logs] --> T10
+  T22[T22 holding currency in the context]
 ```
 
 | Wave | Tasks |
@@ -343,6 +376,11 @@ flowchart LR
 | 4 | T7 |
 | 5 | T8, T9 |
 | 6 | T10 |
+| 7 | T14 first, then T11, T13, T15, T16, T17, T18 |
+| 8 | T12 |
+| 9 | T10's production criterion (deploy, then verify) |
+| 10 | T19, T20, T21, then T10's production criterion again |
+| 11 | T22, after P3's approval |
 
 #### Running the build
 
@@ -363,34 +401,140 @@ flowchart LR
 
 ### P4 — Ready to launch
 
-**Checkpoint:** everything the launch needs except the go-live itself (Stage 8): the landing page
-live, the metrics readable per segment, the free-tier limits watched, ten packs reviewed, and the
-listings and launch note ready to submit and post.
+Status: briefed. Briefs: `docs/phases/P4/tasks/P4-T1.md` … `P4-T15.md`.
 
-**Criteria:** PRD §3.4 G-D1–G-D4, §3.5 `landing_view`, the M12 comparison in J8, §2.3's ten packs.
+#### Checkpoint
 
-**Tasks (outline):**
-- The landing page (G-D1): its own design, §2.5's statement with both proofs, the screen recording
-  (fictional data), the call to action straight to sign-up; `landing_view` with the cookie-less
-  `visitor` hash.
-- Measurement (G-D4): `ops/metrics/*.sql` for M1–M11 and M13 per segment (M13 per channel), run as
-  `netnet_metrics`; `pnpm metrics --env production`; the M10 funnel.
-- Operations: the daily health cron (Neon usage, the N1 SLO from events, the day's email count, a
-  security email unsent for 24 hours), emailed to the Founder at the architecture §9.4 triggers; the
-  FX failure alert.
-- The seven remaining launch packs (ID, PH, TH, VN, HK, IN, AU), and all ten reviewed by someone who
-  knows each market, the reviewer named in each publish message.
-- Agent guides checked against the clients' current screens; listing materials for Claude's and
-  ChatGPT's directories and the public MCP registries (G-D2). Once OpenAI lists NetNet, ChatGPT is
-  tested on a free account and its guide is listed in the connect flow. Submitting them needs the privacy
-  policy and terms (Stage 8's legal basics).
-- A security review before launch, starting with whether sign-up keeps saying that an email already
-  has an account (P1 answers 422; the reset flow reveals nothing).
-- The launch note (G-D3): one text, the proof varied per audience.
-- The M12 harness: a fixed fictional dataset and question set, a deliberately weak model, NetNet
-  versus a spreadsheet upload, scored blind. Each run's API spend is approved by the Founder first.
+On `https://‹domain›`, deployed by the production workflow, still unannounced (`noindex` until
+Stage 8):
 
-**Founder items:** F20–F23.
+1. `/` is the landing page: §2.5's statement first, both proofs, a recording of Claude answering
+   from a fictional household, the trust facts, and sign-up one tap away; `/privacy` and `/terms`
+   beside it. Each visit fires `landing_view` with a cookie-less `visitor`.
+2. The Founder reads M1–M11 and M13 per segment (M13 per channel), the kill readings on P-B and
+   P-C, and the M10 funnel, from one workflow run as `netnet_metrics`.
+3. A daily health check reads Neon's usage, the N1 SLO, the email allowance, unsent security emails
+   and the exchange rates, and emails the Founder when a §9.4 trigger fires or a figure cannot be
+   read.
+4. All ten launch packs are live, each reviewed by someone who knows the market and recorded
+   against the document reviewed.
+5. The connect guides match Claude's screens today. The listing materials for Claude's and
+   OpenAI's directories, the MCP Registry and the public lists are ready to submit once the privacy
+   policy and terms are approved.
+6. The launch note is ready to post. The M12 harness has run, and its result is stated against the
+   80% line.
+7. The security review is done and its Critical, High and Medium findings are fixed; a backup has
+   been restored; the deploy waits for `main`'s green CI.
+
+#### Acceptance criteria in P4
+
+Stage 6 tests P4 against these criteria (PRD §3–§6), and re-checks the P1, P2 and P3 criteria for
+regressions.
+
+| Item | In P4 |
+|---|---|
+| **G-D1** | The landing page states §2.5's line first, never "you don't know your net worth" · both proofs, P-A's and P-B/P-C's · an agent answering a real question from a real balance sheet (recording, no audio, fictional data) · its own design · the call to action straight to sign-up · every claim true of the product |
+| **G-D2** | Listing materials complete for Claude's directory, OpenAI's directory, the MCP Registry and the public lists, each against its published requirements; submission waits for the legal pages (Stage 8) |
+| **G-D3** | One launch note, led by §2.5's statement, the proof varied per audience, for 3+ communities that between them reach all three personas, P-B and P-C at least twice each |
+| **G-D4** | `landing_view` with a cookie-less `visitor` on every load · the M10 funnel readable before launch |
+| **§3.2, §3.3** | M1–M11 and M13 readable per segment (M13 per channel), from events alone, as `netnet_metrics` · the kill readings on P-B and P-C, never on the blend · signups are verified accounts (`email_verified`) |
+| **J8 (M12)** | The blind comparison: NetNet against a spreadsheet upload of identical data, on a deliberately weak model, scored on numeric correctness, qualification and fabrication; the result stated against "≥ 80% of pairs, never worse on fabrication" |
+| **§2.3** | Packs for all ten launch countries, each reviewed by someone who knows the market before it is live in production; every other country still gets the generic pack |
+| **J5** | Claude's guide, phone and computer, matches today's screens, every step with its screenshot |
+| **J6** | A tool's error names only the tool's own fields |
+| **J12** | Push is sent only to the browsers' push services |
+
+Non-functional requirements in P4: N2 (the M12 harness is outside the product), N4 (the isolation
+and RLS suites cover the new routes and scripts), N5 (the new secrets live only in GitHub and
+Vercel settings), N6 and N8 (the health triggers watch every free-tier limit), N7 (the landing
+page at phone width), N9 (`landing_view` sets no cookie and stores nothing in the browser; the
+health alert, the metrics and the M12 reports carry no personal data), N10 (the deny-list covers
+the seven new markets), and the security review across all of them.
+
+#### Tasks
+
+| Task | Title | Depends on | Parallel-safe | Founder items first |
+|---|---|---|---|---|
+| P4-T1 | The demo household — a fictional balance sheet any account can load | — | yes | — |
+| P4-T2 | The landing page, and `landing_view` | — | yes | F21 (the recording, on T1's household) |
+| P4-T3 | The metrics, per segment | T2 (ordering) | yes | F24 |
+| P4-T4 | The daily health check, and the Founder's alert | T3 | yes | F24, F25 |
+| P4-T5 | The seven remaining launch packs, and the review record | — | yes | — |
+| P4-T6 | All ten packs reviewed | T5 | yes | F20 |
+| P4-T7 | Agent guides checked against today's screens, and the listings ready | T1, T8 (ordering) | yes | F11 |
+| P4-T8 | The privacy policy and terms — drafts for legal review, and their pages | T2 (ordering) | yes | F23 (to finalise) |
+| P4-T9 | The M12 harness — NetNet against a spreadsheet, on a weak model, scored blind | T1 | yes | F22 |
+| P4-T10 | The launch note | T2 (ordering) | yes | — |
+| P4-T11 | Push endpoints only at the browsers' own push services | — | yes | — |
+| P4-T12 | An agent's error names the tool's own fields | — | yes | — |
+| P4-T13 | The security review before launch | T1–T4, T8, T9, T11, T12 | no | — |
+| P4-T14 | Launch readiness, and the P4 checkpoint | T1–T13, the review's fixes | no | the restore drill, the Actions budget |
+| P4-T15 | ChatGPT, once OpenAI lists NetNet | OpenAI's listing, T7 | yes | F11 (ChatGPT's shots) |
+
+T1 comes first because three tasks show the same fictional household: the landing page's
+recording (F21), the directory reviewers' test account (T7) and M12 (T9). T3 follows T2 because
+both change the event contract and M10 reads `landing_view`; T4 follows T3 for the metrics role's
+login and the N1 query. T7, T8 and T10 follow T2 only so that the listings, the legal pages and the
+launch note use the landing page as shipped. T11 and T12 are small fixes with nothing in common
+with the rest: T11 is the push-endpoint limit named for the security review, fixed first because
+the fix is clear, and T12 is the Low issue from P3's last test report, which a weak model (M12)
+would trip on.
+
+T13 runs in a fresh session once the code tasks are merged and deployed, reviews without changing
+code, and its findings are triaged into new P4 tasks (P4-T16 onward). T6 runs as each reviewer
+reports, one small change per pack; its last review is the long pole of the phase. T15 waits on
+OpenAI's review, which NetNet does not control: it is outside the checkpoint and may land after
+launch.
+
+P3's report also left two Info notes; both follow the PRD and stay as they are: a type a pack does
+not know reads by its universal label after a country move (J2, §6.7), and a carried month with no
+change reads "—" in Insights and "$0" on the holding chart.
+
+#### Order
+
+```mermaid
+flowchart LR
+  T1[T1 demo household] --> T7[T7 guides + listings] & T9[T9 M12 harness]
+  T2[T2 landing + landing_view] --> T3[T3 metrics] & T8[T8 privacy + terms] & T10[T10 launch note]
+  T3 --> T4[T4 health check]
+  T8 --> T7
+  T5[T5 seven packs + review record] --> T6[T6 ten reviews]
+  T11[T11 push hosts] & T12[T12 error fields] --> T13[T13 security review]
+  T1 & T3 & T4 & T8 & T9 --> T13
+  T13 --> T14[T14 readiness + checkpoint]
+  T6 & T7 & T10 --> T14
+  T7 -.-> T15[T15 ChatGPT, once listed]
+```
+
+| Wave | Tasks |
+|---|---|
+| 1 | T1, T2, T5, T11, T12 |
+| 2 | T3, T7, T8, T9, T10 |
+| 3 | T4 |
+| 4 | T13 (a fresh session), then the fix tasks its triage writes |
+| 5 | T14 |
+| alongside | T6, as each review comes back; T15, when OpenAI lists NetNet |
+
+#### Running the build
+
+- `stage: build P4` in a new session. The build session works wave by wave, dispatching one
+  engineer subagent per task, and hands off to a new session between waves when its context runs
+  heavy (STATE names the next wave). `stage: build P4-Tn` runs a single task.
+- One branch and one pull request per task (`p4-tn`, CONVENTIONS §15; T6 one per pack,
+  `p4-t6-<pack>`), each with its own preview and Neon branch. A preview's `DATABASE_URL` is
+  injected per-deployment by its Preview job: never redeploy from the Vercel dashboard; re-run the
+  Preview job instead.
+- T13 is not a build task: `stage: build P4-T13` starts a fresh review session, and its report goes
+  to the Founder before any fix is written.
+- After T14, `stage: test P4` in a fresh session (WORKFLOW Stage 6), against the criteria above
+  plus the P1–P3 criteria. Suggested manual checks for Stage 6: the landing page on a real phone
+  and its link preview in a messaging app; the recording under reduced motion; a test health alert
+  in the inbox; the metrics workflow's summary; one pack read by its reviewer on production.
+
+**Founder items:** F20 reviewers, F21 the recording, F22 the API key, F23 the legal review, F24 the
+metrics role, F25 the alert address, F11 (fresh Claude screenshots for T7; ChatGPT's six for T15),
+the MCP Registry's DNS record (at submission, T7), and T14's restore drill and Actions budget
+check.
 
 ## 5. Founder setup checklist
 
@@ -436,10 +580,12 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | F17 | Google OAuth client (Google Cloud console: consent screen, web client, the redirect URIs P2's brief lists). Vercel env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | P2 |
 | F18 | Sign in with Apple (needs F1): a Services ID, domain verification, a key. Vercel env: `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` | P2 |
 | F19 | VAPID keys, on your own computer: `npx web-push generate-vapid-keys`. Vercel env: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:` your address), and `LINK_SIGNING_SECRET` (generated) | P3 |
-| F20 | The reviewers from F3 engaged, one per pack | P4 |
-| F21 | The landing page's screen recording: an agent answering a real question from a fictional balance sheet (P4's brief gives the script) | P4 |
-| F22 | An Anthropic API key with a spend limit, for the M12 harness; approve each run's spend | P4 |
-| F23 | A privacy policy and terms (Stage 8's legal basics), needed before directory listings are submitted | P4 → Stage 8 |
+| F20 | The reviewers from F3 engaged, one per pack, each sent P4-T6's review sheet for their market | P4-T6 |
+| F21 | The landing page's screen recording: Claude answering a real question from P4-T1's fictional household, recorded to P4-T2's script | P4-T2 |
+| F22 | An Anthropic API key, with a monthly spend limit set in the Claude Console, as GitHub secret `ANTHROPIC_API_KEY` (or in your own shell); approve each M12 run's spend | P4-T9 |
+| F23 | Have P4-T8's drafts of the privacy policy and terms reviewed by someone qualified, then tell the build what changed; needed before directory listings are submitted (Stage 8's legal basics) | P4-T8 → Stage 8 |
+| F24 | **Metrics role:** `openssl rand -hex 32` → GitHub secret `NETNET_METRICS_DB_PASSWORD_PROD`, before P4-T3 deploys. After that deploy: GitHub secrets `DATABASE_METRICS_URL` (the pooled connection string for `netnet_metrics`, in the form of `DATABASE_URL`) and `METRICS_EXCLUDE_USERS` (the probe account's user id and your own test accounts', comma-separated) | P4-T3, P4-T4 |
+| F25 | Vercel env (Production) `OPS_EMAIL`: the address the daily health alert goes to | P4-T4 |
 
 ## 6. Coverage
 
@@ -449,24 +595,25 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | J2 | P1, P2, P3 |
 | J3 | P1, P2 (edit), P3 (in the log) |
 | J4 | P2, P3 (holding bar chart) |
-| J5 | P1, P2 (other entries, handoff) |
-| J6 | P1 (undo in P3) |
+| J5 | P1, P2 (other entries, handoff), P4 (guides re-checked) |
+| J6 | P1, P4 (error fields) |
 | J7 | P3 |
 | J8 | P1 (M12 in P4) |
 | J9 | P2 |
 | J10 | P1 (isolation), P3 |
 | J11 | P3 |
-| J12 | P3 |
+| J12 | P3, P4 (push services only) |
 | G-D1–G-D4 | P4 |
 | §2.3 packs | P1 (machinery; generic, SG, MY, GB), P4 (the other seven; all ten reviewed) |
 
 | §3.5 events | First fired in |
 |---|---|
-| `signup_started`, `account_created`, `session_started`, `holding_created`, `value_recorded`, `value_corrected`, `agent_connection_started`, `agent_connection_completed`, `agent_connection_failed`, `agent_tool_called`, `security_email_sent` | P1 (all 21 schemas exist from P1) |
+| `signup_started`, `account_created`, `session_started`, `holding_created`, `value_recorded`, `value_corrected`, `agent_connection_started`, `agent_connection_completed`, `agent_connection_failed`, `agent_tool_called`, `security_email_sent` | P1 (all 20 schemas exist from P1) |
 | `holding_created {via: guided}` | P2 |
-| `value_undone`, `reminder_sent`, `reminder_opened`, `push_prompt_shown`, `push_prompt_result`, `push_enabled`, `push_disabled`, `account_deleted` | P3 |
+| `reminder_sent`, `reminder_opened`, `push_prompt_shown`, `push_prompt_result`, `push_enabled`, `push_disabled`, `account_deleted` | P3 |
 | `landing_view` | P4 |
 | `insights_viewed` | P3 |
+| `email_verified` | P4 (added to §3.5 so that M1's verified signups are countable) |
 
 ## 7. Delivery risks
 
@@ -479,4 +626,7 @@ settings, never into chat or a file.** Generate a random secret with `openssl ra
 | Pack reviewers are the long pole for launch | F3 starts now; packs are content, so they can be written from P1-T3 onward, beside the build |
 | Directory listings need legal pages that belong to Stage 8 | P4 prepares the materials; submission follows the legal basics |
 | Provider setup (F17, F18; F1's Apple enrolment has a lead time) holds up P2-T1 | T1 is wave 1 but standalone: the email flow is unaffected and the other wave-1 tasks proceed; the providers land when the Founder's setup does |
-| The phone shots arrive late | P2-T8 is content-only and off the critical path: the sweep and checkpoint (T7) never wait for it |
+| The phone shots arrive late | P2-T8 is content-only and off the critical path: the sweep and checkpoint (T7) never wait for it; P4-T7 completes it |
+| The directories' reviews (Claude's, OpenAI's) take time NetNet does not control, and need the legal pages first | P4 prepares every listing; submission follows F23; launch never waits for ChatGPT (P4-T15 is outside the checkpoint) |
+| M12 shows no lift | It is the experiment, not a build failure: the question set and rubric are fixed before the first paid run, the result goes to the Founder as evidence about A13, and nothing is tuned toward a pass |
+| P4 leans on the Founder's hands (reviewers, the recording, screenshots, legal review, the restore drill) | Each is named at the task that needs it; waves 1–3 build while they are in progress |

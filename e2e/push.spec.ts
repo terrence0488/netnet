@@ -1,7 +1,14 @@
 /// <reference lib="dom" />
 import { expect, test, type Page } from '@playwright/test';
 import { expectSoundScreen, recordProblems } from './accounts';
-import { asSignedIn, mockConnections, mockPacks, mockSnapshot } from './support';
+import {
+  asSignedIn,
+  canReceivePush,
+  cannotReceivePush,
+  mockConnections,
+  mockPacks,
+  mockSnapshot,
+} from './support';
 
 /**
  * Web push (PRD J12, architecture §7.10, CONVENTIONS §9): the Home card's ask and Not nows, the
@@ -126,26 +133,6 @@ function recordPromptEvents(
   return sent;
 }
 
-/** A capable browser with the permission at `state`. Chromium can really receive push. */
-async function capableBrowser(page: Page, state: 'default' | 'granted' | 'denied'): Promise<void> {
-  await page.addInitScript((permission) => {
-    Object.defineProperty(window.Notification, 'permission', {
-      value: permission,
-      configurable: true,
-    });
-  }, state);
-}
-
-/** No service worker, PushManager or Notification: an iPhone in a Safari tab, say. */
-async function incapableBrowser(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    for (const name of ['PushManager', 'Notification'] as const) {
-      Object.defineProperty(window, name, { value: undefined, configurable: true });
-    }
-    Object.defineProperty(navigator, 'serviceWorker', { value: undefined, configurable: true });
-  });
-}
-
 /** A subscription the Turn on tap gets, without reaching a push service. */
 async function fakeSubscription(page: Page): Promise<void> {
   await page.addInitScript((subscription) => {
@@ -172,7 +159,7 @@ async function fakeSubscription(page: Page): Promise<void> {
 test.describe('the Home card', () => {
   test('asks once and gently below the Position ledger', async ({ page }, testInfo) => {
     const problems = recordProblems(page);
-    await capableBrowser(page, 'default');
+    await canReceivePush(page, 'default');
     await mockLedger(page);
     const prompts = recordPromptEvents(page);
     await page.goto('/app/');
@@ -196,7 +183,7 @@ test.describe('the Home card', () => {
   });
 
   test('Not now hides the card for 30 days, a second for good', async ({ page }) => {
-    await capableBrowser(page, 'default');
+    await canReceivePush(page, 'default');
     await mockLedger(page);
     const prompts = recordPromptEvents(page);
     await page.goto('/app/');
@@ -226,7 +213,7 @@ test.describe('the Home card', () => {
   });
 
   test('Turn on subscribes from the tap and confirms in one line', async ({ page }) => {
-    await capableBrowser(page, 'default');
+    await canReceivePush(page, 'default');
     await fakeSubscription(page);
     await mockLedger(page);
     await page.route('**/api/notifications/vapid-key', (route) =>
@@ -261,7 +248,7 @@ test.describe('the Home card', () => {
 
   test('stays hidden where push cannot work', async ({ page }) => {
     // An incapable browser: no card, and no Home Screen how-to anywhere.
-    await incapableBrowser(page);
+    await cannotReceivePush(page);
     await mockLedger(page);
     await page.goto('/app/');
     await expect(page.getByTestId('push-card')).toBeHidden();
@@ -269,7 +256,7 @@ test.describe('the Home card', () => {
   });
 
   test('stays hidden once the device has decided', async ({ page }) => {
-    await capableBrowser(page, 'default');
+    await canReceivePush(page, 'default');
     await mockLedger(page);
     // Push on: the endpoint id is saved.
     await page.goto('/app/');
@@ -283,13 +270,13 @@ test.describe('the Home card', () => {
   test('stays hidden when permission is granted or denied, and with no picture', async ({
     page,
   }) => {
-    await capableBrowser(page, 'granted');
+    await canReceivePush(page, 'granted');
     await mockLedger(page);
     await page.goto('/app/');
     await expect(page.getByTestId('push-card')).toBeHidden();
 
     // No first picture: an empty ledger never asks.
-    await capableBrowser(page, 'default');
+    await canReceivePush(page, 'default');
     await page.route('**/api/snapshot*', (route) =>
       route.fulfill({ json: { ...LEDGER, holdings: [], values: {} } }),
     );
@@ -298,7 +285,7 @@ test.describe('the Home card', () => {
   });
 
   test('never asks for permission except inside the tap', async ({ page }) => {
-    await capableBrowser(page, 'default');
+    await canReceivePush(page, 'default');
     await mockLedger(page);
     await mockPrefs(page);
     await page.goto('/app/');
@@ -312,7 +299,7 @@ test.describe('the Home card', () => {
 test.describe('Settings → Notifications', () => {
   test('shows the switches, the other devices, and Always', async ({ page }, testInfo) => {
     const problems = recordProblems(page);
-    await capableBrowser(page, 'default');
+    await canReceivePush(page, 'default');
     await mockLedger(page);
     await mockPrefs(page);
     await page.addInitScript(() => {
@@ -341,7 +328,7 @@ test.describe('Settings → Notifications', () => {
   });
 
   test('applies the switches at once and removes devices', async ({ page }) => {
-    await capableBrowser(page, 'default');
+    await canReceivePush(page, 'default');
     await mockLedger(page);
     const patched: unknown[] = [];
     await page.route('**/api/notifications/prefs', (route) => {
@@ -371,7 +358,7 @@ test.describe('Settings → Notifications', () => {
   });
 
   test('turns this device on from the switch and off again', async ({ page }) => {
-    await capableBrowser(page, 'default');
+    await canReceivePush(page, 'default');
     await fakeSubscription(page);
     await mockLedger(page);
     await page.route('**/api/notifications/vapid-key', (route) =>
@@ -437,7 +424,7 @@ test.describe('Settings → Notifications', () => {
   test('leaves the switch off with a pointer when denied, and hides it when incapable', async ({
     page,
   }) => {
-    await capableBrowser(page, 'denied');
+    await canReceivePush(page, 'denied');
     await mockLedger(page);
     await mockPrefs(page);
     await page.goto('/app/account/notifications');
@@ -448,7 +435,7 @@ test.describe('Settings → Notifications', () => {
       page.getByText('Allow them in your browser or phone settings to turn them on.'),
     ).toBeVisible();
 
-    await incapableBrowser(page);
+    await cannotReceivePush(page);
     await page.reload();
     await expect(page.getByRole('switch', { name: 'Reminders', exact: true })).toBeVisible();
     await expect(page.getByRole('switch', { name: 'Email reminders' })).toBeVisible();
@@ -459,7 +446,7 @@ test.describe('Settings → Notifications', () => {
 
 test.describe('the lifecycle', () => {
   test('a session starting on a device with push on checks in', async ({ page }) => {
-    await capableBrowser(page, 'granted');
+    await canReceivePush(page, 'granted');
     await fakeSubscription(page);
     await mockLedger(page);
     const checkedIn: unknown[] = [];
@@ -483,7 +470,7 @@ test.describe('the lifecycle', () => {
   });
 
   test('signing out revokes this device’s subscription', async ({ page }) => {
-    await capableBrowser(page, 'granted');
+    await canReceivePush(page, 'granted');
     await fakeSubscription(page);
     await mockLedger(page);
     await mockPrefs(page);
@@ -512,7 +499,7 @@ test.describe('the lifecycle', () => {
   });
 
   test('Account links Notifications below General', async ({ page }) => {
-    await capableBrowser(page, 'default');
+    await canReceivePush(page, 'default');
     await mockLedger(page);
     await mockPrefs(page);
     await page.goto('/app/account');

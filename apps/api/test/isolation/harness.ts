@@ -121,10 +121,24 @@ export interface Fixtures {
 }
 
 /**
- * Users A and B, each with a ledger that has rows in every `ledger` table, written as `netnet_app`
- * through `withUser`; A has an active and a revoked agent connection, B an active one.
+ * The account `userId` names, as sign-up makes it, unless it exists: every `core` row keyed by a
+ * user id (profile, reminder state, connections…) references it. A fictional address.
+ */
+export async function ensureAccount(db: TestDatabase, userId: string): Promise<void> {
+  await db.owner.query(
+    `insert into core."user" (id, name, email) values ($1, '', $2) on conflict (id) do nothing`,
+    [userId, `${userId.toLowerCase()}@example.com`],
+  );
+}
+
+/**
+ * Users A and B, each with an account and a ledger that has rows in every `ledger` table, written
+ * as `netnet_app` through `withUser`; A has an active and a revoked agent connection, B an active
+ * one.
  */
 export async function seedUsers(db: TestDatabase): Promise<Fixtures> {
+  await ensureAccount(db, USER_A);
+  await ensureAccount(db, USER_B);
   const connection = (id: string, userId: string, revokedAt: Date | null = null) => ({
     id,
     userId,

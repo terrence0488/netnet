@@ -8,7 +8,6 @@ export const ERROR_STATUS = {
   UNAUTHENTICATED: 401,
   NOT_FOUND: 404,
   LIKELY_DUPLICATE: 409,
-  UNDO_CONFLICT: 409,
   EMAIL_NOT_VERIFIED: 403,
   SCOPE_REQUIRED: 403,
   REAUTH_REQUIRED: 401,
@@ -26,7 +25,7 @@ export const errorCodeSchema = z.enum(ERROR_CODES);
 /**
  * The body of every error response. `fields` names each bad field and the allowed form
  * (VALIDATION_FAILED); `requestId` comes with INTERNAL. Code-specific details, such as
- * `candidates` or `blockers`, sit beside them.
+ * `candidates`, sit beside them.
  */
 export const errorBodySchema = z.object({
   error: z.looseObject({

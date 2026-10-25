@@ -7,12 +7,10 @@ import type {
   McpHoldingView,
   McpTag,
   McpType,
-  McpUndoResult,
   McpValue,
   McpWarning,
   Pack,
   Tag,
-  UndoResult,
   UserType,
   Value,
   Warning,
@@ -43,6 +41,8 @@ export function valueToMcp(value: Value): McpValue {
     fx_rate: value.fxRate,
     fx_rate_date: value.fxRateDate,
     fx_source: value.fxSource,
+    given_rate: value.givenRate,
+    given_rate_into: value.givenRateInto,
     source: value.source,
     client_name: value.clientName,
     entered_at: value.enteredAt,
@@ -114,20 +114,7 @@ export function auditEntryToMcp(entry: AuditEntry): McpAuditEntry {
     entity_id: entry.entityId,
     before: entry.before,
     after: entry.after,
-    undoes: entry.undoes,
-    undone_by: entry.undoneBy,
     summary: entry.summary,
-  };
-}
-
-export function undoResultToMcp(result: UndoResult): McpUndoResult {
-  return {
-    undone: result.undone.map((u) => ({
-      entry_id: u.entryId,
-      entity: u.entity,
-      entity_id: u.entityId,
-    })),
-    undo_ids: [...result.undoIds],
   };
 }
 

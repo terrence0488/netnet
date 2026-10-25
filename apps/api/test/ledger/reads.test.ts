@@ -346,9 +346,11 @@ describe('periods', () => {
     ]);
     expect(table.periods[5]).toMatchObject({ change: -20_000_000, carried: true });
     expect(table.periods.at(-1)).toMatchObject({
-      change: 30_000_000,
+      endValue: 30_000_000,
+      change: null,
       changePct: null,
       carried: false,
+      drivers: [],
     });
   });
 

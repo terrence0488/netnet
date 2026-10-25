@@ -19,7 +19,8 @@ export const getHoldingTool: ToolDef<McpGetHoldingInput, McpGetHoldingOutput> = 
   annotations: { readOnlyHint: true, openWorldHint: false },
   inputSchema: getHoldingInputSchema,
   outputSchema: getHoldingOutputSchema,
-  renames: {},
+  // The Ledger pages values under `values`; the tool's page parameters are flat.
+  renames: { 'values.cursor': 'values_cursor' },
   run: async (ctx: ToolCtx, input) => {
     const page: PageReq = {
       ...(input.values_cursor === undefined ? {} : { cursor: input.values_cursor }),
@@ -36,5 +37,4 @@ export const getHoldingTool: ToolDef<McpGetHoldingInput, McpGetHoldingOutput> = 
       },
     };
   },
-  text: (output) => `Holding "${output.name}" with ${output.values.items.length} values shown.`,
 };

@@ -267,3 +267,40 @@ export async function asSignedIn(page: Page): Promise<void> {
   await mockConnections(page, []);
   await mockPacks(page);
 }
+
+/**
+ * A browser that can receive push, with the permission at `permission`: an init script stubs
+ * `PushManager` and `Notification`, so every Chromium build reads the same (a full Chromium starts
+ * at `default`, Playwright's headless shell at `denied`). From the next load, a later call wins.
+ */
+export async function canReceivePush(
+  page: Page,
+  permission: 'default' | 'granted' | 'denied',
+): Promise<void> {
+  await page.addInitScript((state) => {
+    class PushManagerStub {}
+    class NotificationStub {
+      static get permission() {
+        return state;
+      }
+      static requestPermission() {
+        return Promise.resolve(state);
+      }
+    }
+    Object.defineProperty(window, 'PushManager', { value: PushManagerStub, configurable: true });
+    Object.defineProperty(window, 'Notification', { value: NotificationStub, configurable: true });
+  }, permission);
+}
+
+/**
+ * A browser that cannot receive push, such as an iPhone in a Safari tab: an init script takes away
+ * the service worker, `PushManager` and `Notification`, everything the app's push check reads.
+ */
+export async function cannotReceivePush(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    for (const name of ['PushManager', 'Notification'] as const) {
+      Object.defineProperty(window, name, { value: undefined, configurable: true });
+    }
+    Object.defineProperty(navigator, 'serviceWorker', { value: undefined, configurable: true });
+  });
+}

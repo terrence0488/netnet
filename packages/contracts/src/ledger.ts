@@ -347,13 +347,6 @@ export const activityQuerySchema = z.strictObject({
 });
 export type ActivityQuery = z.input<typeof activityQuerySchema>;
 
-/** `undo` (`undo`): exactly one of an entry and a whole agent turn. */
-export const undoTargetSchema = z.union(
-  [z.strictObject({ entryId: id }), z.strictObject({ batchId: id })],
-  { error: 'Give entryId for one entry, or batchId for a whole agent turn, but not both.' },
-);
-export type UndoTarget = z.input<typeof undoTargetSchema>;
-
 /** `history` (`get_net_worth_history`). `to` defaults to today, `interval` to `month`. */
 export const historyQuerySchema = z
   .strictObject({
@@ -473,6 +466,13 @@ export interface Value {
   fxRate: string;
   fxRateDate: string | null;
   fxSource: ValueFxSource;
+  /**
+   * A rate the person or their agent gave, as given: 1 of `currency` in `givenRateInto`, the
+   * default currency when it was given. Every change of the default currency starts from it
+   * (§6.6). Null when none was given.
+   */
+  givenRate: string | null;
+  givenRateInto: string | null;
   source: ValueSource;
   /** The agent's name as shown: untrusted text, escaped wherever it is shown. */
   clientName: string | null;
@@ -571,27 +571,8 @@ export interface AuditEntry {
   entityId: string | null;
   before: unknown;
   after: unknown;
-  /** The entry this one undoes, when it is itself an undo. */
-  undoes: string | null;
-  /** The entry that undid this one, when it has been undone. */
-  undoneBy: string | null;
   /** How the entry reads, such as "Agent disconnected" for a revocation. */
   summary: string;
-}
-
-/** What an undo restored, in the order it was undone (a batch newest first). */
-export interface UndoResult {
-  undone: { entryId: string; entity: string; entityId: string | null }[];
-  /** The new audit entries' ids, one per undone entry, in the same order. */
-  undoIds: string[];
-}
-
-/** `UNDO_CONFLICT`'s `blockers`: a later change to undo first (architecture §7.5). */
-export interface UndoBlocker {
-  entry_id: string;
-  action: string;
-  /** The instant it was written, ISO-8601 UTC. */
-  at: string;
 }
 
 export const WARNING_CODES = ['SAME_DATE_REPLACED'] as const;
@@ -605,12 +586,7 @@ export interface Warning {
 }
 
 /** The analytics events a write gives back for the edge to `track()` (PRD J3, §7.7). */
-export const DOMAIN_EVENT_NAMES = [
-  'holding_created',
-  'value_recorded',
-  'value_corrected',
-  'value_undone',
-] as const;
+export const DOMAIN_EVENT_NAMES = ['holding_created', 'value_recorded', 'value_corrected'] as const;
 export type DomainEventName = (typeof DOMAIN_EVENT_NAMES)[number];
 
 export type DomainEvent = {
@@ -667,8 +643,9 @@ export interface ExportBundle {
 }
 
 /**
- * The CSV export's header (P3-T4, an additive detail under plan rule 4): one row per value, in the
- * bundle's order. Amounts are decimals in major units; tags are `;`-separated names.
+ * The CSV export's header (architecture §7.2): one row per value, in the bundle's order. Amounts
+ * are decimals in major units; tags are `;`-separated names; a value with no given rate leaves
+ * the last two empty.
  */
 export const EXPORT_CSV_HEADER =
-  'holding_id,holding_name,kind,type,currency,date,amount,base_amount,base_currency,fx_rate,fx_rate_date,fx_source,source,client,access,access_reason,tags';
+  'holding_id,holding_name,kind,type,currency,date,amount,base_amount,base_currency,fx_rate,fx_rate_date,fx_source,source,client,access,access_reason,tags,given_rate,given_rate_into';

@@ -75,7 +75,7 @@ const HALF_YEAR = [
 ];
 
 describe('holdingPeriods', () => {
-  it('buckets one holding’s values into calendar months, oldest first', () => {
+  it('buckets one holding’s values into calendar months, oldest first, the first unchanged', () => {
     const row = holding({ id: 'hld_1' });
     const months = holdingPeriods(
       snapshot([row], { hld_1: HALF_YEAR }),
@@ -85,7 +85,7 @@ describe('holdingPeriods', () => {
       '2026-08-20',
     );
     expect(months.map((p) => [p.start, p.end, p.endValue, p.change])).toStrictEqual([
-      ['2026-03-01', '2026-03-31', 100_000, 100_000],
+      ['2026-03-01', '2026-03-31', 100_000, null],
       ['2026-04-01', '2026-04-30', 105_000, 5_000],
       ['2026-05-01', '2026-05-31', 103_000, -2_000],
       ['2026-06-01', '2026-06-30', 103_000, 0],
@@ -134,7 +134,7 @@ describe('paging', () => {
       start: `2026-${String(i + 1).padStart(2, '0')}-01`,
       end: `2026-${String(i + 1).padStart(2, '0')}-28`,
       endValue: 100_000 + i,
-      change: i === 0 ? 100_000 : 1,
+      change: i === 0 ? null : 1,
       changePct: i === 0 ? null : 0.1,
       carried: false,
       drivers: [],

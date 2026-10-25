@@ -145,7 +145,9 @@ docs/                     the workflow's documents; docs/02-prototype is the des
   Copy follows the PRD: ask facts, not categories; show the consequence; "locked until you're
   eligible to withdraw", not "until 55".
 - Every launch pack is reviewed by someone who knows that market before it is published to
-  production (PRD §2.3). Record the reviewer in the publish message.
+  production (PRD §2.3). A pack is drafted in `content/packs/drafts/`, which is validated and never
+  published; its review records the pack's hash and the reviewer in `content/reviews.json`, in a
+  commit with `Reviewed-by:`, and a production publish refuses a new or changed pack without one.
 
 ## 9. Testing
 
@@ -158,7 +160,7 @@ A task is not done until its tests pass in CI. A bug fix starts with a failing t
 | REST and MCP | Every route and every tool: happy path, validation error, not-found, and **an isolation case** (user B with user A's ids → `NOT_FOUND`, no A data in the body). A registry test fails when a route or tool has no isolation case | Vitest + Postgres |
 | Row-level security | As `netnet_app` with user B set, a raw `SELECT` on every `ledger` table returns none of A's rows; with no user set it returns nothing; writes with another user's id are rejected | Vitest + Postgres |
 | MCP protocol | An SDK client connects with each supported protocol version, lists tools, calls one read and one write | Vitest |
-| Ledger | Atomicity (a failing item in `record_values` writes nothing), undo and batch undo, `UNDO_CONFLICT`, same-date replacement, concurrent writes for one user serialised by the lock | Vitest + Postgres |
+| Ledger | Atomicity (a failing item in `record_values` writes nothing), agent-turn batching, same-date replacement, the default-currency change (one audit entry, a person's own rates exact after a round trip), concurrent writes for one user serialised by the lock | Vitest + Postgres |
 | Web | Each PRD job's happy path at **390 px** and **1280 px**; no horizontal scroll at **320 px**; axe accessibility checks on key screens; the analytics events each flow fires | Playwright |
 | Privacy | Event schemas contain no amount-like or free-text props; `log()` rejects unknown fields; the N10 deny-list scan; every `notify()` message is checked for digits-with-currency and holding names | Vitest |
 | Web push | Payload building and encryption against a fake push endpoint; `404`/`410` revokes; five failures revoke; the service worker has no `fetch` handler; a browser that cannot receive push shows no push option anywhere (and no Home Screen how-to); permission is requested only from the tap | Vitest + Playwright (Chromium with notifications granted) |

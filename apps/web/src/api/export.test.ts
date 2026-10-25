@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { isApiError } from './client';
-import { downloadExport, exportFilename, exportUrl } from './export';
+import { EXPORT_URL_LIFETIME_MS, downloadExport, exportFilename, exportUrl } from './export';
 
 /**
  * Taking the data away (PRD J10): the export's URL and filename, and the download itself — the
- * file saved under its name, the server's error kept as an ApiError. All data is fictional.
+ * file saved under its name, its URL revoked only once the download is under way, the server's
+ * error kept as an ApiError. All data is fictional.
  */
 describe('exportUrl and exportFilename', () => {
   it('names the route and the file per format', () => {
@@ -18,6 +19,7 @@ describe('exportUrl and exportFilename', () => {
 describe('downloadExport', () => {
   const fetchMock = vi.fn<typeof fetch>();
   const clicked: { href: string; download: string }[] = [];
+  const click = vi.fn<() => void>();
 
   beforeEach(() => {
     fetchMock.mockReset();
@@ -41,12 +43,15 @@ describe('downloadExport', () => {
         set download(value: string) {
           clicked[clicked.length - 1]!.download = value;
         },
-        click: () => undefined,
+        click,
       }),
     });
+    click.mockReset();
   });
 
   afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
@@ -58,6 +63,24 @@ describe('downloadExport', () => {
     expect(clicked).toHaveLength(1);
     expect(clicked[0]!.href.startsWith('blob:')).toBe(true);
     expect(clicked[0]!.download).toBe('netnet-export.csv');
+  });
+
+  it('revokes the file’s URL only after the download has started, in a later task', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const revoke = vi.spyOn(URL, 'revokeObjectURL');
+    // Revoked during the click, the download would be cancelled (Safari).
+    click.mockImplementation(() => expect(revoke).not.toHaveBeenCalled());
+
+    await downloadExport('json');
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(revoke).not.toHaveBeenCalled();
+
+    // Not in the next task either, but once the download is under way.
+    await vi.advanceTimersByTimeAsync(EXPORT_URL_LIFETIME_MS - 1);
+    expect(revoke).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(revoke).toHaveBeenCalledTimes(1);
+    expect(revoke).toHaveBeenCalledWith(clicked[0]!.href);
   });
 
   it('keeps the server’s error as an ApiError', async () => {

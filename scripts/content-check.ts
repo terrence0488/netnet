@@ -3,17 +3,25 @@
  * against its schema and every rule of architecture §7.8 (`validateContent`), each pack and guide in
  * a file named after its id, and every image a guide names. A missing image is a warning, because
  * screenshots arrive after the guides; with --strict, which a production publish uses, it is an
- * error. Exits non-zero on any error.
+ * error. Draft packs (`packs/drafts/`) are checked like any pack and never published, the
+ * review record (`reviews.json`) against its schema and the packs, and the demo household
+ * in content/demo/ (`checkDemo`), which is data and never published. Exits non-zero on any
+ * error.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   agentGuideSchema,
+  packSchema,
+  reviewsSchema,
   validateContent,
+  validateDemoHousehold,
+  validateReviews,
   type ContentDoc,
   type ContentError,
   type ContentKind,
+  type Reviews,
 } from '@netnet/contracts';
 
 export const CONTENT_DIR = resolve(import.meta.dirname, '..', 'content');
@@ -95,6 +103,100 @@ export function missingImages(docs: readonly ContentDoc[], dir: string = CONTENT
   return refs.filter((ref) => !existsSync(join(dir, ref.image)));
 }
 
+/* ---- drafts and the review record (CONVENTIONS §8): checked here, never published ---- */
+
+/** Where draft packs live: validated like any pack, never published, until their review. */
+export const DRAFTS_FOLDER = 'packs/drafts';
+export const REVIEWS_FILE = 'reviews.json';
+
+/** `doc`, a path under `dir`, as JSON, or why it cannot be read. */
+function parseJson(dir: string, doc: string): { body: unknown } | { error: ContentError } {
+  try {
+    return { body: JSON.parse(readFileSync(join(dir, doc), 'utf8')) as unknown };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return { error: { doc, path: '', message: `Cannot be read as JSON: ${reason}` } };
+  }
+}
+
+/**
+ * Reads the draft packs in `packs/drafts/`. `readContent`, which `content:publish` uses, reads
+ * only the files directly in `packs/`, so a draft is never among what is published.
+ */
+export function readDrafts(dir: string = CONTENT_DIR): ContentFiles {
+  const files: ContentFiles = { docs: [], errors: [] };
+  if (!existsSync(join(dir, DRAFTS_FOLDER))) return files;
+  const names = readdirSync(join(dir, DRAFTS_FOLDER)).filter((name) => name.endsWith('.json'));
+  for (const name of names.sort()) {
+    const doc = `${DRAFTS_FOLDER}/${name}`;
+    const parsed = parseJson(dir, doc);
+    if ('error' in parsed) files.errors.push(parsed.error);
+    else files.docs.push({ kind: 'pack', doc, body: parsed.body });
+  }
+  return files;
+}
+
+/**
+ * The drafts' errors, each draft validated as it would be beside the published `docs` (so it
+ * falls back to the real generic pack and takes no id already in use), and each named after its
+ * id. Errors in the published set itself are `validateContent(docs)`'s to report.
+ */
+export function draftErrors(
+  docs: readonly ContentDoc[],
+  drafts: readonly ContentDoc[],
+): ContentError[] {
+  const isDraft = (doc: string) => doc.startsWith(`${DRAFTS_FOLDER}/`);
+  const result = validateContent([...docs, ...drafts]);
+  return [
+    ...(result.ok ? [] : result.errors.filter((e) => isDraft(e.doc))),
+    ...misnamedFiles(drafts),
+  ];
+}
+
+/** The review record, and every problem in it: its shape, and keys naming no pack in `docs`. */
+export function readReviews(
+  docs: readonly ContentDoc[],
+  dir: string = CONTENT_DIR,
+): { reviews: Reviews; errors: ContentError[] } {
+  if (!existsSync(join(dir, REVIEWS_FILE))) {
+    const message = 'There is no review record; start it as {}.';
+    return { reviews: {}, errors: [{ doc: REVIEWS_FILE, path: '', message }] };
+  }
+  const parsed = parseJson(dir, REVIEWS_FILE);
+  if ('error' in parsed) return { reviews: {}, errors: [parsed.error] };
+  const packIds = new Set(
+    docs.flatMap(({ kind, body }) => {
+      const pack = kind === 'pack' ? packSchema.safeParse(body) : null;
+      return pack?.success ? [pack.data.id] : [];
+    }),
+  );
+  const shape = reviewsSchema.safeParse(parsed.body);
+  return {
+    reviews: shape.success ? shape.data : {},
+    errors: validateReviews(parsed.body, packIds, REVIEWS_FILE),
+  };
+}
+
+/** The demo household (architecture §6.5): read by `content:check` and `demo:load`, never published. */
+export const DEMO_FILE = 'demo/household.json';
+
+/**
+ * The demo household in `dir` checked against `docs`, the content it is loaded with
+ * (`validateDemoHousehold`); nothing when there is none. `readContent` never reads content/demo/,
+ * so `content:publish`, which publishes what it reads, never publishes it.
+ */
+export function checkDemo(docs: readonly ContentDoc[], dir: string = CONTENT_DIR): ContentError[] {
+  if (!existsSync(join(dir, DEMO_FILE))) return [];
+  let body: unknown;
+  try {
+    body = JSON.parse(readFileSync(join(dir, DEMO_FILE), 'utf8'));
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return [{ doc: DEMO_FILE, path: '', message: `Cannot be read as JSON: ${reason}` }];
+  }
+  return validateDemoHousehold(DEMO_FILE, body, docs);
+}
+
 const line = ({ doc, path, message }: ContentError) =>
   `  content/${doc}${path ? ` ${path}` : ''}: ${message}`;
 
@@ -110,6 +212,9 @@ function main(args: readonly string[]): number {
   const result = validateContent(docs);
   if (!result.ok) errors.push(...result.errors);
   errors.push(...misnamedFiles(docs));
+  const drafts = readDrafts();
+  errors.push(...drafts.errors, ...draftErrors(docs, drafts.docs), ...readReviews(docs).errors);
+  errors.push(...checkDemo(docs));
   const missing = missingImages(docs).map(({ doc, path, image }) => ({
     doc,
     path,
@@ -126,7 +231,9 @@ function main(args: readonly string[]): number {
     console.error(errors.map(line).join('\n'));
     return 1;
   }
-  console.log(`content:check: ${docs.length} documents valid${strict ? ' (strict)' : ''}.`);
+  const demo = existsSync(join(CONTENT_DIR, DEMO_FILE)) ? ' and the demo household' : '';
+  console.log(`content:check: ${drafts.docs.length} drafts and the review record valid.`);
+  console.log(`content:check: ${docs.length} documents${demo} valid${strict ? ' (strict)' : ''}.`);
   return 0;
 }
 

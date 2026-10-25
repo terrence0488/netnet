@@ -29,5 +29,4 @@ export const getTaxonomyTool: ToolDef<McpGetTaxonomyInput, McpGetTaxonomyOutput>
       tags: snapshot.tags.map(tagToMcp),
     };
   },
-  text: (output) => `${output.types.length} types, ${output.tags.length} tags.`,
 };

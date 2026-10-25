@@ -1,0 +1,111 @@
+{
+  "id": "ph",
+  "locale": "en-PH",
+  "currency": "PHP",
+  "labels": {
+    "mortgage": "Housing loan"
+  },
+  "examples": {
+    "cash": "e.g. Savings account, e-wallet",
+    "listed": "e.g. Stocks, mutual funds, UITFs",
+    "retirement": "e.g. Pag-IBIG Regular Savings",
+    "property": "e.g. Condo unit",
+    "vehicle": "e.g. Car or motorcycle",
+    "mortgage": "e.g. Pag-IBIG housing loan",
+    "loan": "e.g. SSS salary loan",
+    "wrapper": "e.g. Pag-IBIG MP2, PERA"
+  },
+  "meaning": {},
+  "cadenceDays": {},
+  "defaults": {
+    "retirement": {
+      "access": "locked",
+      "reason": "Pag-IBIG savings are locked until you’re eligible to withdraw",
+      "until": "until you’re eligible to withdraw"
+    },
+    "wrapper": {
+      "access": "locked",
+      "reason": "Pag-IBIG and PERA savings are locked until you’re eligible to withdraw",
+      "until": "until you’re eligible to withdraw"
+    }
+  },
+  "questions": {},
+  "types": [
+    {
+      "key": "vehicle_loan",
+      "u": "loan",
+      "label": "Auto loan",
+      "example": "e.g. Car or motorcycle loan"
+    }
+  ],
+  "checklist": [
+    {
+      "id": "bank",
+      "u": "cash",
+      "name": "Bank accounts",
+      "ask": "Do you have money in a bank account or an e-wallet?",
+      "amount": "Roughly how much, across all of them?"
+    },
+    {
+      "id": "pagibig",
+      "u": "retirement",
+      "name": "Pag-IBIG savings",
+      "ask": "Do you have Pag-IBIG Regular Savings?",
+      "amount": "Roughly how much, with dividends?"
+    },
+    {
+      "id": "mp2",
+      "u": "wrapper",
+      "name": "MP2 savings",
+      "ask": "Do you have MP2 savings?",
+      "amount": "Roughly how much, with dividends?"
+    },
+    {
+      "id": "invest",
+      "u": "listed",
+      "name": "Investments",
+      "ask": "Any investments — stocks, mutual funds, UITFs, an investing app?",
+      "amount": "Roughly what are they worth today?"
+    },
+    {
+      "id": "home",
+      "u": "property",
+      "name": "Home",
+      "ask": "Do you own the home you live in?",
+      "amount": "Roughly what would it sell for?",
+      "answer": "yes"
+    },
+    {
+      "id": "home_loan",
+      "u": "mortgage",
+      "name": "Housing loan",
+      "ask": "Is there a housing loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "home",
+      "hint": "Your latest loan statement shows what’s outstanding."
+    },
+    {
+      "id": "vehicle",
+      "u": "vehicle",
+      "name": "Vehicle",
+      "ask": "Do you own a car or a motorcycle?",
+      "amount": "Roughly what would it sell for?"
+    },
+    {
+      "id": "vehicle_loan",
+      "u": "loan",
+      "type": "vehicle_loan",
+      "name": "Auto loan",
+      "ask": "Is there a loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "vehicle"
+    },
+    {
+      "id": "owed",
+      "u": "loan",
+      "name": "Other loans",
+      "ask": "Anything else you owe — an SSS or Pag-IBIG loan, a personal loan or a card balance?",
+      "amount": "Roughly how much, all together?"
+    }
+  ]
+}

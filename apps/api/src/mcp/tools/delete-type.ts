@@ -36,5 +36,4 @@ export const deleteTypeTool: ToolDef<McpDeleteTypeInput, McpDeleteTypeOutput> = 
     trackWriteEvents(ctx, write.events);
     return writeToMcp(write, null);
   },
-  text: () => 'Deleted the type.',
 };

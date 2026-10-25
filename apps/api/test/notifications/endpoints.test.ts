@@ -33,6 +33,10 @@ function newPerson(): Promise<Person> {
 }
 
 const KEYS = { p256dh: 'BEl64z-abcDEF0123456789_-', auth: 'abcDEF0123456789_-' };
+
+/** The refusal for a push service off the list: plain words, and what happens instead. */
+const NOT_A_PUSH_SERVICE =
+  "This browser's push service is not one NetNet sends to; reminders will come by email instead.";
 const subscription = (n: number) => ({
   endpoint: `https://push.example.net/push/device-${serial}-${n}`,
   keys: KEYS,
@@ -144,6 +148,50 @@ describe('POST /api/notifications/endpoints', () => {
     expect(await events(person.userId, 'push_enabled')).toHaveLength(2);
   });
 
+  it('accepts a subscription at each push service on the list', async () => {
+    const person = await newPerson();
+    const endpoints = [
+      `https://fcm.googleapis.com/fcm/send/device-${serial}`,
+      `https://updates.push.services.mozilla.com/wpush/v2/device-${serial}`,
+      `https://wns2-par02p.notify.windows.com/w/?token=device-${serial}`,
+      `https://web.push.apple.com/device-${serial}`,
+    ];
+    for (const endpoint of endpoints) {
+      const { status } = await postEndpoint(person, { ...subscription(1), endpoint });
+      expect(status, endpoint).toBe(200);
+    }
+    // One clock tick for all four: the order among them is the ids' random part.
+    expect((await rowsOf(person.userId)).map((row) => row.endpoint).sort()).toEqual(
+      [...endpoints].sort(),
+    );
+  });
+
+  it('refuses any other host, an IP literal, a port or userinfo, storing nothing', async () => {
+    const person = await newPerson();
+    for (const endpoint of [
+      'https://push.example.org/push/device',
+      'https://evilnotify.windows.com.example/w/?token=device',
+      'https://notify.windows.com/w/?token=device',
+      'https://203.0.113.7/push/device',
+      'https://[2001:db8::7]/push/device',
+      'https://push.example.net:8443/push/device',
+      'https://someone:secret@push.example.net/push/device',
+    ]) {
+      const res = await person.browser.send('/api/notifications/endpoints', {
+        json: { ...subscription(1), endpoint },
+      });
+      expect(res.status, endpoint).toBe(400);
+      expect(await res.json(), endpoint).toMatchObject({
+        error: {
+          code: 'VALIDATION_FAILED',
+          fields: { endpoint: NOT_A_PUSH_SERVICE },
+        },
+      });
+    }
+    expect(await rowsOf(person.userId)).toEqual([]);
+    expect(await events(person.userId, 'push_enabled')).toEqual([]);
+  });
+
   it('holds one row per person per URL: another account may hold the same URL', async () => {
     const a = await newPerson();
     const b = await newPerson();
@@ -245,6 +293,21 @@ describe('PUT /api/notifications/endpoints/:id', () => {
     expect((rows[0]?.last_seen_at as Date).toISOString()).toBe(target.clock.now.toISOString());
     expect(await events(person.userId, 'push_enabled')).toHaveLength(1);
     expect(await events(person.userId, 'push_disabled')).toEqual([]);
+  });
+
+  it('refuses a rotation off the list, leaving the device as it was', async () => {
+    const person = await newPerson();
+    const { body } = await postEndpoint(person, subscription(1));
+    const before = await rowsOf(person.userId);
+    const res = await person.browser.send(`/api/notifications/endpoints/${body.id}`, {
+      method: 'PUT',
+      json: { endpoint: 'https://push.example.org/push/rotated', keys: KEYS },
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({
+      error: { code: 'VALIDATION_FAILED', fields: { endpoint: NOT_A_PUSH_SERVICE } },
+    });
+    expect(await rowsOf(person.userId)).toEqual(before);
   });
 
   it('answers 404 for an unknown, revoked or removed device', async () => {

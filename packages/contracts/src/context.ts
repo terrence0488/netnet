@@ -157,6 +157,8 @@ const holdingSchema = z.strictObject({
   /** The type's label in the current pack, or the user's own name for it; `types` says what it is. */
   type: text,
   tags: z.array(text),
+  /** The holding's own currency, whether or not it has a value yet. */
+  currency,
   access: z.enum(CONTEXT_ACCESSES),
   access_reason: text.nullable(),
   until: text.nullable(),

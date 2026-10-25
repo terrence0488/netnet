@@ -1,0 +1,452 @@
+{
+  "as_of": "2026-09-30",
+  "currency": "SGD",
+  "answer_guide": [
+    {
+      "for": "affordability — can I pay for X from what I have",
+      "use": "totals.could_use",
+      "never": "totals.net_worth",
+      "note": "sell_first, locked and undecided money is excluded"
+    },
+    {
+      "for": "progress — am I on track, how did I do",
+      "use": "totals.net_worth, totals.change, holdings[].change"
+    },
+    {
+      "for": "exposure and risk",
+      "use": "exposure"
+    },
+    {
+      "for": "debt burden",
+      "use": "totals.owed, totals.owed_to_could_use"
+    },
+    {
+      "for": "how current and complete the figures are",
+      "use": "picture, holdings[].value"
+    }
+  ],
+  "totals": {
+    "net_worth": 1663764.95,
+    "assets": 2252433.72,
+    "owed": 588668.77,
+    "could_use": 523851.77,
+    "sell_first": 78000,
+    "locked": 1604647.81,
+    "undecided": 45934.14,
+    "owed_to_could_use": 1.12,
+    "change": {
+      "baseline": "last_month",
+      "since": "2026-08-31",
+      "amount": 17798.22,
+      "pct": 1.08
+    }
+  },
+  "picture": {
+    "holdings": 20,
+    "stale": 1,
+    "undecided": 1,
+    "without_value": 1,
+    "oldest_value_days": 426,
+    "freshness": "some_stale",
+    "notes": [
+      "Accessibility of “Whole-life policy” is undecided: it counts in net_worth, not in could_use",
+      "“Junior savings account” has no value yet, so no total includes it",
+      "The value of “Family car” is 426 days old, past its usual update interval",
+      "Values in 3 other currencies are converted to the base currency at the rate of each value’s date, not today’s",
+      "NetNet only knows what has been added"
+    ]
+  },
+  "exposure": {
+    "by_currency": [
+      {
+        "currency": "SGD",
+        "share": 0.83
+      },
+      {
+        "currency": "USD",
+        "share": 0.16
+      },
+      {
+        "currency": "GBP",
+        "share": 0.01
+      },
+      {
+        "currency": "MYR",
+        "share": 0.01
+      }
+    ],
+    "concentration": [
+      {
+        "holding_id": "hld_demo_10",
+        "name": "Family home",
+        "share": 0.48
+      },
+      {
+        "holding_id": "hld_demo_14",
+        "name": "US brokerage account",
+        "share": 0.11
+      },
+      {
+        "holding_id": "hld_demo_07",
+        "name": "CPF Ordinary Account",
+        "share": 0.08
+      },
+      {
+        "holding_id": "hld_demo_08",
+        "name": "CPF Special Account",
+        "share": 0.05
+      },
+      {
+        "holding_id": "hld_demo_15",
+        "name": "Robo-advisor portfolio",
+        "share": 0.05
+      },
+      {
+        "holding_id": "hld_demo_16",
+        "name": "SRS account",
+        "share": 0.04
+      },
+      {
+        "holding_id": "hld_demo_02",
+        "name": "Joint savings account",
+        "share": 0.04
+      },
+      {
+        "holding_id": "hld_demo_12",
+        "name": "Family car",
+        "share": 0.03
+      },
+      {
+        "holding_id": "hld_demo_09",
+        "name": "CPF MediSave Account",
+        "share": 0.03
+      },
+      {
+        "holding_id": "hld_demo_17",
+        "name": "Unvested RSUs",
+        "share": 0.03
+      }
+    ]
+  },
+  "types": [
+    {
+      "type": "Property",
+      "meaning": "Real estate: a home the user lives in, or a property held to let or as an investment. Counts at its estimated sale value; a loan on it is a separate liability."
+    },
+    {
+      "type": "Home loan",
+      "meaning": "A loan secured on property. A liability: the amount still owed reduces net worth."
+    },
+    {
+      "type": "Investments",
+      "meaning": "Listed investments: shares, funds, ETFs and bonds, held directly or through a broker or investing app. Can usually be sold within days; the value moves with the market."
+    },
+    {
+      "type": "CPF",
+      "meaning": "Mandatory or workplace retirement savings. Counts toward net worth. Usually locked until the owner is eligible to withdraw, so it does not count toward what can be spent this month unless the holding is marked accessible."
+    },
+    {
+      "type": "SRS",
+      "meaning": "A tax-advantaged savings or investment account. Whether money can be taken out early without a penalty depends on the account; the holding’s access records which."
+    },
+    {
+      "type": "Cash",
+      "meaning": "Cash and money in bank, savings or deposit accounts. Usually readily accessible, so it counts toward what can be spent this month."
+    },
+    {
+      "type": "Car",
+      "meaning": "A car, motorbike or other vehicle. Counts at its estimated resale value, which usually falls over time; a loan on it is a separate liability."
+    }
+  ],
+  "holdings": [
+    {
+      "id": "hld_demo_10",
+      "name": "Family home",
+      "type": "Property",
+      "tags": [
+        "Joint"
+      ],
+      "currency": "SGD",
+      "access": "locked",
+      "access_reason": "it’s your home",
+      "until": "while you live in it",
+      "value": {
+        "amount": 1085000,
+        "currency": "SGD",
+        "base": 1085000,
+        "as_of": "2026-09-30",
+        "age_days": 0,
+        "stale": false,
+        "written_by": "system"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_demo_11",
+      "name": "Home loan",
+      "type": "Home loan",
+      "tags": [
+        "Joint"
+      ],
+      "currency": "SGD",
+      "access": "owed",
+      "access_reason": null,
+      "until": null,
+      "value": {
+        "amount": 564155.18,
+        "currency": "SGD",
+        "base": 564155.18,
+        "as_of": "2026-09-30",
+        "age_days": 0,
+        "stale": false,
+        "written_by": "system"
+      },
+      "change": {
+        "amount": 1441.74,
+        "pct": 0.25
+      }
+    },
+    {
+      "id": "hld_demo_14",
+      "name": "US brokerage account",
+      "type": "Investments",
+      "tags": [],
+      "currency": "USD",
+      "access": "accessible",
+      "access_reason": "listed investments can be sold within days",
+      "until": null,
+      "value": {
+        "amount": 187578.73,
+        "currency": "USD",
+        "base": 240869.85,
+        "as_of": "2026-09-30",
+        "age_days": 0,
+        "stale": false,
+        "written_by": "system"
+      },
+      "change": {
+        "amount": 9445.72,
+        "pct": 4.08
+      }
+    },
+    {
+      "id": "hld_demo_07",
+      "name": "CPF Ordinary Account",
+      "type": "CPF",
+      "tags": [
+        "Retirement"
+      ],
+      "currency": "SGD",
+      "access": "locked",
+      "access_reason": "CPF is locked until you’re eligible to withdraw",
+      "until": "until you’re eligible to withdraw",
+      "value": {
+        "amount": 172826.07,
+        "currency": "SGD",
+        "base": 172826.07,
+        "as_of": "2026-09-30",
+        "age_days": 0,
+        "stale": false,
+        "written_by": "system"
+      },
+      "change": {
+        "amount": 1258.69,
+        "pct": 0.73
+      }
+    },
+    {
+      "id": "hld_demo_08",
+      "name": "CPF Special Account",
+      "type": "CPF",
+      "tags": [
+        "Retirement"
+      ],
+      "currency": "SGD",
+      "access": "locked",
+      "access_reason": "CPF is locked until you’re eligible to withdraw",
+      "until": "until you’re eligible to withdraw",
+      "value": {
+        "amount": 115913.56,
+        "currency": "SGD",
+        "base": 115913.56,
+        "as_of": "2026-09-30",
+        "age_days": 0,
+        "stale": false,
+        "written_by": "system"
+      },
+      "change": {
+        "amount": 518.33,
+        "pct": 0.45
+      }
+    },
+    {
+      "id": "hld_demo_15",
+      "name": "Robo-advisor portfolio",
+      "type": "Investments",
+      "tags": [],
+      "currency": "SGD",
+      "access": "accessible",
+      "access_reason": "listed investments can be sold within days",
+      "until": null,
+      "value": {
+        "amount": 102028.1,
+        "currency": "SGD",
+        "base": 102028.1,
+        "as_of": "2026-09-30",
+        "age_days": 0,
+        "stale": false,
+        "written_by": "system"
+      },
+      "change": {
+        "amount": 1859.08,
+        "pct": 1.86
+      }
+    },
+    {
+      "id": "hld_demo_16",
+      "name": "SRS account",
+      "type": "SRS",
+      "tags": [
+        "Retirement"
+      ],
+      "currency": "SGD",
+      "access": "locked",
+      "access_reason": "SRS withdrawals before retirement age carry a penalty",
+      "until": "until retirement age",
+      "value": {
+        "amount": 91048.11,
+        "currency": "SGD",
+        "base": 91048.11,
+        "as_of": "2026-09-30",
+        "age_days": 0,
+        "stale": false,
+        "written_by": "system"
+      },
+      "change": {
+        "amount": -892.25,
+        "pct": -0.97
+      }
+    },
+    {
+      "id": "hld_demo_02",
+      "name": "Joint savings account",
+      "type": "Cash",
+      "tags": [
+        "Emergency fund",
+        "Joint"
+      ],
+      "currency": "SGD",
+      "access": "accessible",
+      "access_reason": "it’s money in the bank",
+      "until": null,
+      "value": {
+        "amount": 82556.15,
+        "currency": "SGD",
+        "base": 82556.15,
+        "as_of": "2026-09-30",
+        "age_days": 0,
+        "stale": false,
+        "written_by": "system"
+      },
+      "change": {
+        "amount": 1001.23,
+        "pct": 1.23
+      }
+    },
+    {
+      "id": "hld_demo_12",
+      "name": "Family car",
+      "type": "Car",
+      "tags": [
+        "Joint"
+      ],
+      "currency": "SGD",
+      "access": "illiquid",
+      "access_reason": "you’d have to sell it first",
+      "until": null,
+      "value": {
+        "amount": 78000,
+        "currency": "SGD",
+        "base": 78000,
+        "as_of": "2025-07-31",
+        "age_days": 426,
+        "stale": true,
+        "written_by": "system"
+      },
+      "change": {
+        "amount": 0,
+        "pct": 0
+      }
+    },
+    {
+      "id": "hld_demo_09",
+      "name": "CPF MediSave Account",
+      "type": "CPF",
+      "tags": [
+        "Retirement"
+      ],
+      "currency": "SGD",
+      "access": "locked",
+      "access_reason": "CPF is locked until you’re eligible to withdraw",
+      "until": "until you’re eligible to withdraw",
+      "value": {
+        "amount": 72437.31,
+        "currency": "SGD",
+        "base": 72437.31,
+        "as_of": "2026-09-30",
+        "age_days": 0,
+        "stale": false,
+        "written_by": "system"
+      },
+      "change": {
+        "amount": 427.64,
+        "pct": 0.59
+      }
+    }
+  ],
+  "omitted": {
+    "holdings": 10,
+    "by_type": [
+      {
+        "type": "Cash",
+        "holdings": 5,
+        "assets": 71167.82,
+        "owed": 0
+      },
+      {
+        "type": "RSUs & options",
+        "holdings": 1,
+        "assets": 67422.76,
+        "owed": 0
+      },
+      {
+        "type": "Other",
+        "holdings": 1,
+        "assets": 45934.14,
+        "owed": 0
+      },
+      {
+        "type": "Crypto",
+        "holdings": 1,
+        "assets": 27229.85,
+        "owed": 0
+      },
+      {
+        "type": "Car loan",
+        "holdings": 1,
+        "assets": 0,
+        "owed": 22050
+      },
+      {
+        "type": "Credit card",
+        "holdings": 1,
+        "assets": 0,
+        "owed": 2463.59
+      }
+    ],
+    "hint": "list_holdings returns every holding"
+  }
+}

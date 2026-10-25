@@ -33,7 +33,6 @@ export const AGENT_TOOLS = [
   'delete_type',
   'upsert_tag',
   'delete_tag',
-  'undo',
 ] as const;
 export type AgentTool = (typeof AGENT_TOOLS)[number];
 
@@ -85,7 +84,6 @@ export const eventSchemas = {
     original_source: z.enum(['web', 'agent', 'system']),
     age_at_correction: bounded(0, MAX_AGE_DAYS),
   }),
-  value_undone: noProps,
   agent_connection_started: connection,
   agent_connection_completed: connection,
   agent_connection_failed: z.strictObject({
@@ -132,10 +130,10 @@ export function isEventName(value: unknown): value is EventName {
 
 /**
  * The events architecture §7.7 marks *client*, which `POST /api/events` accepts. Every other name
- * is the server's. `landing_view` is a client event too; it joins this list in P4, with the
- * landing page and its `visitor` hash.
+ * is the server's.
  */
 export const CLIENT_EVENT_NAMES = [
+  'landing_view',
   'signup_started',
   'session_started',
   'agent_connection_started',
@@ -146,8 +144,13 @@ export const CLIENT_EVENT_NAMES = [
 
 export type ClientEventName = (typeof CLIENT_EVENT_NAMES)[number];
 
-/** The client events accepted without a session: the account does not exist yet. */
+/**
+ * The client events accepted without a session: the account does not exist yet. `landing_view`
+ * never carries one, even from a signed-in browser: the server fills its `visitor` hash instead
+ * (architecture §6.4).
+ */
 export const SESSIONLESS_EVENT_NAMES = [
+  'landing_view',
   'signup_started',
 ] as const satisfies readonly ClientEventName[];
 

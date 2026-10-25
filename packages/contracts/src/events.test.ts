@@ -47,7 +47,6 @@ const TOOLS = [
   'delete_type',
   'upsert_tag',
   'delete_tag',
-  'undo',
 ];
 
 /** `name?` marks an optional prop. */
@@ -62,7 +61,6 @@ const SPEC: Record<string, Record<string, SpecLeaf>> = {
     original_source: ['web', 'agent', 'system'],
     age_at_correction: { int: [0, 36_500] },
   },
-  value_undone: {},
   agent_connection_started: { client: CLIENT, entry: CONNECTION_ENTRY },
   agent_connection_completed: { client: CLIENT, entry: CONNECTION_ENTRY },
   agent_connection_failed: {
@@ -81,7 +79,6 @@ const SPEC: Record<string, Record<string, SpecLeaf>> = {
       'UNAUTHENTICATED',
       'NOT_FOUND',
       'LIKELY_DUPLICATE',
-      'UNDO_CONFLICT',
       'EMAIL_NOT_VERIFIED',
       'SCOPE_REQUIRED',
       'REAUTH_REQUIRED',
@@ -217,8 +214,8 @@ const SNAKE = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 /* ---- the tests ---- */
 
 describe('the event schemas', () => {
-  it('define the 21 events of architecture §7.7, and only those', () => {
-    expect(EVENT_NAMES).toHaveLength(21);
+  it('define the 20 events of architecture §7.7, and only those', () => {
+    expect(EVENT_NAMES).toHaveLength(20);
     expect([...EVENT_NAMES].sort()).toStrictEqual(Object.keys(SPEC).sort());
   });
 
@@ -317,8 +314,9 @@ describe('privacy (N9): the schemas', () => {
 });
 
 describe('client events', () => {
-  it('are the names §7.7 marks client (landing_view joins in P4)', () => {
+  it('are the names §7.7 marks client', () => {
     expect([...CLIENT_EVENT_NAMES]).toStrictEqual([
+      'landing_view',
       'signup_started',
       'session_started',
       'agent_connection_started',
@@ -329,10 +327,21 @@ describe('client events', () => {
     for (const name of CLIENT_EVENT_NAMES) expect(isEventName(name)).toBe(true);
   });
 
-  it('only signup_started goes without a session', () => {
-    expect([...SESSIONLESS_EVENT_NAMES]).toStrictEqual(['signup_started']);
+  it('only landing_view and signup_started go without a session', () => {
+    expect([...SESSIONLESS_EVENT_NAMES]).toStrictEqual(['landing_view', 'signup_started']);
+    expect(isSessionlessEventName('landing_view')).toBe(true);
     expect(isSessionlessEventName('signup_started')).toBe(true);
     expect(isSessionlessEventName('session_started')).toBe(false);
+  });
+
+  it('landing_view takes no props', () => {
+    expect(eventSchemas.landing_view.safeParse({}).success).toBe(true);
+    expect(eventSchemas.landing_view.safeParse({ visitor: '0123456789abcdef' }).success).toBe(
+      false,
+    );
+    expect(eventSchemas.landing_view.safeParse({ referrer: 'https://example.com' }).success).toBe(
+      false,
+    );
   });
 
   it('tell names apart', () => {
@@ -341,6 +350,6 @@ describe('client events', () => {
     expect(isEventName(42)).toBe(false);
     expect(isClientEventName('insights_viewed')).toBe(true);
     expect(isClientEventName('value_recorded')).toBe(false);
-    expect(isClientEventName('landing_view')).toBe(false);
+    expect(isClientEventName('landing_view')).toBe(true);
   });
 });

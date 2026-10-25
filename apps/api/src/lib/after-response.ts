@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
 import type { AppEnv } from './context';
-import { log } from './log';
+import { errorClass, log } from './log';
 import { routeOf } from './request-context';
 
 /**
@@ -23,25 +23,31 @@ function vercelRequestContext(): VercelRequestContext {
 /**
  * Lets `task` finish after the response has gone (architecture §5.1: events are written after the
  * response). On Vercel the function stays alive for it through `waitUntil`; elsewhere (local runs)
- * it simply runs on. It never rejects: a failure is logged with the request id, because the caller
- * has already been answered.
+ * it simply runs on. It never rejects: a failure is logged with the request id and the error's
+ * class (never its message), because the caller has already been answered.
  */
 export function afterResponse(c: Context<AppEnv>, task: Promise<unknown>): void {
   const requestId = c.get('requestId');
   const route = routeOf(c);
-  inBackground(task, () =>
-    log('after_response_failed', { requestId, route, errorCode: 'INTERNAL' }),
+  inBackground(task, (error) =>
+    log('after_response_failed', {
+      requestId,
+      route,
+      errorCode: 'INTERNAL',
+      ...errorClass(error),
+    }),
   );
 }
 
 /**
  * `afterResponse` for code that has no Hono context, such as Better Auth's hooks: `task` finishes
- * after the response, and `onFailure` (which must not throw) runs if it rejects.
+ * after the response, and `onFailure` (which must not throw) runs with the rejection if it
+ * rejects, so the log can name the error's class.
  */
-export function inBackground(task: Promise<unknown>, onFailure: () => void): void {
+export function inBackground(task: Promise<unknown>, onFailure: (error: unknown) => void): void {
   const settled = task.then(
     () => undefined,
-    () => onFailure(),
+    (error: unknown) => onFailure(error),
   );
   vercelRequestContext().waitUntil?.(settled);
 }

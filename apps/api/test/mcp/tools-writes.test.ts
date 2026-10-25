@@ -6,9 +6,7 @@ import type {
   McpDeleteValueOutput,
   McpGetHoldingOutput,
   McpGetTaxonomyOutput,
-  McpListActivityOutput,
   McpRecordValuesOutput,
-  McpUndoOutput,
   McpUpdateHoldingOutput,
   McpUpdateValueOutput,
   McpUpsertTagOutput,
@@ -28,9 +26,8 @@ import {
 } from './support';
 
 /**
- * The eleven write tools (architecture §7.4): a happy path, a validation error and not-found
- * each, and the behaviours that make a write a write — duplicates, atomic batches, moves,
- * merges and undo.
+ * The ten write tools (architecture §7.4): a happy path, a validation error and not-found each,
+ * and the behaviours that make a write a write — duplicates, atomic batches, moves and merges.
  */
 
 let db: TestDatabase;
@@ -153,6 +150,42 @@ describe('create_holding', () => {
     );
     expect(error.fields).toHaveProperty('type_id');
   });
+
+  it('names the currency when there is no rate for its first value', async () => {
+    const { agent, cashType } = await seeded();
+    const error = errOf(
+      await callTool(target, agent.token, 'create_holding', {
+        name: 'Franc pot',
+        kind: 'asset',
+        type_id: cashType,
+        currency: 'CHF',
+        opening_value: { amount: '100.00', date: '2026-07-28' },
+      }),
+      'CURRENCY_UNSUPPORTED',
+    );
+    expect(Object.keys(error.fields ?? {})).toStrictEqual(['currency']);
+    expect(error.message).toMatch(/^currency: "CHF" is not an ISO 4217 currency NetNet has /);
+  });
+
+  it('names a field it does not have as the agent sent it, even a Ledger name', async () => {
+    const { agent, cashType } = await seeded();
+    const error = errOf(
+      await callTool(target, agent.token, 'create_holding', {
+        name: 'Everyday pot',
+        kind: 'asset',
+        type_id: cashType,
+        currency: 'EUR',
+        access: 'now',
+      }),
+      'VALIDATION_FAILED',
+    );
+    expect(error.fields).toStrictEqual({
+      access: 'This is not a field here: remove it, or check its spelling.',
+    });
+    expect(error.message).toBe(
+      'access: This is not a field here: remove it, or check its spelling.',
+    );
+  });
 });
 
 describe('update_holding', () => {
@@ -266,6 +299,39 @@ describe('record_values', () => {
     expect(await valuesOf(agent, second.result.id)).toStrictEqual([55]);
   });
 
+  it('keeps a rate the agent gives as given, into the default currency, and get_holding carries it', async () => {
+    const { agent, cashType } = await seeded();
+    const created = await createHolding(agent, {
+      name: 'Dollar pot',
+      kind: 'asset',
+      type_id: cashType,
+      currency: 'USD',
+    });
+    const recorded = okOf<McpRecordValuesOutput>(
+      await callTool(target, agent.token, 'record_values', {
+        values: [
+          { holding_id: created.result.id, amount: '100.00', date: '2026-07-27', fx_rate: '0.91' },
+          { holding_id: created.result.id, amount: '120.00', date: '2026-07-28' },
+        ],
+      }),
+    );
+    expect(recorded.results.map((r) => r.value)).toMatchObject([
+      { fx_rate: '0.91', fx_source: 'agent', given_rate: '0.91', given_rate_into: 'EUR' },
+      { fx_source: 'ecb', given_rate: null, given_rate_into: null },
+    ]);
+    const valueId = recorded.results[0]!.value.id;
+    okOf<McpUpdateValueOutput>(
+      await callTool(target, agent.token, 'update_value', { value_id: valueId, amount: '105.00' }),
+    );
+    const holding = okOf<McpGetHoldingOutput>(
+      await callTool(target, agent.token, 'get_holding', { holding_id: created.result.id }),
+    );
+    expect(holding.values.items.map((v) => [v.id, v.given_rate, v.given_rate_into])).toStrictEqual([
+      [recorded.results[1]!.value.id, null, null],
+      [valueId, '0.91', 'EUR'],
+    ]);
+  });
+
   it('takes 200 values, and refuses 201', async () => {
     const { agent, cashType } = await seeded();
     const created = await createHolding(agent, {
@@ -320,6 +386,54 @@ describe('record_values', () => {
       'NOT_FOUND',
     );
     expect(error.fields).toHaveProperty('values[0].holding_id');
+  });
+
+  it('names a field it does not have as the agent sent it', async () => {
+    const { agent, cashType } = await seeded();
+    const created = await createHolding(agent, {
+      name: 'Everyday pot',
+      kind: 'asset',
+      type_id: cashType,
+      currency: 'EUR',
+    });
+    const error = errOf(
+      await callTool(target, agent.token, 'record_values', {
+        values: [{ holding_id: created.result.id, amount: '10.00', fxRate: '1.1' }],
+      }),
+      'VALIDATION_FAILED',
+    );
+    expect(error.fields).toStrictEqual({
+      'values[0].fxRate': 'This is not a field here: remove it, or check its spelling.',
+    });
+    expect(error.message).toBe(
+      'values[0].fxRate: This is not a field here: remove it, or check its spelling.',
+    );
+  });
+
+  it('names the unknown holding by the tool’s own field, in the message as in fields', async () => {
+    const { agent, cashType } = await seeded();
+    const created = await createHolding(agent, {
+      name: 'Everyday pot',
+      kind: 'asset',
+      type_id: cashType,
+      currency: 'EUR',
+    });
+    const error = errOf(
+      await callTool(target, agent.token, 'record_values', {
+        values: [
+          { holding_id: created.result.id, amount: '1250.00', date: '2026-07-28' },
+          { holding_id: 'hld_01K1G4KX00ZZZZZZZZZZZZZZZZZ', amount: '10.00' },
+        ],
+      }),
+      'NOT_FOUND',
+    );
+    expect(error.message).toBe(
+      'values[1].holding_id: There is no holding "hld_01K1G4KX00ZZZZZZZZZZZZZZZZZ" in this account.',
+    );
+    expect(error.fields).toStrictEqual({
+      'values[1].holding_id':
+        'There is no holding "hld_01K1G4KX00ZZZZZZZZZZZZZZZZZ" in this account.',
+    });
   });
 });
 
@@ -631,128 +745,6 @@ describe('delete_tag', () => {
     errOf(
       await callTool(target, agent.token, 'delete_tag', {
         tag_id: 'tag_01K1G4KX00ZZZZZZZZZZZZZZZZZ',
-      }),
-      'NOT_FOUND',
-    );
-  });
-});
-
-describe('undo', () => {
-  it('undoes one entry, restoring it exactly', async () => {
-    const { agent, cashType } = await seeded();
-    const created = await createHolding(agent, {
-      name: 'Everyday pot',
-      kind: 'asset',
-      type_id: cashType,
-      currency: 'EUR',
-      opening_value: { amount: '1200.00', date: '2026-07-01' },
-    });
-    await callTool(target, agent.token, 'update_holding', {
-      holding_id: created.result.id,
-      name: 'Renamed pot',
-    });
-    const activity = okOf<McpListActivityOutput>(
-      await callTool(target, agent.token, 'list_activity'),
-    );
-    const update = activity.entries.find(
-      (e) => e.entity === 'holding' && e.entity_id === created.result.id && e.action === 'update',
-    )!;
-    const undone = okOf<McpUndoOutput>(
-      await callTool(target, agent.token, 'undo', { entry_id: update.id }),
-    );
-    expect(undone.result.undone).toEqual([
-      { entry_id: update.id, entity: 'holding', entity_id: created.result.id },
-    ]);
-    expect(undone.result.undo_ids).toHaveLength(1);
-    expect(undone.data_version).toBeGreaterThan(0);
-    const holding = okOf<McpGetHoldingOutput>(
-      await callTool(target, agent.token, 'get_holding', { holding_id: created.result.id }),
-    );
-    expect(holding.name).toBe('Everyday pot');
-  });
-
-  it('undoes a whole turn newest first', async () => {
-    const { agent, cashType } = await seeded();
-    const created = await createHolding(agent, {
-      name: 'Everyday pot',
-      kind: 'asset',
-      type_id: cashType,
-      currency: 'EUR',
-    });
-    const recorded = okOf<McpRecordValuesOutput>(
-      await callTool(target, agent.token, 'record_values', {
-        values: [
-          { holding_id: created.result.id, amount: '100.00', date: '2026-07-10' },
-          { holding_id: created.result.id, amount: '120.00', date: '2026-07-20' },
-        ],
-      }),
-    );
-    expect(recorded.results).toHaveLength(2);
-    const activity = okOf<McpListActivityOutput>(
-      await callTool(target, agent.token, 'list_activity'),
-    );
-    const latest = activity.entries.find((e) => e.action === 'create' && e.entity === 'value')!;
-    const batchId = latest.batch_id!;
-    const undone = okOf<McpUndoOutput>(
-      await callTool(target, agent.token, 'undo', { batch_id: batchId }),
-    );
-    // The turn held the holding's creation and both values: all three are gone.
-    expect(undone.result.undone).toHaveLength(3);
-    errOf(
-      await callTool(target, agent.token, 'get_holding', { holding_id: created.result.id }),
-      'NOT_FOUND',
-    );
-  });
-
-  it('answers UNDO_CONFLICT with the blockers', async () => {
-    const { agent, cashType } = await seeded();
-    const created = await createHolding(agent, {
-      name: 'Everyday pot',
-      kind: 'asset',
-      type_id: cashType,
-      currency: 'EUR',
-      opening_value: { amount: '1200.00', date: '2026-07-01' },
-    });
-    const holding = okOf<McpGetHoldingOutput>(
-      await callTool(target, agent.token, 'get_holding', { holding_id: created.result.id }),
-    );
-    const valueId = holding.values.items[0]!.id;
-    await callTool(target, agent.token, 'update_value', { value_id: valueId, amount: '1300.00' });
-    const first = okOf<McpListActivityOutput>(
-      await callTool(target, agent.token, 'list_activity'),
-    ).entries.find((e) => e.entity === 'value' && e.entity_id === valueId)!;
-    await callTool(target, agent.token, 'update_value', { value_id: valueId, amount: '1400.00' });
-    const second = okOf<McpListActivityOutput>(
-      await callTool(target, agent.token, 'list_activity'),
-    ).entries.find((e) => e.entity === 'value' && e.entity_id === valueId)!;
-    const failed = errOf(
-      await callTool(target, agent.token, 'undo', { entry_id: first.id }),
-      'UNDO_CONFLICT',
-    );
-    expect(failed.blockers).toEqual([{ entry_id: second.id, action: 'update', at: second.at }]);
-  });
-
-  it('takes exactly one target, and names unknown ids', async () => {
-    const { agent } = await seeded();
-    const neither = errOf(await callTool(target, agent.token, 'undo', {}), 'VALIDATION_FAILED');
-    expect(neither.fields).toHaveProperty('entry_id');
-    const both = errOf(
-      await callTool(target, agent.token, 'undo', {
-        entry_id: 'aud_01K1G4KX00ZZZZZZZZZZZZZZZZZ',
-        batch_id: 'bat_01K1G4KX00ZZZZZZZZZZZZZZZZZ',
-      }),
-      'VALIDATION_FAILED',
-    );
-    expect(both.fields).toHaveProperty('entry_id');
-    errOf(
-      await callTool(target, agent.token, 'undo', {
-        entry_id: 'aud_01K1G4KX00ZZZZZZZZZZZZZZZZZ',
-      }),
-      'NOT_FOUND',
-    );
-    errOf(
-      await callTool(target, agent.token, 'undo', {
-        batch_id: 'bat_01K1G4KX00ZZZZZZZZZZZZZZZZZ',
       }),
       'NOT_FOUND',
     );

@@ -199,8 +199,9 @@ export interface Driver {
 /**
  * One calendar period (PRD J11): the period-end value, the absolute and % change against the
  * previous period's end, whether any counted holding's figure was carried, and the holdings that
- * moved it, ranked by contribution. All money in base-currency minor units, from each value's
- * stored `baseMinor`.
+ * moved it, ranked by contribution. The first period has nothing earlier to compare with, so it
+ * has no change, % or drivers. All money in base-currency minor units, from each value's stored
+ * `baseMinor`.
  */
 export interface Period {
   /** The calendar period's first day. */
@@ -209,13 +210,16 @@ export interface Period {
   end: string;
   /** Net worth at `end`: assets minus liabilities. */
   endValue: number;
-  /** `endValue` minus the previous period's end value (0 before the first). */
-  change: number;
-  /** Percent of the previous end value's size; null when that was 0. */
+  /** `endValue` minus the previous period's end value; null for the first period. */
+  change: number | null;
+  /** Percent of the previous end value's size; null for the first period, or when that was 0. */
   changePct: number | null;
   /** Some holding counted here had no value dated inside this period (PRD J11). */
   carried: boolean;
-  /** The holdings with a nonzero contribution, ranked by contribution, largest first. */
+  /**
+   * The holdings with a nonzero contribution, ranked by contribution, largest first; none for
+   * the first period.
+   */
   drivers: Driver[];
 }
 

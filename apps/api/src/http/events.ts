@@ -10,6 +10,7 @@ import {
 } from '@netnet/contracts';
 import { Hono, type Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
+import { visitor, type Visitor, type VisitorRequest } from '../db/visitor';
 import { appVersion } from '../events/app-version';
 import { track, type Track } from '../events/track';
 import { afterResponse } from '../lib/after-response';
@@ -18,9 +19,13 @@ import { AppError } from '../lib/errors';
 import { clientIp, rateLimit, type RateLimit } from '../lib/rate-limit';
 
 /**
- * `POST /api/events {name, props}` → 204 (architecture §7.2, §7.7): the web app's client-side
- * events. Only the names §7.7 marks *client* are accepted, and without a session only
- * `signup_started`. The event is written after the response.
+ * `POST /api/events {name, props}` → 204 (architecture §7.2, §7.7): the landing page's and the
+ * web app's client-side events. Only the names §7.7 marks *client* are accepted, and without a
+ * session only `landing_view` and `signup_started`. The event is written after the response.
+ *
+ * `landing_view` never reads the session: it carries no user id and segment `unknown`, and the
+ * server fills its `visitor` from the request's address and user agent and today's salt (§6.4).
+ * No other event gets a `visitor`.
  */
 
 /** Per IP address, in a fixed one-minute window. */
@@ -30,12 +35,14 @@ export const EVENTS_PER_MINUTE_PER_IP = 60;
 const MAX_BODY_BYTES = 2048;
 
 const ACCEPTED = CLIENT_EVENT_NAMES.join(', ');
-const SESSIONLESS = SESSIONLESS_EVENT_NAMES.join(', ');
+const SESSIONLESS = SESSIONLESS_EVENT_NAMES.join(' and ');
 
 export interface EventsDeps {
   track: Track;
   rateLimit: RateLimit;
   appVersion: () => string;
+  /** `landing_view`'s visitor hash for a request. */
+  visitor: Visitor;
 }
 
 function invalid(fields: Record<string, string>): AppError {
@@ -93,7 +100,15 @@ function parseClientEvent(body: unknown): ClientEventInput {
   return { name, props: parsed.data };
 }
 
-export function eventsRoutes(deps: EventsDeps = { track, rateLimit, appVersion }): Hono<AppEnv> {
+/** `landing_view`, written as nobody's: the hash first, then the event. */
+async function landingView(deps: EventsDeps, request: VisitorRequest): Promise<void> {
+  const hash = await deps.visitor(request);
+  await deps.track('landing_view', {}, { visitor: hash, appVersion: deps.appVersion() });
+}
+
+export function eventsRoutes(
+  deps: EventsDeps = { track, rateLimit, appVersion, visitor },
+): Hono<AppEnv> {
   return new Hono<AppEnv>().post(
     '/',
     bodyLimit({
@@ -104,11 +119,16 @@ export function eventsRoutes(deps: EventsDeps = { track, rateLimit, appVersion }
     }),
     async (c) => {
       const event = parseClientEvent(await readJson(c));
-      await deps.rateLimit(`events:ip:${clientIp(c)}`, EVENTS_PER_MINUTE_PER_IP, 60);
+      const ip = clientIp(c);
+      await deps.rateLimit(`events:ip:${ip}`, EVENTS_PER_MINUTE_PER_IP, 60);
+      if (event.name === 'landing_view') {
+        afterResponse(c, landingView(deps, { ip, userAgent: c.req.header('User-Agent') ?? '' }));
+        return c.body(null, 204);
+      }
       const user = await c.var.session();
       if (user === null && !isSessionlessEventName(event.name)) {
         throw invalid({
-          name: `${event.name} needs a signed-in session. Without one, only ${SESSIONLESS} is accepted.`,
+          name: `${event.name} needs a signed-in session. Without one, only ${SESSIONLESS} are accepted.`,
         });
       }
       afterResponse(

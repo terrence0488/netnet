@@ -35,7 +35,6 @@ export class WriteScope {
   readonly warnings: Warning[] = [];
   readonly events: DomainEvent[] = [];
   private readonly audits: AuditRow[] = [];
-  private readonly links: { undoneId: string; undoId: string; reopenedId?: string }[] = [];
   private batchId: Promise<string | null> | undefined;
   private readonly rates = new Map<string, Promise<CrossRate>>();
 
@@ -72,23 +71,18 @@ export class WriteScope {
     };
   }
 
-  /**
-   * Records one entity's change: `before` and `after` in full, so undo can restore it. An undo
-   * names the entry it undoes, and gets its id back so the write can link it (`linkUndo`).
-   */
+  /** Records one entity's change: `before` and `after` in full, so the log reads old → new. */
   async audit(
     entity: Entity,
     entityId: string,
     action: Action,
     before: unknown,
     after: unknown,
-    opts?: { undoes?: string },
-  ): Promise<string> {
+  ): Promise<void> {
     const { actor } = this.s;
-    const id = this.s.id('aud');
     this.audits.push({
       userId: this.s.userId,
-      id,
+      id: this.s.id('aud'),
       at: this.s.now(),
       actor: actor.kind,
       clientName: actor.clientName ?? null,
@@ -99,21 +93,6 @@ export class WriteScope {
       entityId,
       before: before ?? null,
       after: after ?? null,
-      undoes: opts?.undoes ?? null,
-    });
-    return id;
-  }
-
-  /**
-   * Links an undo to the entry it undid, once the rows are written (`finish`, same transaction):
-   * the undone entry's `undone_by` names the undo, and when the undone entry was itself an undo,
-   * the entry it had undone is live again.
-   */
-  linkUndo(undoneId: string, undoId: string, reopenedId?: string): void {
-    this.links.push({
-      undoneId,
-      undoId,
-      ...(reopenedId === undefined ? {} : { reopenedId }),
     });
   }
 
@@ -140,19 +119,6 @@ export class WriteScope {
   async finish(): Promise<number> {
     if (this.audits.length === 0) return this.state.dataVersion;
     await this.s.db.insert(audit).values(this.audits);
-    // After the insert: `undone_by` points at the undo rows just written (same transaction).
-    for (const link of this.links) {
-      await this.s.db
-        .update(audit)
-        .set({ undoneBy: link.undoId })
-        .where(and(eq(audit.userId, this.s.userId), eq(audit.id, link.undoneId)));
-      if (link.reopenedId !== undefined) {
-        await this.s.db
-          .update(audit)
-          .set({ undoneBy: null })
-          .where(and(eq(audit.userId, this.s.userId), eq(audit.id, link.reopenedId)));
-      }
-    }
     const [row] = await this.s.db
       .update(ledgerState)
       .set({ dataVersion: sql`${ledgerState.dataVersion} + 1` })

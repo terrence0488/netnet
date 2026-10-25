@@ -23,7 +23,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 |---|---|
 | NetNet is the context layer for the user's own AI agent. It supplies facts and uncertainty, never advice | Frontier models already advise well enough; what they lack is where the user stands |
 | No LLM inference in NetNet's backend; documents never reach NetNet (N2) | Running cost stays near zero, and statements stay off our servers |
-| Agents get full CRUD through MCP, backed by an audit log and undo (N3) | Clients confirm each call; audit and undo make write access recoverable |
+| Agents get full CRUD through MCP, backed by an audit log (N3). There is no undo: every change moves forward, and a mistake is corrected by another change, on the web or through the agent | Clients confirm each call, and the log shows every change old → new. Undo brought edge cases and complexity (conflicts, batches, re-derived values) out of proportion to its worth |
 | Agents connect by remote MCP with OAuth, never a pasted token | The only one-click path in Claude and ChatGPT; connection drop-off is the top risk (A1) |
 | P1 ships the web app and the MCP layer together | Tests the riskiest assumptions (will people connect, will they trust writes) first |
 | Web first, mobile-first responsive; native iOS/Android later with React Native + Expo on the same API | Fastest go-to-market; native reuses the API and the shared TypeScript |
@@ -52,6 +52,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Analytics is a v1 deliverable equal to the MCP layer; events never carry amounts, names or text (N9) | Instrumentation is the experiment; a pipeline that leaks the balance sheet is an incident |
 | Every event carries `segment`; `client`, `entry`, `method`, `via` and `channel` ride where they apply | Each splits a metric that would otherwise be misread, e.g. one client's broken flow looking like A1 failing |
 | Distribution (landing page, demo recording, directory listings, launch note, funnel analytics) is v1 work. The pitch: "you can't get useful advice from an AI that doesn't know where you stand" | Sign-ups are the kill metric and there is no channel; the line is true for all three personas |
+| A signup is a verified account: an `account_created` by Google or Apple, or an `email_verified` for an email sign-up | §3.2 counts verified accounts, and the metrics read events alone, which recorded no verification before |
 
 ## Holdings, accessibility and packs
 
@@ -67,9 +68,12 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Ten launch packs (SG, MY, ID, PH, TH, VN, HK, IN, AU, GB), each reviewed by someone who knows the market. Other countries get generic, and their country is recorded | Covers where the first users live and hold assets; the recorded country says which pack to write next |
 | Packs and agent guides are versioned, validated, audited content, editable later through an admin portal with no access to user data. A pack edit never reclassifies an existing holding | They change more often than the product; one edited default must not silently move everyone's "could use" figure |
 | Money is stored in integer minor units. The FX rate for the value's date is fixed at write, stored, exported and readable by the agent, but not displayed | No float drift; periods are not distorted by later FX moves; the rate is almost never wanted on screen |
-| Deleting a tag removes it from the holdings that carry it, or merges it into another; it is never refused | A tag is only a label. Each holding's change is audited, so undo can put the tag back |
+| A rate the person or their agent gives is kept as given through every change of the default currency, and the change is one audit entry | The rate is what their statement says, so a round trip must land on their own figures; an entry per value would bury the one change made under hundreds of unchanged rows |
+| Deleting a tag removes it from the holdings that carry it, or merges it into another; it is never refused | A tag is only a label. Each holding's change is audited, so the log shows where it was |
 | A change against a baseline is worked out per holding and summed; a holding first valued after the baseline counts from its first value | Adding a holding is not growth, and the total and every row are measured against the same thing |
 | The calendar baselines are month ends: last month is the end of last month, last quarter the end of the month three months back, last year the end of the same month last year; Jan 1 is 1 January | Statements are dated at month ends, so the comparison is like with like, and "since 31 Aug" reads as a fixed point |
+| The first period in Insights and `get_period_changes` has an end value but no change | Nothing comes before it to compare with; its opening value read as a gain or loss that never happened |
+| Insights' average is the mean change over the periods shown that have one, and its percent is that mean as a share of the opening total (in absolute value), with no percent when that total is 0 | The amount and the percent then describe the same window and always agree in sign; a mean of the periods' percents can rise while net worth falls |
 | The empty Home links to Archived whenever anything is archived | Archiving everything would otherwise strand the account: the prototype's empty Home offers no way back |
 
 ## Onboarding and agents
@@ -114,6 +118,8 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Google's and Apple's sign-in buttons wear the brands' own colours, outside the token system | An official button cannot be drawn from another palette (architecture §8); everything else about them stays on tokens |
 | A history row's change reads signed, so a growing debt reads negative like the Home rows | Signed amounts are the production convention everywhere else; the prototype's magnitude reading would contradict the row beside it |
 | The trend's range and the allocation's $/% are session-local, not saved prefs | Prefs carry baseline, sort and filters; a fix session does not extend that contract |
+| On Home the stale note sits directly beneath Position, and the push card below it | The note qualifies the figures above it; the card is an offer, and J12 asks only that it sit below Position |
+| The landing page is its own page, in Poster's brand at poster scale, built from its own HTML and CSS | G-D1 asks for a marketing page, not a screen in the product; one brand from the first screen to the app |
 
 ## Delivery
 
@@ -126,7 +132,8 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | The build adds endpoints, fields, parameters and message kinds that the architecture implies, and reports them; any other interface change is stop-and-raise | Keeps architecture §7 current without a Founder gate for every implied detail |
 | CI checks every push, plus reopened and closed pull requests (but not opening: the branch push already ran the same head). Previews deploy from CI with the Vercel CLI, only for a branch with an open pull request (or a manual run); Vercel's own Git deployments are off | Production comes only from the manual workflow, and previews stay one per pull request, within Neon's branch limit |
 | CI runs in parallel lanes (quick, integration, E2E) behind one `Checks` verdict; pushes touching only docs, `ops/` or the deploy/backup/probe/cron workflows skip the browser suite and the preview; previews smoke-test instead of re-running E2E | One sequential job spent ~14 minutes per PR, most of it re-proving the browser; nothing skipped can break what the lanes still prove |
-| Vercel's scheduler never fired the production crons (jobs registered, manual triggers 200, zero scheduled executions in two days): the daily and fx runs moved to GitHub Actions schedules calling the same handlers with `CRON_SECRET`, and `vercel.json` carries no crons | Architecture §9.3's prescribed fallback; GitHub's schedules demonstrably fire in this repository, and both jobs tolerate their lateness |
+| Vercel's scheduler never fired the production crons (jobs registered, manual triggers 200, zero scheduled executions in two days), so every scheduled job (the three reminder runs, the daily sweep, FX, and P4's health check) is a GitHub Actions schedule calling its handler with `CRON_SECRET`, and `vercel.json` carries no crons | GitHub's schedules demonstrably fire in this repository, and every job tolerates their lateness (architecture §9.3) |
+| P4 drafts the privacy policy and terms from the architecture's facts; the Founder has them reviewed by someone qualified before they are final or used in a listing | They must say what NetNet actually does, and P-B and P-C read them before signing up (A7) |
 | Production deploys trust the merged pull request's green Checks instead of waiting for main CI; when all phases are delivered, revisit: re-enable the main-green gate or take GitHub's merge queue | One PR lands at a time, so the merged tree is the tested tree; main CI still runs as the backstop |
 
 ## Architecture
@@ -140,10 +147,12 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Per-user isolation by Postgres row-level security with `FORCE`, composite keys and one `withUser()` entry | Enforced by the database, not by remembering a filter (N4) |
 | One ISO 4217 table, in contracts; core imports it by its zod-free path, `@netnet/contracts/currencies`, the one value core takes from contracts | One list to keep current, and core stays free of zod |
 | Better Auth for accounts and the agents' OAuth 2.1 server (CIMD and DCR); our own MCP token check | No hand-rolled security code; protocol support stays in our hands |
-| In P1, sign-up says when an email already has an account (422); P4's security review revisits it | Sign-up is limited to 5 a minute per IP and the reset flow reveals nothing; hiding it would mean sending an "already registered" email instead |
+| Sign-up says when an email already has an account (422) | J1 lets a new person carry on unverified at once, so the flow itself shows whether an address was new; sign-up is limited to 5 a minute per IP and the reset flow reveals nothing |
+| The daily health check is split: its GitHub workflow reads Neon's usage (with the GitHub-held key) and the analytics (as `netnet_metrics`) and posts them to `/api/cron/health`, which adds what `core` holds and emails the Founder through `notifyOperator()` | The Neon key could delete the database, so it stays out of the function; `netnet_app` keeps no read on analytics; every email still leaves through the notification module |
 | A change refused by the Origin check gets `401 UNAUTHENTICATED`, with no code of its own | Either way the request lacks a session from this site, and §7.5's list stays short |
 | The OAuth endpoints are Better Auth's own paths, `/api/auth/oauth2/*` and `/api/auth/jwks` | Clients find them from the server's metadata, so a rewrite to other paths would be a route to maintain for nothing |
 | MCP is stateless Streamable HTTP across three protocol versions, with one summary tool, `get_financial_context`, of at most 8 KB | Clients migrate at different speeds; one dense call answers a question |
+| A tool result's text content is its `structuredContent` as compact JSON, errors included | MCP asks this of a tool with structured output, and Claude gives the model only the text: a short summary left it with counts and no figures |
 | `get_financial_context` says what each type of holding is once per type (`types`), not on every holding | The repeated pack text was about a quarter of each holding's bytes; more holdings fit in the 8 KB |
 | The snapshot's ETag is the data version with the version of each pack in its chain; the web app sends it back as it came | A content publish changes the snapshot (its `packRef`) without a write, so the data version alone would keep an old pack until the person's next write |
 | No charting library: d3 maths and our own SVG, with geometry shared with native | Three heavily specified chart kinds; one geometry for web and native |
@@ -151,4 +160,4 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | Web push by the standard (VAPID, a service worker that caches nothing); email by Resend | Free and standard; no financial data ever stored offline |
 | Account deletion erases at once, with a stated window of 30 days (the life of backups) | J10 needs a stated window |
 | Exchange rates come through Frankfurter's API: the ECB's reference rates for the currencies the ECB publishes, and for every other currency Frankfurter's daily blend of central banks' published rates, stored as `fallback`. SOS, SSP, XCG, XPF and ZWG have no daily source and are unsupported (`CURRENCY_UNSUPPORTED`) | Free, no key, daily history back to each bank's own start, official sources rather than scraped market data, and one client for both. Frankfurter is open source, so it can be self-hosted if the public API goes. It covers every other currency in `countries.json` |
-| Accepted risks: slow first calls while traffic is thin (about 1 s server-side on a new instance; `latency_ms` and P1-T18's probe measure it in production), Neon's monthly compute cap, Vercel Hobby's non-commercial terms and cron limits (timing within the hour is checked on production in P1-T18), higher cost past ~100 users | The price of $0 at launch; each has a trigger or a fallback (architecture §12) |
+| Accepted risks: slow first calls while traffic is thin (about 1 s server-side on a new instance; `latency_ms` and P1-T18's probe measure it in production), Neon's monthly compute cap, Vercel Hobby's non-commercial terms, GitHub Actions schedules that can start late or skip a run, higher cost past ~100 users | The price of $0 at launch; each has a trigger or a fallback (architecture §12) |

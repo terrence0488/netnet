@@ -13,6 +13,7 @@
     "./content/publish": "./src/content/publish.ts",
     "./db/bootstrap": "./src/db/bootstrap.ts",
     "./db/client": "./src/db/client.ts",
+    "./db/demo": "./src/db/demo.ts",
     "./db/fx-rates": "./src/db/fx-rates.ts",
     "./db/migrate": "./src/db/migrate.ts",
     "./db/seed": "./src/db/seed.ts"

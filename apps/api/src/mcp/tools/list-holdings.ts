@@ -35,7 +35,4 @@ export const listHoldingsTool: ToolDef<McpListHoldingsInput, McpListHoldingsOutp
     const page = await ctx.ledger(ctx.userId, ctx.actor, (l) => l.listHoldings(query));
     return { holdings: page.items.map(holdingViewToMcp), next_cursor: page.nextCursor };
   },
-  text: (output) =>
-    `${output.holdings.length} holding${output.holdings.length === 1 ? '' : 's'}` +
-    `${output.next_cursor === null ? '' : ' (more pages follow)'}.`,
 };

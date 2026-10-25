@@ -9,7 +9,9 @@
  * earlier version, audited with the git user's name.
  *
  * <env> is local, preview or production; a production publish is --strict (a missing image is an
- * error). Reads DATABASE_URL: the app's connection (netnet_app), as `db:seed` does.
+ * error), and refuses, whole, any new or changed pack without a review of that version in
+ * content/reviews.json (CONVENTIONS §8). Draft packs (content/packs/drafts/) are never published.
+ * Reads DATABASE_URL: the app's connection (netnet_app), as `db:seed` does.
  */
 import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
@@ -18,11 +20,12 @@ import {
   ContentRejected,
   parseContentRef,
   publishContent,
+  requireReviews,
   rollbackContent,
   type DocOutcome,
 } from '@netnet/api/content/publish';
 import { validateContent, type ContentError } from '@netnet/contracts';
-import { missingImages, misnamedFiles, readContent } from './content-check';
+import { missingImages, misnamedFiles, readContent, readReviews } from './content-check';
 import { requireEnv, run } from './db-env';
 
 const ENVS = ['local', 'preview', 'production'] as const;
@@ -46,6 +49,10 @@ function gitUser(): string {
 
 const line = ({ doc, path, message }: ContentError) =>
   `  ${doc}${path ? ` ${path}` : ''}: ${message}`;
+
+const REVIEW_HOW =
+  'A review goes in content/reviews.json as "<pack>": {"sha256", "reviewer", "on"}, in its own ' +
+  'commit with a Reviewed-by: trailer.';
 
 function describe(outcome: DocOutcome): string {
   const name = `${outcome.kind}/${outcome.key}`;
@@ -107,6 +114,9 @@ await run('content:publish', async () => {
   else if (missing.length > 0) {
     console.warn(`${missing.length} missing images (an error with --strict).`);
   }
+  // Production publishes only reviewed packs: the review record is read with the content.
+  const record = env === 'production' ? readReviews(docs) : undefined;
+  if (record) errors.push(...record.errors);
   if (errors.length > 0) {
     console.error(errors.map((e) => line({ ...e, doc: `content/${e.doc}` })).join('\n'));
     throw new Error(`${errors.length} errors in ${docs.length} documents: nothing was published.`);
@@ -116,7 +126,14 @@ await run('content:publish', async () => {
   const pool = createPool(requireEnv('DATABASE_URL'));
   let outcomes: DocOutcome[];
   try {
-    outcomes = await publishContent(createDatabase(pool), docs, meta);
+    const options = record ? { admit: requireReviews(record.reviews) } : {};
+    outcomes = await publishContent(createDatabase(pool), docs, meta, options);
+  } catch (error) {
+    if (error instanceof ContentRejected && error.errors.length > 0) {
+      console.error(error.errors.map((e) => line({ ...e, doc: `content/${e.doc}` })).join('\n'));
+      if (record) console.error(REVIEW_HOW);
+    }
+    throw error;
   } finally {
     await pool.end();
   }

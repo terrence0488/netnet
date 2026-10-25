@@ -5,7 +5,7 @@ import { USER, agentActor, dataVersion, ledgerSuite, newUserId, type LedgerSuite
 /**
  * `exportAll` (PRD J10): everything, to rebuild a spreadsheet from — every holding with its
  * accessibility outcome and the answer behind it, every value with its currency, rate and rate
- * date, and the types with their labels. All data is fictional (CONVENTIONS §6).
+ * date and any rate given as given, and the types with their labels. All data is fictional (CONVENTIONS §6).
  */
 let db: TestDatabase;
 let suite: LedgerSuite;
@@ -109,10 +109,13 @@ describe('exportAll', () => {
       clientName: null,
     });
     expect(opening!.fxRateDate).toBe('2026-07-01');
+    expect([opening!.givenRate, opening!.givenRateInto]).toStrictEqual([null, null]);
     expect(stated).toMatchObject({
       amountMinor: 20000,
       fxRate: '0.81',
       fxSource: 'user',
+      givenRate: '0.81',
+      givenRateInto: 'EUR',
       source: 'web',
     });
     expect(agents).toMatchObject({

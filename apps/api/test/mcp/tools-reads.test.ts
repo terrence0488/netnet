@@ -8,6 +8,7 @@ import type {
   McpGetTaxonomyOutput,
   McpListActivityOutput,
   McpListHoldingsOutput,
+  McpUpsertTypeOutput,
 } from '@netnet/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestDatabase, type TestDatabase } from '../isolation/harness';
@@ -16,10 +17,12 @@ import {
   connectAgent,
   errOf,
   ledgerOf,
+  mcpRequest,
   mcpTestApp,
   newPerson,
   okOf,
   onboarded,
+  rpcOf,
   type ConnectedAgent,
   type McpTestApp,
 } from './support';
@@ -126,6 +129,20 @@ describe('get_financial_context', () => {
     expect(JSON.stringify(context).length).toBeLessThanOrEqual(8192);
   });
 
+  it('gives each holding the currency list_holdings gives it', async () => {
+    const { agent } = await seeded();
+    const context = okOf<McpGetFinancialContextOutput>(
+      await callTool(target, agent.token, 'get_financial_context'),
+    );
+    const listed = okOf<McpListHoldingsOutput>(
+      await callTool(target, agent.token, 'list_holdings', { limit: 100 }),
+    );
+    const byId = new Map(listed.holdings.map((h) => [h.id, h.currency]));
+    expect(context.holdings).toHaveLength(3);
+    expect(new Set(context.holdings.map((h) => h.currency))).toStrictEqual(new Set(['EUR', 'GBP']));
+    for (const h of context.holdings) expect(h.currency).toBe(byId.get(h.id));
+  });
+
   it('rejects an unknown baseline', async () => {
     const { agent } = await seeded();
     const error = errOf(
@@ -226,6 +243,23 @@ describe('get_holding', () => {
       'NOT_FOUND',
     );
   });
+
+  it('names a values cursor it did not give by the tool’s own field', async () => {
+    const { agent, freshHolding } = await seeded();
+    const error = errOf(
+      await callTool(target, agent.token, 'get_holding', {
+        holding_id: freshHolding,
+        values_cursor: 'not-a-cursor',
+      }),
+      'VALIDATION_FAILED',
+    );
+    expect(error.fields).toStrictEqual({
+      values_cursor: 'Pass the next_cursor of the previous page as it was.',
+    });
+    expect(error.message).toBe(
+      'values_cursor: Pass the next_cursor of the previous page as it was.',
+    );
+  });
 });
 
 describe('get_net_worth_history', () => {
@@ -272,7 +306,7 @@ describe('get_net_worth_history', () => {
 
 describe('get_period_changes', () => {
   it('returns each period newest first, with its change and ranked drivers', async () => {
-    const { agent, freshHolding, staleHolding, gbpHolding } = await seeded();
+    const { agent, freshHolding, gbpHolding } = await seeded();
     const gbp = okOf<McpGetHoldingOutput>(
       await callTool(target, agent.token, 'get_holding', { holding_id: gbpHolding }),
     );
@@ -282,7 +316,6 @@ describe('get_period_changes', () => {
       view: 'monthly',
     });
     const table = okOf<McpGetPeriodChangesOutput>(result);
-    expect(result.content[0]?.text).toBe('3 monthly periods in EUR.');
     expect(table.currency).toBe('EUR');
     expect(table.view).toBe('monthly');
     expect(table.periods.map((p) => [p.start, p.end])).toEqual([
@@ -290,18 +323,21 @@ describe('get_period_changes', () => {
       ['2026-07-01', '2026-07-31'],
       ['2026-06-01', '2026-06-30'],
     ]);
+    // The first period has nothing earlier to compare with: its end value, no change.
     expect(table.periods[2]).toStrictEqual({
       start: '2026-06-01',
       end: '2026-06-30',
       end_value: 50,
-      change: 50,
+      change: null,
       change_pct: null,
       carried: false,
-      drivers: [{ holding_id: staleHolding, name: 'Old tin', contribution: 50 }],
+      drivers: [],
     });
+    // Holdings first valued in July count toward July's change.
     const july = table.periods[1]!;
     expect(july.end_value).toBe(1250 + 50 + gbpBase);
     expect(july.change).toBe(1250 + gbpBase);
+    expect(july.change_pct).toBeCloseTo(((1250 + gbpBase) / 50) * 100, 9);
     expect(july.carried).toBe(true);
     expect(july.drivers).toStrictEqual([
       { holding_id: freshHolding, name: 'Everyday pot', contribution: 1250 },
@@ -316,6 +352,29 @@ describe('get_period_changes', () => {
     });
   });
 
+  it('declares the change nullable, and says why', async () => {
+    const userId = await onboarded(target);
+    const agent = await connectAgent(target, userId);
+    const listed = await rpcOf(
+      await mcpRequest(target, agent.token, { jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+    );
+    const tools = (
+      listed.body.result as {
+        tools: { name: string; description: string; outputSchema: Record<string, unknown> }[];
+      }
+    ).tools;
+    const tool = tools.find((t) => t.name === 'get_period_changes')!;
+    expect(tool.description).toContain('The first period has nothing earlier to compare with');
+    const period = (
+      tool.outputSchema as {
+        properties: { periods: { items: { properties: Record<string, unknown> } } };
+      }
+    ).properties.periods.items.properties;
+    expect(period.end_value).toStrictEqual({ type: 'number' });
+    expect(period.change).toStrictEqual({ type: ['number', 'null'] });
+    expect(period.change_pct).toStrictEqual({ type: ['number', 'null'] });
+  });
+
   it('pages the newest periods with each one’s top drivers', async () => {
     const { agent, freshHolding } = await seeded();
     const table = okOf<McpGetPeriodChangesOutput>(
@@ -326,6 +385,8 @@ describe('get_period_changes', () => {
       }),
     );
     expect(table.periods.map((p) => p.start)).toEqual(['2026-08-01', '2026-07-01']);
+    // A page that stops short of the first period keeps its oldest period's change.
+    expect(table.periods[1]?.change).toBe(table.periods[1]!.end_value - 50);
     expect(table.periods[1]?.drivers).toStrictEqual([
       { holding_id: freshHolding, name: 'Everyday pot', contribution: 1250 },
     ]);
@@ -471,6 +532,37 @@ describe('list_activity', () => {
     const walked = [...first.entries, ...second.entries];
     const all = okOf<McpListActivityOutput>(await callTool(target, agent.token, 'list_activity'));
     expect(walked.map((e) => e.id)).toEqual(all.entries.map((e) => e.id));
+  });
+
+  it('names each type by its label in the person’s pack chain, never by a key', async () => {
+    const { agent } = await seeded();
+    okOf<McpUpsertTypeOutput>(
+      await callTool(target, agent.token, 'upsert_type', { name: 'Art', universal_type: 'other' }),
+    );
+    const all = okOf<McpListActivityOutput>(
+      await callTool(target, agent.token, 'list_activity', { limit: 100 }),
+    );
+    const types = all.entries
+      .filter((e) => e.entity === 'type')
+      .map((e) => e.summary)
+      .reverse();
+    // QZ's chain: its own cash label and pack type `auto_loan`, generic's labels for the rest.
+    expect(types).toStrictEqual([
+      'Added type "Current account"',
+      'Added type "Label listed"',
+      'Added type "Label retirement"',
+      'Added type "Label property"',
+      'Added type "Label vehicle"',
+      'Added type "Label equity"',
+      'Added type "Label crypto"',
+      'Added type "Label mortgage"',
+      'Added type "Label loan"',
+      'Added type "Label wrapper"',
+      'Added type "Label card"',
+      'Added type "Label other"',
+      'Added type "Auto loan"',
+      'Added type "Art"',
+    ]);
   });
 
   it('filters to one agent turn', async () => {

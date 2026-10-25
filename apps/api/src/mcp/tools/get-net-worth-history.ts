@@ -56,5 +56,4 @@ export const getNetWorthHistoryTool: ToolDef<
       })),
     };
   },
-  text: (output) => `${output.points.length} points in ${output.currency}.`,
 };

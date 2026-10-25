@@ -1,11 +1,11 @@
-import type { AuditEntry } from '@netnet/contracts';
-import { isApiError } from '../../api/client';
-import { errorCopy, type ErrorCopy } from '../../components/ErrorState';
+import type { AuditEntry, Pack } from '@netnet/contracts';
+import { typeLabelOfSnapshot } from '@netnet/core';
+import { formatDate } from '../../components/dates';
 import { formatMoney } from '../../components/money';
 
 /**
  * The Activity screen's readings (PRD J7): newest-first entries grouped by agent turn, each with
- * what changed, old → new, who did it and when — and plain words when an undo cannot go through.
+ * what changed, old → new, who did it and when.
  */
 
 export interface TurnGroup {
@@ -44,11 +44,6 @@ export function groupActivity(items: readonly AuditEntry[]): ActivityGroup[] {
   return groups;
 }
 
-/** A turn's entries that still stand: an undone entry's way back is its undo's own Undo. */
-export function undoableOf(group: TurnGroup): AuditEntry[] {
-  return group.entries.filter((entry) => entry.undoneBy === null);
-}
-
 /** The turn's writer: the client name on its entries, if they carry one. */
 export function turnClient(group: TurnGroup): string | null {
   return group.entries.find((entry) => entry.clientName !== null)?.clientName ?? null;
@@ -77,11 +72,6 @@ function moneyOf(side: unknown): MoneySide | undefined {
   return typeof amount === 'number' && typeof currency === 'string'
     ? { amountMinor: amount, currency }
     : undefined;
-}
-
-/** A type's label as the log reads it: its own name, else the pack's, else the universal. */
-function typeLabelOf(side: unknown): string | undefined {
-  return textOf(side, 'customName') ?? textOf(side, 'packTypeKey') ?? textOf(side, 'universal');
 }
 
 function valueChange(entry: AuditEntry): string | null {
@@ -117,21 +107,39 @@ function prefsChange(entry: AuditEntry): string | null {
 }
 
 /**
- * The old → new beneath an entry's summary, or null when the summary already says it (a creation,
- * a deletion, a revocation, the default currency). Sides that are not shaped as expected read as
- * no detail rather than a guess.
+ * A change of the default currency is one entry however many values it re-derived (architecture
+ * §6.8): beneath its summary, how many. An entry logged before the count was kept, or one that
+ * recalculated nothing, leaves the summary to say it.
  */
-export function describeChange(entry: AuditEntry): string | null {
+function ledgerChange(entry: AuditEntry): string | null {
+  if (entry.action !== 'update') return null;
+  const count = recordOf(entry.after)?.valuesRederived;
+  if (typeof count !== 'number' || !Number.isSafeInteger(count) || count < 1) return null;
+  return `${count.toLocaleString()} ${count === 1 ? 'value' : 'values'} recalculated`;
+}
+
+/**
+ * The old → new beneath an entry's summary, or null when the summary already says it (a creation,
+ * a deletion, a revocation). A type reads by its label in `chain`, the person's pack chain, as
+ * the summary names it. Sides that are not shaped as expected read as no detail rather than a
+ * guess.
+ */
+export function describeChange(entry: AuditEntry, chain: readonly Pack[]): string | null {
   switch (entry.entity) {
     case 'value':
       return valueChange(entry);
+    case 'ledger':
+      return ledgerChange(entry);
     case 'holding':
       return entry.action === 'update'
         ? renamedChange(textOf(entry.before, 'name'), textOf(entry.after, 'name'))
         : null;
     case 'type':
       return entry.action === 'update'
-        ? renamedChange(typeLabelOf(entry.before), typeLabelOf(entry.after))
+        ? renamedChange(
+            typeLabelOfSnapshot(chain, entry.before),
+            typeLabelOfSnapshot(chain, entry.after),
+          )
         : null;
     case 'tag':
       return entry.action === 'update'
@@ -142,6 +150,27 @@ export function describeChange(entry: AuditEntry): string | null {
     default:
       return null;
   }
+}
+
+/** A value's date at the end of its summary: "Recorded a value for 2026-05-20". */
+const TRAILING_DATE = / (\d{4}-\d{2}-\d{2})$/;
+
+/** Whether `date` is a real `YYYY-MM-DD` calendar date. */
+function isCalendarDate(date: string): boolean {
+  const at = Date.parse(`${date}T00:00:00Z`);
+  return !Number.isNaN(at) && new Date(at).toISOString().slice(0, 10) === date;
+}
+
+/**
+ * The entry's first line: its summary, with a value's date read as the screen reads every other
+ * date (`formatDate`: "Recorded a value for May 20, 2026" in an en-US browser). The summary itself
+ * keeps `YYYY-MM-DD`, as every date an agent is given does.
+ */
+export function entrySummary(entry: AuditEntry, locale?: string): string {
+  if (entry.entity !== 'value') return entry.summary;
+  const date = TRAILING_DATE.exec(entry.summary)?.[1];
+  if (date === undefined || !isCalendarDate(date)) return entry.summary;
+  return `${entry.summary.slice(0, -date.length)}${formatDate(date, locale)}`;
 }
 
 /** Who the entry's meta line names: the agent, the person, NetNet, or the disconnected agent. */
@@ -158,55 +187,4 @@ export function formatInstant(iso: string): string {
   const day = at.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   const time = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   return `${day}, ${time}`;
-}
-
-/** `UNDO_CONFLICT`'s blockers, newest first: the later changes to undo before this one. */
-export function conflictBlockers(error: unknown): string[] {
-  if (!isApiError(error, 'UNDO_CONFLICT')) return [];
-  const blockers = error.details['blockers'];
-  if (!Array.isArray(blockers)) return [];
-  const ids: string[] = [];
-  for (const blocker of blockers) {
-    const id = recordOf(blocker)?.entry_id;
-    if (typeof id === 'string') ids.push(id);
-  }
-  return ids;
-}
-
-export interface ConflictCopy {
-  readonly title: string;
-  readonly action: string;
-}
-
-/**
- * Plain words for a conflict: what stands in the way, named from the loaded log, and the offer to
- * undo it first. Never an id.
- */
-export function conflictCopy(blocker: AuditEntry | undefined): ConflictCopy {
-  if (!blocker) {
-    return {
-      title:
-        'This can’t be undone yet — a newer change is in the way. Undo that first, then try again.',
-      action: 'Undo the newer change first',
-    };
-  }
-  return {
-    title: `This can’t be undone yet — “${blocker.summary}” came afterwards. Undo that first, then try again.`,
-    action: `Undo “${blocker.summary}” first`,
-  };
-}
-
-/** Plain words when an undo fails for good: some changes, like a disconnection, stay made. */
-export function undoFailureCopy(error: unknown, entry: AuditEntry): ErrorCopy {
-  if (isApiError(error, 'VALIDATION_FAILED')) {
-    return {
-      title: 'This change can’t be undone.',
-      detail:
-        entry.entity === 'connection'
-          ? 'Disconnecting an agent stays in the log. Reconnect it from the Agent tab to use it again.'
-          : 'Some changes stay as they are once made.',
-      retry: false,
-    };
-  }
-  return errorCopy(error);
 }

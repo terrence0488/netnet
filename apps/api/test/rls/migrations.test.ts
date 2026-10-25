@@ -92,6 +92,7 @@ const TABLES: Record<string, string> = {
     'id bigint, kind text, key text, from_version integer, to_version integer, actor text, at timestamptz',
   'core.fx_rate': 'date date, currency text, per_usd numeric, source text',
   'core.rate_limit': 'key text, window_start timestamptz, count integer',
+  'core.visitor_salt': 'day date, salt bytea',
   'analytics.event':
     'id bigint, name text, at timestamptz, user_id text, visitor text, segment text, props jsonb, ' +
     'app_version text',
@@ -110,12 +111,12 @@ const TABLES: Record<string, string> = {
     'user_id text, id text, holding_id text, date date, amount_minor bigint, currency text, ' +
     'base_minor bigint, base_currency text, fx_rate numeric, fx_rate_date date, fx_source text, ' +
     'source text, client_name text, connection_id text, batch_id text, entered_at timestamptz, ' +
-    'updated_at timestamptz, row_version integer',
+    'updated_at timestamptz, row_version integer, given_rate numeric, ' +
+    'given_rate_into character(3), given_rate_by text',
   'ledger.prefs': 'user_id text, key text, value jsonb',
   'ledger.audit':
     'user_id text, id text, at timestamptz, actor text, client_name text, connection_id text, ' +
-    'batch_id text, action text, entity text, entity_id text, before jsonb, after jsonb, undoes text, ' +
-    'undone_by text',
+    'batch_id text, action text, entity text, entity_id text, before jsonb, after jsonb',
   'ledger.batch':
     'user_id text, id text, connection_id text, opened_at timestamptz, last_write_at timestamptz',
 };

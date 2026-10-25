@@ -1,5 +1,11 @@
+import { PUSH_SERVICE_HOSTS } from '@netnet/contracts';
 import { database } from '../db/client';
-import { activePushTargets, recordPushFailure, recordPushSuccess } from '../db/endpoints';
+import {
+  activePushTargets,
+  recordPushFailure,
+  recordPushSuccess,
+  revokeEndpoint,
+} from '../db/endpoints';
 import { accountOf, type Account } from '../db/profiles';
 import { countReminderEmailsToday, getReminderState, recordReminderSent } from '../db/reminders';
 import { appVersion } from '../events/app-version';
@@ -153,16 +159,21 @@ export function createNotify(deps: () => NotifyDeps): Notify {
 let sharedEmail: EmailChannel | undefined;
 const sharedPushPost = fetchPost();
 
-/** The live push wiring: the person's devices with their TTLs, and the `webpush` channel. */
+/**
+ * The live push wiring: the person's devices with their TTLs, and the `webpush` channel, which
+ * sends only to the push services on `PUSH_SERVICE_HOSTS`.
+ */
 function livePush(): ReminderDeps['push'] {
   const channel = webPushChannelFromEnv({
     post: sharedPushPost,
     store: {
       success: (id, at) => recordPushSuccess(database(), id, at),
       failure: (id, status, at) => recordPushFailure(database(), id, status, at),
+      revoke: async (id, userId, at) => (await revokeEndpoint(database(), userId, id, at)) !== null,
     },
     track,
     appVersion,
+    pushHosts: PUSH_SERVICE_HOSTS,
   });
   if (channel === undefined) return undefined;
   return {

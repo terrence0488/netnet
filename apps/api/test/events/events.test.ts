@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eventStore } from '../../src/db/analytics';
 import { countHit } from '../../src/db/rate-limits';
+import { createVisitor } from '../../src/db/visitor';
 import { event, profile } from '../../src/db/schema';
 import { EVENTS_PER_MINUTE_PER_IP } from '../../src/http/events';
 import { createTrack, type Track } from '../../src/events/track';
@@ -13,6 +14,7 @@ import {
   USER_A,
   USER_B,
   createTestDatabase,
+  ensureAccount,
   sqlState,
   type TestDatabase,
 } from '../isolation/harness';
@@ -34,6 +36,8 @@ beforeAll(async () => {
     count: (key, windowStart) => countHit(db.appDb, key, windowStart),
     clock: () => now,
   }));
+  await ensureAccount(db, USER_A);
+  await ensureAccount(db, USER_B);
   await db.appDb.insert(profile).values({ userId: USER_A, segment: 'accumulating' });
 }, 60_000);
 
@@ -96,8 +100,21 @@ describe('track() as netnet_app', () => {
     ]);
   });
 
+  it('writes no event for an id no account holds, and account_deleted on its re-keyed id', async () => {
+    const gone = 'usr_01K1G4KX00EEEEEEEEEEEEEEEE';
+    await track('session_started', {}, { userId: gone, appVersion: 'dev' });
+    await track(
+      'account_deleted',
+      {},
+      { rekeyedUserId: gone, segment: 'starting_out', appVersion: 'dev' },
+    );
+    expect((await storedEvents()).map((e) => [e.name, e.user_id, e.segment])).toStrictEqual([
+      ['account_deleted', gone, 'starting_out'],
+    ]);
+  });
+
   it('cannot select, change or delete what it wrote', async () => {
-    await track('value_undone', {}, { userId: USER_A, appVersion: 'dev' });
+    await track('session_started', {}, { userId: USER_A, appVersion: 'dev' });
     expect(await sqlState(db.appDb.select().from(event))).toBe('42501');
     expect(await sqlState(db.app.query(`update analytics.event set segment = 'unknown'`))).toBe(
       '42501',
@@ -149,7 +166,16 @@ describe('rateLimit() over core.rate_limit', () => {
 describe('POST /api/events against the database', () => {
   let signedIn: SessionUser | null;
   let vercel: CapturedWaitUntil;
-  const app = () => eventsApp({ track, rateLimit, appVersion: () => 'abc1234' }, () => signedIn);
+  const app = () =>
+    eventsApp(
+      {
+        track,
+        rateLimit,
+        appVersion: () => 'abc1234',
+        visitor: createVisitor(() => ({ db: () => db.appDb, clock: () => now })),
+      },
+      () => signedIn,
+    );
 
   beforeEach(() => {
     signedIn = { userId: USER_A, emailVerified: false };

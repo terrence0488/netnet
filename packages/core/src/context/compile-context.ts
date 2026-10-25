@@ -331,6 +331,7 @@ export function compileContext(
         .flatMap((id) => tags.get(id) ?? [])
         .sort((a, b) => compareText(a.name, b.name) || compareText(a.id, b.id))
         .map((t) => clipName(t.name)),
+      currency: holding.currency,
       access: isLiability(holding) ? 'owed' : (holding.access ?? 'undecided'),
       access_reason: nonEmpty(holding.accessReason),
       until: nonEmpty(holding.accessUntil),

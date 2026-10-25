@@ -468,4 +468,214 @@ describe('deleteValue', () => {
       'NOT_FOUND',
     );
   });
+
+  it('fires value_corrected with the value’s own source and age, from the web and an agent', async () => {
+    const { userId, holdingId } = await userWithHolding('USD');
+    const connection = await suite.connect(userId);
+    const agent = suite.as(userId, agentActor(connection));
+    const recorded = await agent.write((l) =>
+      l.recordValues([
+        { holdingId, amount: '10', date: '2026-07-30' },
+        { holdingId, amount: '20', date: '2026-07-31' },
+      ]),
+    );
+    const [first, second] = recorded.result.map((r) => r.value);
+    suite.clock.advance(3 * 86_400_000);
+    const byWeb = await suite.as(userId, USER).write((l) => l.deleteValue(first!.id));
+    expect(byWeb.events).toEqual([
+      { name: 'value_corrected', props: { original_source: 'agent', age_at_correction: 3 } },
+    ]);
+    const web = await suite
+      .as(userId, USER)
+      .write((l) => l.recordValues([{ holdingId, amount: '30', date: '2026-08-01' }]));
+    const byAgent = await agent.write((l) => l.deleteValue(web.result[0]!.value.id));
+    expect(byAgent.events).toEqual([
+      { name: 'value_corrected', props: { original_source: 'web', age_at_correction: 0 } },
+    ]);
+    // NetNet's own writes fire nothing (architecture §7.7).
+    const bySystem = await suite
+      .as(userId, { kind: 'system' })
+      .write((l) => l.deleteValue(second!.id));
+    expect(bySystem.events).toEqual([]);
+    suite.clock.set(new Date(Date.UTC(2026, 7, 1, 10)));
+  });
+});
+
+/** The given rate as stored, with who gave it, or null when none was. */
+async function givenOf(valueId: string) {
+  const [row] = await suite.rows<{ rate: string | null; into: string | null; by: string | null }>(
+    `select given_rate as rate, given_rate_into as into, given_rate_by as by
+       from ledger.value where id = $1`,
+    [valueId],
+  );
+  if (!row) throw new Error(`No value ${valueId}`);
+  return row.rate === null ? null : row;
+}
+
+describe('the given rate (architecture §6.6)', () => {
+  it('is set by recording with a rate, into the base currency, by whoever gave it', async () => {
+    const { userId, holdingId } = await userWithHolding('EUR', 'USD');
+    const connection = await suite.connect(userId);
+    const web = await suite
+      .as(userId)
+      .write((l) =>
+        l.recordValues([{ holdingId, amount: '200', date: '2026-07-01', fxRate: '1.1' }]),
+      );
+    const byWeb = web.result[0]!.value;
+    expect(byWeb).toMatchObject({ fxRate: '1.1', givenRate: '1.1', givenRateInto: 'USD' });
+    expect(await givenOf(byWeb.id)).toStrictEqual({ rate: '1.1', into: 'USD', by: 'user' });
+
+    const agent = await suite
+      .as(userId, agentActor(connection))
+      .write((l) =>
+        l.recordValues([{ holdingId, amount: '200', date: '2026-07-02', fxRate: 1.2 }]),
+      );
+    const byAgent = agent.result[0]!.value;
+    expect(byAgent).toMatchObject({ givenRate: '1.2', givenRateInto: 'USD' });
+    expect(await givenOf(byAgent.id)).toStrictEqual({ rate: '1.2', into: 'USD', by: 'agent' });
+
+    // A published rate is not a given one; nor is a value's own currency.
+    const plain = await suite.as(userId).write((l) =>
+      l.recordValues([
+        { holdingId, amount: '200', date: '2026-07-03' },
+        { holdingId, amount: '200', date: '2026-07-04', currency: 'USD' },
+      ]),
+    );
+    for (const { value } of plain.result) {
+      expect(value).toMatchObject({ givenRate: null, givenRateInto: null });
+      expect(await givenOf(value.id)).toBeNull();
+    }
+
+    // A new value for the same date replaces the old, rate and all.
+    const replaced = await suite
+      .as(userId)
+      .write((l) => l.recordValues([{ holdingId, amount: '210', date: '2026-07-01' }]));
+    expect(replaced.result[0]?.value).toMatchObject({
+      id: byWeb.id,
+      fxSource: 'ecb',
+      givenRate: null,
+      givenRateInto: null,
+    });
+    expect(await givenOf(byWeb.id)).toBeNull();
+  });
+
+  it('is set by a holding’s opening value with a rate', async () => {
+    const userId = await suite.newUser('USD');
+    const connection = await suite.connect(userId);
+    const created = await suite.as(userId, agentActor(connection)).write((l) =>
+      l.createHolding({
+        name: 'Euro account',
+        kind: 'asset',
+        universal: 'cash',
+        currency: 'EUR',
+        opening: { amount: '500', date: '2026-07-01', fxRate: '1.15' },
+      }),
+    );
+    const [value] = (
+      await suite.as(userId).read((l) => l.getHolding(created.result.id, { limit: 10 }))
+    ).values.items;
+    expect(value).toMatchObject({ fxRate: '1.15', fxSource: 'agent', givenRate: '1.15' });
+    expect(await givenOf(value!.id)).toStrictEqual({ rate: '1.15', into: 'USD', by: 'agent' });
+  });
+
+  it('is kept by edits to the amount and date, and cleared by another currency or null', async () => {
+    const { userId, holdingId } = await userWithHolding('EUR', 'USD');
+    const connection = await suite.connect(userId);
+    const recorded = await suite
+      .as(userId)
+      .write((l) =>
+        l.recordValues([{ holdingId, amount: '100', date: '2026-07-20', fxRate: '1.1' }]),
+      );
+    const id = recorded.result[0]!.value.id;
+    const kept = { rate: '1.1', into: 'USD', by: 'user' };
+
+    // An agent corrects the amount, then the date: the person's rate stays theirs.
+    const agent = suite.as(userId, agentActor(connection));
+    const amount = await agent.write((l) => l.updateValue(id, { amount: '120' }));
+    expect(amount.result).toMatchObject({
+      baseMinor: 13_200,
+      fxRate: '1.1',
+      fxSource: 'user',
+      givenRate: '1.1',
+    });
+    expect(await givenOf(id)).toStrictEqual(kept);
+    const date = await agent.write((l) => l.updateValue(id, { date: '2026-07-25' }));
+    expect(date.result).toMatchObject({
+      fxRate: '1.1',
+      fxRateDate: '2026-07-25',
+      fxSource: 'user',
+      givenRate: '1.1',
+    });
+    expect(await givenOf(id)).toStrictEqual(kept);
+
+    // An edit with a rate gives it anew, by whoever gave it.
+    const rated = await agent.write((l) => l.updateValue(id, { fxRate: '1.3' }));
+    expect(rated.result).toMatchObject({ fxRate: '1.3', fxSource: 'agent', givenRate: '1.3' });
+    expect(await givenOf(id)).toStrictEqual({ rate: '1.3', into: 'USD', by: 'agent' });
+
+    // Another currency without a rate: the rate was for the old one, so it goes.
+    const gbp = await suite.as(userId).write((l) => l.updateValue(id, { currency: 'GBP' }));
+    expect(gbp.result).toMatchObject({
+      currency: 'GBP',
+      fxSource: 'ecb',
+      givenRate: null,
+      givenRateInto: null,
+    });
+    expect(await givenOf(id)).toBeNull();
+
+    // Another currency with a rate takes the new one; `fxRate: null` drops it.
+    const eur = await suite
+      .as(userId)
+      .write((l) => l.updateValue(id, { currency: 'EUR', fxRate: '1.12' }));
+    expect(eur.result).toMatchObject({ fxRate: '1.12', fxSource: 'user', givenRate: '1.12' });
+    expect(await givenOf(id)).toStrictEqual({ rate: '1.12', into: 'USD', by: 'user' });
+    const dropped = await suite.as(userId).write((l) => l.updateValue(id, { fxRate: null }));
+    expect(dropped.result).toMatchObject({ fxRate: '1.25', fxSource: 'ecb', givenRate: null });
+    expect(await givenOf(id)).toBeNull();
+  });
+
+  it('carries through another default currency: an edit starts from it, a new rate is into the new default', async () => {
+    const { userId, holdingId } = await userWithHolding('EUR', 'USD');
+    const recorded = await suite
+      .as(userId)
+      .write((l) =>
+        l.recordValues([{ holdingId, amount: '100', date: '2026-07-20', fxRate: '1.1' }]),
+      );
+    const id = recorded.result[0]!.value.id;
+    const system = suite.as(userId, { kind: 'system' });
+
+    // In EUR, the value's own currency: 1, the person's rate kept, unused, through an edit.
+    await system.write((l) => l.changeBaseCurrency('EUR'));
+    const inEur = await suite.as(userId).write((l) => l.updateValue(id, { amount: '110' }));
+    expect(inEur.result).toMatchObject({ baseMinor: 11_000, fxRate: '1', fxSource: 'same' });
+    expect(await givenOf(id)).toStrictEqual({ rate: '1.1', into: 'USD', by: 'user' });
+
+    // In GBP: 1.1 × USD-to-GBP (0.75), again after an edit to the amount.
+    await system.write((l) => l.changeBaseCurrency('GBP'));
+    const inGbp = await suite.as(userId).write((l) => l.updateValue(id, { amount: '100' }));
+    expect(inGbp.result).toMatchObject({
+      baseMinor: 8250,
+      baseCurrency: 'GBP',
+      fxRate: '0.825',
+      fxRateDate: '2026-07-20',
+      fxSource: 'user',
+      givenRate: '1.1',
+      givenRateInto: 'USD',
+    });
+
+    // A rate given now is into GBP, and back in USD it is carried from there.
+    await suite.as(userId).write((l) => l.updateValue(id, { fxRate: '0.86' }));
+    expect(await givenOf(id)).toStrictEqual({ rate: '0.86', into: 'GBP', by: 'user' });
+    await system.write((l) => l.changeBaseCurrency('USD'));
+    const [back] = (await suite.as(userId).read((l) => l.getHolding(holdingId, { limit: 10 })))
+      .values.items;
+    // 0.86 × GBP-to-USD (1 ÷ 0.75 = 1.33333333333) = 1.1466666666638.
+    expect(back).toMatchObject({
+      baseMinor: 11_467,
+      fxRate: '1.1466666666638',
+      fxSource: 'user',
+      givenRate: '0.86',
+      givenRateInto: 'GBP',
+    });
+  });
 });

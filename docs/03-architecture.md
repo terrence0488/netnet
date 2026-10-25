@@ -50,12 +50,12 @@ write-ups. The P1 spike re-checks them before anything depends on them.
 | **N1** MCP ≥99.5% success, p95 <1.5 s | Function and database in the same region, so a request makes one long hop and many short ones. Cold starts are measured and have an upgrade trigger (§9.4) |
 | **N4** isolation at the data layer, tested | Row-level security enforced by Postgres, a single `withUser` entry point, composite keys that make cross-user references impossible, and an isolation test suite |
 | **N8** reliability never traded for cost | Free-tier stops (Neon's monthly compute cap) are watched and pre-empted, and our own daily backups cover Neon Free's 6-hour restore window |
-| **N3 / J7** every write auditable and reversible; batches undo together | Postgres transactions around each write and its audit rows; a per-user row lock serialises one user's writes |
+| **N3 / J7** every write auditable; one agent turn reads as one group | Postgres transactions around each write and its audit rows; a per-user row lock serialises one user's writes, which also makes the turn grouping exact |
 | **N10 / §2.3** packs are versioned data an admin will edit | A content store with versions, validation, audit and a published schema |
 | **N11** context is deterministic | Figures come from pure functions with no clock, randomness or inference inside |
 | **N7** native iOS/Android later (React Native + Expo) | One API; domain logic and chart geometry in plain TypeScript the native app imports |
 | **§2.3 rule 2** IP country looked up on our own server or CDN | Vercel's own country header, never a browser-side third-party call |
-| **J12** reminders only between 08:00 and 21:00 in each person's time zone, on Hobby's once-a-day cron | Three daily runs eight hours apart; each sends only to people for whom it is daytime right then (§9.3) |
+| **J12** reminders only between 08:00 and 21:00 in each person's time zone, on daily schedules that may start late | Three daily runs eight hours apart; each sends only to people for whom it is daytime right then (§9.3) |
 
 ## 3. Agent clients at launch
 
@@ -103,7 +103,7 @@ need: any request can land on any instance.
 | Web app hosting | **Vercel's CDN**, same project and domain as the API (§5.2) | Static files cost nothing to serve and load from an edge near the user; one domain means no CORS and a first-party cookie |
 | Landing page | **Static HTML/CSS** (its own Vite entry) | A marketing page with its own design (PRD G-D1) |
 | Charts | **No charting library.** `d3-scale` / `d3-shape` / `d3-array` maths, our own SVG | Three heavily specified chart kinds. Geometry lives in `core`, and native draws it through `react-native-svg` |
-| Scheduled work | **Vercel Cron** (Hobby: each job at most daily, started within its hour) + **GitHub Actions** schedules | §9.3 |
+| Scheduled work | **GitHub Actions** schedules calling the cron handlers with `CRON_SECRET`; no Vercel crons | §9.3 |
 | Email | **Resend**: the comeback reminder's fallback channel and the security email, through `notify()` (§7.10); also Better Auth's verification and reset emails | Permanent free tier (3,000/month, 100/day), shared by all four kinds of email (§9.4 trigger) |
 | Web push | **v1, the comeback reminder's first channel.** The **Web Push** standard: VAPID keys, the `web-push` library in the function, a minimal service worker in the web app (§7.10) | Free and standard; delivered by the browsers' own push services; no vendor SDK in the web app |
 | Native push | **Later, with the Expo apps:** Expo's push service (→ APNs, FCM), as another `notify()` channel | Free; no change to the server's shape |
@@ -275,6 +275,7 @@ $1 FOR UPDATE`. That lock serialises one user's writes, exactly as a single-thre
 | `content_audit` | `id`, `kind`, `key`, `from_version`, `to_version`, `actor`, `at` | Who changed the world, when, old → new (§2.3) |
 | `fx_rate` | (`date`, `currency`) PK, `per_usd` numeric, `source` (`ecb`/`fallback`) | Filled daily; history backfilled once |
 | `rate_limit` | (`key`, `window_start`) PK, `count` | Fixed-window counters (§8) |
+| `visitor_salt` | `day` date PK, `salt` bytea (32 random bytes) | The landing page's salt for one UTC day, kept only for that day (§6.4) |
 | `notification_endpoint` | `id`, `user_id`, `channel` (`webpush`; `expo` later), `endpoint` (push service URL), `keys` jsonb (`p256dh`, `auth`), `platform` (`ios`/`android`/`desktop`), `device_label` (e.g. "Android · Chrome"), `created_at`, `last_seen_at`, `last_success_at`, `failure_count`, `revoked_at` | One row per device where push is on (J12). **Active** = not revoked. Revoked when the person turns the device off or removes it, on sign-out on that device, and when the push service answers `404`/`410` or fails five times in a row. Deleted with the account. `last_seen_at` is "last used" in the device list |
 | `reminder_state` | `user_id` PK, `enabled` (the Reminders switch, default on), `email_enabled` (default on), `last_checked_on` date, `next_due_on` date, `sent_since_check` smallint, `last_sent_at`, `last_channel` (`push`/`email`), `last_opened_at` | The comeback reminder (J12). Dates are in the person's `time_zone`. Created at sign-up with `last_checked_on` = that day, `next_due_on` = +30. In `core`, not `ledger`, because the reminder job reads it across users and it holds no money |
 
@@ -287,19 +288,23 @@ $1 FOR UPDATE`. That lock serialises one user's writes, exactly as a single-thre
 | `tag` | `id`, `name` (unique per user, case-insensitive), `sort` | |
 | `holding` | `id`, `name`, `kind` (`asset`/`liability`), `type_id`, `currency`, `cadence_days`, `archived_at`, `created_at`, `row_version`, **`access`** (`accessible`/`illiquid`/`locked`/`undecided`, null for liabilities), **`access_basis`** jsonb `{via, pack, pack_version, question, answer}`, **`access_reason`**, **`access_until`** | The applied accessibility outcome **and its reason** are kept as applied, with the pack version. A pack edit never moves them (§6.7) |
 | `holding_tag` | `holding_id`, `tag_id` | |
-| `value` | `id`, `holding_id`, `date`, `amount_minor`, `currency`, `base_minor`, `base_currency`, `fx_rate` numeric, `fx_rate_date`, `fx_source` (`ecb`/`fallback`/`same`/`user`/`agent`), `source` (`web`/`agent`/`system`), `client_name`, `connection_id`, `batch_id`, `entered_at`, `updated_at`, `row_version` | **Unique (`user_id`, `holding_id`, `date`)**: last write wins, with a warning (J3). `base_minor` is the stored conversion that totals and periods use (J2, J11) |
+| `value` | `id`, `holding_id`, `date`, `amount_minor`, `currency`, `base_minor`, `base_currency`, `fx_rate` numeric, `fx_rate_date`, `fx_source` (`ecb`/`fallback`/`same`/`user`/`agent`), **`given_rate`** numeric, **`given_rate_into`**, **`given_rate_by`** (`user`/`agent`), `source` (`web`/`agent`/`system`), `client_name`, `connection_id`, `batch_id`, `entered_at`, `updated_at`, `row_version` | **Unique (`user_id`, `holding_id`, `date`)**: last write wins, with a warning (J3). `base_minor` is the stored conversion that totals and periods use (J2, J11). The `given_rate_*` columns keep a rate the person or their agent supplied, as given, through every change of the default currency (§6.6); null when none was given |
 | `prefs` | `key`, `value` jsonb | Home filter, Insights filter and exclusions (persist, J11), baseline, sort |
-| `audit` | `id`, `at`, `actor` (`user`/`agent`/`system`), `client_name`, `connection_id`, `batch_id`, `action`, `entity`, `entity_id`, `before` jsonb, `after` jsonb, `undoes`, `undone_by` | One row per entity changed. `before` for a deleted holding includes its values |
+| `audit` | `id`, `at`, `actor` (`user`/`agent`/`system`), `client_name`, `connection_id`, `batch_id`, `action`, `entity`, `entity_id`, `before` jsonb, `after` jsonb | One row per entity changed. `before` for a deleted holding includes its values |
 | `batch` | `id`, `connection_id`, `opened_at`, `last_write_at` | One agent turn (§6.8) |
 
 ### 6.4 `analytics`
 
 `event(id, name, at, user_id NULL, visitor NULL, segment, props jsonb, app_version)`. It is written
 only through the typed `track()` (§7.7), so no amount, name or document text can reach it.
-`visitor` is `sha256(daily_salt ‖ ip ‖ user-agent)`, truncated. The salt changes daily and is never
-stored, so the landing page counts unique visitors (M10) without a cookie. When an account is
-deleted, its events are **re-keyed to a random id**: they still count, and they no longer point at
-anyone.
+`visitor` is set on `landing_view` only, by the server: `sha256(daily_salt ‖ ip ‖ user-agent)`,
+truncated to 16 hex characters, so the landing page counts unique visitors (M10) without a cookie
+or anything stored in the browser. A salt held only in memory would differ between function
+instances and count one person several times, so each UTC day's salt is a random value in
+`core.visitor_salt`, made on that day's first `landing_view`, read by every instance, and deleted
+once the day has passed: on the next day's first read, and by the daily sweep (§9.3). A past day's
+hashes can then never be recomputed. When an account is deleted, its events are **re-keyed to a
+random id**: they still count, and they no longer point at anyone.
 
 ### 6.5 Content (packs, countries, agent guides)
 
@@ -310,11 +315,14 @@ anyone.
   (§7.8). Any failure rejects the whole publish, because a half-applied pack is a wrong pack. It then
   inserts new `content_doc` versions, moves `content_current` and writes `content_audit`. **No code
   release.** Images ship as static files through a content-only deploy.
+- **Review:** draft packs (`content/packs/drafts/`) are validated and never published. A production
+  publish refuses, whole, any new or changed pack whose hash has no record in `content/reviews.json`.
 - **Reading:** the function caches `content_current` for 60 s and each version indefinitely. The
   web app fetches `GET /api/content/:kind/:key@:version`, cached for a year.
 - **The admin portal (not v1)** writes the same tables through the same validator, as
   `netnet_content_admin`, which has **no access to `ledger`, `analytics` or identity**. Nothing in
   v1 has to change for it.
+- **Demo:** `content/demo/` holds the fictional demo household, validated, never published.
 
 ### 6.6 Money and exchange rates
 
@@ -328,9 +336,16 @@ anyone.
   e.g. the one on a statement.
 - **Conversion** is exact decimal arithmetic, rounded half away from zero. Rate and rate date are
   stored, exported and readable by the agent, and not displayed (J2).
-- **Changing the default currency** re-derives every value's `base_minor` from the stored rates at
-  each value's own `fx_rate_date`. That is one logged, undoable `system` change (J11 stays
-  undistorted).
+- **Changing the default currency** re-derives every value's `base_minor` at the value's own rate
+  date, so every period reads as if the new currency had always been the default (J11 stays
+  undistorted). A rate the person or their agent supplied stays as given (`given_rate` into
+  `given_rate_into`), and every re-derivation starts from it: used as it is when the new default
+  is that currency, carried through the stored cross rate otherwise, and kept unused while the
+  value's own currency is the default. A round trip therefore lands back on the person's own rate
+  and figures exactly. Other values take the stored published rate from their currency into the
+  new one. It is one logged `system` change with **one audit entry** (`baseCurrency` old → new and
+  the number of values re-derived), not an entry per value: no amount, date or rate anyone entered
+  changes.
 - If the day's fetch fails, the previous rate stays in use with its date, and an alert fires.
 
 ### 6.7 Accessibility and pack versions (PRD §2.3)
@@ -343,21 +358,19 @@ current pack; outcomes and their reasons do not.** A later re-application is an 
 worth, never toward what could be used, and is reported to the agent as incompleteness (J2).
 **Moving country** adds the new pack's default types and removes none (J2).
 
-### 6.8 Audit, batches and undo (N3, J7)
+### 6.8 Audit and agent turns (N3, J7)
 
 - **Every write** is one transaction: the change, one audit row per entity touched, `data_version +
-  1`. Nothing is ever partially written (J6).
+  1`. Nothing is ever partially written (J6). A write that only re-derives figures (the
+  default-currency change, §6.6) is one row for the change itself.
+- **The log is a record only.** Nothing reverts an entry. Every change moves forward: a mistake is
+  corrected by another change, on the web or through the agent, and logged like any other (J7).
 - **Batches (one agent turn).** MCP has no turn id, and the 2026-07-28 spec removed sessions. A
   connection's writes join one batch while each follows the previous by **≤ 120 s**. A single
-  `record_values` call is always one batch. The per-user lock makes the grouping exact. It is a
-  heuristic, tuned by M5 evidence.
-- **Undo of an entry** restores `before` exactly, and only if the entity is still at the entry's
-  `after` (by `row_version`). Otherwise the result is `UNDO_CONFLICT`, naming the later change to
-  undo first. The undo is itself an audit entry, so it can be undone too.
-- **Undo of a batch** reverts every not-yet-undone entry, newest first, in one transaction. It is
-  all or nothing.
-- A user correcting or undoing an agent-written value fires `value_corrected {original_source:
-  agent, age_at_correction}` or `value_undone` (M5).
+  `record_values` call is always one batch. The per-user lock makes the grouping exact. Activity
+  shows a batch as one turn. The grouping is a heuristic for reading, tuned by M5 evidence.
+- Editing or deleting a value fires `value_corrected {original_source, age_at_correction}`; M5
+  reads it for agent-written values.
 
 ## 7. Interface contracts
 
@@ -393,8 +406,7 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 | `PATCH /api/values/:id` · `DELETE /api/values/:id` | `{amount?, date?, currency?, fxRate?}` | J3 |
 | `POST /api/types` · `PATCH /api/types/:id` · `DELETE /api/types/:id?moveTo=` | create / rename / delete or merge; holdings follow, nothing orphaned | J2 |
 | `POST /api/tags` · `PATCH /api/tags/:id` · `DELETE /api/tags/:id?mergeInto=` | same for tags | J2 |
-| `GET /api/activity` | `?cursor&limit≤100` → audit entries, newest first, grouped by batch | J7 |
-| `POST /api/activity/:entryId/undo` · `POST /api/activity/batches/:batchId/undo` | → `UNDO_CONFLICT {blockers}` when not possible | J7 |
+| `GET /api/activity` | `?cursor&limit≤100` → audit entries, newest first, grouped by batch. Read only: nothing reverts an entry (§6.8) | J7 |
 | `PATCH /api/prefs` | prefs by key — `homeFilter`, `insightsFilter`, `insightsExclusions` (the Don't Show holding, type and tag ids), `baseline`, `sort`; each given is set, `null` clears | J4, J11 |
 | `GET /api/notifications/prefs` | → `{reminders: bool, email: bool, emailVerified: bool, devices: [{id, label, platform, lastSeenAt}]}` (active devices only) | J12 |
 | `PATCH /api/notifications/prefs` | `{reminders?: bool, email?: bool}`; applies at once | J12 |
@@ -407,7 +419,7 @@ Writes return `{result, dataVersion, warnings: [{code, message}]}`.
 | `POST /api/agent/attempts` · `GET /api/agent/attempts/:id` | `{client: "claude"\|"chatgpt"\|"other", entry, platform}` → `{id, state, failedStep?, cause?}` (polled every 2 s); `cause` is `cancelled`, `invalid_request`, `token_rejected` or `timed_out` | J5 |
 | `GET /api/agent/approval` · `POST /api/agent/approval` | The approval page's API (§7.6), with the page's query as NetNet signed it: `?‹query›` → `{clientName, registration, nameVerified, client, host, scopes}`; `{accept, query}` → `{url}`, where the browser goes next (the agent, with the code or the refusal). Reading and Allow need a verified email | J5 |
 | `GET /api/content/current` · `GET /api/content/:kind/:key@:version` | live version map · an immutable document | §2.3, J5 |
-| `GET /api/export?format=json\|csv` | everything: holdings, types, tags, accessibility and the answer behind it, all values with currencies, rates and rate dates. CSV is one flat values table with the header `holding_id,holding_name,kind,type,currency,date,amount,base_amount,base_currency,fx_rate,fx_rate_date,fx_source,source,client,access,access_reason,tags` (amounts in major units, tags `;`-separated) | J10 |
+| `GET /api/export?format=json\|csv` | everything: holdings, types, tags, accessibility and the answer behind it, all values with currencies, rates and rate dates. CSV is one flat values table with the header `holding_id,holding_name,kind,type,currency,date,amount,base_amount,base_currency,fx_rate,fx_rate_date,fx_source,source,client,access,access_reason,tags,given_rate,given_rate_into` (amounts in major units, tags `;`-separated) | J10 |
 | `DELETE /api/account` | needs a sign-in in the last 10 minutes → `{erasedWithinDays: 30}` | J10 |
 | `POST /api/events` | client-side events only (§7.7): `{name, props}`, whitelisted | §3.5 |
 | `POST /api/reminders/unsubscribe` | signed token; turns email reminders off. The target of `List-Unsubscribe-Post` (RFC 8058), and of the email footer's link through a page that posts once it loads, so a mail scanner fetching the link changes nothing | J12 |
@@ -449,9 +461,8 @@ interface Ledger {
   deleteType(id: string, moveTo?: string): Promise<Write<void>>;
   upsertTag(i: TagInput): Promise<Write<Tag>>;
   deleteTag(id: string, mergeInto?: string): Promise<Write<void>>;
-  undo(t: { entryId: string } | { batchId: string }): Promise<Write<UndoResult>>;
   setPrefs(p: PrefsPatch): Promise<Write<Prefs>>;
-  changeBaseCurrency(ccy: string): Promise<Write<void>>;
+  changeBaseCurrency(ccy: string): Promise<Write<void>>;   // one audit entry; given rates kept (§6.6)
   applyPackTypes(pack: PackRef): Promise<Write<UserType[]>>;
   // Another country: with no holding yet, over again in its currency and types; else adds its types
   changeCountry(i: { baseCurrency: string; pack: PackRef }): Promise<Write<void>>;
@@ -468,8 +479,9 @@ The isolation suite (§8) attacks `withUser` and the RLS policies directly.
 **Transport and protocol.** Streamable HTTP at `/mcp`, stateless. Every request is authenticated
 and served on its own, on any function instance. Protocol versions **2026-07-28, 2025-11-25,
 2025-06-18**. Tools declare `inputSchema`, `outputSchema` and annotations (`readOnlyHint`,
-`destructiveHint`, `idempotentHint`, `openWorldHint: false`), and return `structuredContent` plus
-a short text rendering. Names and parameters are `snake_case`. Amounts are decimals in major units
+`destructiveHint`, `idempotentHint`, `openWorldHint: false`), and return `structuredContent` with
+the same object as compact JSON in the text content, errors included: some clients (Claude) give
+the model only the text. Names and parameters are `snake_case`. Amounts are decimals in major units
 with their currency. Every list is paged. **Server instructions** (a few lines): call
 `get_financial_context` first for any question about the user's position; NetNet states facts and
 uncertainty, and advice is yours; look for an existing holding before creating one; for a setup
@@ -488,7 +500,7 @@ naming neither ledger scope gets both. The metadata advertises only the ledger s
 | `list_holdings` | read | `query?, type_ids?, tag_ids?, archived? (exclude\|include\|only), stale_only?, cursor?, limit≤100` | holdings with latest value, as-of, staleness, access | J6, J8 |
 | `get_holding` | read | `holding_id, values_cursor?, values_limit≤500` | holding + paged values with provenance | J6, J8 |
 | `get_net_worth_history` | read | `from?, to?, interval (month\|quarter\|year\|day), group_by? (none\|type\|access\|currency), type_ids?, tag_ids?` | series; each point carried or observed | J8, J11 |
-| `get_period_changes` | read | `view (monthly\|quarterly\|yearly), periods?≤24, drivers?` | period-end value, change, %, top contributors | J11 |
+| `get_period_changes` | read | `view (monthly\|quarterly\|yearly), periods?≤24, drivers?` | period-end value, change and % (both null for the first period, which has nothing before it to compare with), top contributors | J11 |
 | `get_taxonomy` | read | — | types (label, universal meaning) and tags | J6 |
 | `get_setup_guide` | read | `country?` | this country's basics and the fact questions per type | J6 |
 | `list_activity` | read | `cursor?, limit≤100, batch_id?` | audit entries | J7 |
@@ -502,7 +514,6 @@ naming neither ledger scope gets both. The metadata advertises only the ledger s
 | `delete_type` | write · destructive | `type_id, move_holdings_to?` | — (merge = delete with move) | J6 |
 | `upsert_tag` | write | `tag_id?, name` | tag | J6 |
 | `delete_tag` | write · destructive | `tag_id, merge_into?` | — | J6 |
-| `undo` | write | `entry_id \| batch_id` | what was restored, or `UNDO_CONFLICT` | J7 |
 
 **Deliberately not agent tools:** account deletion, export, revoking connections, changing email
 or password.
@@ -548,7 +559,7 @@ holding is (its pack `meaning`) is given once per type in `types`, not on every 
       "meaning": "Mandatory retirement account. Counts toward net worth, never toward what can be spent this month." }
   ],
   "holdings": [
-    { "id": "hld_…", "name": "CPF Ordinary Account", "type": "CPF",
+    { "id": "hld_…", "name": "CPF Ordinary Account", "type": "CPF", "tags": [], "currency": "SGD",
       "access": "locked", "access_reason": "CPF is locked until you’re eligible to withdraw",
       "until": "until you’re eligible to withdraw",
       "value": { "amount": 117100.00, "currency": "SGD", "base": 117100.00, "as_of": "2026-08-04",
@@ -570,7 +581,6 @@ byte for byte for fixed inputs (N11).
 | `UNAUTHENTICATED` | 401 | no valid session on a route that needs one, or a change sent from another site (the Origin check, §8); the web app sends the person to sign in. An agent without a valid token gets OAuth's `401` instead (§7.6) |
 | `NOT_FOUND` | 404 | also for another user's ids. Never "forbidden", which would confirm the id exists |
 | `LIKELY_DUPLICATE` | 409 | `candidates: [{id, name, latest}]`; retry with `allow_duplicate` |
-| `UNDO_CONFLICT` | 409 | `blockers: [{entry_id, action, at}]` |
 | `EMAIL_NOT_VERIFIED` | 403 | connecting an agent before verifying (J1, J5) |
 | `SCOPE_REQUIRED` | 403 | token lacks `ledger.write` |
 | `REAUTH_REQUIRED` | 401 | account deletion needs a recent sign-in |
@@ -606,20 +616,21 @@ byte for byte for fixed inputs (N11).
 One typed function, `track(name, props, ctx)`, with a strict zod schema per name. Unknown props
 are rejected, and the only strings allowed are enums. `client` is always `claude`, `chatgpt` or
 `other`: the guide chosen (client side) or the connection's classification (server side, §3),
-never the name an agent registered with. `segment`, `user_id` and `app_version` are attached by
-`track()` itself. **Client-side** events come through `POST /api/events`, and only the names
-marked *client* are accepted.
+never the name an agent registered with. `segment`, `user_id`, `visitor` and `app_version` are
+attached by `track()` itself. **Client-side** events come through `POST /api/events`, and only the
+names marked *client* are accepted; without a session, only those also marked *sessionless*, at the
+same per-IP limit. `landing_view` never carries a session's user, even from a signed-in browser:
+its user is null, its segment `unknown`, and the server fills its `visitor` from the request (§6.4).
 
 | Event | Props | Emitted by |
 |---|---|---|
-| `landing_view` | — (plus `visitor` hash) | client (landing) |
-| `signup_started` | `method` | client |
+| `landing_view` | — (plus `visitor` hash) | client (landing), sessionless |
+| `signup_started` | `method` | client, sessionless |
 | `account_created` | `method` | server (auth hook) |
 | `session_started` | — | client (new session after 30 min idle) |
 | `holding_created` | `source`, `via?` (`guided`/`form`, web only) | server |
 | `value_recorded` | `source` | server |
-| `value_corrected` | `original_source`, `age_at_correction` (days) | server |
-| `value_undone` | — | server |
+| `value_corrected` | `original_source`, `age_at_correction` (days) | server, when a value is edited or deleted (M5) |
 | `agent_connection_started` | `client`, `entry` | client (connect flow) |
 | `agent_connection_completed` | `client`, `entry` | server (approval) |
 | `agent_connection_failed` | `step`, `client`, `entry` | server. `authorise`: Cancel or an invalid request. `callback`: token exchange failed. `discovery`: no authorize request within 15 min of starting. `first_call`: no successful call within 15 min of the token. The two timeouts are recorded when the attempt is next read, or by the daily sweep |
@@ -762,10 +773,14 @@ It is one statement: `UPDATE core.reminder_state SET last_checked_on = ‹today�
 4. **Retry security emails** not yet accepted (`security_email_sent_at` null, older than 10 minutes,
    younger than 7 days).
 
-**Why three runs.** The night (21:00–08:00) is 11 hours. Three runs eight hours apart cannot all
-fall inside it, even though Hobby starts each run anywhere within its hour. So on every local day,
-in every time zone, at least one run is in the daytime: a reminder goes out on the day it is due
-and never at night. A run Vercel misses (crons are not retried) delays some people by a day at most.
+**Why three runs.** Each run sends only to people for whom it is daytime (08:00–21:00) when it
+starts, so however late it starts, no reminder goes at night. The daytime is 13 hours and the runs
+are scheduled eight hours apart. GitHub starts each run late, by hours (§9.3), but a delay that
+consecutive runs share moves them together without widening the gap between them. So while no run
+is delayed five hours more than the run before it, every gap stays under 13 hours, every local day
+in every time zone has a run in its daytime, and a reminder goes out on the day it is due. A run
+that never starts (schedules are not retried), or one delayed five hours more than the run before
+it, delays some people by a day at most.
 
 **Email budget.** Resend Free allows 100 emails a day, and sign-up verification and password resets
 use the same allowance. Reminder emails stop at **60 per UTC day**; anyone past that is released
@@ -791,7 +806,12 @@ The agent's name is HTML-escaped and at most 40 characters. A DCR client's name 
    `pushManager.subscribe()`, so the browser's own prompt follows the tap. Granted: the subscription
    (an endpoint URL plus two keys) is `POST`ed to `/api/notifications/endpoints` and `push_enabled`
    fires. Denied: the switch stays off and says where to allow it, and NetNet never asks again on
-   its own. `push_prompt_result` fires either way.
+   its own. `push_prompt_result` fires either way. The server takes an endpoint only at the
+   browsers' push services (`PUSH_SERVICE_HOSTS`: `fcm.googleapis.com`,
+   `updates.push.services.mozilla.com`, `*.notify.windows.com`, `*.push.apple.com`; https on port
+   443, no userinfo or IP literal) and never follows their redirects: any other is refused, so
+   reminders go by email, and one stored earlier is revoked at its next send (`push_disabled {by:
+   browser}`).
 2. **Where it can't work.** "Can receive push" is decided in the browser: a service worker,
    `PushManager` (or `window.pushManager`, Declarative Web Push) and `Notification`. Where one is
    missing, including an iPhone or iPad in a Safari tab, **no push option appears anywhere** and
@@ -846,7 +866,7 @@ The agent's name is HTML-escaped and at most 40 characters. A DCR client's name 
 | Data at rest | Neon encrypts storage at rest; TLS to the database. No field-level encryption in v1 (§12) |
 | Privacy in pipelines (N9) | Typed `track()`, whitelisted `log()`, Sentry scrubbing; messages are built from typed parameters and carry no amount, total, or holding, type or tag name (§7.10) |
 | Untrusted agent names | An agent's registered name is third-party text. Events never carry it (§7.7); the reminder uses it only when short and plain; the security email escapes it and says when NetNet cannot verify it (§7.10) |
-| Prompt injection | Holding and tag names are user text returned to agents, always as JSON string values in `structuredContent`; tool descriptions never interpolate user data |
+| Prompt injection | Holding and tag names are user text returned to agents, always as JSON string values, in `structuredContent` and its JSON text copy; tool descriptions never interpolate user data |
 | Deletion (J10) | `DELETE /api/account` deletes the user's `ledger` rows, identity, sessions, OAuth grants (revoking every connection), notification endpoints and reminder state, so every reminder stops at once, and re-keys events. **Stated window: 30 days**, the life of our daily backups (Neon's own history is 6 hours). Shown before the user confirms |
 | Content admin (future) | `netnet_content_admin` role, no access to `ledger`, `analytics` or identity |
 | Dependencies | Lockfile, Renovate weekly, `pnpm audit` in CI; no analytics or tracking SDKs |
@@ -876,25 +896,25 @@ preview gives the Founder a link to try a task's work before it merges.
 
 ### 9.3 Scheduled work
 
-Vercel Hobby runs each cron job at most once a day, starting it anywhere within its scheduled
-hour. So frequent work is done lazily or in GitHub Actions, and the reminder's time bands are three
-separate once-a-day jobs on one handler. Jobs at the same hour share one database wake.
+Every scheduled job is a GitHub Actions schedule that calls its handler with `CRON_SECRET`, and
+`vercel.json` carries no crons: Vercel's scheduler never fired the production crons, while
+GitHub's schedules demonstrably fire in this repository (decisions.md). A schedule starts a run
+late, by hours (two to six in this repository; `ops/probe.md` logs the starts), and, rarely, not at
+all; every job below tolerates both. The reminder's time bands are three schedules on one handler.
+Jobs at the same hour share one database wake.
 
 | Job | Where | When (UTC) | Wakes the database |
 |---|---|---|---|
-| **Comeback reminders** (J12) + security-email retries | Vercel Cron `/api/cron/reminders`, **three entries** | daily at **01:00, 09:00 and 17:00** (09:00, 17:00 and 01:00 in Singapore). Each run sends only to people for whom it is 08:00–21:00 (§7.10) | ~5 min each |
-| Connection-attempt timeout sweep | GitHub Actions → `/api/cron/daily` | daily at 01:00 | — |
-| Usage and SLO check | Vercel Cron `/api/cron/health` | daily at 01:00, in the same wake. Reads Neon's consumption API, N1 from events and the day's email count; emails the Founder only on a trigger (§9.4) | — |
+| **Comeback reminders** (J12) + security-email retries | GitHub Actions → `/api/cron/reminders`, **three schedules** | daily at **01:00, 09:00 and 17:00** (09:00, 17:00 and 01:00 in Singapore). Each run sends only to people for whom it is 08:00–21:00 (§7.10) | ~5 min each |
+| Connection-attempt timeout sweep, and past visitor salts deleted (§6.4) | GitHub Actions → `/api/cron/daily` | daily at 01:00 | — |
+| Usage and SLO check | GitHub Actions → `/api/cron/health` | daily at 01:00, in the same wake. Reads Neon's consumption API, N1 from events and the day's email count; emails the Founder only on a trigger (§9.4) | — |
 | FX rates | GitHub Actions → `/api/cron/fx` | daily at 17:00, after the ECB publishes (~16:00 CET) | — |
 | Backup | GitHub Actions | daily. `pg_dump` → encrypted to a key only the Founder holds → stored 30 days (Actions artifact; R2 free tier if it outgrows 500 MB) | ~5 min |
 | MCP probe | GitHub Actions | **every 6 hours on Free**, hourly after Neon Launch | ~5 min each |
 
-That is eight wakes a day: about 6 CU-hours a month of the 100. Four Vercel cron entries
-in all (P3's reminders and health check); the daily sweep and fx moved to GitHub Actions
-schedules after Vercel's scheduler never fired them (decisions.md). The P1 spike confirms
-Hobby's cron count and timing; if either falls short, the reminder runs move to GitHub Actions
-schedules calling the same handler with `CRON_SECRET`, which works because each run checks
-the time itself.
+That is eight wakes a day: about 6 CU-hours a month of the 100. The schedules use about 400 of
+the account's Actions minutes a month, before CI. A spent Actions budget stops every job at once,
+reminders and backups included, so the budget is kept well above that use.
 
 ### 9.4 Running cost and upgrade triggers
 
@@ -928,7 +948,7 @@ paid plans.
 
 | What | How |
 |---|---|
-| Logs | Vercel runtime logs (short retention on Hobby); JSON through `log(event, fields)`, whitelisted fields only (request id, route, tool, status, latency, user id, connection id, error code, and a response's size and value count for §7.2's snapshot trigger). **Never** amounts, names, emails or bodies |
+| Logs | Vercel runtime logs (short retention on Hobby); JSON through `log(event, fields)`, whitelisted fields only (request id, route, tool, status, latency, user id, connection id, error code, an unexpected error's class (its name and Postgres SQLSTATE, never its message), and a response's size and value count for §7.2's snapshot trigger). **Never** amounts, names, emails or bodies. Where no Sentry DSN is set (local runs and tests, never production), an unexpected error's stack also goes to stderr |
 | Notification delivery | Per channel: reminders sent, fallen back to email, released unsent; endpoints revoked; security emails pending past 10 minutes (counts only), from `reminder_sent {channel}`, `push_disabled {by: browser}` and the run's log line. The health check emails the Founder if a security email is still unsent after 24 hours |
 | Errors | Sentry (`@sentry/node` in the function, `@sentry/react` in the web app); `sendDefaultPii: false`; `beforeSend` drops bodies, query strings and breadcrumb text; **no session replay** |
 | Product analytics | `analytics.event` + `ops/metrics/*.sql` → `pnpm metrics --env production` prints M1–M11 and M13 per segment (M13 per channel) |
@@ -970,11 +990,11 @@ paid plans.
 | 8 | Cost rises past ~100 users (~$35–45/month at 1,000) | Accepted; still under the $50 ceiling (§9.4) |
 | 9 | **M12 (context lift) needs a harness and paid model calls** | Built in a later phase; the Founder approves each run's API spend |
 | 10 | The agent-turn heuristic (≤120 s gap) may split or merge turns | One `record_values` call is always one batch; tuned with M5 |
-| 11 | Undo conflicts can surprise | The conflict names the blocking change |
+| 11 | **No undo: a wrong write stays until it is corrected** | Activity shows every change old → new, so a correction is one more change, on the web or through the agent; M5 measures how often agent writes need one |
 | 12 | Pseudonymised events after deletion | Stage 8 legal pass |
 | 13 | No field-level encryption | Encryption at rest, RLS, no amounts outside `ledger`; revisit before any advisor feature |
 | 14 | **Web push on iPhone reaches only people who add NetNet to the Home Screen**, and NetNet does not tell them how (PRD J12) | Email carries the reminder for everyone else, so nobody depends on push. Native push later removes the step. M13's push-on share shows the cost |
-| 15 | **Reminder timing rests on Hobby's cron** (count of jobs, start anywhere within the hour, no retry) | Each run checks local time itself, so a late run is never a night-time send; a missed run delays by a day at most. Accepted risk: dealt with if a limit is hit; GitHub Actions schedules are the ready fallback (§9.3) |
+| 15 | **Scheduled work rests on GitHub Actions schedules** (a run can start late or, rarely, not at all; a spent Actions budget stops every job) | Each reminder run checks local time itself, so a late run is never a night-time send; a missed run delays by a day at most; the budget is kept well above the schedules' use (§9.3) |
 | 16 | Push can't be fully tested headless (it needs a real push service) | Unit tests on payloads and rules; integration tests against a fake push endpoint; a manual check on a real iPhone (Home Screen) and Android phone in Stage 6 |
 | 17 | **Resend's 100 emails a day are shared** by reminders, security emails, verification and resets | Reminders capped at 60 a day; security emails retried; the §9.4 trigger moves to the paid plan well before the cap |
 | 18 | "Checking" is inferred: a tab left open without requests does not count, and an agent that only lists tools does not count | Matches the PRD's intent (a look, or the agent reading or writing); the first is rare and costs one gentle reminder |

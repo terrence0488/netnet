@@ -56,6 +56,8 @@ export function toValue(row: ValueRow): Value {
     fxRate: row.fxRate,
     fxRateDate: row.fxRateDate,
     fxSource: row.fxSource,
+    givenRate: row.givenRate,
+    givenRateInto: row.givenRateInto,
     source: row.source,
     clientName: row.clientName,
     connectionId: row.connectionId,
@@ -188,10 +190,10 @@ export async function loadHolding(s: Scope, id: string): Promise<Holding | undef
   return found;
 }
 
-/** Values oldest first (by date, then id); only `holdingIds`' when given. */
-export async function loadValues(s: Scope, holdingIds?: readonly string[]): Promise<Value[]> {
+/** Value rows by holding, oldest first (by date, then id); only `holdingIds`' when given. */
+export async function loadValueRows(s: Scope, holdingIds?: readonly string[]): Promise<ValueRow[]> {
   if (holdingIds?.length === 0) return [];
-  const rows = await s.db
+  return s.db
     .select()
     .from(value)
     .where(
@@ -201,15 +203,24 @@ export async function loadValues(s: Scope, holdingIds?: readonly string[]): Prom
       ),
     )
     .orderBy(asc(value.holdingId), asc(value.date), asc(value.id));
-  return rows.map(toValue);
 }
 
-export async function loadValue(s: Scope, id: string): Promise<Value | undefined> {
+/** Values by holding, oldest first (by date, then id); only `holdingIds`' when given. */
+export async function loadValues(s: Scope, holdingIds?: readonly string[]): Promise<Value[]> {
+  return (await loadValueRows(s, holdingIds)).map(toValue);
+}
+
+export async function loadValueRow(s: Scope, id: string): Promise<ValueRow | undefined> {
   const [row] = await s.db
     .select()
     .from(value)
     .where(and(eq(value.userId, s.userId), eq(value.id, id)))
     .limit(1);
+  return row;
+}
+
+export async function loadValue(s: Scope, id: string): Promise<Value | undefined> {
+  const row = await loadValueRow(s, id);
   return row ? toValue(row) : undefined;
 }
 

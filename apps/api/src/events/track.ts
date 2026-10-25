@@ -8,21 +8,37 @@ import {
 } from '@netnet/contracts';
 import { eventStore, type EventStore } from '../db/analytics';
 import { database } from '../db/client';
+import { VISITOR } from '../db/visitor';
 import { isProduction } from '../lib/env';
 import { isId } from '../lib/ids';
 import { log } from '../lib/log';
 
 /**
  * `track()`: the only way an analytics event is written (architecture §6.4, §7.7). The event's
- * props must pass its strict schema in packages/contracts; `segment`, `user_id` and `app_version`
- * are attached here, never taken from props.
+ * props must pass its strict schema in packages/contracts; `segment`, `user_id`, `visitor` and
+ * `app_version` are attached here, never taken from props. An event for a verified user is written only while
+ * their account exists, so none keeps the id of a deleted account (PRD J10).
  */
 
 export interface TrackContext {
-  /** The verified user id, when there is one. */
+  /**
+   * The verified user id, when there is one. The event is written only while that account exists;
+   * once it is deleted, nothing is.
+   */
   userId?: string | undefined;
+  /**
+   * Instead of `userId`: the random id a deleted account's events were re-keyed to
+   * (`DELETE /api/account`), for `account_deleted`. It is no account's, so the event is written
+   * as it is. Its segment is the caller's, or `unknown`.
+   */
+  rekeyedUserId?: string | undefined;
   /** The person's segment when the caller has it loaded; otherwise read from `core.profile`. */
   segment?: Segment | undefined;
+  /**
+   * `landing_view` only, and never with a user id: the visitor hash the events route works out
+   * from the request (`db/visitor.ts`, architecture §6.4).
+   */
+  visitor?: string | undefined;
   /** The deployed version (see `appVersion()`). */
   appVersion: string;
 }
@@ -67,8 +83,21 @@ function check(name: unknown, props: unknown, ctx: TrackContext): Checked | stri
   if (ctx.userId !== undefined && !isId(ctx.userId, 'usr')) {
     return 'ctx.userId must be the verified user id, a usr_ ULID';
   }
+  if (ctx.rekeyedUserId !== undefined && !isId(ctx.rekeyedUserId, 'usr')) {
+    return 'ctx.rekeyedUserId must be the re-keyed id, a usr_ ULID';
+  }
+  if (ctx.userId !== undefined && ctx.rekeyedUserId !== undefined) {
+    return 'ctx.userId and ctx.rekeyedUserId cannot both be set';
+  }
   if (ctx.segment !== undefined && !SEGMENTS.includes(ctx.segment)) {
     return 'ctx.segment is not a segment';
+  }
+  if (ctx.visitor !== undefined) {
+    if (name !== 'landing_view') return 'ctx.visitor is for landing_view only';
+    if (ctx.userId !== undefined || ctx.rekeyedUserId !== undefined) {
+      return 'ctx.visitor cannot go with a user id';
+    }
+    if (!VISITOR.test(ctx.visitor)) return 'ctx.visitor must be 16 lower-case hex characters';
   }
   if (typeof ctx.appVersion !== 'string' || !APP_VERSION.test(ctx.appVersion)) {
     return 'ctx.appVersion must be a version token such as a short commit SHA';
@@ -98,17 +127,16 @@ export function createTrack(deps: () => TrackDeps): Track {
 async function write(deps: () => TrackDeps, event: Checked, ctx: TrackContext) {
   try {
     const { store, clock } = deps();
-    const at = clock();
-    const userId = ctx.userId ?? null;
-    const segment = ctx.segment ?? (userId === null ? 'unknown' : await store.segmentOf(userId));
-    await store.insert({
-      name: event.name,
-      at,
-      userId,
-      segment,
-      props: event.props,
-      appVersion: ctx.appVersion,
-    });
+    const row = { name: event.name, at: clock(), props: event.props, appVersion: ctx.appVersion };
+    const { userId } = ctx;
+    if (userId === undefined) {
+      const segment = ctx.segment ?? 'unknown';
+      const visitor = ctx.visitor === undefined ? {} : { visitor: ctx.visitor };
+      await store.insert({ ...row, ...visitor, userId: ctx.rekeyedUserId ?? null, segment });
+    } else {
+      const segment = ctx.segment ?? (await store.segmentOf(userId));
+      await store.insertForAccount({ ...row, userId, segment });
+    }
   } catch {
     log('event_write_failed', { ...logUser(ctx), errorCode: 'INTERNAL' });
   }

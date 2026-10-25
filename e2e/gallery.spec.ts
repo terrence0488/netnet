@@ -154,7 +154,7 @@ test('a toast offers its one follow-up, and choosing it dismisses the toast', as
   await page.getByRole('button', { name: 'Show a toast' }).click();
   const toast = page.getByRole('status').filter({ hasText: 'Value saved.' });
   await expect(toast).toBeVisible();
-  await toast.getByRole('button', { name: 'Undo' }).click();
+  await toast.getByRole('button', { name: 'Open' }).click();
   await expect(page.getByText('Value saved.')).toHaveCount(0);
-  await expect(page.getByText('Undone.')).toBeVisible();
+  await expect(page.getByText('Opened.')).toBeVisible();
 });

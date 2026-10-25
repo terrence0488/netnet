@@ -1,4 +1,8 @@
-import type { McpGetTaxonomyOutput } from '@netnet/contracts';
+import type {
+  McpCreateHoldingOutput,
+  McpGetHoldingOutput,
+  McpGetTaxonomyOutput,
+} from '@netnet/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestDatabase, type TestDatabase } from '../isolation/harness';
 import {
@@ -87,6 +91,39 @@ describe('agent_tool_called', () => {
     expect(failed.outcome).toBe('NOT_FOUND');
     const created = events.find((e) => e.name === 'holding_created');
     expect((created?.props as { source: string } | undefined)?.source).toBe('agent');
+  });
+
+  it('records value_corrected when the agent deletes a value, with its original source', async () => {
+    const userId = await onboarded(target);
+    const agent = await connectAgent(target, userId, { client: 'claude', clientName: 'Claude' });
+    const taxonomy = okOf<McpGetTaxonomyOutput>(
+      await callTool(target, agent.token, 'get_taxonomy'),
+    );
+    const cashType = taxonomy.types.find(
+      (t) => t.universal_type === 'cash' && t.pack_type_key === null,
+    )!.id;
+    const created = okOf<McpCreateHoldingOutput>(
+      await callTool(target, agent.token, 'create_holding', {
+        name: 'Everyday pot',
+        kind: 'asset',
+        type_id: cashType,
+        currency: 'EUR',
+        opening_value: { amount: '1200.00' },
+      }),
+    );
+    const holding = okOf<McpGetHoldingOutput>(
+      await callTool(target, agent.token, 'get_holding', { holding_id: created.result.id }),
+    );
+    okOf(
+      await callTool(target, agent.token, 'delete_value', {
+        value_id: holding.values.items[0]?.id,
+      }),
+    );
+    await target.settle();
+    const corrected = (await eventsOf(target, userId)).filter((e) => e.name === 'value_corrected');
+    expect(corrected.map((e) => e.props)).toStrictEqual([
+      { original_source: 'agent', age_at_correction: 0 },
+    ]);
   });
 
   it('carries no amount, name or email', async () => {

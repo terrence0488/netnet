@@ -32,5 +32,4 @@ export const deleteValueTool: ToolDef<McpDeleteValueInput, McpDeleteValueOutput>
     trackWriteEvents(ctx, write.events);
     return writeToMcp(write, null);
   },
-  text: () => 'Deleted the value.',
 };
