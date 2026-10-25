@@ -7,34 +7,85 @@ import { errorClass, log } from '../lib/log';
 /**
  * What a failed tool call answers (architecture §7.5): `isError: true` with
  * `structuredContent.error {code, message, fields?}` and the code's own details beside them. The
- * Ledger's camelCase field paths are renamed to the tool's snake_case parameters, so the agent is
- * told what to change in the words it called with.
+ * Ledger's camelCase field paths are renamed to the tool's snake_case parameters, in `fields` and
+ * wherever its messages name them, so the agent is told what to change in the words it called
+ * with.
  */
 
-/** `holdingId` → `holding_id`; an id or index is left as it is. */
+/**
+ * A Ledger segment in camelCase (`holdingId`, `fxRate`). An id (`hld_01J…`), a code (`USD`), a
+ * name (`NetNet`) and a plain word are not.
+ */
+const CAMEL = /^[a-z][a-z0-9]*(?:[A-Z][a-z0-9]*)+$/;
+
+/** `holdingId` → `holding_id`; anything else is left as it is. */
 function snake(segment: string): string {
-  return segment.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+  return CAMEL.test(segment)
+    ? segment.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase()
+    : segment;
 }
 
 /**
- * The Ledger's field paths as this tool names them: `renames` maps the segments whose MCP name
- * is not the snake_case of the Ledger's (`access` → `access_answer`); every other segment is
- * snake_cased.
+ * One Ledger path as this tool names it: `renames` maps the segments whose MCP name is not the
+ * snake_case of the Ledger's (`access` → `access_answer`); every other segment is snake_cased,
+ * and an index is left as it is.
  */
+function renamePath(path: string, renames: Record<string, string>): string {
+  const segments = path.match(/[A-Za-z0-9_]+|\[\d+\]/g) ?? [];
+  let out = '';
+  for (const segment of segments) {
+    out += segment.startsWith('[')
+      ? segment
+      : `${out === '' ? '' : '.'}${renames[segment] ?? snake(segment)}`;
+  }
+  return out === '' ? path : out;
+}
+
+/**
+ * Something in a message that may be a path, from the start of a word: an identifier, then any
+ * `[n]` and `.segment` (`values[1].holdingId`, `opening.fxRate`, `moveTo`, `name`).
+ */
+const PATH_IN_TEXT = /(?<![\w.[\]])[A-Za-z_]\w*(?:\[\d+\]|\.[A-Za-z_]\w*)*/g;
+
+/** Whether `token`, followed in its message by `after`, is a Ledger path rather than a word. */
+function isPath(token: string, after: string, fields: ReadonlySet<string>): boolean {
+  return /[.[]/.test(token) || CAMEL.test(token) || (fields.has(token) && after.startsWith(':'));
+}
+
+/**
+ * `text` with each Ledger path it names renamed as in `fields`: one with an index or a dot
+ * (`values[1].holdingId`), one in camelCase (`leave fxRate out`), and one of `fields` where the
+ * message lists it (`access: …`), at the start or further on. A plain word stays, even one that is
+ * also a field's name ("the universal type"), and so does anything in double quotes: what the
+ * agent or the content gave (an id, an answer, a code, a question), quoted as it was.
+ */
+export function renameText(
+  text: string,
+  renames: Record<string, string>,
+  fields: ReadonlySet<string> = new Set(),
+): string {
+  return text
+    .split('"')
+    .map((part, i) =>
+      i % 2 === 1
+        ? part
+        : part.replace(PATH_IN_TEXT, (token: string, offset: number) =>
+            isPath(token, part.slice(offset + token.length), fields)
+              ? renamePath(token, renames)
+              : token,
+          ),
+    )
+    .join('"');
+}
+
+/** The Ledger's field paths as this tool names them, and any path their messages name. */
 export function renamePaths(
   fields: Record<string, string>,
   renames: Record<string, string>,
 ): Record<string, string> {
   const renamed: Record<string, string> = {};
   for (const [path, message] of Object.entries(fields)) {
-    const segments = path.match(/[A-Za-z0-9_]+|\[\d+\]/g) ?? [];
-    let out = '';
-    for (const segment of segments) {
-      out += segment.startsWith('[')
-        ? segment
-        : `${out === '' ? '' : '.'}${renames[segment] ?? snake(segment)}`;
-    }
-    renamed[out === '' ? path : out] = message;
+    renamed[renamePath(path, renames)] = renameText(message, renames);
   }
   return renamed;
 }
@@ -88,10 +139,11 @@ export interface ToolFailure {
 
 /**
  * Any error a tool raises as the failure it answers with. Deliberate errors keep their code,
- * message and details, with the Ledger's paths renamed by `renames`, or left as they are when it
- * is null (the tool's own schema refused the arguments, naming them as the agent sent them);
- * anything else is logged with the request id and its class (architecture §10) and answered
- * INTERNAL, and its message, stack and SQL never leave here (CONVENTIONS §11).
+ * message and details, with the Ledger's paths renamed by `renames` in `fields` and in the
+ * messages alike (the error itself is left as it is), or not at all when `renames` is null: the
+ * tool's own schema refused the arguments, naming them as the agent sent them. Anything else is
+ * logged with the request id and its class (architecture §10) and answered INTERNAL, and its
+ * message, stack and SQL never leave here (CONVENTIONS §11).
  */
 export function toMcpError(
   error: unknown,
@@ -112,7 +164,10 @@ export function toMcpError(
           ...rest,
           ...(candidates === undefined ? {} : { candidates: candidatesOf(candidates) }),
           code: error.code,
-          message: error.message,
+          message:
+            renames === null
+              ? error.message
+              : renameText(error.message, renames, new Set(Object.keys(fields ?? {}))),
         },
       },
     };
