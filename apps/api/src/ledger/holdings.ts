@@ -151,109 +151,119 @@ export async function saveHolding(
 /** `createHolding` (`POST /api/holdings`, `create_holding`). */
 export function createHolding(s: Scope, input: CreateHolding): Promise<Write<Holding>> {
   const i = parseInput(createHoldingSchema, input);
-  return runWrite(s, 'createHolding', async (w) => {
-    const errors = new FieldErrors();
-    let type: TypeRow | undefined;
-    let newType: TypeRow | undefined;
-    if (i.typeId !== undefined) {
-      type = await loadType(s, i.typeId);
-      if (!type)
-        errors.add('NOT_FOUND', 'typeId', `There is no type "${i.typeId}" in this account.`);
-    } else if (i.universal !== undefined) {
-      type = await typeForUniversal(s, i.universal);
-      if (!type) {
-        newType = {
-          userId: s.userId,
-          id: s.id('typ'),
-          universal: i.universal,
-          packTypeKey: null,
-          customName: null,
-          sort: await nextTypeSort(s),
-          archived: false,
-        };
-        type = newType;
-      }
-    }
-    const known = currencyExponent(i.currency) !== undefined;
-    if (!known) {
-      errors.add(
-        'CURRENCY_UNSUPPORTED',
-        'currency',
-        `"${i.currency}" is not an ISO 4217 currency in circulation. Use a code such as "USD".`,
-      );
-    }
-    const tagIds = await checkTags(s, i.tagIds ?? [], 'tagIds', errors);
-    let access: AccessFields | undefined = NO_ACCESS;
-    if (i.kind === 'liability') {
-      if (i.access !== undefined) errors.add('VALIDATION_FAILED', 'access', LIABILITY_ACCESS);
-    } else if (type) {
-      access = await applyAccess(s, type.universal, i.access, 'access', errors);
-    }
-    let opening: PreparedValue | undefined;
-    if (i.opening && known) {
-      opening = await prepareValue(
-        w,
-        {
-          amount: i.opening.amount,
-          currency: i.currency,
-          date: i.opening.date,
-          fxRate: i.opening.fxRate,
-        },
-        'opening',
-        errors,
-      );
-    }
-    errors.throwIfAny();
-    if (!type || !access) throw new Error('unreachable: checked above');
+  return runWrite(s, 'createHolding', (w) => addHolding(w, i));
+}
 
-    if (i.allowDuplicate !== true) {
-      await refuseDuplicates(s, {
-        name: i.name,
-        kind: i.kind,
+/** A `createHolding` input as its contract schema parses it. */
+export type ParsedCreateHolding = ReturnType<typeof createHoldingSchema.parse>;
+
+/**
+ * `createHolding`'s change, inside a write under way: the holding with its type, tags,
+ * accessibility and opening value, its audit rows and its events. The demo household's loader
+ * (`./demo`) writes each of its holdings through it.
+ */
+export async function addHolding(w: WriteScope, i: ParsedCreateHolding): Promise<Holding> {
+  const { s } = w;
+  const errors = new FieldErrors();
+  let type: TypeRow | undefined;
+  let newType: TypeRow | undefined;
+  if (i.typeId !== undefined) {
+    type = await loadType(s, i.typeId);
+    if (!type) errors.add('NOT_FOUND', 'typeId', `There is no type "${i.typeId}" in this account.`);
+  } else if (i.universal !== undefined) {
+    type = await typeForUniversal(s, i.universal);
+    if (!type) {
+      newType = {
+        userId: s.userId,
+        id: s.id('typ'),
+        universal: i.universal,
+        packTypeKey: null,
+        customName: null,
+        sort: await nextTypeSort(s),
+        archived: false,
+      };
+      type = newType;
+    }
+  }
+  const known = currencyExponent(i.currency) !== undefined;
+  if (!known) {
+    errors.add(
+      'CURRENCY_UNSUPPORTED',
+      'currency',
+      `"${i.currency}" is not an ISO 4217 currency in circulation. Use a code such as "USD".`,
+    );
+  }
+  const tagIds = await checkTags(s, i.tagIds ?? [], 'tagIds', errors);
+  let access: AccessFields | undefined = NO_ACCESS;
+  if (i.kind === 'liability') {
+    if (i.access !== undefined) errors.add('VALIDATION_FAILED', 'access', LIABILITY_ACCESS);
+  } else if (type) {
+    access = await applyAccess(s, type.universal, i.access, 'access', errors);
+  }
+  let opening: PreparedValue | undefined;
+  if (i.opening && known) {
+    opening = await prepareValue(
+      w,
+      {
+        amount: i.opening.amount,
         currency: i.currency,
-        universal: type.universal,
-      });
-    }
+        date: i.opening.date,
+        fxRate: i.opening.fxRate,
+      },
+      'opening',
+      errors,
+    );
+  }
+  errors.throwIfAny();
+  if (!type || !access) throw new Error('unreachable: checked above');
 
-    if (newType) {
-      await s.db.insert(userType).values(newType);
-      await w.audit('type', newType.id, 'create', null, toUserType(newType));
-    }
-    const row: HoldingRow = {
-      userId: s.userId,
-      id: s.id('hld'),
+  if (i.allowDuplicate !== true) {
+    await refuseDuplicates(s, {
       name: i.name,
       kind: i.kind,
-      typeId: type.id,
       currency: i.currency,
-      cadenceDays: null,
-      archivedAt: null,
-      createdAt: s.now(),
-      rowVersion: 1,
-      ...access,
-    };
-    await s.db.insert(holding).values(row);
-    if (tagIds.length > 0) {
-      await s.db
-        .insert(holdingTag)
-        .values(tagIds.map((tagId) => ({ userId: s.userId, holdingId: row.id, tagId })));
-    }
-    const created = toHolding(row, tagIds);
-    await w.audit('holding', created.id, 'create', null, created);
+      universal: type.universal,
+    });
+  }
 
-    const source = w.eventSource;
-    if (source) {
-      w.event({
-        name: 'holding_created',
-        props: source === 'web' && i.via !== undefined ? { source, via: i.via } : { source },
-      });
-    }
-    if (opening) {
-      await insertValue(w, created.id, opening);
-      if (source) w.event({ name: 'value_recorded', props: { source } });
-    }
-    return created;
-  });
+  if (newType) {
+    await s.db.insert(userType).values(newType);
+    await w.audit('type', newType.id, 'create', null, toUserType(newType));
+  }
+  const row: HoldingRow = {
+    userId: s.userId,
+    id: s.id('hld'),
+    name: i.name,
+    kind: i.kind,
+    typeId: type.id,
+    currency: i.currency,
+    cadenceDays: null,
+    archivedAt: null,
+    createdAt: s.now(),
+    rowVersion: 1,
+    ...access,
+  };
+  await s.db.insert(holding).values(row);
+  if (tagIds.length > 0) {
+    await s.db
+      .insert(holdingTag)
+      .values(tagIds.map((tagId) => ({ userId: s.userId, holdingId: row.id, tagId })));
+  }
+  const created = toHolding(row, tagIds);
+  await w.audit('holding', created.id, 'create', null, created);
+
+  const source = w.eventSource;
+  if (source) {
+    w.event({
+      name: 'holding_created',
+      props: source === 'web' && i.via !== undefined ? { source, via: i.via } : { source },
+    });
+  }
+  if (opening) {
+    await insertValue(w, created.id, opening);
+    if (source) w.event({ name: 'value_recorded', props: { source } });
+  }
+  return created;
 }
 
 /**
