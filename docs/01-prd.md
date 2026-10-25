@@ -294,7 +294,7 @@ Channel selection and posting are Founder work; producing G-D1–G-D4 is in v1 s
 Analytics ranks with the MCP layer as a P1 deliverable. Without these events the launch produces
 no evidence and §3.3 cannot be applied. Minimum event set:
 
-`landing_view` · `signup_started {method: email|google|apple}` · `account_created {method}` · `holding_created {source: web|agent, via: guided|form}` ·
+`landing_view` · `signup_started {method: email|google|apple}` · `account_created {method}` · `email_verified` · `holding_created {source: web|agent, via: guided|form}` ·
 `value_recorded {source}` · `agent_connection_started {client, entry: onboarding|home|holding|agent}` ·
 `agent_connection_completed {client, entry}` · `agent_connection_failed {step, client, entry}` ·
 `agent_tool_called {tool, kind: read|write, outcome, latency_ms, client}` ·
@@ -316,6 +316,12 @@ M13 can compare them. None of them carries an amount or any message text (N9).
 
 `method` says which way in people choose — Google, Apple or email. Sign-up is built to be as
 frictionless as possible (J1), and this is how that is checked.
+
+A **signup** is a verified account: an `account_created` with `method` `google` or `apple`, or an
+`email_verified`. `email_verified` has no props and fires server-side once, when the auth hook
+marks an email sign-up's address verified; an account whose address is never verified is not a
+signup. Nothing else records that moment, so this event is what makes M1, and every rate whose
+denominator is signups, readable.
 
 `via` is set only when `source` is `web`: **`guided`** for the basics (J1), **`form`** for the Add
 form. Without it nothing can say whether guided assembly is what gets P-A to M2 — a guided "yes"

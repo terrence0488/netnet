@@ -54,6 +54,7 @@ const SPEC: Record<string, Record<string, SpecLeaf>> = {
   landing_view: {},
   signup_started: { method: METHOD },
   account_created: { method: METHOD },
+  email_verified: {},
   session_started: {},
   holding_created: { source: SOURCE, 'via?': ['guided', 'form'] },
   value_recorded: { source: SOURCE },
@@ -214,8 +215,8 @@ const SNAKE = /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/;
 /* ---- the tests ---- */
 
 describe('the event schemas', () => {
-  it('define the 20 events of architecture §7.7, and only those', () => {
-    expect(EVENT_NAMES).toHaveLength(20);
+  it('define the 21 events of architecture §7.7, and only those', () => {
+    expect(EVENT_NAMES).toHaveLength(21);
     expect([...EVENT_NAMES].sort()).toStrictEqual(Object.keys(SPEC).sort());
   });
 
@@ -332,6 +333,12 @@ describe('client events', () => {
     expect(isSessionlessEventName('landing_view')).toBe(true);
     expect(isSessionlessEventName('signup_started')).toBe(true);
     expect(isSessionlessEventName('session_started')).toBe(false);
+  });
+
+  it('email_verified takes no props and is the server’s', () => {
+    expect(eventSchemas.email_verified.safeParse({}).success).toBe(true);
+    expect(eventSchemas.email_verified.safeParse({ method: 'email' }).success).toBe(false);
+    expect(isClientEventName('email_verified')).toBe(false);
   });
 
   it('landing_view takes no props', () => {

@@ -69,10 +69,11 @@ Node 22 and pnpm. A SessionStart hook runs `pnpm install --frozen-lockfile`.
 | `pnpm content:check` | Validates `content/` against its schemas and the §7.8 rules; `--strict` also fails on a missing image |
 | `pnpm content:publish --env <env>` | Validates, then publishes changed `content/` documents as new versions, as `netnet_app` (`DATABASE_URL`); production needs `--strict`; `--rollback kind/key@version` points one back |
 | `pnpm fx:backfill --from <date> --env <env>` | Fills exchange-rate history from both sources, as `netnet_app` (`DATABASE_URL`); safe to repeat |
-| `pnpm db:bootstrap` | Creates the app roles by SQL, as `netnet_owner` (`DATABASE_OWNER_URL`, `NETNET_APP_DB_PASSWORD`) |
+| `pnpm db:bootstrap` | Creates the app roles by SQL, as `netnet_owner` (`DATABASE_OWNER_URL`, `NETNET_APP_DB_PASSWORD`, and `NETNET_METRICS_DB_PASSWORD` for the metrics login) |
 | `pnpm db:migrate` | Applies `apps/api/migrations/`, as `netnet_owner` |
 | `pnpm db:seed` | Fictional data, as `netnet_app` (`DATABASE_URL`) |
 | `pnpm db:generate` | A new migration from the Drizzle schema (drizzle-kit, then Prettier) |
 | `pnpm demo:load --env <env> --email <address>` | Loads the fictional demo household (`content/demo/`) into that verified account if it has no holdings, as `netnet_app` (`DATABASE_URL`); prints counts only |
+| `pnpm metrics --env <local\|preview\|production> --from <date> [--to <date>]` | Prints M1–M11 and M13 per segment (M13 per channel), the M10 funnel and the N1 SLO, as `netnet_metrics` (`DATABASE_METRICS_URL`); `METRICS_EXCLUDE_USERS` omits ids; aggregates only |
 | `pnpm smoke --origin <url>` | Post-deploy checks against any origin: health, OAuth metadata, the `/mcp` 401, security headers, and the probe's authenticated path when the probe secrets are set |
 | `pnpm probe --origin <url>` | The MCP probe (`PROBE_CLIENT_ID`, `PROBE_REFRESH_TOKEN`): refresh, `tools/list`, `get_financial_context`, timed; rotates the token into `$GITHUB_OUTPUT` |

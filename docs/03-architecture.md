@@ -627,6 +627,7 @@ its user is null, its segment `unknown`, and the server fills its `visitor` from
 | `landing_view` | — (plus `visitor` hash) | client (landing), sessionless |
 | `signup_started` | `method` | client, sessionless |
 | `account_created` | `method` | server (auth hook) |
+| `email_verified` | — | server (auth hook). Once per account, when Better Auth marks an email sign-up's address verified (`emailVerification.afterEmailVerification`); a second click on the link changes nothing. A signup is this or an `account_created` with `method` `google` or `apple` |
 | `session_started` | — | client (new session after 30 min idle) |
 | `holding_created` | `source`, `via?` (`guided`/`form`, web only) | server |
 | `value_recorded` | `source` | server |
@@ -646,9 +647,10 @@ its user is null, its segment `unknown`, and the server fills its `visitor` from
 | `account_deleted` | — | server |
 
 `ops/metrics/*.sql`, run as `netnet_metrics`, computes M1–M11 and M13 per segment from this table
-alone, so no metric can read a balance. M13's "checked NetNet within 7 days" is a `session_started`
-or an `agent_tool_called` by the same user after `reminder_sent`. M12 is a separate benchmark
-harness (§12, risk 9).
+alone, so no metric can read a balance. M1 counts a signup as an `account_created` with `method`
+`google` or `apple`, or an `email_verified`; every rate with signups as its denominator does the
+same. M13's "checked NetNet within 7 days" is a `session_started` or an `agent_tool_called` by the
+same user after `reminder_sent`. M12 is a separate benchmark harness (§12, risk 9).
 
 ### 7.8 Content schemas
 
@@ -951,8 +953,8 @@ paid plans.
 | Logs | Vercel runtime logs (short retention on Hobby); JSON through `log(event, fields)`, whitelisted fields only (request id, route, tool, status, latency, user id, connection id, error code, an unexpected error's class (its name and Postgres SQLSTATE, never its message), and a response's size and value count for §7.2's snapshot trigger). **Never** amounts, names, emails or bodies. Where no Sentry DSN is set (local runs and tests, never production), an unexpected error's stack also goes to stderr |
 | Notification delivery | Per channel: reminders sent, fallen back to email, released unsent; endpoints revoked; security emails pending past 10 minutes (counts only), from `reminder_sent {channel}`, `push_disabled {by: browser}` and the run's log line. The health check emails the Founder if a security email is still unsent after 24 hours |
 | Errors | Sentry (`@sentry/node` in the function, `@sentry/react` in the web app); `sendDefaultPii: false`; `beforeSend` drops bodies, query strings and breadcrumb text; **no session replay** |
-| Product analytics | `analytics.event` + `ops/metrics/*.sql` → `pnpm metrics --env production` prints M1–M11 and M13 per segment (M13 per channel) |
-| N1 SLO | From `agent_tool_called`: success rate and p95 over 7 days; the daily health cron emails on breach |
+| Product analytics | `analytics.event` + `ops/metrics/*.sql` → `pnpm metrics --env production` prints M1–M11 and M13 per segment (M13 per channel), the M10 funnel and the N1 SLO, as `netnet_metrics` (`DATABASE_METRICS_URL`), and `.github/workflows/metrics.yml` dispatches the same command and writes the tables to its job summary |
+| N1 SLO | From `agent_tool_called` over 7 days (`ops/metrics/n1-slo.sql`): success rate and p95; the daily health check reads the same file and emails on breach |
 | Free-tier limits | The daily health cron reads Neon usage (compute, storage) and emails at the §9.4 triggers |
 | Uptime | An external free monitor on `/api/health` (shallow, never wakes the database) and the OAuth metadata; the 6-hourly MCP probe covers the full path |
 | FX fetch | A failed fetch alerts; values keep the last rate with its date |
