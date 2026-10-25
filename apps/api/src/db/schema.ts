@@ -3,6 +3,7 @@ import {
   bigint,
   boolean,
   check,
+  customType,
   date,
   foreignKey,
   index,
@@ -597,6 +598,24 @@ export const rateLimit = core.table(
   (t) => [primaryKey({ columns: [t.key, t.windowStart] })],
 );
 
+/** Raw bytes; `pg` reads `bytea` as a Buffer. */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
+
+/**
+ * The landing page's daily salt (§6.4): one random value per UTC day, made on that day's first
+ * `landing_view` and deleted once the day has passed, so a past day's `visitor` hashes can never
+ * be recomputed. In the database rather than in memory so every function instance hashes one
+ * visitor alike.
+ */
+export const visitorSalt = core.table(
+  'visitor_salt',
+  {
+    day: date('day', { mode: 'string' }).primaryKey(),
+    salt: bytea('salt').notNull(),
+  },
+  (t) => [check('visitor_salt_salt_check', sql`octet_length(${t.salt}) = 32`)],
+);
+
 /**
  * First-party analytics events, written only through the typed `track()` (§7.7). The app may
  * insert and nothing else; `netnet_metrics` reads.
@@ -608,7 +627,10 @@ export const event = analytics.table(
     name: text('name').notNull(),
     at: instant('at').notNull().defaultNow(),
     userId: text('user_id'),
-    /** sha256(daily salt ‖ ip ‖ user agent), truncated; the salt is never stored (M10). */
+    /**
+     * `landing_view`'s only: sha256(daily salt ‖ ip ‖ user agent), 16 hex characters, with the
+     * salt kept only for its day (`visitor_salt`), so M10 counts visitors without a cookie.
+     */
     visitor: text('visitor'),
     segment: text('segment', { enum: SEGMENTS }).notNull(),
     props: jsonb('props').notNull().default({}),

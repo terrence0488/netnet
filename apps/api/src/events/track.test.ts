@@ -106,6 +106,23 @@ describe('track()', () => {
     expect(lookups).toStrictEqual([USER]);
   });
 
+  it('writes landing_view with the visitor it is given, as nobody’s', async () => {
+    await track('landing_view', {}, { ...ctx, visitor: '0123456789abcdef' });
+    expect(rows).toStrictEqual([
+      {
+        name: 'landing_view',
+        at: NOW,
+        visitor: '0123456789abcdef',
+        userId: null,
+        segment: 'unknown',
+        props: {},
+        appVersion: 'abc1234',
+      },
+    ]);
+    expect(via).toStrictEqual(['plain']);
+    expect(lookups).toStrictEqual([]);
+  });
+
   it('takes the time of the call, not of the write', async () => {
     let now = NOW;
     const later = createTrack(() => ({ store: fakeStore({}), clock: () => now }));
@@ -163,6 +180,33 @@ describe('track()', () => {
       expect(() =>
         track('account_deleted', {}, { ...ctx, userId: USER, rekeyedUserId: NEW_USER }),
       ).toThrow(/cannot both be set/);
+      expect(rows).toStrictEqual([]);
+    });
+
+    it('takes a visitor for landing_view only, never with a user, and only as 16 hex characters', () => {
+      const visitor = '0123456789abcdef';
+      expect(() => track('signup_started', { method: 'email' }, { ...ctx, visitor })).toThrow(
+        'track(): ctx.visitor is for landing_view only',
+      );
+      expect(() => track('session_started', {}, { ...ctx, userId: USER, visitor })).toThrow(
+        /landing_view only/,
+      );
+      expect(() => track('landing_view', {}, { ...ctx, userId: USER, visitor })).toThrow(
+        'track(): ctx.visitor cannot go with a user id',
+      );
+      expect(() => track('landing_view', {}, { ...ctx, rekeyedUserId: NEW_USER, visitor })).toThrow(
+        /cannot go with a user id/,
+      );
+      for (const bad of [
+        '0123456789ABCDEF',
+        '0123456789abcde',
+        '0123456789abcdef0',
+        '192.0.2.10',
+      ]) {
+        expect(() => track('landing_view', {}, { ...ctx, visitor: bad })).toThrow(
+          'track(): ctx.visitor must be 16 lower-case hex characters',
+        );
+      }
       expect(rows).toStrictEqual([]);
     });
   });
