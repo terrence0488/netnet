@@ -2,6 +2,7 @@ import { createECDH, randomBytes } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import webpush from 'web-push';
+import { PUSH_SERVICE_HOSTS } from '@netnet/contracts';
 import type { Track } from '../events/track';
 import type { PushEndpoint, RenderedPush } from './channel';
 import {
@@ -79,7 +80,10 @@ function stubPost(answer: { ok: boolean; status: number } | 'throw') {
 function memoryStore() {
   const successes: { id: string; at: Date }[] = [];
   const failures: { id: string; status: number | undefined; at: Date }[] = [];
+  const revocations: { id: string; userId: string; at: Date }[] = [];
   let next: { userId: string; revoked: boolean } | null = { userId: USER, revoked: false };
+  // The row is active until the first revocation.
+  let active = true;
   const store: PushOutcomeStore = {
     success: (id, at) => {
       successes.push({ id, at });
@@ -89,8 +93,20 @@ function memoryStore() {
       failures.push({ id, status, at });
       return Promise.resolve(next);
     },
+    revoke: (id, userId, at) => {
+      revocations.push({ id, userId, at });
+      const revoked = active;
+      active = false;
+      return Promise.resolve(revoked);
+    },
   };
-  return { store, successes, failures, revoke: (outcome: typeof next) => (next = outcome) };
+  return {
+    store,
+    successes,
+    failures,
+    revocations,
+    failureOutcome: (outcome: typeof next) => (next = outcome),
+  };
 }
 
 function captureTrack() {
@@ -147,12 +163,16 @@ beforeEach(() => {
 
 afterEach(() => vi.restoreAllMocks());
 
+/** The fake push service these tests send to. */
+const FAKE_PUSH_HOSTS = ['push.example.net'];
+
 function channelOf(options: {
   post: WebPushPost;
   store: PushOutcomeStore;
   track: Track;
   vapid?: VapidConfig;
   clock?: () => Date;
+  pushHosts?: readonly string[];
 }) {
   return webPushChannel({
     vapid: options.vapid ?? VAPID,
@@ -160,6 +180,7 @@ function channelOf(options: {
     store: options.store,
     track: options.track,
     appVersion: () => 'test123',
+    pushHosts: options.pushHosts ?? FAKE_PUSH_HOSTS,
     ...(options.clock ? { clock: options.clock } : {}),
   });
 }
@@ -225,6 +246,7 @@ describe('webPushChannelFromEnv', () => {
           store: store.store,
           track: tracked.track,
           appVersion: () => 'test123',
+          pushHosts: PUSH_SERVICE_HOSTS,
         },
         {},
       ),
@@ -285,12 +307,12 @@ describe('sending', () => {
       const store = memoryStore();
       const tracked = captureTrack();
       const channel = channelOf({
-        post: fetchPost(),
+        post: fetchPost(fetchVia(`http://127.0.0.1:${address.port}`)),
         store: store.store,
         track: tracked.track,
       });
       const to = device({
-        subscription: subscription(`http://127.0.0.1:${address.port}/push/fake-device`),
+        subscription: subscription('https://push.example.net/push/fake-device'),
         ttlSeconds: 7200,
       });
       await expect(channel.send(to, RENDERED)).resolves.toEqual({ ok: true });
@@ -364,12 +386,79 @@ describe('sending', () => {
     }
   });
 
+  it('skips and revokes an endpoint off the list, with push_disabled once', async () => {
+    const post = stubPost({ ok: true, status: 201 });
+    const store = memoryStore();
+    const tracked = captureTrack();
+    const at = new Date('2026-08-01T10:00:00.000Z');
+    const channel = channelOf({
+      post: post.post,
+      store: store.store,
+      track: tracked.track,
+      clock: () => at,
+    });
+    for (const endpoint of [
+      'https://push.example.org/push/stored-before-the-list',
+      'https://192.0.2.10/push/x',
+      'https://push.example.net:8443/push/x',
+      'https://someone@push.example.net/push/x',
+      'http://push.example.net/push/x',
+    ]) {
+      const to = device({ subscription: subscription(endpoint) });
+      await expect(channel.send(to, RENDERED), endpoint).resolves.toEqual({ ok: false });
+    }
+    // Nothing went out, nothing counted as the device's failure: each was revoked instead.
+    expect(post.sent).toEqual([]);
+    expect(store.successes).toEqual([]);
+    expect(store.failures).toEqual([]);
+    expect(store.revocations).toHaveLength(5);
+    expect(store.revocations[0]).toEqual({ id: device().id, userId: USER, at });
+    // The row was revoked by the first: the event fires once.
+    expect(tracked.events).toEqual([
+      { name: 'push_disabled', props: { platform: 'android', by: 'browser' }, userId: USER },
+    ]);
+    expect(logged).toContain(`{"event":"push_endpoint_off_list","userId":"${USER}"}`);
+  });
+
+  it('takes only the push services’ own hosts with production’s list', async () => {
+    const post = stubPost({ ok: true, status: 201 });
+    const store = memoryStore();
+    const tracked = captureTrack();
+    const channel = channelOf({
+      post: post.post,
+      store: store.store,
+      track: tracked.track,
+      pushHosts: PUSH_SERVICE_HOSTS,
+    });
+    // The tests' fake push service is not one production sends to.
+    await expect(channel.send(device(), RENDERED)).resolves.toEqual({ ok: false });
+    expect(post.sent).toEqual([]);
+    expect(store.revocations).toHaveLength(1);
+    for (const endpoint of [
+      'https://fcm.googleapis.com/fcm/send/test-device',
+      'https://updates.push.services.mozilla.com/wpush/v2/test-device',
+      'https://wns2-par02p.notify.windows.com/w/?token=test-device',
+      'https://web.push.apple.com/test-device',
+    ]) {
+      await expect(
+        channel.send(device({ subscription: subscription(endpoint) }), RENDERED),
+        endpoint,
+      ).resolves.toEqual({ ok: true });
+    }
+    expect(post.sent.map((sent) => sent.url)).toEqual([
+      'https://fcm.googleapis.com/fcm/send/test-device',
+      'https://updates.push.services.mozilla.com/wpush/v2/test-device',
+      'https://wns2-par02p.notify.windows.com/w/?token=test-device',
+      'https://web.push.apple.com/test-device',
+    ]);
+  });
+
   it('revokes on 404 and 410, firing push_disabled {by: browser} once', async () => {
     for (const status of [404, 410]) {
       const post = stubPost({ ok: false, status });
       const store = memoryStore();
       const tracked = captureTrack();
-      store.revoke({ userId: USER, revoked: true });
+      store.failureOutcome({ userId: USER, revoked: true });
       const at = new Date('2026-08-01T10:00:00.000Z');
       const channel = channelOf({
         post: post.post,
@@ -404,7 +493,7 @@ describe('sending', () => {
     expect(store.failures.map((f) => f.status)).toEqual([503]);
     expect(tracked.events).toEqual([]);
 
-    store.revoke({ userId: USER, revoked: true });
+    store.failureOutcome({ userId: USER, revoked: true });
     await expect(channel.send(device(), RENDERED)).resolves.toEqual({ ok: false, status: 503 });
     expect(tracked.events).toEqual([
       { name: 'push_disabled', props: { platform: 'android', by: 'browser' }, userId: USER },
@@ -429,7 +518,7 @@ describe('sending', () => {
     const post = stubPost({ ok: false, status: 410 });
     const store = memoryStore();
     const tracked = captureTrack();
-    store.revoke(null);
+    store.failureOutcome(null);
     const channel = channelOf({ post: post.post, store: store.store, track: tracked.track });
 
     await expect(channel.send(device(), RENDERED)).resolves.toEqual({ ok: false, status: 410 });

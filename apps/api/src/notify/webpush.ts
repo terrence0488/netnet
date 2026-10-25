@@ -1,3 +1,4 @@
+import { isPushServiceUrl } from '@netnet/contracts';
 import webpush from 'web-push';
 import type { Track } from '../events/track';
 import { log } from '../lib/log';
@@ -9,7 +10,9 @@ import type { PushChannel, PushEndpoint, RenderedPush, SendResult } from './chan
  * `/app/sw.js` reads the same JSON — encrypted per device (aes128gcm, by the `web-push` library),
  * signed with the VAPID key, `urgency: normal`, and a TTL of the time left until 21:00 in the
  * person's zone. `404`/`410` or five failures in a row revokes the device (`push_disabled {by:
- * browser}`). Failures are logged without content.
+ * browser}`). It sends only to the push services on its list, and never follows a redirect; a
+ * stored endpoint off the list is revoked instead of sent to, the same way. Failures are logged
+ * without content.
  */
 
 /** The payload's marker: what tells the worker (and Safari) this is NetNet's reminder. */
@@ -76,6 +79,11 @@ export interface PushOutcomeStore {
     status: number | undefined,
     at: Date,
   ): Promise<{ userId: string; revoked: boolean } | null>;
+  /**
+   * Revokes a device whose endpoint is off the push services' list (one stored before the list):
+   * true when this call revoked it, so `push_disabled` fires once.
+   */
+  revoke(id: string, userId: string, at: Date): Promise<boolean>;
 }
 
 export interface WebPushPost {
@@ -117,19 +125,38 @@ export interface WebPushChannelOptions {
   track: Track;
   appVersion: () => string;
   clock?: () => Date;
+  /**
+   * The push services it sends to (architecture §7.10): `PUSH_SERVICE_HOSTS` in production,
+   * never read from the environment; tests pass a fake service's host.
+   */
+  pushHosts: readonly string[];
 }
 
 /**
  * The channel over the `web-push` library: it builds each send's request (encryption, VAPID
  * signature, TTL, urgency) and `post` delivers it. A refusal or a network failure is a result,
  * never a throw, and is recorded on the row — except building the request itself failing, which
- * is our bug or a malformed subscription, and counts as failed without touching the count.
+ * is our bug or a malformed subscription, and counts as failed without touching the count. An
+ * endpoint off the list is never sent to: the device is revoked, as for a `410`.
  */
 export function webPushChannel(options: WebPushChannelOptions): PushChannel {
   const clock = options.clock ?? (() => new Date());
+  const disabledByBrowser = (to: PushEndpoint, userId: string) =>
+    options.track(
+      'push_disabled',
+      { platform: to.platform, by: 'browser' },
+      { userId, appVersion: options.appVersion() },
+    );
   return {
     id: 'webpush',
     async send(to: PushEndpoint, rendered: RenderedPush): Promise<SendResult> {
+      if (!isPushServiceUrl(to.subscription.endpoint, options.pushHosts)) {
+        if (await options.store.revoke(to.id, to.userId, clock())) {
+          await disabledByBrowser(to, to.userId);
+        }
+        log('push_endpoint_off_list', { userId: to.userId });
+        return { ok: false };
+      }
       let request: { endpoint: string; headers: Record<string, string>; body: Buffer };
       try {
         const built = webpush.generateRequestDetails(
@@ -177,13 +204,7 @@ export function webPushChannel(options: WebPushChannelOptions): PushChannel {
         return { ok: true };
       }
       const outcome = await options.store.failure(to.id, status, at);
-      if (outcome !== null && outcome.revoked) {
-        await options.track(
-          'push_disabled',
-          { platform: to.platform, by: 'browser' },
-          { userId: outcome.userId, appVersion: options.appVersion() },
-        );
-      }
+      if (outcome !== null && outcome.revoked) await disabledByBrowser(to, outcome.userId);
       if (status !== undefined) {
         log('push_send_failed', { userId: to.userId, status, errorCode: 'INTERNAL' });
       } else {
