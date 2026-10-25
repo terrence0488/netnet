@@ -1,0 +1,139 @@
+{
+  "id": "in",
+  "locale": "en-IN",
+  "currency": "INR",
+  "labels": {
+    "mortgage": "Home loan"
+  },
+  "examples": {
+    "cash": "e.g. Savings account, fixed deposit",
+    "listed": "e.g. Demat account, mutual funds",
+    "retirement": "e.g. EPF or NPS",
+    "property": "e.g. Flat",
+    "vehicle": "e.g. Car or two-wheeler",
+    "mortgage": "e.g. Home loan",
+    "loan": "e.g. Education loan",
+    "wrapper": "e.g. PPF account"
+  },
+  "meaning": {},
+  "cadenceDays": {},
+  "defaults": {},
+  "questions": {
+    "retirement": {
+      "ask": "Could you withdraw this now, without retiring or leaving work?",
+      "answers": [
+        {
+          "id": "yes",
+          "label": "Yes",
+          "access": "accessible",
+          "reason": "your PF or NPS lets you withdraw this now"
+        },
+        {
+          "id": "no",
+          "label": "No",
+          "access": "locked",
+          "reason": "your PF or NPS is locked until you’re eligible to withdraw",
+          "until": "until you’re eligible to withdraw"
+        }
+      ]
+    }
+  },
+  "types": [
+    { "key": "gold", "u": "other", "label": "Gold", "example": "e.g. Gold jewellery or coins" },
+    {
+      "key": "vehicle_loan",
+      "u": "loan",
+      "label": "Vehicle loan",
+      "example": "e.g. Two-wheeler loan"
+    }
+  ],
+  "checklist": [
+    {
+      "id": "bank",
+      "u": "cash",
+      "name": "Bank accounts",
+      "ask": "Do you have money in a bank account or a fixed deposit?",
+      "amount": "Roughly how much, across all of them?"
+    },
+    {
+      "id": "epf",
+      "u": "retirement",
+      "name": "EPF",
+      "ask": "Do you have EPF savings?",
+      "amount": "Roughly how much?",
+      "hint": "Your EPFO passbook shows the balance."
+    },
+    {
+      "id": "nps",
+      "u": "retirement",
+      "name": "NPS",
+      "ask": "Do you have an NPS account?",
+      "amount": "Roughly how much in Tier I?",
+      "answer": "no",
+      "hint": "Add a Tier II account on its own: it can be withdrawn at any time."
+    },
+    {
+      "id": "invest",
+      "u": "listed",
+      "name": "Investments",
+      "ask": "Any investments — shares, mutual funds, a demat account?",
+      "amount": "Roughly what are they worth today?"
+    },
+    {
+      "id": "ppf",
+      "u": "wrapper",
+      "name": "PPF",
+      "ask": "Do you have a PPF account?",
+      "amount": "Roughly how much is in it?"
+    },
+    {
+      "id": "gold",
+      "u": "other",
+      "type": "gold",
+      "name": "Gold",
+      "ask": "Do you own gold — jewellery, coins or bars?",
+      "amount": "Roughly what would it sell for today?",
+      "answer": "sell"
+    },
+    {
+      "id": "home",
+      "u": "property",
+      "name": "Home",
+      "ask": "Do you own the home you live in?",
+      "amount": "Roughly what would it sell for?",
+      "answer": "yes"
+    },
+    {
+      "id": "home_loan",
+      "u": "mortgage",
+      "name": "Home loan",
+      "ask": "Is there a home loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "home",
+      "hint": "Your latest loan statement shows what’s outstanding."
+    },
+    {
+      "id": "vehicle",
+      "u": "vehicle",
+      "name": "Vehicle",
+      "ask": "Do you own a car or a two-wheeler?",
+      "amount": "Roughly what would it sell for?"
+    },
+    {
+      "id": "vehicle_loan",
+      "u": "loan",
+      "type": "vehicle_loan",
+      "name": "Vehicle loan",
+      "ask": "Is there a loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "vehicle"
+    },
+    {
+      "id": "owed",
+      "u": "loan",
+      "name": "Other loans",
+      "ask": "Anything else you owe — an education loan, a personal loan or a card balance?",
+      "amount": "Roughly how much, all together?"
+    }
+  ]
+}
