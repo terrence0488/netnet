@@ -135,6 +135,6 @@ starts, read from each workflow's runs (event `schedule`):
 |---|---|---|---|
 | daily (`cron-daily.yml`) | daily 01:00 | 2026-10-09 07:04 | 05:15–07:17, every day |
 | fx (`cron-fx.yml`) | daily 17:00 | 2026-10-08 21:37 | 18:56–23:20, every day |
-| reminders (`cron-reminders.yml`) | daily 01:00 | — | — |
-| reminders (`cron-reminders.yml`) | daily 09:00 | 2026-10-24 13:03 | — |
-| reminders (`cron-reminders.yml`) | daily 17:00 | — | — |
+| reminders (`cron-reminders.yml`) | daily 01:00 | 2026-10-25 05:38 | 05:38–07:00, every day |
+| reminders (`cron-reminders.yml`) | daily 09:00 | 2026-10-24 13:03 | 13:03–13:30, every day |
+| reminders (`cron-reminders.yml`) | daily 17:00 | 2026-10-24 19:15 | 19:15–19:26, every day |
