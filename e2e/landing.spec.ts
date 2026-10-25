@@ -3,7 +3,9 @@
  * The landing page at `/` (PRD G-D1, G-D4): §2.5's line first, both proofs and the trust points,
  * sign-up one tap away; `landing_view` fired once per load with no cookie and nothing stored in
  * the browser; noindex, robots.txt and link previews; usable at 390 and 1280px, nothing sideways
- * at 320px, axe clean, and light. At both widths, against the built app.
+ * at 320px, axe clean, and light. The draft privacy policy and terms at `/privacy` and `/terms`
+ * (P4-T8) carry the same design, a visible Draft note, no analytics and no cookie. At both
+ * widths, against the built app.
  */
 import { withClient } from '@netnet/api/db/client';
 import {
@@ -26,6 +28,17 @@ import {
 } from './support';
 
 const LINE = 'You can’t get useful advice from an AI that doesn’t know where you stand.';
+
+/** The two legal drafts (P4-T8): the footer's word for each, its route, and what it opens with. */
+const LEGAL = [
+  {
+    link: 'Privacy',
+    path: '/privacy',
+    title: 'Privacy policy · NetNet',
+    heading: 'Privacy policy',
+  },
+  { link: 'Terms', path: '/terms', title: 'Terms of use · NetNet', heading: 'Terms of use' },
+] as const;
 
 /** The page's HTML, CSS, fonts and script together stay under this (P4-T2). */
 const MAX_PAGE_BYTES = 300 * 1024;
@@ -146,6 +159,99 @@ test.describe('the landing page', () => {
     await signIn.first().click();
     await expect(page).toHaveURL(/\/app\/login$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Log in' })).toBeVisible();
+  });
+
+  test('links to the privacy policy and the terms from its footer, and both pages open', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const legalLink = (word: string) =>
+      page.getByRole('contentinfo').getByRole('link', { name: word, exact: true });
+    for (const item of LEGAL) await expect(legalLink(item.link)).toHaveAttribute('href', item.path);
+
+    for (const item of LEGAL) {
+      await page.goto('/');
+      await legalLink(item.link).click();
+      await expect(page).toHaveURL(new RegExp(`${item.path}$`));
+      await expect(page).toHaveTitle(item.title);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(item.heading);
+      await expect(page.getByRole('heading', { level: 1 })).toBeInViewport();
+    }
+  });
+
+  test('says Draft at the top of both legal pages, and does not claim to be final', async ({
+    page,
+  }) => {
+    for (const item of LEGAL) {
+      await page.goto(item.path);
+      const note = page.locator('main > .draft');
+      await expect(page.locator('main > :first-child')).toHaveClass(/draft/);
+      await expect(note).toBeVisible();
+      await expect(note).toContainText('Draft');
+      await expect(note).toContainText('not final');
+      const text = (await page.locator('main').innerText()).replace(/[’']/g, "'");
+      expect(text).not.toMatch(/last updated|effective (date|from)|final policy/i);
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
+    }
+  });
+
+  test('states what NetNet does in both drafts, and nothing beyond it', async ({ page }) => {
+    await page.goto('/privacy');
+    const privacy = (await page.locator('main').innerText()).replace(/\s+/g, ' ');
+    for (const fact of [
+      'Singapore',
+      'never sold',
+      'never reaches us',
+      '30 days',
+      'erased at once',
+      'machine-readable',
+      'one first-party session cookie',
+    ]) {
+      expect(privacy).toContain(fact);
+    }
+
+    await page.goto('/terms');
+    const terms = (await page.locator('main').innerText()).replace(/\s+/g, ' ');
+    for (const fact of [
+      'free today, and what is free stays free',
+      'never gives advice',
+      'your agent is yours',
+      'provided as it is',
+      'Acceptable use',
+    ]) {
+      expect(terms).toContain(fact);
+    }
+  });
+
+  test('keeps both legal pages usable at this width, axe clean, targets big enough', async ({
+    page,
+  }, testInfo) => {
+    for (const item of LEGAL) {
+      await page.goto(item.path);
+      await expect(page.getByRole('heading', { level: 1 })).toBeInViewport();
+      await expectNoHorizontalScroll(page);
+      await expectNoSeriousAxeViolations(page);
+      await expectTapTargets(page, hitTarget(testInfo));
+      if (isPhone(testInfo)) await expectTextAtLeast(page, 11);
+    }
+  });
+
+  test('never scrolls sideways at the narrowest phone, on either legal page', async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS.narrow);
+    for (const item of LEGAL) {
+      await page.goto(item.path);
+      await expectNoHorizontalScroll(page);
+      await expectTextAtLeast(page, 11);
+    }
+  });
+
+  test('sends no event and sets no cookie on either legal page', async ({ browser }) => {
+    const { context, page } = await visitor(browser);
+    for (const item of LEGAL) {
+      expect(await eventsSent(page, () => page.goto(item.path))).toStrictEqual([]);
+    }
+    expect(await context.cookies()).toStrictEqual([]);
+    await context.close();
   });
 
   test('fires landing_view once per load, sends and sets no cookie, and stores nothing', async ({

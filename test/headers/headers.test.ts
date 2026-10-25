@@ -9,7 +9,13 @@ interface HeaderEntry {
   headers: { key: string; value: string }[];
 }
 
+interface RewriteEntry {
+  source: string;
+  destination: string;
+}
+
 const entries = vercel.headers as HeaderEntry[];
+const rewrites = vercel.rewrites as RewriteEntry[];
 
 function headersFor(source: string): Record<string, string> {
   const entry = entries.find((candidate) => candidate.source === source);
@@ -58,9 +64,19 @@ describe('vercel.json security headers', () => {
   });
 
   it('never caches the pages, but caches hashed assets forever', () => {
-    const pages = headersFor('/(|index\\.html|app|app/(?!assets/).*)');
+    const pages = headersFor(
+      '/(|index\\.html|privacy|privacy\\.html|terms|terms\\.html|app|app/(?!assets/).*)',
+    );
     expect(pages['Cache-Control']).toBe('no-cache');
     const assets = headersFor('/(assets|app/assets)/(.*)');
     expect(assets['Cache-Control']).toBe('public, max-age=31536000, immutable');
+  });
+
+  it('serves the privacy policy and terms as clean URLs, uncached, like the other pages', () => {
+    for (const page of ['privacy', 'terms']) {
+      expect(rewrites).toContainEqual({ source: `/${page}`, destination: `/${page}.html` });
+    }
+    // Every route, `/privacy` and `/terms` included, carries the global security headers.
+    expect(headersFor('/(.*)')['Content-Security-Policy']).toContain("frame-ancestors 'none'");
   });
 });

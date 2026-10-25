@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F2EADB" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1B1712" media="(prefers-color-scheme: dark)" />
+    <title>Privacy policy · NetNet</title>
+    <meta
+      name="description"
+      content="A draft privacy policy: what NetNet holds, what never reaches it, who processes it, and how to export or delete it."
+    />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preload" href="/src/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin />
+    <link
+      rel="preload"
+      href="/src/fonts/space-grotesk.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <a class="wordmark" href="/"><i class="sparkle" aria-hidden="true"></i>NetNet</a>
+      <a class="quiet" href="/app/login">Sign in</a>
+    </header>
+
+    <main class="doc">
+      <p class="draft" role="note">
+        <strong>Draft.</strong> This policy is not final. It describes what NetNet does today and is
+        waiting for review by someone qualified before it is published.
+      </p>
+
+      <h1>Privacy policy</h1>
+      <p class="doc-lede">
+        NetNet keeps where you stand and gives the facts to your own AI agent. This page says what
+        that means for your data: what is held, what never reaches us, who processes it, and how to
+        take it with you or delete it.
+      </p>
+
+      <section aria-labelledby="short">
+        <h2 id="short">In short</h2>
+        <ul>
+          <li>Your data is stored in Singapore, encrypted at rest and in transit.</li>
+          <li>It is never sold, and NetNet has no advertising or tracking SDKs.</li>
+          <li>Statements and documents you give your agent never reach NetNet.</li>
+          <li>You can export everything at any time.</li>
+          <li>
+            Delete your account and your data is erased at once; our backups expire within 30 days.
+          </li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="held">
+        <h2 id="held">What NetNet holds</h2>
+        <ul>
+          <li>
+            Your account: your email address and either a password hash or the link to the provider
+            you signed in with (Google or Apple).
+          </li>
+          <li>
+            Your profile: your country, your time zone and the segment you chose when you started.
+          </li>
+          <li>
+            The balance sheet you or your agent enter: holdings, values with their currencies and
+            rates, types, tags, accessibility, and the full value history.
+          </li>
+          <li>
+            Your agents: each connection's client name and the times it was started, approved and
+            last used, so the Agent tab and Activity can show them.
+          </li>
+          <li>
+            Notifications: the push endpoints of the devices you turned notifications on for, and
+            your reminder settings and state.
+          </li>
+          <li>
+            Analytics events: names, counts, timings and a user id only. They never carry an amount,
+            a holding name or any text you wrote.
+          </li>
+          <li>
+            Logs and error reports: a request id, route, status, latency, error code and similar
+            technical fields, scrubbed of content.
+          </li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="never">
+        <h2 id="never">What NetNet never receives</h2>
+        <ul>
+          <li>
+            Your documents and statements. Your agent reads a statement in your own client and sends
+            NetNet the figures; the document itself never reaches us.
+          </li>
+          <li>
+            Your data sold or shared for marketing. NetNet has no ads, no tracking SDKs and no
+            session replay.
+          </li>
+          <li>
+            Amounts, names or text in analytics, logs or error reports. Events are typed, and every
+            message NetNet sends you is built from typed fields: no amount, total, holding, type or
+            tag name.
+          </li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="where">
+        <h2 id="where">Where it is kept, and who processes it</h2>
+        <p>
+          NetNet's database and its server function run with Neon and Vercel in Singapore. Static
+          files, this page included, are served from Vercel's CDN. Storage is encrypted at rest and
+          traffic is encrypted in transit.
+        </p>
+        <p>The processors are:</p>
+        <ul>
+          <li>Vercel, for hosting and the CDN.</li>
+          <li>Neon, for Postgres.</li>
+          <li>
+            Resend, for email: address verification, password reset, the security email and reminder
+            email.
+          </li>
+          <li>
+            Sentry, for error reports, with default personal data off and bodies, query strings and
+            breadcrumb text dropped.
+          </li>
+          <li>
+            Your browser's own push service, for a reminder when you have notifications on. Which
+            company that is depends on your browser and device.
+          </li>
+          <li>Google and Apple, only when you choose to sign in with them.</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="agent">
+        <h2 id="agent">Your agent</h2>
+        <p>
+          A connection is made only when you approve it on NetNet's own page, from an account whose
+          email is verified. A connected agent can read your balance sheet and write to it, the same
+          things the web app can do, and every change it makes is in Activity.
+        </p>
+        <p>
+          Every connection sends a security email to your account address: which agent connected,
+          when, and what it may do, with a link to revoke it. It is email only, never push, it
+          carries no financial data, and it cannot be turned off. You can revoke any connection at
+          any time; later calls from it are rejected and the revocation is in the audit log.
+        </p>
+      </section>
+
+      <section aria-labelledby="cookies">
+        <h2 id="cookies">Cookies and analytics</h2>
+        <p>
+          The app sets one first-party session cookie. It is HttpOnly, Secure and SameSite=Lax, and
+          it lasts 30 days of use (sliding). It is how the server knows which account a request
+          belongs to.
+        </p>
+        <p>
+          This page sets no cookie. The landing page sets none either and stores nothing in your
+          browser: a visit counts through a hash the server computes from the request and a daily
+          salt, and that day's salt is deleted once the day has passed, so a past day's counts
+          cannot be traced back to a person.
+        </p>
+        <p>There are no advertising or tracking cookies and no third-party analytics SDK.</p>
+      </section>
+
+      <section aria-labelledby="reminders">
+        <h2 id="reminders">Reminders</h2>
+        <p>
+          If you have not checked NetNet for 30 days, NetNet may send one reminder, then at most
+          once a month up to three times (days 30, 60 and 90), in the daytime in your own time zone.
+          It goes by push to the devices where notifications are on, and by email only when none is,
+          or every push fails, to a verified address with email reminders on.
+        </p>
+        <p>
+          A reminder never carries an amount, a total, a holding, type or tag name. Turn reminders
+          off in Settings → Notifications and nothing is sent by any channel. Turn email reminders
+          off and no reminder email is sent. Every reminder email has a one-click unsubscribe.
+          Checking NetNet, in the app or through your agent, restarts the clock.
+        </p>
+      </section>
+
+      <section aria-labelledby="export">
+        <h2 id="export">Export and deletion</h2>
+        <p>
+          Export at any time and you get a complete, machine-readable file: holdings, types, tags,
+          accessibility and the full value history with currencies and rates, enough to rebuild a
+          spreadsheet from.
+        </p>
+        <p>
+          Delete your account and the deletion happens at once: your ledger rows, account and
+          sessions, agent grants (which revokes every connection), notification endpoints and
+          reminder state go, and your analytics events are re-keyed to a random id, so they still
+          count but no longer point at you. Our daily backups expire within 30 days; that is the
+          stated window, and the app shows it before you confirm.
+        </p>
+      </section>
+
+      <section aria-labelledby="security">
+        <h2 id="security">Security</h2>
+        <p>
+          Each account's data is isolated by Postgres row-level security, so the database itself,
+          not only the application, refuses another account's rows. Passwords are hashed with
+          scrypt. Traffic is over TLS, and responses carry a strict content security policy, HSTS
+          and the related headers.
+        </p>
+        <p>
+          If you think someone else has used your account, revoke the connection in the Agent tab
+          and change your password.
+        </p>
+      </section>
+
+      <section aria-labelledby="operator">
+        <h2 id="operator">Who runs NetNet, and how to reach us</h2>
+        <p>NetNet is run by its founder, and the service and its data are in Singapore.</p>
+        <p>
+          The operator's legal name and registered address, and the contact address for privacy
+          questions, are not in this draft. They will appear here before this policy is final. No
+          reviewer and no review date are named yet, because neither has been recorded.
+        </p>
+      </section>
+
+      <section aria-labelledby="changes">
+        <h2 id="changes">Changes to this policy</h2>
+        <p>
+          This is a draft, and it changes when the qualified review is recorded. The final version
+          names the reviewer and the date, and the pull request that records them removes the draft
+          note at the top. If a change affects what NetNet does with your data, it will be said
+          plainly here before it takes effect.
+        </p>
+        <p>The terms of use are separate: <a href="/terms">Terms of use</a>.</p>
+      </section>
+
+      <section aria-labelledby="reviewer">
+        <h2 id="reviewer">Where the reviewer should look</h2>
+        <p>
+          Singapore's Personal Data Protection Act is the starting point: the operator and the data
+          are in Singapore. The reviewer should confirm at least:
+        </p>
+        <ul>
+          <li>
+            that the PDPA's consent, notification, access and correction, retention and transfer
+            rules are met as written, including the 30-day backup window;
+          </li>
+          <li>
+            whether users in the EU or UK make a GDPR representative or a different lawful basis
+            necessary, and what the transfer wording should be;
+          </li>
+          <li>
+            whether any other launch market's rules need a separate notice, and whether the
+            processor list needs a data-processing agreement with each processor.
+          </li>
+          <li>
+            the operator's legal name, registered address and the contact address, which the Founder
+            supplies.
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <span class="wordmark small"><i class="sparkle" aria-hidden="true"></i>NetNet</span>
+      <nav class="foot-links" aria-label="Legal">
+        <a class="quiet" href="/privacy">Privacy</a>
+        <a class="quiet" href="/terms">Terms</a>
+      </nav>
+    </footer>
+  </body>
+</html>
