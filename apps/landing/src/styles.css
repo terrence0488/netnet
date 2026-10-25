@@ -24,6 +24,9 @@
   --poster-headline: clamp(26px, 8.4vw, 64px);
   --poster-title: clamp(21px, 5.6vw, 32px);
   --poster-closing: clamp(26px, 7.4vw, 52px);
+  --poster-doc-title: clamp(26px, 7vw, 44px);
+  --poster-doc-heading: max(var(--fs-min), calc(18px * var(--fs)));
+  --poster-doc-measure: 44em;
   --poster-lead: max(var(--fs-min), calc(17px * var(--fs)));
   --poster-prompt: max(var(--fs-min), calc(16px * var(--fs)));
   --poster-point: max(var(--fs-min), calc(15px * var(--fs)));
@@ -47,6 +50,7 @@
     --poster-body: 17px;
     --poster-small: 15px;
     --poster-meta: 14px;
+    --poster-doc-heading: 20px;
   }
 }
 
@@ -497,6 +501,76 @@ main,
   }
 }
 
+/* ---------------------------------------------------------------- the documents */
+
+/* `/privacy` and `/terms`: the landing page's tokens and faces, in a centred reading column. */
+.doc {
+  width: min(100% - 2 * var(--gutter), var(--poster-doc-measure));
+  margin-inline: auto;
+  padding-top: var(--space-6);
+}
+
+.doc h1 {
+  font-size: var(--poster-doc-title);
+}
+
+.doc-lede {
+  margin-top: var(--space-8);
+  color: var(--ink);
+  font-size: var(--poster-lead);
+  line-height: var(--leading-body);
+}
+
+.doc section {
+  margin-top: var(--space-16);
+}
+
+.doc h2 {
+  margin-bottom: var(--space-5);
+  font-size: var(--poster-doc-heading);
+}
+
+.doc p,
+.doc li {
+  color: var(--ink-2);
+  font-size: var(--poster-body);
+}
+
+.doc p + p {
+  margin-top: var(--space-5);
+}
+
+.doc ul {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding-left: var(--space-10);
+  list-style: disc;
+}
+
+.doc a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  font-weight: var(--weight-button);
+}
+
+/* The draft note (F23). Visible before anything else on the page, and not a control. */
+.draft {
+  margin-bottom: var(--space-12);
+  padding: var(--space-6) var(--space-8);
+  border: var(--border-edge) dashed var(--rule-strong);
+  border-radius: var(--radius-card);
+  background: var(--warn-bg);
+  color: var(--ink);
+  font-size: var(--poster-small);
+  line-height: var(--leading-body-sm);
+}
+
+.draft strong {
+  font-weight: var(--weight-button);
+}
+
 /* ---------------------------------------------------------------- the close */
 
 .closing {
@@ -512,9 +586,20 @@ main,
 }
 
 .foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
   margin-top: var(--poster-gap);
   padding-block: var(--space-16) var(--inset-page-end-computer);
   border-top: var(--border-edge) solid var(--rule);
+}
+
+.foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .wordmark.small {

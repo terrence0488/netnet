@@ -16,7 +16,9 @@
     { "source": "/mcp", "destination": "/api" },
     { "source": "/.well-known/(.*)", "destination": "/api" },
     { "source": "/app", "destination": "/app/index.html" },
-    { "source": "/app/(.*)", "destination": "/app/index.html" }
+    { "source": "/app/(.*)", "destination": "/app/index.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/terms", "destination": "/terms.html" }
   ],
   "headers": [
     {
@@ -37,7 +39,7 @@
       "headers": [{ "key": "Cache-Control", "value": "private, no-store" }]
     },
     {
-      "source": "/(|index\\.html|app|app/(?!assets/).*)",
+      "source": "/(|index\\.html|privacy|privacy\\.html|terms|terms\\.html|app|app/(?!assets/).*)",
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     },
     {
