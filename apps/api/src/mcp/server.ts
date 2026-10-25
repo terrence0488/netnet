@@ -60,9 +60,14 @@ export async function callTool(
 ): Promise<CallToolResult> {
   const started = ctx.deps.clock().getTime();
   let outcome: 'ok' | ErrorCode = 'ok';
+  // The tool's own schema names a bad argument as the agent sent it, so nothing is renamed until
+  // the Ledger runs, whose errors carry its own paths.
+  let renames: ToolDef['renames'] | null = null;
   try {
     if (!scopes.includes(tool.scope)) throw scopeRequired(tool.scope);
-    const output = await tool.run(ctx, parseInput(tool.inputSchema, args ?? {}));
+    const input = parseInput(tool.inputSchema, args ?? {});
+    renames = tool.renames;
+    const output = await tool.run(ctx, input);
     const checked = tool.outputSchema.safeParse(output);
     if (!checked.success) {
       throw new Error(
@@ -77,7 +82,7 @@ export async function callTool(
       structuredContent: output as Record<string, unknown>,
     };
   } catch (error) {
-    const failed = toMcpError(error, tool.renames, ctx.requestId, tool.name);
+    const failed = toMcpError(error, renames, ctx.requestId, tool.name);
     outcome = failed.code;
     return {
       content: asText(failed.body),

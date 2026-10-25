@@ -31,8 +31,9 @@ export interface McpSchema<Out> extends StandardSchemaWithJSON<unknown, Out> {
 /**
  * One MCP tool (architecture §7.4): its registration, its schemas from
  * `packages/contracts/src/mcp/`, and what it does. `run` maps the parsed input onto the Ledger
- * and the output back; `renames` maps the Ledger field segments whose MCP name is not their
- * snake_case. Methods (not properties) so the registry holds every tool as one `ToolDef`.
+ * and the output back; `renames` maps the Ledger field paths, or segments of them, whose MCP name
+ * is not their snake_case. Methods (not properties) so the registry holds every tool as one
+ * `ToolDef`.
  */
 export interface ToolDef<In = unknown, Out = unknown> {
   name: AgentTool;

@@ -150,6 +150,42 @@ describe('create_holding', () => {
     );
     expect(error.fields).toHaveProperty('type_id');
   });
+
+  it('names the currency when there is no rate for its first value', async () => {
+    const { agent, cashType } = await seeded();
+    const error = errOf(
+      await callTool(target, agent.token, 'create_holding', {
+        name: 'Franc pot',
+        kind: 'asset',
+        type_id: cashType,
+        currency: 'CHF',
+        opening_value: { amount: '100.00', date: '2026-07-28' },
+      }),
+      'CURRENCY_UNSUPPORTED',
+    );
+    expect(Object.keys(error.fields ?? {})).toStrictEqual(['currency']);
+    expect(error.message).toMatch(/^currency: "CHF" is not an ISO 4217 currency NetNet has /);
+  });
+
+  it('names a field it does not have as the agent sent it, even a Ledger name', async () => {
+    const { agent, cashType } = await seeded();
+    const error = errOf(
+      await callTool(target, agent.token, 'create_holding', {
+        name: 'Everyday pot',
+        kind: 'asset',
+        type_id: cashType,
+        currency: 'EUR',
+        access: 'now',
+      }),
+      'VALIDATION_FAILED',
+    );
+    expect(error.fields).toStrictEqual({
+      access: 'This is not a field here: remove it, or check its spelling.',
+    });
+    expect(error.message).toBe(
+      'access: This is not a field here: remove it, or check its spelling.',
+    );
+  });
 });
 
 describe('update_holding', () => {
@@ -350,6 +386,54 @@ describe('record_values', () => {
       'NOT_FOUND',
     );
     expect(error.fields).toHaveProperty('values[0].holding_id');
+  });
+
+  it('names a field it does not have as the agent sent it', async () => {
+    const { agent, cashType } = await seeded();
+    const created = await createHolding(agent, {
+      name: 'Everyday pot',
+      kind: 'asset',
+      type_id: cashType,
+      currency: 'EUR',
+    });
+    const error = errOf(
+      await callTool(target, agent.token, 'record_values', {
+        values: [{ holding_id: created.result.id, amount: '10.00', fxRate: '1.1' }],
+      }),
+      'VALIDATION_FAILED',
+    );
+    expect(error.fields).toStrictEqual({
+      'values[0].fxRate': 'This is not a field here: remove it, or check its spelling.',
+    });
+    expect(error.message).toBe(
+      'values[0].fxRate: This is not a field here: remove it, or check its spelling.',
+    );
+  });
+
+  it('names the unknown holding by the tool’s own field, in the message as in fields', async () => {
+    const { agent, cashType } = await seeded();
+    const created = await createHolding(agent, {
+      name: 'Everyday pot',
+      kind: 'asset',
+      type_id: cashType,
+      currency: 'EUR',
+    });
+    const error = errOf(
+      await callTool(target, agent.token, 'record_values', {
+        values: [
+          { holding_id: created.result.id, amount: '1250.00', date: '2026-07-28' },
+          { holding_id: 'hld_01K1G4KX00ZZZZZZZZZZZZZZZZZ', amount: '10.00' },
+        ],
+      }),
+      'NOT_FOUND',
+    );
+    expect(error.message).toBe(
+      'values[1].holding_id: There is no holding "hld_01K1G4KX00ZZZZZZZZZZZZZZZZZ" in this account.',
+    );
+    expect(error.fields).toStrictEqual({
+      'values[1].holding_id':
+        'There is no holding "hld_01K1G4KX00ZZZZZZZZZZZZZZZZZ" in this account.',
+    });
   });
 });
 
