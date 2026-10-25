@@ -1,0 +1,62 @@
+name: Load the demo household
+
+# The fictional demo household (content/demo/household.json, P4-T1) into one account, so the
+# landing page's recording, the directory reviewers' account and the M12 harness see the same
+# balance sheet. Dispatch it by hand (Actions → Load the demo household → Run workflow) with the
+# email of a verified account that has no holding: `demo:load` refuses any other, writing nothing,
+# so a second run changes nothing. Production only for now; previews use their own seed.
+#
+# The email never reaches the log: the first step reads it from the event payload, not through an
+# expression (a step's `env:` is printed with each step), masks it, and only then hands it on. The
+# script prints counts only. DATABASE_URL is the repository secret (netnet_app, pooled), as in
+# deploy.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Where to load it'
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+      email:
+        description: 'Email of the verified account with no holdings'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  load:
+    name: Load the household
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # No `environment:` here on purpose, as in cron-*.yml: DATABASE_URL is a repository secret,
+    # and the `Production` environment holds none.
+    steps:
+      - name: Mask the email
+        run: |
+          set -euo pipefail
+          email=$(jq -r '.inputs.email // ""' "$GITHUB_EVENT_PATH")
+          # One line, so the mask covers all of it; an address that is not one is never echoed.
+          if ! [[ "$email" =~ ^[^[:space:]@]+@[^[:space:]@]+$ ]]; then
+            echo "::error::Give the email of the account to load it into, as one address."
+            exit 1
+          fi
+          echo "::add-mask::$email"
+          echo "DEMO_EMAIL=$email" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.3
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Load the household
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DEMO_ENV: ${{ inputs.environment }}
+        run: pnpm --silent demo:load --env "$DEMO_ENV" --email "$DEMO_EMAIL"
