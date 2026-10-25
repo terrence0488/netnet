@@ -24,7 +24,9 @@ test('the built app answers health, serves the web app at /app and its deep link
   await expect(page.getByRole('heading', { name: 'This page isn’t here.' })).toBeVisible();
 });
 
-test('the landing placeholder is at /', async ({ page }) => {
+test('the landing page is at /', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'NetNet' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'You can’t get useful advice from an AI that doesn’t know where you stand.',
+  );
 });
