@@ -1,0 +1,98 @@
+<!doctype html>
+<!--
+  The link-preview image's source: rendered at 1200 × 630 to ../public/og.png with Playwright's
+  Chromium (light theme). Not part of the build.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>NetNet link preview</title>
+    <link rel="stylesheet" href="../../../packages/tokens/src/tokens.css" />
+    <style>
+      @font-face {
+        font-family: Unbounded;
+        src: url('../src/fonts/unbounded.woff2') format('woff2');
+        font-weight: 200 900;
+      }
+
+      @font-face {
+        font-family: 'Space Grotesk';
+        src: url('../src/fonts/space-grotesk.woff2') format('woff2');
+        font-weight: 300 700;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+
+      body {
+        width: 1200px;
+        height: 630px;
+        padding: 48px 54px 54px 48px;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--font-text);
+      }
+
+      .poster {
+        position: relative;
+        display: grid;
+        align-content: space-between;
+        height: 100%;
+        padding: 52px 56px;
+        border: 3px solid var(--edge);
+        border-radius: 22px;
+        background: var(--brand);
+        color: var(--brand-on);
+        box-shadow: 8px 8px 0 var(--drop);
+      }
+
+      .poster::after {
+        content: '';
+        position: absolute;
+        top: 40px;
+        right: 44px;
+        width: 92px;
+        aspect-ratio: 34 / 26;
+        background: var(--brand-on);
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 26'%3E%3Cpath d='M24 4l2.2 7.8L34 14l-7.8 2.2L24 24l-2.2-7.8L14 14l7.8-2.2zM7 0l1.3 4.7L13 6 8.3 7.3 7 12 5.7 7.3 1 6l4.7-1.3z'/%3E%3C/svg%3E")
+          no-repeat center / contain;
+      }
+
+      .wordmark {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        font-family: var(--font-display);
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+
+      .sparkle {
+        width: 28px;
+        height: 28px;
+        background: var(--card);
+        outline: none;
+        clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+      }
+
+      h1 {
+        max-width: 960px;
+        font-family: var(--font-display);
+        font-size: 62px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.1;
+        text-wrap: balance;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="poster">
+      <span class="wordmark"><i class="sparkle"></i>NetNet</span>
+      <h1>You can’t get useful advice from an AI that doesn’t know where you stand.</h1>
+    </div>
+  </body>
+</html>

@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { currencyExponent } from './currencies';
+import { SEGMENTS } from './events';
+import { HOLDING_KINDS } from './figures';
 
 /**
  * Administered content (architecture §6.5, §7.8): jurisdiction packs, the country list and the
@@ -623,4 +626,205 @@ export function validateReviews(
       path: key,
       message: `There is no pack "${key}". A pack's review is recorded as it moves out of drafts.`,
     }));
+}
+
+/* ---------------------------------------------------------------- the demo household */
+
+/**
+ * The fictional demo household (`content/demo/household.json`, architecture §6.5): one balance
+ * sheet that `pnpm demo:load` writes into an empty account through the Ledger, so the landing
+ * page's recording, the directory reviewers' account and the M12 harness see the same picture.
+ * It is data, not a pack: `content:check` validates it and `content:publish` never publishes it.
+ * Every value outside the base currency gives its own rate into it, kept as given (§6.6), so no
+ * published rate is looked up and every figure is the same on every environment. Every name and
+ * figure in it is made up (CONVENTIONS §6).
+ */
+
+const DEMO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+const demoDate = z
+  .string()
+  .refine(
+    (s) => DEMO_DATE.test(s) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s),
+    'Use a calendar date in the form YYYY-MM-DD, such as "2026-09-30".',
+  );
+
+const demoAmount = z
+  .string()
+  .regex(/^\d+(\.\d+)?$/, 'Give the amount in major units as a string, such as "1234.56".');
+
+const demoRate = z
+  .string()
+  .refine(
+    (r) => /^\d+(\.\d+)?$/.test(r) && /[1-9]/.test(r) && r.length <= 32,
+    'Give the rate as a positive decimal string, such as "1.3456": 1 of the value’s currency in the base currency.',
+  );
+
+const demoValueSchema = z.strictObject({
+  date: demoDate,
+  amount: demoAmount,
+  fxRate: demoRate.exactOptional(),
+});
+
+const demoHoldingSchema = z.strictObject({
+  name: copy,
+  kind: z.enum(HOLDING_KINDS, { error: 'Use "asset" or "liability".' }),
+  universal: z.enum(UNIVERSALS, {
+    error: `Use one of the universal types: ${UNIVERSALS.join(', ')}.`,
+  }),
+  /** A type of the country's pack chain, such as `car_loan`; left out, the plain type. */
+  packType: slug.exactOptional(),
+  currency,
+  /** The answer to the type's question (or the `other` question), or `not_sure`. */
+  access: slug.exactOptional(),
+  tags: z.array(copy).exactOptional(),
+  archived: z.boolean().exactOptional(),
+  /** In date order, one per date, none after `endDate`. */
+  values: z.array(demoValueSchema),
+});
+
+const DEMO_SEGMENTS = SEGMENTS.filter((s) => s !== 'unknown');
+
+export const demoHouseholdSchema = z
+  .strictObject({
+    country: countryCode,
+    baseCurrency: currency,
+    segment: z.enum(DEMO_SEGMENTS, { error: `Use one of ${DEMO_SEGMENTS.join(', ')}.` }),
+    /** The household's "today": no value is dated after it. */
+    endDate: demoDate,
+    tags: z.array(copy),
+    holdings: z.array(demoHoldingSchema).min(1, 'Give at least one holding.'),
+  })
+  .superRefine((household, ctx) => {
+    const report = (path: PropertyKey[], message: string) => {
+      ctx.addIssue({ code: 'custom', path, message });
+    };
+    const tags = new Set<string>();
+    household.tags.forEach((tag, i) => {
+      if (tags.has(tag.toLowerCase())) report(['tags', i], `Another tag is already "${tag}".`);
+      tags.add(tag.toLowerCase());
+    });
+    const names = new Set<string>();
+    household.holdings.forEach((holding, h) => {
+      const at = (...path: PropertyKey[]) => ['holdings', h, ...path];
+      const name = holding.name.toLowerCase();
+      if (names.has(name)) report(at('name'), `Another holding is already "${holding.name}".`);
+      names.add(name);
+      if (holding.kind === 'liability' && holding.access !== undefined) {
+        report(at('access'), 'A liability has no accessibility: leave access out.');
+      }
+      const own = new Set<string>();
+      (holding.tags ?? []).forEach((tag, t) => {
+        if (!tags.has(tag.toLowerCase())) {
+          report(at('tags', t), `"${tag}" is not one of the household's tags.`);
+        } else if (own.has(tag.toLowerCase())) {
+          report(at('tags', t), `The holding already has "${tag}".`);
+        }
+        own.add(tag.toLowerCase());
+      });
+      const exponent = currencyExponent(holding.currency) ?? 0;
+      const foreign = holding.currency !== household.baseCurrency;
+      let previous = '';
+      holding.values.forEach((value, v) => {
+        if (value.date > household.endDate) {
+          report(
+            at('values', v, 'date'),
+            `${value.date} is after the end date, ${household.endDate}: date it on or before it.`,
+          );
+        }
+        if (value.date <= previous) {
+          report(
+            at('values', v, 'date'),
+            `Put the values in date order, one per date: ${value.date} follows ${previous}.`,
+          );
+        }
+        previous = value.date;
+        const decimals = value.amount.split('.')[1]?.length ?? 0;
+        if (decimals > exponent) {
+          report(
+            at('values', v, 'amount'),
+            `${holding.currency} has ${exponent} decimal places: give at most that many.`,
+          );
+        }
+        if (foreign && value.fxRate === undefined) {
+          report(
+            at('values', v, 'fxRate'),
+            `The holding is in ${holding.currency}, not ${household.baseCurrency}: give the rate into ${household.baseCurrency}, so no published rate is looked up.`,
+          );
+        } else if (!foreign && value.fxRate !== undefined) {
+          report(
+            at('values', v, 'fxRate'),
+            `The holding is in ${household.baseCurrency}, the base currency, so its rate is 1: leave fxRate out.`,
+          );
+        }
+      });
+    });
+  });
+export type DemoHousehold = z.infer<typeof demoHouseholdSchema>;
+export type DemoHolding = DemoHousehold['holdings'][number];
+
+/**
+ * `body` checked as the demo household (`doc` names it in errors), then against `docs`, the
+ * content it is loaded with: its country is in the country list, in that country's currency
+ * (`demo:load` starts the ledger over in it), and each `packType` is a type of the country's
+ * pack chain, of the holding's universal type. Content that fails its own schema is left out:
+ * `validateContent` reports it.
+ */
+export function validateDemoHousehold(
+  doc: string,
+  body: unknown,
+  docs: readonly ContentDoc[],
+): ContentError[] {
+  const errors: ContentError[] = [];
+  const report = (path: Path, message: string) => {
+    errors.push({ doc, path: formatPath(path), message });
+  };
+  const parsed = demoHouseholdSchema.safeParse(body);
+  if (!parsed.success) {
+    for (const issue of parsed.error.issues) report(issue.path, issue.message);
+    return errors;
+  }
+  const household = parsed.data;
+  const parse = <T>(schema: z.ZodType<T>, kind: ContentKind) =>
+    docs.flatMap((d) => {
+      if (d.kind !== kind) return [];
+      const result = schema.safeParse(d.body);
+      return result.success ? [result.data] : [];
+    });
+  const [countries] = parse(countriesSchema, 'countries');
+  const packs = parse(packSchema, 'pack');
+  if (countries === undefined) return errors;
+
+  const country = Object.hasOwn(countries, household.country)
+    ? countries[household.country]
+    : undefined;
+  if (country === undefined) {
+    report(['country'], `There is no country "${household.country}" in the country list.`);
+    return errors;
+  }
+  if (country.currency !== household.baseCurrency) {
+    report(
+      ['baseCurrency'],
+      `${household.country}'s currency is ${country.currency}: demo:load starts the ledger in it, so the base currency is ${country.currency}.`,
+    );
+  }
+  const own = packs.find((p) => p.id === country.pack);
+  const generic = packs.find((p) => p.id === GENERIC_PACK);
+  const types = new Map([...(generic?.types ?? []), ...(own?.types ?? [])].map((t) => [t.key, t]));
+  household.holdings.forEach((holding, h) => {
+    if (holding.packType === undefined) return;
+    const type = types.get(holding.packType);
+    if (type === undefined) {
+      report(
+        ['holdings', h, 'packType'],
+        `There is no type "${holding.packType}" in ${household.country}'s packs. Leave packType out for the plain type.`,
+      );
+    } else if (type.u !== holding.universal) {
+      report(
+        ['holdings', h, 'universal'],
+        `Type "${type.key}" is a ${type.u}, so the holding's universal is "${type.u}", not "${holding.universal}".`,
+      );
+    }
+  });
+  return errors;
 }

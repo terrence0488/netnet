@@ -275,6 +275,7 @@ $1 FOR UPDATE`. That lock serialises one user's writes, exactly as a single-thre
 | `content_audit` | `id`, `kind`, `key`, `from_version`, `to_version`, `actor`, `at` | Who changed the world, when, old → new (§2.3) |
 | `fx_rate` | (`date`, `currency`) PK, `per_usd` numeric, `source` (`ecb`/`fallback`) | Filled daily; history backfilled once |
 | `rate_limit` | (`key`, `window_start`) PK, `count` | Fixed-window counters (§8) |
+| `visitor_salt` | `day` date PK, `salt` bytea (32 random bytes) | The landing page's salt for one UTC day, kept only for that day (§6.4) |
 | `notification_endpoint` | `id`, `user_id`, `channel` (`webpush`; `expo` later), `endpoint` (push service URL), `keys` jsonb (`p256dh`, `auth`), `platform` (`ios`/`android`/`desktop`), `device_label` (e.g. "Android · Chrome"), `created_at`, `last_seen_at`, `last_success_at`, `failure_count`, `revoked_at` | One row per device where push is on (J12). **Active** = not revoked. Revoked when the person turns the device off or removes it, on sign-out on that device, and when the push service answers `404`/`410` or fails five times in a row. Deleted with the account. `last_seen_at` is "last used" in the device list |
 | `reminder_state` | `user_id` PK, `enabled` (the Reminders switch, default on), `email_enabled` (default on), `last_checked_on` date, `next_due_on` date, `sent_since_check` smallint, `last_sent_at`, `last_channel` (`push`/`email`), `last_opened_at` | The comeback reminder (J12). Dates are in the person's `time_zone`. Created at sign-up with `last_checked_on` = that day, `next_due_on` = +30. In `core`, not `ledger`, because the reminder job reads it across users and it holds no money |
 
@@ -296,10 +297,14 @@ $1 FOR UPDATE`. That lock serialises one user's writes, exactly as a single-thre
 
 `event(id, name, at, user_id NULL, visitor NULL, segment, props jsonb, app_version)`. It is written
 only through the typed `track()` (§7.7), so no amount, name or document text can reach it.
-`visitor` is `sha256(daily_salt ‖ ip ‖ user-agent)`, truncated. The salt changes daily and is never
-stored, so the landing page counts unique visitors (M10) without a cookie. When an account is
-deleted, its events are **re-keyed to a random id**: they still count, and they no longer point at
-anyone.
+`visitor` is set on `landing_view` only, by the server: `sha256(daily_salt ‖ ip ‖ user-agent)`,
+truncated to 16 hex characters, so the landing page counts unique visitors (M10) without a cookie
+or anything stored in the browser. A salt held only in memory would differ between function
+instances and count one person several times, so each UTC day's salt is a random value in
+`core.visitor_salt`, made on that day's first `landing_view`, read by every instance, and deleted
+once the day has passed: on the next day's first read, and by the daily sweep (§9.3). A past day's
+hashes can then never be recomputed. When an account is deleted, its events are **re-keyed to a
+random id**: they still count, and they no longer point at anyone.
 
 ### 6.5 Content (packs, countries, agent guides)
 
@@ -317,6 +322,7 @@ anyone.
 - **The admin portal (not v1)** writes the same tables through the same validator, as
   `netnet_content_admin`, which has **no access to `ledger`, `analytics` or identity**. Nothing in
   v1 has to change for it.
+- **Demo:** `content/demo/` holds the fictional demo household, validated, never published.
 
 ### 6.6 Money and exchange rates
 
@@ -610,14 +616,16 @@ byte for byte for fixed inputs (N11).
 One typed function, `track(name, props, ctx)`, with a strict zod schema per name. Unknown props
 are rejected, and the only strings allowed are enums. `client` is always `claude`, `chatgpt` or
 `other`: the guide chosen (client side) or the connection's classification (server side, §3),
-never the name an agent registered with. `segment`, `user_id` and `app_version` are attached by
-`track()` itself. **Client-side** events come through `POST /api/events`, and only the names
-marked *client* are accepted.
+never the name an agent registered with. `segment`, `user_id`, `visitor` and `app_version` are
+attached by `track()` itself. **Client-side** events come through `POST /api/events`, and only the
+names marked *client* are accepted; without a session, only those also marked *sessionless*, at the
+same per-IP limit. `landing_view` never carries a session's user, even from a signed-in browser:
+its user is null, its segment `unknown`, and the server fills its `visitor` from the request (§6.4).
 
 | Event | Props | Emitted by |
 |---|---|---|
-| `landing_view` | — (plus `visitor` hash) | client (landing) |
-| `signup_started` | `method` | client |
+| `landing_view` | — (plus `visitor` hash) | client (landing), sessionless |
+| `signup_started` | `method` | client, sessionless |
 | `account_created` | `method` | server (auth hook) |
 | `session_started` | — | client (new session after 30 min idle) |
 | `holding_created` | `source`, `via?` (`guided`/`form`, web only) | server |
@@ -893,7 +901,7 @@ Jobs at the same hour share one database wake.
 | Job | Where | When (UTC) | Wakes the database |
 |---|---|---|---|
 | **Comeback reminders** (J12) + security-email retries | GitHub Actions → `/api/cron/reminders`, **three schedules** | daily at **01:00, 09:00 and 17:00** (09:00, 17:00 and 01:00 in Singapore). Each run sends only to people for whom it is 08:00–21:00 (§7.10) | ~5 min each |
-| Connection-attempt timeout sweep | GitHub Actions → `/api/cron/daily` | daily at 01:00 | — |
+| Connection-attempt timeout sweep, and past visitor salts deleted (§6.4) | GitHub Actions → `/api/cron/daily` | daily at 01:00 | — |
 | Usage and SLO check | GitHub Actions → `/api/cron/health` | daily at 01:00, in the same wake. Reads Neon's consumption API, N1 from events and the day's email count; emails the Founder only on a trigger (§9.4) | — |
 | FX rates | GitHub Actions → `/api/cron/fx` | daily at 17:00, after the ECB publishes (~16:00 CET) | — |
 | Backup | GitHub Actions | daily. `pg_dump` → encrypted to a key only the Founder holds → stored 30 days (Actions artifact; R2 free tier if it outgrows 500 MB) | ~5 min |

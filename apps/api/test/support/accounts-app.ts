@@ -20,6 +20,7 @@ import {
   getReminderState,
   recordReminderSent,
 } from '../../src/db/reminders';
+import { createVisitor, deleteSaltsBefore, utcDay } from '../../src/db/visitor';
 import { createTrack } from '../../src/events/track';
 import { agentRoutes } from '../../src/http/agent';
 import { eventsRoutes } from '../../src/http/events';
@@ -215,7 +216,11 @@ export function accountsApp(db: TestDatabase, options: AccountsAppOptions = {}):
     }),
   );
   app.route('/api/geo', geoRoutes(countries));
-  app.route('/api/events', eventsRoutes({ track, rateLimit, appVersion: () => 'test123' }));
+  const visitor = createVisitor(() => ({ db: () => db.appDb, clock: () => clock.now }));
+  app.route(
+    '/api/events',
+    eventsRoutes({ track, rateLimit, appVersion: () => 'test123', visitor }),
+  );
   app.route(
     '/api/reminders',
     remindersRoutes({
@@ -243,7 +248,10 @@ export function accountsApp(db: TestDatabase, options: AccountsAppOptions = {}):
   );
   app.get(
     '/api/cron/daily',
-    dailyJob(() => agent),
+    dailyJob(
+      () => agent,
+      () => deleteSaltsBefore(db.appDb, utcDay(clock.now)),
+    ),
   );
   app.get(
     '/api/cron/reminders',

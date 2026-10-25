@@ -314,8 +314,9 @@ describe('privacy (N9): the schemas', () => {
 });
 
 describe('client events', () => {
-  it('are the names §7.7 marks client (landing_view joins in P4)', () => {
+  it('are the names §7.7 marks client', () => {
     expect([...CLIENT_EVENT_NAMES]).toStrictEqual([
+      'landing_view',
       'signup_started',
       'session_started',
       'agent_connection_started',
@@ -326,10 +327,21 @@ describe('client events', () => {
     for (const name of CLIENT_EVENT_NAMES) expect(isEventName(name)).toBe(true);
   });
 
-  it('only signup_started goes without a session', () => {
-    expect([...SESSIONLESS_EVENT_NAMES]).toStrictEqual(['signup_started']);
+  it('only landing_view and signup_started go without a session', () => {
+    expect([...SESSIONLESS_EVENT_NAMES]).toStrictEqual(['landing_view', 'signup_started']);
+    expect(isSessionlessEventName('landing_view')).toBe(true);
     expect(isSessionlessEventName('signup_started')).toBe(true);
     expect(isSessionlessEventName('session_started')).toBe(false);
+  });
+
+  it('landing_view takes no props', () => {
+    expect(eventSchemas.landing_view.safeParse({}).success).toBe(true);
+    expect(eventSchemas.landing_view.safeParse({ visitor: '0123456789abcdef' }).success).toBe(
+      false,
+    );
+    expect(eventSchemas.landing_view.safeParse({ referrer: 'https://example.com' }).success).toBe(
+      false,
+    );
   });
 
   it('tell names apart', () => {
@@ -338,6 +350,6 @@ describe('client events', () => {
     expect(isEventName(42)).toBe(false);
     expect(isClientEventName('insights_viewed')).toBe(true);
     expect(isClientEventName('value_recorded')).toBe(false);
-    expect(isClientEventName('landing_view')).toBe(false);
+    expect(isClientEventName('landing_view')).toBe(true);
   });
 });

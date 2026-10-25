@@ -8,13 +8,15 @@ export interface EventRow {
   name: string;
   at: Date;
   userId: string | null;
+  /** `landing_view`'s cookie-less visitor hash (`db/visitor.ts`); absent on every other event. */
+  visitor?: string;
   segment: Segment;
   props: Record<string, unknown>;
   appVersion: string;
 }
 
-/** An event of the account `userId` names. */
-export interface AccountEventRow extends EventRow {
+/** An event of the account `userId` names. It never carries a visitor hash. */
+export interface AccountEventRow extends Omit<EventRow, 'visitor'> {
   userId: string;
 }
 
@@ -30,10 +32,10 @@ export interface EventStore {
 
 /**
  * Writes one event. Insert only, with no RETURNING: `netnet_app` cannot read `analytics` back
- * (§6.1). `visitor` stays null; the landing page's hash is P4's.
+ * (§6.1). `visitor` is null unless the row carries one.
  */
 export async function insertEvent(db: Executor, row: EventRow): Promise<void> {
-  await db.insert(event).values({ ...row, visitor: null });
+  await db.insert(event).values({ ...row, visitor: row.visitor ?? null });
 }
 
 /**

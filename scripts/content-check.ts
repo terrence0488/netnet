@@ -3,8 +3,10 @@
  * against its schema and every rule of architecture §7.8 (`validateContent`), each pack and guide in
  * a file named after its id, and every image a guide names. A missing image is a warning, because
  * screenshots arrive after the guides; with --strict, which a production publish uses, it is an
- * error. Draft packs (`packs/drafts/`) are checked like any pack and never published, and the
- * review record (`reviews.json`) against its schema and the packs. Exits non-zero on any error.
+ * error. Draft packs (`packs/drafts/`) are checked like any pack and never published, the
+ * review record (`reviews.json`) against its schema and the packs, and the demo household
+ * in content/demo/ (`checkDemo`), which is data and never published. Exits non-zero on any
+ * error.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
@@ -14,6 +16,7 @@ import {
   packSchema,
   reviewsSchema,
   validateContent,
+  validateDemoHousehold,
   validateReviews,
   type ContentDoc,
   type ContentError,
@@ -174,6 +177,26 @@ export function readReviews(
   };
 }
 
+/** The demo household (architecture §6.5): read by `content:check` and `demo:load`, never published. */
+export const DEMO_FILE = 'demo/household.json';
+
+/**
+ * The demo household in `dir` checked against `docs`, the content it is loaded with
+ * (`validateDemoHousehold`); nothing when there is none. `readContent` never reads content/demo/,
+ * so `content:publish`, which publishes what it reads, never publishes it.
+ */
+export function checkDemo(docs: readonly ContentDoc[], dir: string = CONTENT_DIR): ContentError[] {
+  if (!existsSync(join(dir, DEMO_FILE))) return [];
+  let body: unknown;
+  try {
+    body = JSON.parse(readFileSync(join(dir, DEMO_FILE), 'utf8'));
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return [{ doc: DEMO_FILE, path: '', message: `Cannot be read as JSON: ${reason}` }];
+  }
+  return validateDemoHousehold(DEMO_FILE, body, docs);
+}
+
 const line = ({ doc, path, message }: ContentError) =>
   `  content/${doc}${path ? ` ${path}` : ''}: ${message}`;
 
@@ -191,6 +214,7 @@ function main(args: readonly string[]): number {
   errors.push(...misnamedFiles(docs));
   const drafts = readDrafts();
   errors.push(...drafts.errors, ...draftErrors(docs, drafts.docs), ...readReviews(docs).errors);
+  errors.push(...checkDemo(docs));
   const missing = missingImages(docs).map(({ doc, path, image }) => ({
     doc,
     path,
@@ -207,8 +231,9 @@ function main(args: readonly string[]): number {
     console.error(errors.map(line).join('\n'));
     return 1;
   }
+  const demo = existsSync(join(CONTENT_DIR, DEMO_FILE)) ? ' and the demo household' : '';
   console.log(`content:check: ${drafts.docs.length} drafts and the review record valid.`);
-  console.log(`content:check: ${docs.length} documents valid${strict ? ' (strict)' : ''}.`);
+  console.log(`content:check: ${docs.length} documents${demo} valid${strict ? ' (strict)' : ''}.`);
   return 0;
 }
 

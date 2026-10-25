@@ -1,8 +1,15 @@
-import { CLIENT_EVENT_NAMES, EVENT_NAMES, errorBodySchema, type Segment } from '@netnet/contracts';
+import {
+  CLIENT_EVENT_NAMES,
+  EVENT_NAMES,
+  SESSIONLESS_EVENT_NAMES,
+  errorBodySchema,
+  type Segment,
+} from '@netnet/contracts';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { eventsApp, postEvent } from '../../test/support/events-app';
 import { captureWaitUntil, type CapturedWaitUntil } from '../../test/support/wait-until';
 import type { EventRow } from '../db/analytics';
+import { visitorHash, type VisitorRequest } from '../db/visitor';
 import { createTrack } from '../events/track';
 import type { SessionUser } from '../lib/context';
 import { createRateLimit } from '../lib/rate-limit';
@@ -12,10 +19,17 @@ import { EVENTS_PER_MINUTE_PER_IP } from './events';
 const START = Date.UTC(2026, 7, 1, 10);
 const USER = 'usr_01K1G4KX00AAAAAAAAAAAAAAAA';
 
+/** A fixed salt: the route's own part is passing the request on, not the salt's rotation. */
+const SALT = Buffer.alloc(32, 7);
+
 let now: number;
 let rows: EventRow[];
 let counters: Map<string, number>;
 let signedIn: SessionUser | null;
+/** How often the route read the session. */
+let sessionReads: number;
+/** The requests the route asked a visitor hash for. */
+let hashed: VisitorRequest[];
 let vercel: CapturedWaitUntil;
 /** While set, writes wait for it: the response must not. */
 let gate: Promise<void> | null;
@@ -48,8 +62,15 @@ const app = eventsApp(
       clock: () => new Date(now),
     })),
     appVersion: () => 'abc1234',
+    visitor: (request) => {
+      hashed.push(request);
+      return Promise.resolve(visitorHash(SALT, request.ip, request.userAgent));
+    },
   },
-  () => signedIn,
+  () => {
+    sessionReads += 1;
+    return signedIn;
+  },
 );
 
 beforeEach(() => {
@@ -57,6 +78,8 @@ beforeEach(() => {
   rows = [];
   counters = new Map();
   signedIn = { userId: USER, emailVerified: false };
+  sessionReads = 0;
+  hashed = [];
   vercel = captureWaitUntil();
   gate = null;
 });
@@ -65,6 +88,7 @@ afterEach(() => vercel.restore());
 
 /** A valid example of each client event. */
 const EXAMPLES = {
+  landing_view: {},
   signup_started: { method: 'email' },
   session_started: {},
   agent_connection_started: { client: 'claude', entry: 'onboarding' },
@@ -87,7 +111,7 @@ describe('POST /api/events', () => {
     expect(Object.keys(EXAMPLES).sort()).toStrictEqual([...CLIENT_EVENT_NAMES].sort());
   });
 
-  it.each(Object.entries(EXAMPLES))(
+  it.each(Object.entries(EXAMPLES).filter(([name]) => name !== 'landing_view'))(
     'accepts %s with a session: 204, written after the response with the user and segment',
     async (name, props) => {
       const res = await postEvent(app, { name, props });
@@ -147,15 +171,112 @@ describe('POST /api/events', () => {
       expect(rows).toMatchObject([{ name: 'signup_started', userId: null, segment: 'unknown' }]);
     });
 
-    it.each(CLIENT_EVENT_NAMES.filter((name) => name !== 'signup_started'))(
-      'rejects %s',
-      async (name) => {
-        const fields = await rejection(await postEvent(app, { name, props: EXAMPLES[name] }));
-        expect(fields).toStrictEqual({
-          name: `${name} needs a signed-in session. Without one, only signup_started is accepted.`,
-        });
-      },
-    );
+    it.each(
+      CLIENT_EVENT_NAMES.filter(
+        (name) => !(SESSIONLESS_EVENT_NAMES as readonly string[]).includes(name),
+      ),
+    )('rejects %s', async (name) => {
+      const fields = await rejection(await postEvent(app, { name, props: EXAMPLES[name] }));
+      expect(fields).toStrictEqual({
+        name: `${name} needs a signed-in session. Without one, only landing_view and signup_started are accepted.`,
+      });
+    });
+  });
+
+  describe('landing_view', () => {
+    const UA = 'Mozilla/5.0 (fictional) Gecko/20100101 Firefox/150.0';
+
+    function view(ip = '192.0.2.10', userAgent = UA) {
+      return Promise.resolve(
+        app.request('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-real-ip': ip, 'User-Agent': userAgent },
+          body: JSON.stringify({ name: 'landing_view', props: {} }),
+        }),
+      );
+    }
+
+    it('without a session: 204, then written as nobody’s with the visitor hash of the request', async () => {
+      signedIn = null;
+      const res = await view();
+      expect(res.status).toBe(204);
+      expect(res.headers.get('Set-Cookie')).toBeNull();
+      await vercel.settle();
+      expect(hashed).toStrictEqual([{ ip: '192.0.2.10', userAgent: UA }]);
+      expect(rows).toStrictEqual([
+        {
+          name: 'landing_view',
+          at: new Date(START),
+          visitor: visitorHash(SALT, '192.0.2.10', UA),
+          userId: null,
+          segment: 'unknown',
+          props: {},
+          appVersion: 'abc1234',
+        },
+      ]);
+      expect(rows[0]?.visitor).toMatch(/^[0-9a-f]{16}$/);
+    });
+
+    it('from a signed-in browser too, never reading the session or carrying the user', async () => {
+      signedIn = { userId: USER, emailVerified: true, segment: 'established' };
+      expect((await view()).status).toBe(204);
+      await vercel.settle();
+      expect(sessionReads).toBe(0);
+      expect(rows).toMatchObject([{ name: 'landing_view', userId: null, segment: 'unknown' }]);
+    });
+
+    it('tells browsers apart by address and user agent, and hashes one alike', async () => {
+      await view('192.0.2.10', UA);
+      await view('192.0.2.10', UA);
+      await view('192.0.2.11', UA);
+      await view('192.0.2.10', 'Mozilla/5.0 (another fictional browser)');
+      await vercel.settle();
+      const [a, b, c, d] = rows.map((row) => row.visitor);
+      expect(a).toBe(b);
+      expect(new Set([a, c, d]).size).toBe(3);
+    });
+
+    it('hashes a request with no user agent as an empty one', async () => {
+      await postEvent(app, { name: 'landing_view', props: {} });
+      await vercel.settle();
+      expect(hashed).toStrictEqual([{ ip: '192.0.2.10', userAgent: '' }]);
+    });
+
+    it('takes no props, and no visitor from the browser', async () => {
+      expect(
+        await rejection(
+          await postEvent(app, { name: 'landing_view', props: { visitor: '0123456789abcdef' } }),
+        ),
+      ).toStrictEqual({ 'props.visitor': 'landing_view has no such prop; remove it.' });
+      expect(
+        await rejection(
+          await postEvent(app, { name: 'landing_view', props: {}, visitor: '0123456789abcdef' }),
+        ),
+      ).toStrictEqual({ visitor: 'Remove it: send name and props.' });
+      expect(hashed).toStrictEqual([]);
+    });
+
+    it('is the only event that gets a visitor', async () => {
+      await postEvent(app, { name: 'session_started', props: {} });
+      signedIn = null;
+      await postEvent(app, { name: 'signup_started', props: { method: 'google' } });
+      await vercel.settle();
+      expect(hashed).toStrictEqual([]);
+      expect(rows.map((row) => Object.hasOwn(row, 'visitor'))).toStrictEqual([false, false]);
+    });
+
+    it('answers before the event is written, and hands the work to waitUntil', async () => {
+      let open: () => void = () => undefined;
+      gate = new Promise((resolve) => {
+        open = resolve;
+      });
+      expect((await view()).status).toBe(204);
+      expect(vercel.pending).toBe(1);
+      expect(rows).toStrictEqual([]);
+      open();
+      await vercel.settle();
+      expect(rows).toHaveLength(1);
+    });
   });
 
   it.each(EVENT_NAMES.filter((name) => !(CLIENT_EVENT_NAMES as readonly string[]).includes(name)))(
@@ -252,6 +373,22 @@ describe('POST /api/events', () => {
       }
       const res = await postEvent(app, { name: 'signup_started', props: { method: 'email' } });
       expect(res.status).toBe(429);
+    });
+
+    it('holds landing_view to the same limit, shared with the other events', async () => {
+      signedIn = null;
+      for (let i = 0; i < EVENTS_PER_MINUTE_PER_IP - 1; i += 1) {
+        expect((await postEvent(app, { name: 'landing_view', props: {} })).status).toBe(204);
+      }
+      expect(
+        (await postEvent(app, { name: 'signup_started', props: { method: 'email' } })).status,
+      ).toBe(204);
+      const res = await postEvent(app, { name: 'landing_view', props: {} });
+      expect(res.status).toBe(429);
+      expect(errorBodySchema.parse(await res.json()).error.code).toBe('RATE_LIMITED');
+      await vercel.settle();
+      expect(rows).toHaveLength(EVENTS_PER_MINUTE_PER_IP);
+      expect(hashed).toHaveLength(EVENTS_PER_MINUTE_PER_IP - 1);
     });
 
     it('does not count a malformed request', async () => {
