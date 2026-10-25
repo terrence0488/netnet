@@ -88,12 +88,14 @@ export interface ToolFailure {
 
 /**
  * Any error a tool raises as the failure it answers with. Deliberate errors keep their code,
- * message and details; anything else is logged with the request id and its class (architecture
- * §10) and answered INTERNAL, and its message, stack and SQL never leave here (CONVENTIONS §11).
+ * message and details, with the Ledger's paths renamed by `renames`, or left as they are when it
+ * is null (the tool's own schema refused the arguments, naming them as the agent sent them);
+ * anything else is logged with the request id and its class (architecture §10) and answered
+ * INTERNAL, and its message, stack and SQL never leave here (CONVENTIONS §11).
  */
 export function toMcpError(
   error: unknown,
-  renames: Record<string, string>,
+  renames: Record<string, string> | null,
   requestId: string,
   tool: string,
 ): ToolFailure {
@@ -104,7 +106,9 @@ export function toMcpError(
       code: error.code,
       body: {
         error: {
-          ...(fields === undefined ? {} : { fields: renamePaths(fields, renames) }),
+          ...(fields === undefined
+            ? {}
+            : { fields: renames === null ? { ...fields } : renamePaths(fields, renames) }),
           ...rest,
           ...(candidates === undefined ? {} : { candidates: candidatesOf(candidates) }),
           code: error.code,

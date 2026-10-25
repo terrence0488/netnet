@@ -65,4 +65,18 @@ describe('toMcpError()', () => {
     expect(revoked.code).toBe('UNAUTHENTICATED');
     expect(log.of('tool_failed')).toStrictEqual([]);
   });
+
+  it('leaves the paths of arguments the tool’s schema refused as the agent sent them', () => {
+    const refused = new AppError('VALIDATION_FAILED', 'values[0].fxRate: Not a field.', {
+      fields: { 'values[0].fxRate': 'Not a field.' },
+    });
+    const asSent = toMcpError(refused, null, REQUEST_ID, 'record_values');
+    expect(asSent.body.error).toStrictEqual({
+      code: 'VALIDATION_FAILED',
+      message: 'values[0].fxRate: Not a field.',
+      fields: { 'values[0].fxRate': 'Not a field.' },
+    });
+    const fromLedger = toMcpError(refused, {}, REQUEST_ID, 'record_values');
+    expect(fromLedger.body.error.fields).toStrictEqual({ 'values[0].fx_rate': 'Not a field.' });
+  });
 });

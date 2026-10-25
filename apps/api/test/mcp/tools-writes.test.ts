@@ -150,6 +150,26 @@ describe('create_holding', () => {
     );
     expect(error.fields).toHaveProperty('type_id');
   });
+
+  it('names a field it does not have as the agent sent it, even a Ledger name', async () => {
+    const { agent, cashType } = await seeded();
+    const error = errOf(
+      await callTool(target, agent.token, 'create_holding', {
+        name: 'Everyday pot',
+        kind: 'asset',
+        type_id: cashType,
+        currency: 'EUR',
+        access: 'now',
+      }),
+      'VALIDATION_FAILED',
+    );
+    expect(error.fields).toStrictEqual({
+      access: 'This is not a field here: remove it, or check its spelling.',
+    });
+    expect(error.message).toBe(
+      'access: This is not a field here: remove it, or check its spelling.',
+    );
+  });
 });
 
 describe('update_holding', () => {
@@ -350,6 +370,28 @@ describe('record_values', () => {
       'NOT_FOUND',
     );
     expect(error.fields).toHaveProperty('values[0].holding_id');
+  });
+
+  it('names a field it does not have as the agent sent it', async () => {
+    const { agent, cashType } = await seeded();
+    const created = await createHolding(agent, {
+      name: 'Everyday pot',
+      kind: 'asset',
+      type_id: cashType,
+      currency: 'EUR',
+    });
+    const error = errOf(
+      await callTool(target, agent.token, 'record_values', {
+        values: [{ holding_id: created.result.id, amount: '10.00', fxRate: '1.1' }],
+      }),
+      'VALIDATION_FAILED',
+    );
+    expect(error.fields).toStrictEqual({
+      'values[0].fxRate': 'This is not a field here: remove it, or check its spelling.',
+    });
+    expect(error.message).toBe(
+      'values[0].fxRate: This is not a field here: remove it, or check its spelling.',
+    );
   });
 });
 
