@@ -1,12 +1,463 @@
-body {
-  margin: 0;
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  font-family: system-ui, sans-serif;
+/* The landing page (PRD G-D1): Poster's brand at poster scale. Colours, faces, outlines and
+   shadows are the app's tokens, so the page and the app read as one product; the sizes above the
+   app's own are the page's, below. Built from its own HTML and CSS, not the app's components. */
+
+@import '@netnet/tokens/tokens.css';
+
+@font-face {
+  font-family: Unbounded;
+  src: url('./fonts/unbounded.woff2') format('woff2');
+  font-weight: 200 900;
+  font-display: swap;
 }
 
-main {
-  padding: 1rem;
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('./fonts/space-grotesk.woff2') format('woff2');
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+/* Poster scale. A phone reads the text sizes 15% larger (`--fs`), as in the app. */
+:root {
+  --gutter: var(--inset-gutter);
+  --poster-headline: clamp(26px, 8.4vw, 64px);
+  --poster-title: clamp(21px, 5.6vw, 32px);
+  --poster-closing: clamp(26px, 7.4vw, 52px);
+  --poster-lead: max(var(--fs-min), calc(17px * var(--fs)));
+  --poster-prompt: max(var(--fs-min), calc(16px * var(--fs)));
+  --poster-point: max(var(--fs-min), calc(15px * var(--fs)));
+  --poster-button: max(var(--fs-min), calc(16px * var(--fs)));
+  --poster-body: var(--size-body);
+  --poster-small: var(--size-body-sm);
+  --poster-meta: var(--size-meta);
+  --poster-pad: clamp(var(--space-10), 5vw, var(--space-20));
+  --poster-gap: clamp(var(--space-20), 9vw, 96px);
+  --poster-sparkles: clamp(var(--space-16), 7vw, 68px);
+  --poster-shadow: var(--shadow-sheet);
+  --tracking-poster: -0.04em;
+  --leading-poster: 1.1;
+}
+
+@media (min-width: 900px) {
+  :root {
+    --gutter: var(--inset-gutter-computer);
+    --poster-lead: 21px;
+    --poster-prompt: 18px;
+    --poster-body: 17px;
+    --poster-small: 15px;
+    --poster-meta: 14px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  /* No double-tap zoom; pinch-zoom kept (design-system §6.1 rule 7). */
+  touch-action: manipulation;
+}
+
+html {
+  background: var(--paper);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: var(--viewport-full);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: var(--size-body);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-poster);
+  line-height: var(--leading-poster);
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+ul {
+  list-style: none;
+}
+
+a {
+  color: var(--brand-text);
+}
+
+:focus-visible {
+  outline: var(--border-edge) dashed var(--edge);
+  outline-offset: var(--offset-control);
+}
+
+/* One centred column, the same width whatever is in it (design-system §7). */
+.bar,
+main,
+.foot {
+  width: min(100% - 2 * var(--gutter), var(--measure));
+  margin-inline: auto;
+}
+
+/* ---------------------------------------------------------------- the bar */
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding-block: var(--space-6);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--hit);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--size-wordmark);
+  font-weight: var(--weight-wordmark);
+  letter-spacing: var(--tracking-wordmark);
+  text-decoration: none;
+}
+
+.sparkle {
+  flex: none;
+  width: var(--icon-mark);
+  height: var(--icon-mark);
+  background: var(--brand);
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+}
+
+.quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit);
+  min-width: var(--hit);
+  padding-inline: var(--space-4);
+  color: var(--brand-text);
+  font-size: var(--size-button);
+  font-weight: var(--weight-button);
+  text-decoration: underline;
+  text-decoration-thickness: var(--border-rule);
+  text-underline-offset: var(--offset-control);
+}
+
+.quiet:hover {
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- the hero */
+
+.hero {
+  padding-top: var(--space-6);
+}
+
+/* The app's hero card, at poster scale: tomato, outlined, two sparkles in its corner. */
+.poster {
+  position: relative;
+  padding: var(--poster-pad);
+  padding-right: calc(var(--space-8) + var(--poster-sparkles) + var(--space-4));
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-card);
+  background: var(--brand);
+  color: var(--brand-on);
+  box-shadow: var(--poster-shadow);
+}
+
+.poster::after {
+  content: '';
+  position: absolute;
+  top: var(--space-8);
+  right: var(--space-8);
+  width: var(--poster-sparkles);
+  aspect-ratio: 34 / 26;
+  pointer-events: none;
+  background: var(--brand-on);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 26'%3E%3Cpath d='M24 4l2.2 7.8L34 14l-7.8 2.2L24 24l-2.2-7.8L14 14l7.8-2.2zM7 0l1.3 4.7L13 6 8.3 7.3 7 12 5.7 7.3 1 6l4.7-1.3z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 26'%3E%3Cpath d='M24 4l2.2 7.8L34 14l-7.8 2.2L24 24l-2.2-7.8L14 14l7.8-2.2zM7 0l1.3 4.7L13 6 8.3 7.3 7 12 5.7 7.3 1 6l4.7-1.3z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+
+.poster h1 {
+  max-width: 19em;
+  font-size: var(--poster-headline);
+  font-weight: var(--weight-wordmark);
+}
+
+.pitch {
+  display: grid;
+  gap: var(--space-12);
+  margin-top: var(--space-16);
+}
+
+.lead {
+  max-width: 34em;
+  color: var(--ink);
+  font-size: var(--poster-lead);
+  line-height: var(--leading-body);
+}
+
+.act {
+  display: grid;
+  gap: var(--space-6);
+  align-content: start;
+}
+
+/* The one call to action: tomato, outlined, a hard shadow that collapses when pressed. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--hit) + var(--space-4));
+  padding: var(--space-6) var(--space-15);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-control);
+  background: var(--brand);
+  color: var(--brand-on);
+  box-shadow: var(--shadow-control);
+  font-family: var(--font-text);
+  font-size: var(--poster-button);
+  font-weight: var(--weight-button);
+  text-decoration: none;
+  transition:
+    transform var(--duration-press),
+    box-shadow var(--duration-press);
+}
+
+.button:active {
+  transform: translate(var(--offset-control), var(--offset-control));
+  box-shadow: none;
+}
+
+.meta {
+  color: var(--ink-2);
+  font-size: var(--poster-meta);
+  line-height: var(--leading-body-sm);
+}
+
+@media (min-width: 900px) {
+  .pitch {
+    grid-template-columns: 7fr 5fr;
+    gap: var(--space-20);
+    align-items: end;
+  }
+
+  .act {
+    justify-items: start;
+  }
+}
+
+/* ---------------------------------------------------------------- cards */
+
+.card {
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.label {
+  color: var(--ink-2);
+  font-size: var(--size-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------------- the two proofs */
+
+.proofs,
+.pair {
+  display: grid;
+  gap: var(--space-12);
+  margin-top: var(--poster-gap);
+}
+
+.proof,
+.pair .card {
+  padding: var(--poster-pad);
+}
+
+.proof h2,
+.pair h2 {
+  margin: var(--space-5) 0 var(--space-6);
+  font-size: var(--poster-title);
+}
+
+.pair h2 {
+  margin-top: 0;
+}
+
+.proof p:last-child,
+.pair p {
+  color: var(--ink-2);
+  font-size: var(--poster-body);
+}
+
+@media (min-width: 900px) {
+  .proofs,
+  .pair {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-16);
+  }
+}
+
+/* ---------------------------------------------------------------- the questions */
+
+.ask,
+.trust {
+  margin-top: var(--poster-gap);
+}
+
+.ask > h2,
+.trust > h2 {
+  margin-bottom: var(--space-12);
+  font-size: var(--poster-title);
+}
+
+/* A prompt card (design-system §6): what you would send your agent, with its mustard tab. */
+.prompts {
+  position: relative;
+}
+
+.prompts::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--border-edge) * -1);
+  left: var(--space-10);
+  width: var(--space-16);
+  height: var(--space-4);
+  border: var(--border-edge) solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: var(--sun);
+}
+
+.prompts li {
+  padding: var(--space-9) var(--poster-pad);
+  color: var(--ink);
+  font-size: var(--poster-prompt);
+  font-weight: var(--weight-button);
+}
+
+.prompts li + li {
+  border-top: var(--border-rule) solid var(--rule);
+}
+
+.note {
+  max-width: 40em;
+  margin-top: var(--space-12);
+  color: var(--ink-2);
+  font-size: var(--poster-body);
+}
+
+@media (min-width: 900px) {
+  .prompts ul {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .prompts li + li {
+    border-top: none;
+  }
+
+  .prompts li:nth-child(n + 3) {
+    border-top: var(--border-rule) solid var(--rule);
+  }
+
+  .prompts li:nth-child(2n) {
+    border-left: var(--border-rule) solid var(--rule);
+  }
+}
+
+/* ---------------------------------------------------------------- the trust points */
+
+.points li {
+  padding: var(--space-10) var(--poster-pad);
+}
+
+.points li + li {
+  border-top: var(--border-rule) solid var(--rule);
+}
+
+.points h3 {
+  margin-bottom: var(--space-3);
+  font-size: var(--poster-point);
+  letter-spacing: var(--tracking-heading-section);
+  line-height: var(--leading-body-sm);
+}
+
+.points p {
+  color: var(--ink-2);
+  font-size: var(--poster-small);
+  line-height: var(--leading-body-sm);
+}
+
+@media (min-width: 900px) {
+  .points {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .points li {
+    padding-block: var(--space-12);
+  }
+
+  .points li + li {
+    border-top: none;
+  }
+
+  .points li:nth-child(n + 4) {
+    border-top: var(--border-rule) solid var(--rule);
+  }
+
+  .points li:not(:nth-child(3n + 1)) {
+    border-left: var(--border-rule) solid var(--rule);
+  }
+}
+
+/* ---------------------------------------------------------------- the close */
+
+.closing {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-10);
+  margin-top: var(--poster-gap);
   text-align: center;
+}
+
+.closing h2 {
+  font-size: var(--poster-closing);
+}
+
+.foot {
+  margin-top: var(--poster-gap);
+  padding-block: var(--space-16) var(--inset-page-end-computer);
+  border-top: var(--border-edge) solid var(--rule);
+}
+
+.wordmark.small {
+  min-height: 0;
+  color: var(--ink-2);
+}
+
+@media (max-width: 899px) {
+  .act .button {
+    width: 100%;
+  }
 }

@@ -83,18 +83,37 @@ export async function insertValue(
   holdingId: string,
   prepared: PreparedValue,
 ): Promise<Value> {
+  const [created] = await insertValues(w, holdingId, [prepared]);
+  if (!created) throw new Error('unreachable: one value in, one out');
+  return created;
+}
+
+/**
+ * Inserts new values for `holdingId` in one statement, each with its audit row, in the order
+ * given. The holding has no value on any of their dates, and they are on different dates: the
+ * caller has made sure (the demo household's loader, `./demo`, for a holding it just created).
+ */
+export async function insertValues(
+  w: WriteScope,
+  holdingId: string,
+  prepared: readonly PreparedValue[],
+): Promise<Value[]> {
   const { s } = w;
-  const row: ValueRow = {
-    userId: s.userId,
-    id: s.id('val'),
-    holdingId,
-    ...(await written(w, prepared)),
-    enteredAt: s.now(),
-    rowVersion: 1,
-  };
-  await s.db.insert(value).values(row);
-  const created = toValue(row);
-  await w.audit('value', created.id, 'create', null, created);
+  const rows: ValueRow[] = [];
+  for (const p of prepared) {
+    rows.push({
+      userId: s.userId,
+      id: s.id('val'),
+      holdingId,
+      ...(await written(w, p)),
+      enteredAt: s.now(),
+      rowVersion: 1,
+    });
+  }
+  if (rows.length === 0) return [];
+  await s.db.insert(value).values(rows);
+  const created = rows.map(toValue);
+  for (const v of created) await w.audit('value', v.id, 'create', null, v);
   return created;
 }
 

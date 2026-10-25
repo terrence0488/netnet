@@ -92,6 +92,7 @@ const TABLES: Record<string, string> = {
     'id bigint, kind text, key text, from_version integer, to_version integer, actor text, at timestamptz',
   'core.fx_rate': 'date date, currency text, per_usd numeric, source text',
   'core.rate_limit': 'key text, window_start timestamptz, count integer',
+  'core.visitor_salt': 'day date, salt bytea',
   'analytics.event':
     'id bigint, name text, at timestamptz, user_id text, visitor text, segment text, props jsonb, ' +
     'app_version text',
