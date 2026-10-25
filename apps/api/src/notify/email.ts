@@ -57,7 +57,6 @@ export interface CapturedEmail {
   to: string;
   rendered: RenderedEmail;
 }
-
 export interface CaptureChannel extends EmailChannel {
   /** The latest messages, oldest first; at most `keep`. */
   readonly captured: readonly CapturedEmail[];
@@ -77,6 +76,33 @@ export function captureChannel(keep = 50): CaptureChannel {
       if (captured.length > keep) captured.splice(0, captured.length - keep);
       log('email_captured');
       return Promise.resolve({ ok: true, captured: true });
+    },
+  };
+}
+
+/**
+ * Counts every send Resend accepts, and only those (architecture §7.10, §9.4; P4-T4): the day's
+ * allowance is what Resend actually took, so a captured message (a test, or a preview's
+ * non-allowed address) and a refusal spend nothing. A failed count never turns a delivered email
+ * into a failure: it is logged, and the send keeps its result.
+ */
+export function countedChannel(
+  channel: EmailChannel,
+  record: (at: Date) => Promise<void>,
+  clock: () => Date = () => new Date(),
+): EmailChannel {
+  return {
+    id: 'email',
+    async send(to, rendered) {
+      const result = await channel.send(to, rendered);
+      if (result.ok && result.captured !== true) {
+        try {
+          await record(clock());
+        } catch {
+          log('email_count_failed', { errorCode: 'INTERNAL' });
+        }
+      }
+      return result;
     },
   };
 }

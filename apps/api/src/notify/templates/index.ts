@@ -1,6 +1,7 @@
 import type { RenderedEmail, RenderedPush } from '../channel';
 import type { Message, MessageKind, MessageOf } from '../message';
 import { resetPassword, verifyEmail } from './account';
+import { healthAlert } from './ops';
 import { comebackEmail, comebackPush } from './reminder';
 import type { RenderContext } from './render-context';
 import { agentConnected } from './security';
@@ -18,6 +19,7 @@ const EMAIL_TEMPLATES: { [K in MessageKind]: EmailTemplate<K> } = {
   'account.reset_password': resetPassword,
   'security.agent_connected': agentConnected,
   'reminder.comeback': comebackEmail,
+  'ops.health_alert': healthAlert,
 };
 
 /** Renders `msg` as an email: `{subject, html, text, headers}` (architecture §7.10). */

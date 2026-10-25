@@ -37,6 +37,11 @@ describe('content and cron routes', () => {
     expect(res.status).toBe(401);
   });
 
+  it('mounts the health cron, guarded by the bearer secret', async () => {
+    const res = await app.request('/api/cron/health', { method: 'POST' });
+    expect(res.status).toBe(401);
+  });
+
   it('serves content under /api/content, checking the path before any database read', async () => {
     const res = await app.request('/api/content/nothing/generic@1');
     expect(res.status).toBe(400);

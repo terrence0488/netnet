@@ -1,0 +1,56 @@
+name: Health check
+
+# The daily health check (architecture §9.3, §9.4, §10; P4-T4, ops/health.md). The workflow reads
+# the two figures only it can — Neon's consumption with NEON_API_KEY, and the N1 SLO as
+# netnet_metrics — and posts them to /api/cron/health with CRON_SECRET. The function adds the
+# figures only it can read from core, evaluates every trigger and emails the Founder when one
+# fired. Dispatch it with test_alert to deliver the test alert. The step fails when the handler
+# reports a trigger, so a red run is the second signal after the email.
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: 'Send the test alert to OPS_EMAIL'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_TELEMETRY_DISABLED: '1'
+
+jobs:
+  health:
+    name: Run the health check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # No `environment:` here on purpose: the `production` environment's required reviewer would
+    # hold every scheduled run for approval. The health secrets are repository secrets, so the
+    # schedule runs unattended.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.4
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Read Neon and the N1 SLO, then post them
+        env:
+          PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROD_PROJECT_ID: ${{ vars.NEON_PROD_PROJECT_ID }}
+          DATABASE_METRICS_URL: ${{ secrets.DATABASE_METRICS_URL }}
+          METRICS_EXCLUDE_USERS: ${{ secrets.METRICS_EXCLUDE_USERS }}
+          TEST_ALERT: ${{ inputs.test_alert }}
+        run: |
+          set -euo pipefail
+          args=(--env production)
+          if [ "$TEST_ALERT" = "true" ]; then args+=(--test-alert); fi
+          pnpm --silent health "${args[@]}"

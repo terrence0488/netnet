@@ -3,6 +3,7 @@ import type { RenderedEmail } from './channel';
 import {
   allowListChannel,
   captureChannel,
+  countedChannel,
   emailChannelFromEnv,
   parseAllowList,
   resendChannel,
@@ -101,6 +102,51 @@ describe('captureChannel()', () => {
       await channel.send(TO, { ...RENDERED, subject });
     }
     expect(channel.captured.map((m) => m.rendered.subject)).toEqual(['two', 'three']);
+  });
+});
+
+describe('countedChannel()', () => {
+  const AT = new Date('2026-08-01T10:00:00.000Z');
+
+  it('counts a send Resend accepted, stamped by its clock', async () => {
+    const recorded: Date[] = [];
+    const channel = countedChannel(
+      { id: 'email', send: () => Promise.resolve({ ok: true }) },
+      (at) => {
+        recorded.push(at);
+        return Promise.resolve();
+      },
+      () => AT,
+    );
+    expect(await channel.send(TO, RENDERED)).toEqual({ ok: true });
+    expect(recorded).toEqual([AT]);
+  });
+
+  it('counts neither a captured message nor a refusal', async () => {
+    const recorded: Date[] = [];
+    const record = (at: Date) => {
+      recorded.push(at);
+      return Promise.resolve();
+    };
+    const captured = countedChannel(captureChannel(), record, () => AT);
+    expect(await captured.send(TO, RENDERED)).toEqual({ ok: true, captured: true });
+    const refused = countedChannel(
+      { id: 'email', send: () => Promise.resolve({ ok: false, status: 503 }) },
+      record,
+      () => AT,
+    );
+    expect(await refused.send(TO, RENDERED)).toEqual({ ok: false, status: 503 });
+    expect(recorded).toEqual([]);
+  });
+
+  it('keeps a delivered email a success when the count fails, and logs only that', async () => {
+    const channel = countedChannel(
+      { id: 'email', send: () => Promise.resolve({ ok: true }) },
+      () => Promise.reject(new Error('database down')),
+      () => AT,
+    );
+    expect(await channel.send(TO, RENDERED)).toEqual({ ok: true });
+    expect(logged).toEqual(['{"event":"email_count_failed","errorCode":"INTERNAL"}']);
   });
 });
 

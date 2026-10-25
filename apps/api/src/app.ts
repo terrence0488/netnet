@@ -26,6 +26,7 @@ import { valuesRoutes } from './http/values';
 import { cronAuth, cronSecret } from './jobs/cron';
 import { dailyJob } from './jobs/daily';
 import { defaultFxJob } from './jobs/fx';
+import { healthJob } from './jobs/health';
 import { remindersJob } from './jobs/reminders';
 import type { AppEnv } from './lib/context';
 import { appOrigins } from './lib/env';
@@ -98,6 +99,7 @@ app.use('/api/cron/*', cronAuth(cronSecret));
 app.get('/api/cron/fx', defaultFxJob());
 app.get('/api/cron/daily', dailyJob());
 app.get('/api/cron/reminders', remindersJob());
+app.post('/api/cron/health', healthJob());
 
 app.notFound(handleNotFound);
 app.onError(handleError);

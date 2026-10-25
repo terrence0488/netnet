@@ -7,15 +7,16 @@ import {
   revokeEndpoint,
 } from '../db/endpoints';
 import { accountOf, type Account } from '../db/profiles';
+import { recordEmailSent } from '../db/emails';
 import { countReminderEmailsToday, getReminderState, recordReminderSent } from '../db/reminders';
 import { appVersion } from '../events/app-version';
 import { track } from '../events/track';
 import { publicOrigin } from '../lib/env';
 import { log } from '../lib/log';
 import type { EmailChannel, PushChannel, PushEndpoint } from './channel';
-import { emailChannelFromEnv } from './email';
+import { countedChannel, emailChannelFromEnv } from './email';
 import { linkSecret, signReminderToken } from './links';
-import type { Delivery, MessageKind, MessageOf, Notify } from './message';
+import type { Delivery, MessageKind, MessageOf, Notify, NotifyOperator } from './message';
 import { renderEmail, renderPush } from './templates';
 import { fetchPost, webPushChannelFromEnv } from './webpush';
 
@@ -36,7 +37,7 @@ interface Route {
   email: { verifiedOnly: boolean };
 }
 
-const ROUTES: { [K in Exclude<MessageKind, 'reminder.comeback'>]: Route } = {
+const ROUTES: { [K in Exclude<MessageKind, 'reminder.comeback' | 'ops.health_alert'>]: Route } = {
   'account.verify_email': { email: { verifiedOnly: false } },
   'account.reset_password': { email: { verifiedOnly: false } },
   'security.agent_connected': { email: { verifiedOnly: false } },
@@ -141,6 +142,8 @@ async function sendReminder(
 export function createNotify(deps: () => NotifyDeps): Notify {
   return async (userId, msg) => {
     try {
+      // The operator's alert names no user: `notifyOperator` is its only way out.
+      if (msg.kind === 'ops.health_alert') return { channel: null, reason: 'nowhere' };
       if (msg.kind === 'reminder.comeback') return sendReminder(deps(), userId, msg);
       const { recipient, email, origin } = deps();
       const route = ROUTES[msg.kind];
@@ -158,6 +161,17 @@ export function createNotify(deps: () => NotifyDeps): Notify {
 
 let sharedEmail: EmailChannel | undefined;
 const sharedPushPost = fetchPost();
+
+/**
+ * The email channel every message shares: the environment's channel, wrapped so that each send
+ * Resend accepts counts in `core` (architecture §7.10, §9.4). A captured or refused send spends
+ * nothing and is not counted.
+ */
+function liveEmail(): EmailChannel {
+  return (sharedEmail ??= countedChannel(emailChannelFromEnv(), (at) =>
+    recordEmailSent(database(), at),
+  ));
+}
 
 /**
  * The live push wiring: the person's devices with their TTLs, and the `webpush` channel, which
@@ -191,7 +205,7 @@ function livePush(): ReminderDeps['push'] {
 
 export const notify: Notify = createNotify(() => ({
   recipient: (userId) => accountOf(database(), userId),
-  email: (sharedEmail ??= emailChannelFromEnv()),
+  email: liveEmail(),
   origin: publicOrigin(),
   reminders: {
     state: (userId) => getReminderState(database(), userId),
@@ -201,4 +215,48 @@ export const notify: Notify = createNotify(() => ({
     sign: (userId, channel, sentAt) => signReminderToken(linkSecret(), { userId, channel, sentAt }),
     push: livePush(),
   },
+}));
+
+/** What `notifyOperator` needs: where it may send, and how. */
+export interface OperatorDeps {
+  /** `OPS_EMAIL`; empty when the Founder has not set it (F25). */
+  address: string;
+  email: EmailChannel;
+  origin: string;
+}
+
+/**
+ * `notifyOperator(msg)`: the Founder's daily health alert (architecture §9.3, P4-T4), sent by email
+ * to `OPS_EMAIL` only. It names no account, so it cannot use `notify()`. Without `OPS_EMAIL` it
+ * sends nothing — no crash, no attempt — and says so in the log; the caller reports the gap as
+ * `unreadable_ops_email`. It never logs the address or the alert's content.
+ */
+export function createNotifyOperator(deps: () => OperatorDeps): NotifyOperator {
+  return async (msg) => {
+    const { address, email, origin } = deps();
+    const to = address.trim();
+    if (to === '') {
+      log('ops_email_not_configured', { errorCode: 'INTERNAL' });
+      return { channel: null, reason: 'nowhere' };
+    }
+    try {
+      const result = await email.send({ email: to }, renderEmail(msg, { origin }));
+      if (result.ok) return { channel: 'email' };
+      log('ops_alert_failed', {
+        errorCode: 'INTERNAL',
+        ...(result.status === undefined ? {} : { status: result.status }),
+      });
+      return { channel: null, reason: 'failed' };
+    } catch {
+      log('ops_alert_failed', { errorCode: 'INTERNAL' });
+      return { channel: null, reason: 'failed' };
+    }
+  };
+}
+
+/** The live operator alert: `OPS_EMAIL`, the same counted channel, and the public origin. */
+export const notifyOperator: NotifyOperator = createNotifyOperator(() => ({
+  address: process.env.OPS_EMAIL ?? '',
+  email: liveEmail(),
+  origin: publicOrigin(),
 }));
