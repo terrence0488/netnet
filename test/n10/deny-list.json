@@ -25,7 +25,40 @@
     "Roth",
     "TFSA",
     "RRSP",
-    "KiwiSaver"
+    "KiwiSaver",
+    "JHT",
+    "DPLK",
+    "Tapera",
+    "SSS",
+    "GSIS",
+    "MP2",
+    "PERA",
+    "WISP",
+    "PVD",
+    "GPF",
+    "RMF",
+    "SSF",
+    "ThaiESG",
+    "BHXH",
+    "TVC",
+    "QDAP",
+    "eMPF",
+    "ELSS",
+    "VPF",
+    "SCSS",
+    "SSY",
+    "SMSF",
+    "FHSS",
+    "HECS",
+    "MySuper"
   ],
-  "caseInsensitive": ["Superannuation", "401(k)", "403(b)", "Tabung Haji"]
+  "caseInsensitive": [
+    "Superannuation",
+    "401(k)",
+    "403(b)",
+    "Tabung Haji",
+    "Jaminan Hari Tua",
+    "Pension Booster",
+    "Sukanya Samriddhi"
+  ]
 }

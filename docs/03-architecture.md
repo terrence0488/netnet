@@ -315,6 +315,8 @@ random id**: they still count, and they no longer point at anyone.
   (§7.8). Any failure rejects the whole publish, because a half-applied pack is a wrong pack. It then
   inserts new `content_doc` versions, moves `content_current` and writes `content_audit`. **No code
   release.** Images ship as static files through a content-only deploy.
+- **Review:** draft packs (`content/packs/drafts/`) are validated and never published. A production
+  publish refuses, whole, any new or changed pack whose hash has no record in `content/reviews.json`.
 - **Reading:** the function caches `content_current` for 60 s and each version indefinitely. The
   web app fetches `GET /api/content/:kind/:key@:version`, cached for a year.
 - **The admin portal (not v1)** writes the same tables through the same validator, as

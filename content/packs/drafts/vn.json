@@ -1,0 +1,94 @@
+{
+  "id": "vn",
+  "locale": "en-VN",
+  "currency": "VND",
+  "labels": {
+    "mortgage": "Home loan"
+  },
+  "examples": {
+    "cash": "e.g. Term deposit, e-wallet",
+    "listed": "e.g. Vietnamese shares, fund certificates",
+    "property": "e.g. Apartment",
+    "vehicle": "e.g. Motorbike",
+    "mortgage": "e.g. Home loan",
+    "loan": "e.g. Instalment loan"
+  },
+  "meaning": {},
+  "cadenceDays": {},
+  "defaults": {},
+  "questions": {},
+  "types": [
+    { "key": "gold", "u": "other", "label": "Gold", "example": "e.g. Gold bars or jewellery" },
+    {
+      "key": "vehicle_loan",
+      "u": "loan",
+      "label": "Vehicle loan",
+      "example": "e.g. Motorbike instalments"
+    }
+  ],
+  "checklist": [
+    {
+      "id": "bank",
+      "u": "cash",
+      "name": "Bank accounts",
+      "ask": "Do you have money in a bank account, a term deposit or an e-wallet?",
+      "amount": "Roughly how much, across all of them?"
+    },
+    {
+      "id": "gold",
+      "u": "other",
+      "type": "gold",
+      "name": "Gold",
+      "ask": "Do you own gold — bars, rings or jewellery?",
+      "amount": "Roughly what would it sell for today?",
+      "answer": "sell"
+    },
+    {
+      "id": "invest",
+      "u": "listed",
+      "name": "Investments",
+      "ask": "Any investments — shares, fund certificates, an investing app?",
+      "amount": "Roughly what are they worth today?"
+    },
+    {
+      "id": "home",
+      "u": "property",
+      "name": "Home",
+      "ask": "Do you own the home you live in?",
+      "amount": "Roughly what would it sell for?",
+      "answer": "yes"
+    },
+    {
+      "id": "home_loan",
+      "u": "mortgage",
+      "name": "Home loan",
+      "ask": "Is there a home loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "home",
+      "hint": "Your latest loan statement shows what’s outstanding."
+    },
+    {
+      "id": "vehicle",
+      "u": "vehicle",
+      "name": "Vehicle",
+      "ask": "Do you own a car or a motorbike?",
+      "amount": "Roughly what would it sell for?"
+    },
+    {
+      "id": "vehicle_loan",
+      "u": "loan",
+      "type": "vehicle_loan",
+      "name": "Vehicle loan",
+      "ask": "Is there a loan or an instalment plan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "vehicle"
+    },
+    {
+      "id": "owed",
+      "u": "loan",
+      "name": "Other loans",
+      "ask": "Anything else you owe — a consumer loan, a personal loan or a card balance?",
+      "amount": "Roughly how much, all together?"
+    }
+  ]
+}
