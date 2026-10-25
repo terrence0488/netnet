@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eventStore } from '../../src/db/analytics';
 import { countHit } from '../../src/db/rate-limits';
+import { createVisitor } from '../../src/db/visitor';
 import { event, profile } from '../../src/db/schema';
 import { EVENTS_PER_MINUTE_PER_IP } from '../../src/http/events';
 import { createTrack, type Track } from '../../src/events/track';
@@ -165,7 +166,16 @@ describe('rateLimit() over core.rate_limit', () => {
 describe('POST /api/events against the database', () => {
   let signedIn: SessionUser | null;
   let vercel: CapturedWaitUntil;
-  const app = () => eventsApp({ track, rateLimit, appVersion: () => 'abc1234' }, () => signedIn);
+  const app = () =>
+    eventsApp(
+      {
+        track,
+        rateLimit,
+        appVersion: () => 'abc1234',
+        visitor: createVisitor(() => ({ db: () => db.appDb, clock: () => now })),
+      },
+      () => signedIn,
+    );
 
   beforeEach(() => {
     signedIn = { userId: USER_A, emailVerified: false };

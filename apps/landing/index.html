@@ -4,13 +4,173 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F2EADB" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1B1712" media="(prefers-color-scheme: dark)" />
     <title>NetNet</title>
+    <meta
+      name="description"
+      content="You can’t get useful advice from an AI that doesn’t know where you stand. NetNet keeps where you stand, and your own AI agent reads it."
+    />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NetNet" />
+    <meta property="og:title" content="NetNet" />
+    <meta
+      property="og:description"
+      content="You can’t get useful advice from an AI that doesn’t know where you stand."
+    />
+    <meta property="og:url" content="%ORIGIN%/" />
+    <meta property="og:image" content="%ORIGIN%/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="NetNet: you can’t get useful advice from an AI that doesn’t know where you stand."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="NetNet" />
+    <meta
+      name="twitter:description"
+      content="You can’t get useful advice from an AI that doesn’t know where you stand."
+    />
+    <meta name="twitter:image" content="%ORIGIN%/og.png" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preload" href="/src/fonts/unbounded.woff2" as="font" type="font/woff2" crossorigin />
+    <link
+      rel="preload"
+      href="/src/fonts/space-grotesk.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link rel="stylesheet" href="/src/styles.css" />
+    <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
+    <header class="bar">
+      <a class="wordmark" href="/"><i class="sparkle" aria-hidden="true"></i>NetNet</a>
+      <a class="quiet" href="/app/login">Sign in</a>
+    </header>
+
     <main>
-      <h1>NetNet</h1>
-      <p>Coming soon.</p>
+      <section class="hero" aria-labelledby="headline">
+        <div class="poster">
+          <h1 id="headline">
+            You can’t get useful advice from an AI that doesn’t know where you stand.
+          </h1>
+        </div>
+        <div class="pitch">
+          <p class="lead">
+            NetNet keeps where you stand: what you own and what you owe, in any currency. Your own
+            AI agent reads it, so a real question gets an answer from your real balance sheet.
+          </p>
+          <div class="act">
+            <a class="button" href="/app/signup">Get started</a>
+            <p class="meta">Free. Works with Claude and any agent that supports MCP connectors.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="proofs" aria-label="Where you start from">
+        <article class="card proof">
+          <p class="label">Never added it up?</p>
+          <h2>A first picture in minutes.</h2>
+          <p>
+            Answer a few questions (do you have it, and roughly how much) or let your agent do the
+            typing. Home then tells you what you could use today, what’s locked and until when, and
+            what you owe against it.
+          </p>
+        </article>
+        <article class="card proof">
+          <p class="label">Already keep the numbers?</p>
+          <h2>Kept current, and readable by your AI.</h2>
+          <p>
+            Hand your agent a statement: it reads the figures and updates your holdings, and the
+            statement itself never reaches NetNet. Ask anything, and your agent answers from your
+            real balance sheet, with what you could actually use worked out and stale values
+            flagged.
+          </p>
+        </article>
+      </section>
+
+      <section class="ask" aria-labelledby="ask-title">
+        <h2 id="ask-title">Ask what you actually want to know.</h2>
+        <div class="card prompts">
+          <ul>
+            <li>Can I afford a new car this year?</li>
+            <li>How exposed am I to the US dollar?</li>
+            <li>What changed since last quarter?</li>
+            <li>How much could I reach in an emergency?</li>
+          </ul>
+        </div>
+        <p class="note">
+          NetNet does the arithmetic (what you could use, what’s locked, your currency exposure,
+          what changed) and gives your agent the facts. The advice is your agent’s.
+        </p>
+      </section>
+
+      <section class="trust" aria-labelledby="trust-title">
+        <h2 id="trust-title">Your data stays yours.</h2>
+        <ul class="card points">
+          <li>
+            <h3>Stored in Singapore</h3>
+            <p>Encrypted at rest. Backups are encrypted before they’re stored, and kept 30 days.</p>
+          </li>
+          <li>
+            <h3>Never sold</h3>
+            <p>No ads and no tracking. This page sets no cookie.</p>
+          </li>
+          <li>
+            <h3>Statements stay with you</h3>
+            <p>
+              Your agent reads a statement and sends NetNet the figures. The document never reaches
+              us.
+            </p>
+          </li>
+          <li>
+            <h3>Every connection confirmed</h3>
+            <p>Each agent you connect is confirmed by email, and you can revoke it at any time.</p>
+          </li>
+          <li>
+            <h3>Every change on the record</h3>
+            <p>Whatever you or your agent change shows in Activity.</p>
+          </li>
+          <li>
+            <h3>Leave whenever you like</h3>
+            <p>
+              Export everything at any time. Delete your account and it’s erased within 30 days.
+            </p>
+          </li>
+        </ul>
+      </section>
+
+      <section class="pair" aria-label="Price and agents">
+        <article class="card free">
+          <h2>Free. And what’s free stays free.</h2>
+          <p>Everything NetNet does today is free, your agent’s reads and writes included.</p>
+        </article>
+        <article class="card agents">
+          <h2>Works with Claude.</h2>
+          <p>
+            And with any agent that supports MCP connectors: add NetNet’s address as a connector,
+            then allow it on NetNet’s own page.
+          </p>
+        </article>
+      </section>
+
+      <section class="closing" aria-labelledby="closing-title">
+        <h2 id="closing-title">See where you stand.</h2>
+        <a class="button" href="/app/signup">Get started</a>
+        <p class="meta">Already have an account? <a class="quiet" href="/app/login">Sign in</a></p>
+      </section>
     </main>
+
+    <footer class="foot">
+      <span class="wordmark small"><i class="sparkle" aria-hidden="true"></i>NetNet</span>
+    </footer>
   </body>
 </html>

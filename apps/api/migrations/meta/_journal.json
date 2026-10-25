@@ -78,6 +78,13 @@
       "when": 1792803766191,
       "tag": "0010_given_rate",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792918163555,
+      "tag": "0011_visitor_salt",
+      "breakpoints": true
     }
   ]
 }
