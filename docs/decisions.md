@@ -120,6 +120,7 @@ rewritten to match. Nothing here is superseded or historical; git history holds 
 | The trend's range and the allocation's $/% are session-local, not saved prefs | Prefs carry baseline, sort and filters; a fix session does not extend that contract |
 | On Home the stale note sits directly beneath Position, and the push card below it | The note qualifies the figures above it; the card is an offer, and J12 asks only that it sit below Position |
 | The landing page is its own page, in Poster's brand at poster scale, built from its own HTML and CSS | G-D1 asks for a marketing page, not a screen in the product; one brand from the first screen to the app |
+| The landing page's recording slot carries a branded placeholder until F21 lands; the page is reviewed with it before the recording is made | Settles the page's layout and copy first, and builds the 16:9 slot once; the `noindex` page cannot launch with the placeholder |
 
 ## Delivery
 
