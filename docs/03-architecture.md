@@ -315,6 +315,7 @@ anyone.
 - **The admin portal (not v1)** writes the same tables through the same validator, as
   `netnet_content_admin`, which has **no access to `ledger`, `analytics` or identity**. Nothing in
   v1 has to change for it.
+- **Demo:** `content/demo/` holds the fictional demo household, validated, never published.
 
 ### 6.6 Money and exchange rates
 
