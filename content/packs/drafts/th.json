@@ -1,0 +1,110 @@
+{
+  "id": "th",
+  "locale": "en-TH",
+  "currency": "THB",
+  "labels": {
+    "retirement": "Provident fund",
+    "mortgage": "Home loan",
+    "wrapper": "Tax-saving fund"
+  },
+  "examples": {
+    "cash": "e.g. Savings account, fixed deposit",
+    "listed": "e.g. Thai shares, mutual funds",
+    "retirement": "e.g. Provident fund through work",
+    "property": "e.g. Condo",
+    "vehicle": "e.g. Car or motorbike",
+    "mortgage": "e.g. Home loan",
+    "wrapper": "e.g. RMF or ThaiESG"
+  },
+  "meaning": {},
+  "cadenceDays": {},
+  "defaults": {
+    "retirement": {
+      "access": "locked",
+      "reason": "provident and pension fund money is locked until you’re eligible to withdraw",
+      "until": "until you’re eligible to withdraw"
+    }
+  },
+  "questions": {},
+  "types": [
+    {
+      "key": "hire_purchase",
+      "u": "loan",
+      "label": "Hire purchase",
+      "example": "e.g. Car on hire purchase"
+    }
+  ],
+  "checklist": [
+    {
+      "id": "bank",
+      "u": "cash",
+      "name": "Bank accounts",
+      "ask": "Do you have money in a bank account?",
+      "amount": "Roughly how much, across all of them?"
+    },
+    {
+      "id": "pvd",
+      "u": "retirement",
+      "name": "Provident fund",
+      "ask": "Do you have a provident fund, or GPF, through work?",
+      "amount": "Roughly how much?",
+      "hint": "Your fund’s latest statement shows the balance."
+    },
+    {
+      "id": "tax_saving",
+      "u": "wrapper",
+      "name": "Tax-saving funds",
+      "ask": "Any RMF, SSF or ThaiESG units still in their holding period?",
+      "amount": "Roughly what are they worth today?",
+      "answer": "no",
+      "hint": "Units past their holding period count with your other investments."
+    },
+    {
+      "id": "invest",
+      "u": "listed",
+      "name": "Investments",
+      "ask": "Any other investments — shares, mutual funds, an investing app?",
+      "amount": "Roughly what are they worth today?"
+    },
+    {
+      "id": "home",
+      "u": "property",
+      "name": "Home",
+      "ask": "Do you own the home you live in?",
+      "amount": "Roughly what would it sell for?",
+      "answer": "yes"
+    },
+    {
+      "id": "home_loan",
+      "u": "mortgage",
+      "name": "Home loan",
+      "ask": "Is there a home loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "home",
+      "hint": "Your latest loan statement shows what’s outstanding."
+    },
+    {
+      "id": "vehicle",
+      "u": "vehicle",
+      "name": "Vehicle",
+      "ask": "Do you own a car or a motorbike?",
+      "amount": "Roughly what would it sell for?"
+    },
+    {
+      "id": "hire_purchase",
+      "u": "loan",
+      "type": "hire_purchase",
+      "name": "Hire purchase",
+      "ask": "Is it on hire purchase?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "vehicle"
+    },
+    {
+      "id": "owed",
+      "u": "loan",
+      "name": "Other loans",
+      "ask": "Anything else you owe — a student loan, a personal loan or a card balance?",
+      "amount": "Roughly how much, all together?"
+    }
+  ]
+}

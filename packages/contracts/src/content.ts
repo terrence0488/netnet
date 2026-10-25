@@ -575,6 +575,59 @@ export function validateContent(docs: readonly ContentDoc[]): ContentResult {
   return errors.length === 0 ? { ok: true } : { ok: false, errors };
 }
 
+/* ---------------------------------------------------------------- the review record */
+
+/**
+ * The review record (CONVENTIONS §8): each pack key → the review of one version of that pack by
+ * someone who knows the market. `sha256` is the pack document's own hash as `content:publish`
+ * computes it, so an edit after the review needs a review of its own. The record lives beside the
+ * content in the repository and is never published: a production publish reads it to refuse any
+ * new or changed pack without a matching review.
+ */
+export const reviewSchema = z.strictObject({
+  sha256: z
+    .string()
+    .regex(
+      /^[0-9a-f]{64}$/,
+      'Use the pack’s SHA-256 as content:publish computes it: 64 lowercase hex characters.',
+    ),
+  /** As the reviewer agrees to be named: a name or initials. */
+  reviewer: copy,
+  on: z.iso.date('Use the date of the review, as YYYY-MM-DD.'),
+  notes: copy.exactOptional(),
+});
+export type Review = z.infer<typeof reviewSchema>;
+
+export const reviewsSchema = z.record(packKey, reviewSchema);
+export type Reviews = z.infer<typeof reviewsSchema>;
+
+/**
+ * Every problem with the review record `body`, named as `doc`: its shape, and any key that is not
+ * one of `packIds`, the packs that are published (a draft has no review until it moves out).
+ */
+export function validateReviews(
+  body: unknown,
+  packIds: ReadonlySet<string>,
+  doc: string,
+): ContentError[] {
+  const result = reviewsSchema.safeParse(body);
+  if (!result.success) {
+    return result.error.issues.map((issue) => ({
+      doc,
+      path: formatPath(issue.path),
+      message:
+        (issue.code === 'invalid_key' ? issue.issues[0]?.message : undefined) ?? issue.message,
+    }));
+  }
+  return Object.keys(result.data)
+    .filter((key) => !packIds.has(key))
+    .map((key) => ({
+      doc,
+      path: key,
+      message: `There is no pack "${key}". A pack's review is recorded as it moves out of drafts.`,
+    }));
+}
+
 /* ---------------------------------------------------------------- the demo household */
 
 /**

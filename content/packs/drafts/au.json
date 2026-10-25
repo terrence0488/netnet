@@ -1,0 +1,112 @@
+{
+  "id": "au",
+  "locale": "en-AU",
+  "currency": "AUD",
+  "labels": {
+    "retirement": "Super",
+    "vehicle": "Car",
+    "mortgage": "Home loan"
+  },
+  "examples": {
+    "cash": "e.g. Savings or offset account",
+    "listed": "e.g. Shares and ETFs",
+    "retirement": "e.g. Industry fund or SMSF",
+    "property": "e.g. Investment property",
+    "mortgage": "e.g. Variable home loan",
+    "loan": "e.g. HELP debt"
+  },
+  "meaning": {},
+  "cadenceDays": {},
+  "defaults": {
+    "retirement": {
+      "access": "locked",
+      "reason": "super is locked until you’re eligible to withdraw",
+      "until": "until you’re eligible to withdraw"
+    }
+  },
+  "questions": {},
+  "types": [
+    { "key": "car_loan", "u": "loan", "label": "Car loan", "example": "e.g. Secured car loan" }
+  ],
+  "checklist": [
+    {
+      "id": "bank",
+      "u": "cash",
+      "name": "Bank accounts",
+      "ask": "Do you have money in a bank, savings or offset account?",
+      "amount": "Roughly how much, across all of them?",
+      "hint": "Count an offset account here; the home loan comes later."
+    },
+    {
+      "id": "super",
+      "u": "retirement",
+      "name": "Super",
+      "ask": "Do you have super?",
+      "amount": "Roughly how much, all funds together?",
+      "hint": "Your fund’s app shows the balance; myGov lists every fund you have."
+    },
+    {
+      "id": "invest",
+      "u": "listed",
+      "name": "Investments",
+      "ask": "Any investments outside super — shares, ETFs, an investing app?",
+      "amount": "Roughly what are they worth today?"
+    },
+    {
+      "id": "home",
+      "u": "property",
+      "name": "Home",
+      "ask": "Do you own the home you live in?",
+      "amount": "Roughly what would it sell for?",
+      "answer": "yes"
+    },
+    {
+      "id": "home_loan",
+      "u": "mortgage",
+      "name": "Home loan",
+      "ask": "Is there a home loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "home",
+      "hint": "Your latest statement shows what’s outstanding, before any offset."
+    },
+    {
+      "id": "investment_property",
+      "u": "property",
+      "name": "Investment property",
+      "ask": "Do you own an investment property?",
+      "amount": "Roughly what would it sell for?",
+      "answer": "no"
+    },
+    {
+      "id": "investment_loan",
+      "u": "mortgage",
+      "name": "Investment loan",
+      "ask": "Is there a loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "investment_property"
+    },
+    {
+      "id": "car",
+      "u": "vehicle",
+      "name": "Car",
+      "ask": "Do you own a car?",
+      "amount": "Roughly what would it sell for?"
+    },
+    {
+      "id": "car_loan",
+      "u": "loan",
+      "type": "car_loan",
+      "name": "Car loan",
+      "ask": "Is there a car loan on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "car"
+    },
+    {
+      "id": "owed",
+      "u": "loan",
+      "name": "Other loans",
+      "ask": "Anything else you owe — a HELP debt, a personal loan or a card balance?",
+      "amount": "Roughly how much, all together?"
+    }
+  ]
+}

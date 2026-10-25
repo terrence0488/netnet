@@ -1,0 +1,106 @@
+{
+  "id": "hk",
+  "locale": "en-HK",
+  "currency": "HKD",
+  "labels": {
+    "retirement": "MPF"
+  },
+  "examples": {
+    "cash": "e.g. Savings account, time deposit",
+    "listed": "e.g. Hong Kong shares, ETFs",
+    "retirement": "e.g. MPF or ORSO scheme",
+    "property": "e.g. Flat",
+    "mortgage": "e.g. Mortgage on the flat",
+    "wrapper": "e.g. Deferred annuity policy"
+  },
+  "meaning": {},
+  "cadenceDays": {},
+  "defaults": {},
+  "questions": {
+    "retirement": {
+      "ask": "Can you withdraw this now under your scheme’s rules?",
+      "answers": [
+        {
+          "id": "no",
+          "label": "No",
+          "access": "locked",
+          "reason": "MPF is locked until you’re eligible to withdraw",
+          "until": "until you’re eligible to withdraw"
+        },
+        {
+          "id": "yes",
+          "label": "Yes, I can withdraw it now",
+          "access": "accessible",
+          "reason": "your scheme’s rules let you withdraw it now"
+        }
+      ]
+    }
+  },
+  "types": [],
+  "checklist": [
+    {
+      "id": "bank",
+      "u": "cash",
+      "name": "Bank accounts",
+      "ask": "Do you have money in a bank account?",
+      "amount": "Roughly how much, across all of them?"
+    },
+    {
+      "id": "mpf",
+      "u": "retirement",
+      "name": "MPF",
+      "ask": "Do you have MPF savings?",
+      "amount": "Roughly how much, all your MPF accounts together?",
+      "answer": "no",
+      "hint": "The eMPF Platform shows every account. Leave out voluntary contributions you can withdraw now; they come next."
+    },
+    {
+      "id": "mpf_voluntary",
+      "u": "retirement",
+      "name": "MPF voluntary contributions",
+      "ask": "Any voluntary contributions your scheme lets you withdraw now?",
+      "amount": "Roughly how much?",
+      "answer": "yes",
+      "onlyIf": "mpf",
+      "hint": "Your scheme’s rules say whether you can. TVC money can’t be withdrawn early."
+    },
+    {
+      "id": "invest",
+      "u": "listed",
+      "name": "Investments",
+      "ask": "Any investments — shares, funds, an investing app?",
+      "amount": "Roughly what are they worth today?"
+    },
+    {
+      "id": "home",
+      "u": "property",
+      "name": "Home",
+      "ask": "Do you own the home you live in?",
+      "amount": "Roughly what would it sell for?",
+      "answer": "yes"
+    },
+    {
+      "id": "mortgage",
+      "u": "mortgage",
+      "name": "Mortgage",
+      "ask": "Is there a mortgage on it?",
+      "amount": "Roughly how much is left to pay?",
+      "onlyIf": "home",
+      "hint": "Your latest mortgage statement shows what’s outstanding."
+    },
+    {
+      "id": "car",
+      "u": "vehicle",
+      "name": "Car",
+      "ask": "Do you own a car?",
+      "amount": "Roughly what would it sell for?"
+    },
+    {
+      "id": "owed",
+      "u": "loan",
+      "name": "Other loans",
+      "ask": "Anything else you owe — a personal loan, a student loan or a card balance?",
+      "amount": "Roughly how much, all together?"
+    }
+  ]
+}

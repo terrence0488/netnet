@@ -145,7 +145,9 @@ docs/                     the workflow's documents; docs/02-prototype is the des
   Copy follows the PRD: ask facts, not categories; show the consequence; "locked until you're
   eligible to withdraw", not "until 55".
 - Every launch pack is reviewed by someone who knows that market before it is published to
-  production (PRD §2.3). Record the reviewer in the publish message.
+  production (PRD §2.3). A pack is drafted in `content/packs/drafts/`, which is validated and never
+  published; its review records the pack's hash and the reviewer in `content/reviews.json`, in a
+  commit with `Reviewed-by:`, and a production publish refuses a new or changed pack without one.
 
 ## 9. Testing
 

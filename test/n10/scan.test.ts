@@ -49,6 +49,26 @@ describe('N10: no local knowledge in code', () => {
       ]);
     });
 
+    it('catches every listed term, the launch markets’ schemes and wrappers among them', () => {
+      const every = mkdtempSync(join(tmpdir(), 'n10-every-'));
+      try {
+        const terms = [
+          ...denyList.caseSensitive,
+          ...denyList.caseInsensitive.map((t) => t.toUpperCase()),
+        ];
+        mkdirSync(join(every, 'apps', 'web', 'src'), { recursive: true });
+        writeFileSync(
+          join(every, 'apps', 'web', 'src', 'planted.ts'),
+          terms.map((t) => `const note = "a ${t} account";`).join('\n'),
+        );
+        const found = scanForLocalKnowledge(every, denyList);
+        expect(found.map((m) => m.line)).toStrictEqual(terms.map((_, i) => i + 1));
+        expect(denyList.caseSensitive.length).toBeGreaterThan(40);
+      } finally {
+        rmSync(every, { recursive: true, force: true });
+      }
+    });
+
     it('leaves content/ and docs/ alone', () => {
       expect(matches.some((m) => m.file.startsWith('content/') || m.file.startsWith('docs/'))).toBe(
         false,
