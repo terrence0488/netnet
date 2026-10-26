@@ -1,10 +1,10 @@
 name: Deploy to production
 
 # The production release (architecture §9.1, §9.2): manual and gated. The Founder runs it by
-# hand (Actions → Deploy to production → Run workflow), on a main whose last merge was green:
-# one pull request lands at a time and the Founder merges only green ones, so the merged tree
-# is the tested tree, and waiting for main CI would re-run the suite for ~10 minutes per
-# deploy (decisions.md; revisit when delivery ends). It runs `db:bootstrap` (idempotent) →
+# hand (Actions → Deploy to production → Run workflow), and before anything is migrated it waits
+# for the `Checks` job of main's own CI to be green on the commit being deployed (P4-T14): the
+# merged pull request's run proves the tree it carried, not the tree main holds after a rebase or
+# a second merge. It runs `db:bootstrap` (idempotent) →
 # `db:migrate` as owner → `content:publish --env production --strict` → `vercel deploy --prod
 # --prebuilt` → a check that production actually moved → the smoke tests, and on a smoke
 # failure the previous production deployment is rolled back to, failing the run. The rollback
@@ -19,7 +19,8 @@ name: Deploy to production
 # pin was found); recovery is Vercel → project → Settings → Environments → Auto-assign
 # Custom Production Domains ON, then re-run.
 #
-# The gate is that only a human runs this workflow: it is `workflow_dispatch` only, so nothing
+# The gate is two-deep: only a human runs this workflow, and it refuses a commit whose own
+# `Checks` is not green. It is `workflow_dispatch` only, so nothing
 # reaches production unless the Founder runs it. The `Production` environment (exact case) carries
 # no rules — required reviewers need a paid plan for a private repository (decisions.md); if the
 # plan ever allows it, add the Founder as its reviewer. It holds no secrets. The repository holds
@@ -50,6 +51,8 @@ concurrency:
 
 permissions:
   contents: read
+  # The green-main gate reads this commit's `Checks` result (P4-T14).
+  checks: read
 
 env:
   VERCEL_TELEMETRY_DISABLED: '1'
@@ -75,8 +78,36 @@ jobs:
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
-      # No green-main check on purpose (decisions.md): the merged pull request was green, and
-      # main CI still runs as the backstop. When delivery ends, the gate goes back on.
+      # The gate T14 puts back (decisions.md, Delivery): production moves only on a commit whose own
+      # `Checks` job is green. It reads this commit's result by name and waits for it for up to 15
+      # minutes; anything but a green run — missing, still running, red, cancelled — stops here with
+      # a plain message, before a migration or a deploy.
+      - name: Wait for main's green Checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          deadline=$((SECONDS + 900))
+          while :; do
+            verdict=$(gh api \
+              "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?check_name=Checks" \
+              --jq '[.check_runs[]] | sort_by(.started_at // "") | last // {} | "\(.status // "missing") \(.conclusion // "-") \(.html_url // "")"')
+            read -r status conclusion url <<<"$verdict"
+            if [ "$status" = 'completed' ] && [ "$conclusion" = 'success' ]; then
+              echo "main's Checks on $GITHUB_SHA is green ($url). Deploying it."
+              exit 0
+            fi
+            if [ "$status" = 'completed' ]; then
+              echo "::error::main's Checks on $GITHUB_SHA finished $conclusion, not success ($url). Production moves only on a green Checks: wait for main's CI, fix it, and run this deploy again on a green commit."
+              exit 1
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error::main's Checks on $GITHUB_SHA has not finished after 15 minutes (status: $status, $url). Wait for it, then run this deploy again."
+              exit 1
+            fi
+            echo "Waiting for main's Checks on $GITHUB_SHA (status: $status)…"
+            sleep 30
+          done
       - name: Production is configured
         env:
           PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
