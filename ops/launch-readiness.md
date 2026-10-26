@@ -4,27 +4,28 @@ P4-T14's checklist, with what is proven, what is still open and what only the Fo
 Production stays unannounced (`noindex`) until Stage 8; this file never marks a stage or phase
 approved.
 
-Status: **in-progress** — T14's boxes are not all met, and since 2026-10-26 00:50 UTC **no GitHub
-Actions job can start at all** (billing, N2): CI, the deploy and every schedule fail before their
-first step. Last checked: 2026-10-26 (UTC 01:10), on `main` at `b396356`.
+Status: **in-progress** — the build-side boxes are proven; the open ones are Founder-only (N1(a)/N1(b),
+F11, F20, F22, F23, the restore drill, the Actions budget, the paste check and the blind sheet).
+GitHub Actions billing was cleared on 2026-10-26; the deploy and the workflows have run. Last
+checked: 2026-10-26 (UTC 03:05), on `main` at `4b85407`.
 
 ## Checklist
 
 | # | Criterion | Status | Evidence / what is missing |
 |---|---|---|---|
-| 1 | Sweep: landing, `/privacy`, `/terms` at 390 and 1280 px, no horizontal scroll at 320 px, axe clean; full E2E suite green | not run | T14's sweep |
-| 2 | The deploy waits for `main`'s green `Checks`, proven by a workflow test and one real run | not built | `deploy.yml` today has no green-main check (its header comment says so on purpose). T14 rewrites it and `docs/decisions.md`'s delivery row |
-| 3a | Landing live with `noindex` | pass | `curl https://netnetapp.io/` → 200, `<meta name="robots" content="noindex" />` (2026-10-25 22:49 UTC) |
-| 3b | `/privacy` and `/terms` live | pass | both answer 200 on production after the 2026-10-26 deploy (`6c95647`) |
-| 3c | `landing_view` rows with a cookie-less `visitor`, read through `pnpm metrics` | not checked | needs `DATABASE_METRICS_URL` (a repository secret); T14 reads it after the deploy |
-| 3d | The metrics workflow's summary per segment | not checked | dispatched by hand; T14 records one run |
-| 3e | The health check's scheduled run green and one test alert in the Founder's inbox | test alert sent; the SLO reading is explained; the schedule needs billing and a Founder decision | `test_alert` dispatch 40246450413 returned `opsEmailConfigured: true` (F25 set) and fired a real `slo_success`: 86 calls, 83 ok, 96.5% against ≥ 99.5%, p95 176 ms. **Attributed** on 2026-10-26 by dispatch 40251193056: all three non-ok events are one account, `usr_01M5QMPG1S63Y8FQ4NHJWD3RHE`, `create_holding`, client `claude`, `LIKELY_DUPLICATE` ×2 and `VALIDATION_FAILED` ×1, at 19:13:16–19Z on 2026-10-24, 14–24 ms, **not** covered by `METRICS_EXCLUDE_USERS` (1 id). Nothing in the metric, the target or the trigger was changed. Open: N1 (Founder decision) and N2 (billing) — the 01:00 schedule has produced no run since the block. The Founder must also confirm the inbox |
+| 1 | Sweep: landing, `/privacy`, `/terms` at 390 and 1280 px, no horizontal scroll at 320 px, axe clean; full E2E suite green | pass (CI) | The full E2E suite is green on `4b85407` (CI run 40260626406, E2E lane): landing, `/privacy` and `/terms` at 390 and 1280 px, no sideways scroll at 320 px, axe clean. A separate production rerun from this machine could not start because Playwright’s Chromium 1248 is absent (environment, not the site); CI tested the build that was deployed. |
+| 2 | The deploy waits for `main`’s green `Checks`, proven by a workflow test and one real run | pass | #145 merged (`2917b9a`): `Wait for main’s green Checks` runs before every write step; deploy 40261224283 executed it successfully against main’s green `Checks` on `4b85407`; `test/workflows/deploy.test.ts` 6/6. |
+| 3a | Landing live with `noindex` | pass | `curl https://netnetapp.io/` → 200 with `<meta name="robots" content="noindex" />` (2026-10-26 02:53 UTC). |
+| 3b | `/privacy` and `/terms` live | pass | both answer 200 on production after deploy 40261224283 from `4b85407` (2026-10-26 02:53 UTC). |
+| 3c | `landing_view` rows with a cookie-less `visitor`, read through `pnpm metrics` | pass | Metrics dispatch 40261516486 (2026-10-20 … 2026-10-26) reads M10 landing visitors = 4: the sum of daily unique visitor hashes, with no cookie. |
+| 3d | The metrics workflow’s summary per segment | pass | The same run 40261516486 completed green and printed M1–M11, M13 and the M10 funnel per segment as `netnet_metrics` in its job summary. |
+| 3e | The health check’s scheduled run green and one test alert in the Founder’s inbox | test alert sent; the schedule and the N1 decision are open | `test_alert` dispatch 40246450413 returned `opsEmailConfigured: true` (F25 set) and the dispatching runs report `emails.yesterday = 1` — the alert. The unattended health dispatch 40261532440 exits 1 on a real `slo_success`: 87 calls, 96.6% against ≥ 99.5%, p95 175 ms. All three non-ok events are one hands-on account, `usr_01M5QMPG1S63Y8FQ4NHJWD3RHE`, `create_holding`, `LIKELY_DUPLICATE` ×2 + `VALIDATION_FAILED` ×1 — not a service or transport failure, and not in `METRICS_EXCLUDE_USERS`. Nothing in the metric, target or trigger was changed. The 01:00 schedule has not run since billing was restored; the Founder must decide N1(a)/N1(b) and confirm the inbox. |
 | 3f | The FX staleness trigger proven with a fixed clock | pass (tests) | P4-T4's `fx_stale` tests cover ECB > 4 days and fallback > 2; production's latest dates were ECB `2026-10-23` and fallback `2026-10-25`, neither stale |
 | 4 | All ten packs live with review records | blocked | F20: `content/reviews.json` is `{}`; the seven new packs are still in `content/packs/drafts/` (AU, HK, ID, IN, PH, TH, VN). SG, MY and GB are live |
 | 5 | Guides current, P2-T8 done, listing materials complete | listings ready; guides blocked on F11 | P4-T7 merged (#141): `ops/launch/listings.md`, `ops/launch/server.json`, `pnpm listing:tools` and three listing screenshots from the demo household are in. Of F11's six Claude screenshots only the three **computer** images are real; the three phone images are 70-byte 1×1 stand-ins (commit `fbe2f1b`). Claude's computer step 2 now names **Continue**; the phone steps are unverified, so P2-T8 stays open |
 | 6 | The launch note ready to paste, checked by the Founder | note ready, check open | `ops/launch-note.md` (P4-T10); the Founder's paste check is a Founder step |
 | 7 | One M12 run reported, its spend recorded, the blind sheet scored, result stated against the 80% line | blocked | F22: no `ANTHROPIC_API_KEY` repository secret and no spend cap approved in writing. `ops/m12/README.md` documents `--dry-run` as the only path until then |
-| 8 | The security review's Critical, High and Medium fixes merged and deployed | review done; fixes in review | P4-T13's report is merged (#143, `e69de27`): no Critical, 1 High (Sentry keeps SQL and bound parameters), 2 Medium (unbounded CIMD resolution; a CIMD name shown as verified without its host), 4 Low, 8 Info. The fixes are open PRs **#148** (T16), **#149** (T17), **#150** (T18), **#151** (T19), **#152** (T20), each with its local test result in the brief; the parent session re-ran them independently (15/15, 30/30, 76/76, 9/9 focused, 10/10 focused). None can merge while no CI job can start (N2) |
+| 8 | The security review’s Critical, High and Medium fixes merged and deployed | pass | P4-T13’s report is merged (#143, `e69de27`): no Critical, 1 High, 2 Medium, 4 Low, 8 Info. The five fixes merged on green CI — #148 (`ab35eaf`), #149 (`1245ff4`), #150 (`70eb148`), #151 (`816e862`), #152 (`124f6f1`) — and deploy 40261224283 from `4b85407` shipped them. |
 
 ## Founder steps (only the Founder can do these)
 

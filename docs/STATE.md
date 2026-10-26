@@ -4,14 +4,14 @@
 Stage: Build (P4)
 Phase: P4
 Status: in-progress
-Next action: **GitHub Actions billing (N2) blocks every job since 2026-10-26 00:50 UTC** — a
-Founder step, and nothing merges or deploys until it is cleared. Once it is: land the five security
-fixes (P4-T16–T20, five isolated worktrees, one branch/PR each) one at a time on a green `Checks`,
-then #145 (deploy gate) and #146 (`--user` attribution), then deploy from a green `main`, then
-P4-T14's remaining readiness boxes. The N1 reading is attributed and waits on a Founder decision
-(see `ops/launch-readiness.md`).
-**Branches:** one branch and one PR per task, from `main` (CONVENTIONS §15); waves 1–3 merged,
-the T13 review is a docs-only branch.
+Next action: build work is deployed and green; **T14 is in-progress on Founder-only boxes** — N1(a)
+the outcome set, N1(b)/F24 the test account, F11 the three Claude phone screenshots, F20 the pack
+reviews (T6), F22 the M12 key and spend cap, F23 the legal review, the restore drill, the Actions
+budget, the launch-note paste check and the blind sheet (see `ops/launch-readiness.md`). When those
+land: T6 per pack, T7's phone half, one M12 run; then the Founder starts `stage: test P4` in a
+fresh session.
+**Branches:** one branch and one PR per task, from `main` (CONVENTIONS §15); waves 1–3 and the
+security fixes merged.
 
 ## Approvals
 | Stage / Phase | Status | Date | Notes |
@@ -24,44 +24,21 @@ the T13 review is a docs-only branch.
 | P1 | **approved** | 2026-10-08 | Test report reviewed; Claude computer shots shipped (#61) |
 | P2 | **approved** | 2026-10-12 | Test report + hands-on; Account and date review fixups in (#76) |
 | P3 | **approved** | 2026-10-24 | Third test run: pass, one Low and two Info (`docs/phases/P3/test-report.md`); the Reminders 17:00 and 01:00 slots' first starts are now recorded in `ops/probe.md` |
-| P4 | in-progress | | Wave 1 merged 2026-10-25 (#121–#125); wave 2 merged 2026-10-26 (T3 #140, T8 #138, T9 #139, T10 #137); wave 3 merged 2026-10-26 (T7 #141, T4 #142); production deployed from `6c95647`; `b396356` (#144) added the SLO attribution tool. Wave 5 (T16–T20) in flight; #145 and #146 open. T2 and T6 stay open (F21, F20); T7's phone half waits on F11 |
+| P4 | in-progress | | Wave 1 (#121–#125), wave 2 (T3 #140, T8 #138, T9 #139, T10 #137), wave 3 (T7 #141, T4 #142), T13 (#143) and the security fixes (T16 #148, T17 #149, T18 #150, T19 #151, T20 #152) merged; deploy gate #145 and attribution #146 merged; production deployed from `4b85407`; main CI 40260626406 green. T14 in-progress on Founder boxes; T2 (F21), T7 (F11) and T6 (F20) stay open |
 
 ## Handoff note (last session)
-**Blocker (N2):** every GitHub Actions job started after ~00:50 UTC 2026-10-26 fails before its
-first step with the billing annotation ("recent account payments have failed or your spending limit
-needs to be increased"). No PR can earn a green `Checks`, so nothing can be merged under the standing
-rule; `deploy.yml` cannot run; the reminders, FX, daily and health schedules and the backup stop.
-Only the Founder can clear it (Settings → Billing).
-
-**Wave 5 written, not merged:** P4-T16–T20 were dispatched 2026-10-26 as five implementers in
-isolated worktrees; the manager finished and pushed each branch with its local test result recorded
-in its brief. Open PRs: **#148** T16 (Sentry scrub, 15/15), **#149** T17 (CIMD bound, 30/30),
-**#150** T18 (host and unverified name, 76/76), **#151** T19 (first-confirmation races, 15/15 + 12/12),
-**#152** T20 (OAuth purge, 21/21). None can be merged while N2 holds: every `Checks` fails before
-its first step.
-
-**Merged since wave 3:** #144 (`b396356`, `p4-slo-attribution`) — a read-only, dispatch-only
-authentication tool (`pnpm slo:attribute`) that names the non-ok `agent_tool_called` events. It ran
-as dispatch 40251193056 and attributed the N1 trigger.
-
-**Open PRs:** #145 (`p4-t14`) the deploy gate — `Wait for main's green Checks` before any write
-step, 6 workflow tests, local proof of all four paths; not on `main` by any path; waiting on CI.
-#146 (`p4-slo-attribution-user`) adds `--user <usr_…>` so an account can be identified from its own
-event names, for the N1(b) question.
-
-**N1 attributed, Founder decision open:** 86 calls / 83 ok / 3 not ok (96.5%, target ≥ 99.5%; p95
-176 ms) = one account, `usr_01M5QMPG1S63Y8FQ4NHJWD3RHE`, `create_holding`, client `claude`,
-`LIKELY_DUPLICATE` ×2 + `VALIDATION_FAILED` ×1, 3.3 s, 14–24 ms, not in `METRICS_EXCLUDE_USERS`.
-No `INTERNAL` or transport failure among them. `n1-slo.sql`, the target and the trigger's exit 1
-were **not** changed. Founder must decide (a) whether client-correctable outcomes count against
-N1 and (b) whether that account is a test account for F24. T14's scheduled-run box stays open.
-
-**Independent local re-run by the parent session (2026-10-26), on each fix branch with local
-Postgres:** T16 15/15, T17 30/30, T18 76/76 (34 integration + 42 unit), T19 9/9 focused (8 me-init
-including the five-way case, 1 delete race), T20 10/10 focused. These confirm the fixes locally;
-they do not replace the `Checks` job, which billing prevents.
-
-**Unchanged:** T4 done; T7 half delivered (F11 phone shots still 70-byte stand-ins); T2 waits on
-F21; T6 blocked on F20 (`content/reviews.json` is `{}`); F20/F22/F23 open; no M12 spend approved;
-Renovate #128–#131, #134, #135 untouched; `test-results/` gitignored; a local `pnpm lint` may flag
-`.codewhale/state` while CI is clean.
+Billing cleared; the fix wave landed. Merged 2026-10-26: T16 #148 (`ab35eaf`), T17 #149 (`1245ff4`),
+T18 #150 (`70eb148`), T19 #151 (`816e862`), T20 #152 (`124f6f1`), the deploy gate #145 (`2917b9a`)
+and attribution #146 (`4b85407`); main at `4b85407`, CI 40260626406 green.
+Production was deployed from `4b85407` (40261224283): the new "Wait for main's green Checks" gate ran,
+migrate/publish/deploy/smoke passed, `/`, `/privacy` and `/terms` answer 200.
+Metrics dispatch 40261516486 prints every per-segment table; M10 landing visitors = 4. Health
+dispatch 40261532440 exits 1 on the real `slo_success` (87 calls, 96.6%, p95 175 ms) — the three
+non-ok calls are one hands-on account's `create_holding` (`LIKELY_DUPLICATE` ×2, `VALIDATION_FAILED`
+×1), not service failures.
+T14 stays in-progress on Founder-only boxes: N1(a) outcome set, N1(b)/F24 account, F11 phone shots,
+F20 packs (T6 blocked), F22 M12, F23 legal, the restore drill, the Actions budget, the paste check and
+the blind sheet. The 01:00 health schedule has not yet run since billing was restored.
+T2 waits on F21; T7's phone half on F11; T6 on F20; no M12 spend; no Stage 6/8 started; no stage
+approved. A local production E2E rerun could not start (Chromium 1248 absent here); CI's E2E on the
+deployed commit is green.
