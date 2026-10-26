@@ -78,9 +78,14 @@ first step. Last checked: 2026-10-26 (UTC 01:10), on `main` at `b396356`.
   against a stubbed `gh` for green / red / running / missing (green exits 0; the others exit 1 with
   a plain message), the `--jq` filter against real check-run shapes, and the YAML parsed with the
   gate at step 5 of 16. **Not yet proven by a real run** — N2 blocks it.
-- Actions billing block, first seen 2026-10-26T00:49:53Z (run 40251234324): every later run's jobs
-  fail with zero steps and the billing annotation. Runs affected: 40251234324, 40251774846,
-  40251809814. Last job to start: `p4-slo-attribution` PR CI 40251181986 (00:49:11).
+- Actions billing block: **last job to start 00:49:11Z** (`p4-slo-attribution` PR CI 40251181986);
+  **first run to fail whole 00:49:53Z** (40251234324). Every later run's jobs fail with zero steps
+  and the billing annotation. Runs affected: 40251234324, 40251774846, 40251809814.
+- The security wave's five fix branches are pushed with open PRs, each with its local test result in
+  its brief: **#148** T16 Sentry scrub, **#149** T17 CIMD bound, **#150** T18 host and unverified
+  name, **#151** T19 first-confirmation races, **#152** T20 OAuth purge. #145 carries the deploy
+  gate, #146 the `--user` attribution, and this file's PR the readiness record. None is merged:
+  every `Checks` is blocked by N2.
 
 ## Findings for triage
 
@@ -104,7 +109,8 @@ first step. Last checked: 2026-10-26 (UTC 01:10), on `main` at `b396356`.
   and the `--user` lookup that would say so (PR #146) cannot run either while N2 blocks Actions.
   Nothing was changed: `ops/metrics/n1-slo.sql`, the 99.5% target and the health trigger's exit 1
   are as built, and T14's scheduled-run box stays open on (a).
-- **N2 — Actions billing blocks every job (2026-10-26 00:50 UTC onward).** Every workflow run
+- **N2 — Actions billing blocks every job (from 2026-10-26 00:49 UTC; last job to start 00:49:11Z,
+  first run to fail whole 00:49:53Z).** Every workflow run
   started after ~00:50 fails before its first step with *"The job was not started because recent
   account payments have failed or your spending limit needs to be increased"*: `p4-t14`'s CI
   (40251809814), `p4-slo-attribution-user`'s CI (40251774846), and even `renovate/pnpm-action-setup-6.x`'s

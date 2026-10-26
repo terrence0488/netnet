@@ -33,8 +33,12 @@ needs to be increased"). No PR can earn a green `Checks`, so nothing can be merg
 rule; `deploy.yml` cannot run; the reminders, FX, daily and health schedules and the backup stop.
 Only the Founder can clear it (Settings → Billing).
 
-**Wave 5 in flight:** P4-T16–T20 dispatched 2026-10-26 as five implementers in isolated worktrees,
-one branch each (`p4-t16` … `p4-t20`), each against its brief. None merged yet.
+**Wave 5 written, not merged:** P4-T16–T20 were dispatched 2026-10-26 as five implementers in
+isolated worktrees; the manager finished and pushed each branch with its local test result recorded
+in its brief. Open PRs: **#148** T16 (Sentry scrub, 15/15), **#149** T17 (CIMD bound, 30/30),
+**#150** T18 (host and unverified name, 76/76), **#151** T19 (first-confirmation races, 15/15 + 12/12),
+**#152** T20 (OAuth purge, 21/21). None can be merged while N2 holds: every `Checks` fails before
+its first step.
 
 **Merged since wave 3:** #144 (`b396356`, `p4-slo-attribution`) — a read-only, dispatch-only
 authentication tool (`pnpm slo:attribute`) that names the non-ok `agent_tool_called` events. It ran
