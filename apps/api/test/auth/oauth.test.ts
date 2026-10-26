@@ -5,7 +5,10 @@ import {
   jwksFrom,
   type VerifyAccessToken,
 } from '../../src/auth/mcp-token';
-import { REGISTRATIONS_PER_HOUR } from '../../src/auth/oauth-routes';
+import {
+  NEW_CIMD_CLIENTS_PER_IP_PER_HOUR,
+  REGISTRATIONS_PER_HOUR,
+} from '../../src/auth/oauth-routes';
 import { fetchClientMetadataResource } from '@better-auth/cimd/node';
 import { createTestDatabase, type TestDatabase } from '../isolation/harness';
 import { ORIGIN, accountsApp, type AccountsApp } from '../support/accounts-app';
@@ -16,6 +19,7 @@ import {
   signUpPerson,
   type Person,
 } from '../support/oauth-client';
+import { metadataDocument } from '../support/cimd-server';
 
 /**
  * The agents' OAuth server end to end (architecture §7.6), as an MCP agent's servers and the
@@ -449,4 +453,45 @@ describe('the CIMD fetch', () => {
       /public-routable/,
     );
   });
+});
+
+describe('the M-1 probe', () => {
+  it('stops a script naming 25 distinct CIMD documents before it stores 25, and lets a real one complete', async () => {
+    // A legitimate first connection, from the person's browser: fetched, stored, approved, tokened.
+    const legit = AgentClient.cimd(target, 'https://agent.example/cimd/legit.json', 'Legit agent');
+    const { code, verifier } = await legit.connect(person.browser);
+    expect((await legit.exchange(code, verifier)).status).toBe(200);
+
+    const cimdRows = async () => {
+      const { rows } = await db.owner.query<{ n: number }>(
+        `select count(*)::int as n from core.oauth_client where client_discovery_id = 'cimd'`,
+      );
+      return rows[0]?.n ?? 0;
+    };
+    const before = await cimdRows();
+
+    // The probe: one script, no cookie, a fresh valid document at a fresh URL, 25 times.
+    const ip = '198.51.100.42';
+    const statuses: number[] = [];
+    for (let i = 0; i < 25; i += 1) {
+      const clientId = `https://agent.example/cimd/probe-${i}.json`;
+      target.cimd.serve(
+        clientId,
+        metadataDocument(clientId, `Probe ${i}`, ['https://agent.example/cb']),
+      );
+      const { url } = new AgentClient(target, clientId, 'https://agent.example/cb').authorizeUrl();
+      statuses.push((await target.app.request(url, { headers: { 'x-real-ip': ip } })).status);
+    }
+
+    // The per-IP limit stopped it: the first are sent to sign in, the rest are refused.
+    expect(statuses.slice(0, NEW_CIMD_CLIENTS_PER_IP_PER_HOUR).every((s) => s === 302)).toBe(true);
+    expect(statuses.slice(NEW_CIMD_CLIENTS_PER_IP_PER_HOUR).every((s) => s === 429)).toBe(true);
+    // So fewer than 25 rows were created, and the documents past the limit were never fetched.
+    const created = (await cimdRows()) - before;
+    expect(created).toBe(NEW_CIMD_CLIENTS_PER_IP_PER_HOUR);
+    expect(created).toBeLessThan(25);
+    expect(target.cimd.fetched).toContain('https://agent.example/cimd/probe-0.json');
+    expect(target.cimd.fetched).not.toContain('https://agent.example/cimd/probe-20.json');
+    expect(target.cimd.fetched).not.toContain('https://agent.example/cimd/probe-24.json');
+  }, 60_000);
 });
