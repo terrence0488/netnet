@@ -18,9 +18,10 @@ import styles from './Approve.module.css';
 /**
  * The approval page (architecture §7.6): chrome-less, under `RequireSignedIn`. The agent's client
  * sends the browser here with NetNet's signed copy of its request; the page shows who is asking
- * and for what — the registered name (with the DCR caveat), and only the ledger scopes — and Allow
- * or Cancel sends the browser back to the agent. Signed out → log in, then back. Unverified →
- * verify first. Shown for every new connection: a remembered approval is never used.
+ * and for what — the registered name, the host it came from, the caveat unless a named guide's
+ * host matched, and only the ledger scopes — and Allow or Cancel sends the browser back to the
+ * agent. Signed out → log in, then back. Unverified → verify first. Shown for every new
+ * connection: a remembered approval is never used.
  */
 
 /** What each ledger scope lets the agent do, in the consent's words after "will be able to". */
@@ -82,7 +83,10 @@ function Approval({
   const deciding = decide.isPending;
 
   return (
-    <AuthFrame title={`${approval.clientName} wants to connect to your NetNet`}>
+    <AuthFrame
+      title={`${approval.clientName} wants to connect to your NetNet`}
+      sub={approval.host === null ? undefined : `Requests come from ${approval.host}`}
+    >
       <p className={authStyles.body}>Signed in as {email}</p>
       {approval.nameVerified ? null : (
         <p className={styles.caveat} role="note">

@@ -53,6 +53,15 @@ export function classify(host: string | null, guides: readonly GuideHosts[]): Cl
   return 'other';
 }
 
+/**
+ * Whether NetNet can vouch for the name a client gave: only a CIMD client whose host matched a
+ * named guide's `matchHosts` (so its classification is `claude` or `chatgpt`). A DCR client's
+ * name, and every other CIMD document's, is text the client chose (architecture §7.10).
+ */
+export function nameIsVerified(registration: Registration, client: Client): boolean {
+  return registration === 'cimd' && client !== 'other';
+}
+
 /** The live agent guides' hosts, from published content (§6.5). */
 export function guideHostsFrom(store: () => ContentStore): LoadGuideHosts {
   return async () => {

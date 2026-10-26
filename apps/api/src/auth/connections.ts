@@ -15,7 +15,7 @@ import { log } from '../lib/log';
 import type { Notify } from '../notify/message';
 import { cleanAgentName, SHOWN_NAME_LENGTH } from './agent-name';
 import type { AgentDeps } from './attempts';
-import type { Client } from './classify';
+import { hostOf, nameIsVerified, type Client } from './classify';
 
 /**
  * Agent connections (PRD J5, architecture §7.6, §7.10): the Agent tab's list, revocation, the
@@ -29,7 +29,7 @@ export interface ConnectionView {
   clientName: string;
   client: Client;
   registration: (typeof REGISTRATIONS)[number];
-  /** False for a DCR client, whose name NetNet cannot check. */
+  /** True only for a CIMD client whose host matched a named guide's `matchHosts`. */
   nameVerified: boolean;
   createdAt: string;
   lastUsedAt: string | null;
@@ -65,7 +65,7 @@ export function connectionView(row: ConnectionRow): ConnectionView {
     clientName: cleanAgentName(row.clientName, SHOWN_NAME_LENGTH),
     client: row.client,
     registration: row.registration,
-    nameVerified: row.registration === 'cimd',
+    nameVerified: nameIsVerified(row.registration, row.client),
     createdAt: row.createdAt.toISOString(),
     lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
   };
@@ -91,7 +91,8 @@ export function createConnections(deps: ConnectionDeps): Connections {
       const delivery = await deps.notify(row.userId, {
         kind: 'security.agent_connected',
         agentName: row.clientName,
-        nameVerified: row.registration === 'cimd',
+        nameVerified: nameIsVerified(row.registration, row.client),
+        host: row.registration === 'cimd' ? (hostOf(row.clientId) ?? undefined) : undefined,
         connectedAt: row.createdAt.toISOString(),
         timeZone: profile?.timeZone ?? 'UTC',
       });
