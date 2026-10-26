@@ -262,8 +262,13 @@ export function ledgerSuite(db: TestDatabase): LedgerSuite {
     as(userId, actor = USER, country = 'qz') {
       return {
         read: (fn) => withUser(userId, actor, (tx) => fn(openLedger(tx, options(country)))),
-        write: (fn) =>
-          withUser(userId, actor, (tx) => fn(openLedger(tx, options(country))), { write: true }),
+        write: async (fn) => {
+          // Every write needs the account row (`withUser` locks it): ledger-only fixtures get one.
+          await ensureAccount(db, userId);
+          return withUser(userId, actor, (tx) => fn(openLedger(tx, options(country))), {
+            write: true,
+          });
+        },
       };
     },
     async newUser(baseCurrency = 'USD', country = 'qz') {

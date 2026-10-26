@@ -1,5 +1,5 @@
 import type { OnboardingState, Segment } from '@netnet/contracts';
-import { and, eq, like, or, sql } from 'drizzle-orm';
+import { and, eq, like, sql } from 'drizzle-orm';
 import { AppError } from '../lib/errors';
 import { isForeignKeyViolation, type Executor } from './client';
 import { profile, user, verification } from './schema';
@@ -75,32 +75,97 @@ export interface ProfileChange {
   onboardingState?: OnboardingState;
 }
 
+/** The profile as the update left it, and the country it had just before (null before the first). */
+export interface ProfileUpdate {
+  profile: Profile;
+  /**
+   * The country the person had before this update, from the same statement's `RETURNING`: one
+   * value, already decided under the profile row's lock, so two concurrent confirmations cannot
+   * both read a `null` country and then both move the ledger (P4-T19, review L-1).
+   */
+  previousCountry: string | null;
+}
+
+/** `ProfileChange`'s fields as `core.profile`'s columns, for the one statement below. */
+const PROFILE_COLUMN_NAMES: Record<keyof ProfileChange, string> = {
+  country: 'country',
+  timeZone: 'time_zone',
+  segment: 'segment',
+  onboardingState: 'onboarding_state',
+};
+
 /**
- * Applies `change` and returns the profile, or `null` when a new segment was refused because one
- * is already set (it is set once, PRD §3.5): the check is in the UPDATE, so two answers sent at
- * once cannot both win.
+ * Applies `change` and returns the profile and its previous country, or `null` when a new segment
+ * was refused because one is already set (it is set once, PRD §3.5): the check is in the UPDATE,
+ * so two answers sent at once cannot both win.
  */
 export async function updateProfile(
   db: Executor,
   userId: string,
   change: ProfileChange,
-): Promise<Profile | null> {
-  if (Object.keys(change).length === 0) return ensureProfile(db, userId);
+): Promise<ProfileUpdate | null> {
+  if (Object.keys(change).length === 0) {
+    const current = await ensureProfile(db, userId);
+    return { profile: current, previousCountry: current.country };
+  }
   await ensureProfile(db, userId);
   const { segment } = change;
-  const rows = await db
-    .update(profile)
-    .set(change)
-    .where(
-      and(
-        eq(profile.userId, userId),
-        segment === undefined
-          ? undefined
-          : or(eq(profile.segment, 'unknown'), eq(profile.segment, segment)),
-      ),
+  const assignments = Object.entries(change).map(
+    ([field, value]) =>
+      sql`${sql.identifier(PROFILE_COLUMN_NAMES[field as keyof ProfileChange])} = ${value}`,
+  );
+  // The CTE locks the row and reads its country first, so a concurrent update waits there and
+  // this statement returns what that one committed, not a value from an earlier separate read.
+  const result = await db.execute<{
+    country: string | null;
+    timeZone: string;
+    segment: Segment;
+    onboardingState: OnboardingState;
+    previousCountry: string | null;
+  }>(sql`
+    with previous as (
+      select country from core.profile where user_id = ${userId} for update
     )
-    .returning(PROFILE_COLUMNS);
-  return rows[0] ?? null;
+    update core.profile
+       set ${sql.join(assignments, sql`, `)}
+      from previous
+     where core.profile.user_id = ${userId}${
+       segment === undefined
+         ? sql``
+         : sql` and (core.profile.segment = 'unknown' or core.profile.segment = ${segment})`
+     }
+    returning core.profile.country as country,
+      core.profile.time_zone as "timeZone",
+      core.profile.segment as segment,
+      core.profile.onboarding_state as "onboardingState",
+      previous.country as "previousCountry"`);
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    profile: {
+      country: row.country,
+      timeZone: row.timeZone,
+      segment: row.segment,
+      onboardingState: row.onboardingState,
+    },
+    previousCountry: row.previousCountry,
+  };
+}
+
+/**
+ * Takes the account row's share lock for the rest of the transaction (`FOR SHARE`), before the
+ * ledger lock. `DELETE /api/account` deletes this row before the ledger, so a write that asks
+ * first makes the deletion wait and is swept by it, while one that asks after the deletion
+ * committed finds no account and fails: no ledger row for an erased id outlives the deletion
+ * (P4-T19, review L-2). `core` belongs in `db/**` (CONVENTIONS §3).
+ */
+export async function lockAccount(db: Executor, userId: string): Promise<void> {
+  const { rows } = await db.execute<{ id: string }>(
+    sql`select id from core."user" where id = ${userId} for share`,
+  );
+  if (rows.length === 0) {
+    throw new AppError('UNAUTHENTICATED', 'Sign in first: there is no such account.');
+  }
 }
 
 /** The account's email and whether it is verified, or null when there is no such account. */

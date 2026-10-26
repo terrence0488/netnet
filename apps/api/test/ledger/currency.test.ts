@@ -6,7 +6,7 @@ import { openLedger, type Ledger } from '../../src/ledger/ledger';
 import type { LedgerOptions } from '../../src/ledger/scope';
 import type { Actor } from '../../src/ledger/with-user';
 import type { TestDatabase } from '../isolation/harness';
-import { createTestDatabase } from '../isolation/harness';
+import { createTestDatabase, ensureAccount } from '../isolation/harness';
 import {
   USER,
   agentActor,
@@ -72,8 +72,16 @@ afterAll(async () => {
 
 /** `userId`'s Ledger over the two-date rates, as `actor`. */
 function as(userId: string, actor: Actor = USER) {
-  const run = <T>(fn: (l: Ledger) => Promise<T>, write?: boolean) =>
-    db.withUser(userId, actor, (tx) => fn(openLedger(tx, options)), write ? { write: true } : {});
+  const run = async <T>(fn: (l: Ledger) => Promise<T>, write?: boolean) => {
+    // Every write needs the account row (`withUser` locks it), so ledger-only fixtures get one.
+    if (write) await ensureAccount(db, userId);
+    return db.withUser(
+      userId,
+      actor,
+      (tx) => fn(openLedger(tx, options)),
+      write ? { write: true } : {},
+    );
+  };
   return {
     read: <T>(fn: (l: Ledger) => Promise<T>) => run(fn),
     write: <T>(fn: (l: Ledger) => Promise<T>) => run(fn, true),
