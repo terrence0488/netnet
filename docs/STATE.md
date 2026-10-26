@@ -4,9 +4,12 @@
 Stage: Build (P4)
 Phase: P4
 Status: in-progress
-Next action: `stage: build P4-T16` — the security review's fixes (P4-T16 Sentry, T17 CIMD limit,
-T18 who-is-asking, T19 first-confirmation races, T20 OAuth purge), then P4-T14 readiness and the
-checkpoint. T6 waits on F20.
+Next action: **GitHub Actions billing (N2) blocks every job since 2026-10-26 00:50 UTC** — a
+Founder step, and nothing merges or deploys until it is cleared. Once it is: land the five security
+fixes (P4-T16–T20, five isolated worktrees, one branch/PR each) one at a time on a green `Checks`,
+then #145 (deploy gate) and #146 (`--user` attribution), then deploy from a green `main`, then
+P4-T14's remaining readiness boxes. The N1 reading is attributed and waits on a Founder decision
+(see `ops/launch-readiness.md`).
 **Branches:** one branch and one PR per task, from `main` (CONVENTIONS §15); waves 1–3 merged,
 the T13 review is a docs-only branch.
 
@@ -21,15 +24,35 @@ the T13 review is a docs-only branch.
 | P1 | **approved** | 2026-10-08 | Test report reviewed; Claude computer shots shipped (#61) |
 | P2 | **approved** | 2026-10-12 | Test report + hands-on; Account and date review fixups in (#76) |
 | P3 | **approved** | 2026-10-24 | Third test run: pass, one Low and two Info (`docs/phases/P3/test-report.md`); the Reminders 17:00 and 01:00 slots' first starts are now recorded in `ops/probe.md` |
-| P4 | in-progress | | Wave 1 merged 2026-10-25 (#121–#125); wave 2 merged 2026-10-26 (T3 #140, T8 #138, T9 #139, T10 #137); wave 3 merged 2026-10-26 (T7 #141, T4 #142); production deployed from `6c95647`. T2 and T6 stay open (F21, F20); T7's phone half waits on F11 |
+| P4 | in-progress | | Wave 1 merged 2026-10-25 (#121–#125); wave 2 merged 2026-10-26 (T3 #140, T8 #138, T9 #139, T10 #137); wave 3 merged 2026-10-26 (T7 #141, T4 #142); production deployed from `6c95647`; `b396356` (#144) added the SLO attribution tool. Wave 5 (T16–T20) in flight; #145 and #146 open. T2 and T6 stay open (F21, F20); T7's phone half waits on F11 |
 
 ## Handoff note (last session)
-Wave 3 merged on 2026-10-26: T7 (#141) and T4 (#142); production deployed from `6c95647` (run
-40246336691, smoke green), so `/privacy` and `/terms` are live and `/` stays `noindex`.
-F25 is set (`test_alert` 40246450413, `opsEmailConfigured: true`); that run fired a real
-`slo_success` trigger (96.5% over 86 calls) — triage before T14 calls the scheduled run green.
-F11 is half delivered: the three Claude phone screenshots are 70-byte 1×1 stand-ins, so P2-T8
-and T7 stay open. T13's review is merged (#143: no Critical, 1 High, 2 Medium, 4 Low, 8 Info);
-its High and Mediums are P4-T16–T18, the Lows that matter P4-T19–T20, and the `/api/me` race is
-real but rare. F20, F22 and F23 remain open; T6 is blocked; no M12 spend approved; T2 waits on
-F21. Renovate #128–#131, #134, #135 untouched.
+**Blocker (N2):** every GitHub Actions job started after ~00:50 UTC 2026-10-26 fails before its
+first step with the billing annotation ("recent account payments have failed or your spending limit
+needs to be increased"). No PR can earn a green `Checks`, so nothing can be merged under the standing
+rule; `deploy.yml` cannot run; the reminders, FX, daily and health schedules and the backup stop.
+Only the Founder can clear it (Settings → Billing).
+
+**Wave 5 in flight:** P4-T16–T20 dispatched 2026-10-26 as five implementers in isolated worktrees,
+one branch each (`p4-t16` … `p4-t20`), each against its brief. None merged yet.
+
+**Merged since wave 3:** #144 (`b396356`, `p4-slo-attribution`) — a read-only, dispatch-only
+authentication tool (`pnpm slo:attribute`) that names the non-ok `agent_tool_called` events. It ran
+as dispatch 40251193056 and attributed the N1 trigger.
+
+**Open PRs:** #145 (`p4-t14`) the deploy gate — `Wait for main's green Checks` before any write
+step, 6 workflow tests, local proof of all four paths; not on `main` by any path; waiting on CI.
+#146 (`p4-slo-attribution-user`) adds `--user <usr_…>` so an account can be identified from its own
+event names, for the N1(b) question.
+
+**N1 attributed, Founder decision open:** 86 calls / 83 ok / 3 not ok (96.5%, target ≥ 99.5%; p95
+176 ms) = one account, `usr_01M5QMPG1S63Y8FQ4NHJWD3RHE`, `create_holding`, client `claude`,
+`LIKELY_DUPLICATE` ×2 + `VALIDATION_FAILED` ×1, 3.3 s, 14–24 ms, not in `METRICS_EXCLUDE_USERS`.
+No `INTERNAL` or transport failure among them. `n1-slo.sql`, the target and the trigger's exit 1
+were **not** changed. Founder must decide (a) whether client-correctable outcomes count against
+N1 and (b) whether that account is a test account for F24. T14's scheduled-run box stays open.
+
+**Unchanged:** T4 done; T7 half delivered (F11 phone shots still 70-byte stand-ins); T2 waits on
+F21; T6 blocked on F20 (`content/reviews.json` is `{}`); F20/F22/F23 open; no M12 spend approved;
+Renovate #128–#131, #134, #135 untouched; `test-results/` gitignored; a local `pnpm lint` may flag
+`.codewhale/state` while CI is clean.

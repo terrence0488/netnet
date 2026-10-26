@@ -4,8 +4,9 @@ P4-T14's checklist, with what is proven, what is still open and what only the Fo
 Production stays unannounced (`noindex`) until Stage 8; this file never marks a stage or phase
 approved.
 
-Status: **in-progress** — T14's boxes are not all met. Last checked: 2026-10-26 (UTC 2026-10-26
-00:25), on `main` at the commit named under Evidence.
+Status: **in-progress** — T14's boxes are not all met, and since 2026-10-26 00:50 UTC **no GitHub
+Actions job can start at all** (billing, N2): CI, the deploy and every schedule fail before their
+first step. Last checked: 2026-10-26 (UTC 01:10), on `main` at `b396356`.
 
 ## Checklist
 
@@ -17,18 +18,21 @@ Status: **in-progress** — T14's boxes are not all met. Last checked: 2026-10-2
 | 3b | `/privacy` and `/terms` live | pass | both answer 200 on production after the 2026-10-26 deploy (`6c95647`) |
 | 3c | `landing_view` rows with a cookie-less `visitor`, read through `pnpm metrics` | not checked | needs `DATABASE_METRICS_URL` (a repository secret); T14 reads it after the deploy |
 | 3d | The metrics workflow's summary per segment | not checked | dispatched by hand; T14 records one run |
-| 3e | The health check's scheduled run green and one test alert in the Founder's inbox | test alert sent; a real trigger fired | `test_alert` dispatch 40246450413 on `6c95647` returned `opsEmailConfigured: true` (F25 set) and `slo_success` (7-day success 96.5% over 86 calls, target ≥ 99.5%; p95 176 ms, p95 trigger not fired). The route sends one alert; the workflow fails when any trigger fires, so the 01:00 run goes red until that SLO reading is explained or fixed. The Founder must confirm the inbox |
+| 3e | The health check's scheduled run green and one test alert in the Founder's inbox | test alert sent; the SLO reading is explained; the schedule needs billing and a Founder decision | `test_alert` dispatch 40246450413 returned `opsEmailConfigured: true` (F25 set) and fired a real `slo_success`: 86 calls, 83 ok, 96.5% against ≥ 99.5%, p95 176 ms. **Attributed** on 2026-10-26 by dispatch 40251193056: all three non-ok events are one account, `usr_01M5QMPG1S63Y8FQ4NHJWD3RHE`, `create_holding`, client `claude`, `LIKELY_DUPLICATE` ×2 and `VALIDATION_FAILED` ×1, at 19:13:16–19Z on 2026-10-24, 14–24 ms, **not** covered by `METRICS_EXCLUDE_USERS` (1 id). Nothing in the metric, the target or the trigger was changed. Open: N1 (Founder decision) and N2 (billing) — the 01:00 schedule has produced no run since the block. The Founder must also confirm the inbox |
 | 3f | The FX staleness trigger proven with a fixed clock | pass (tests) | P4-T4's `fx_stale` tests cover ECB > 4 days and fallback > 2; production's latest dates were ECB `2026-10-23` and fallback `2026-10-25`, neither stale |
 | 4 | All ten packs live with review records | blocked | F20: `content/reviews.json` is `{}`; the seven new packs are still in `content/packs/drafts/` (AU, HK, ID, IN, PH, TH, VN). SG, MY and GB are live |
 | 5 | Guides current, P2-T8 done, listing materials complete | listings ready; guides blocked on F11 | P4-T7 merged (#141): `ops/launch/listings.md`, `ops/launch/server.json`, `pnpm listing:tools` and three listing screenshots from the demo household are in. Of F11's six Claude screenshots only the three **computer** images are real; the three phone images are 70-byte 1×1 stand-ins (commit `fbe2f1b`). Claude's computer step 2 now names **Continue**; the phone steps are unverified, so P2-T8 stays open |
 | 6 | The launch note ready to paste, checked by the Founder | note ready, check open | `ops/launch-note.md` (P4-T10); the Founder's paste check is a Founder step |
 | 7 | One M12 run reported, its spend recorded, the blind sheet scored, result stated against the 80% line | blocked | F22: no `ANTHROPIC_API_KEY` repository secret and no spend cap approved in writing. `ops/m12/README.md` documents `--dry-run` as the only path until then |
-| 8 | The security review's Critical, High and Medium fixes merged and deployed | review done; fixes todo | P4-T13's report is merged (#143, `e69de27`): no Critical, 1 High (Sentry keeps SQL and bound parameters), 2 Medium (unbounded CIMD resolution; a CIMD name shown as verified without its host), 4 Low, 8 Info. The fixes are P4-T16–T20 (T19/T20 for the Lows worth closing); none is merged yet |
+| 8 | The security review's Critical, High and Medium fixes merged and deployed | review done; fixes in review | P4-T13's report is merged (#143, `e69de27`): no Critical, 1 High (Sentry keeps SQL and bound parameters), 2 Medium (unbounded CIMD resolution; a CIMD name shown as verified without its host), 4 Low, 8 Info. The fixes are P4-T16–T20, dispatched 2026-10-26 in five isolated worktrees; none can be merged while no CI job can start (N2) |
 
 ## Founder steps (only the Founder can do these)
 
 | Step | Why it is theirs | Recorded at |
 |---|---|---|
+| **N2: raise the GitHub Actions spending limit / settle the failed payment** | account settings and money | **new, 2026-10-26** — every job fails before its first step; blocks all merging, the deploy and every schedule |
+| **N1(a): decide whether `LIKELY_DUPLICATE` and `VALIDATION_FAILED` count against N1** | it redefines a PRD metric | 2026-10-26, attributed by dispatch 40251193056 |
+| **N1(b)/F24: say whether `usr_01M5QMPG1S63Y8FQ4NHJWD3RHE` is a test account to exclude** | only the Founder knows which accounts are theirs | 2026-10-26; the `--user` lookup is in PR #146 |
 | F20: engage one reviewer per market and send each P4-T6's review sheet | finding people who know the market | T6, blocked; packs above |
 | F22: add the Anthropic API key with a monthly cap and approve each M12 run's spend | spend approval | T9 and T14, blocked |
 | F23: have the privacy policy and terms reviewed by someone qualified | legal judgement | T8 and T14; submission follows this |
@@ -62,13 +66,54 @@ Status: **in-progress** — T14's boxes are not all met. Last checked: 2026-10-2
 - `content/images/connect/`: `claude-computer-1..3.png` ~190–245 KB; `claude-phone-1..3.png` 70 B
   each (1×1 PNG).
 - GitHub secrets today include F24's three and `NEON_API_KEY`; no `ANTHROPIC_API_KEY`.
+- N1 attribution, 2026-10-26T00:49Z: workflow dispatch 40251193056 on `b396356` succeeded and
+  printed `86 counted, 83 ok, 3 not ok, success 96.5% (all calls before exclusions: 86, 3 not ok)`
+  — the same figures as the alert — then the three non-ok rows: one account
+  (`usr_01M5QMPG1S63Y8FQ4NHJWD3RHE`), `create_holding`, `claude`, `LIKELY_DUPLICATE`,
+  `LIKELY_DUPLICATE`, `VALIDATION_FAILED`, 14–24 ms, `excluded: no` on all three. PR #144 merged
+  the read-only tool (`scripts/slo-attribution.ts`, `ops/metrics/n1-slo.sql` untouched).
+- Deploy gate, 2026-10-26: PR #145 (`p4-t14`, `e045532`, rebased on `b396356`) adds
+  `Wait for main's green Checks` to `deploy.yml` before any write step, with `permissions: checks:
+  read` and `test/workflows/deploy.test.ts` (6 tests). Proven locally: the step's shell logic run
+  against a stubbed `gh` for green / red / running / missing (green exits 0; the others exit 1 with
+  a plain message), the `--jq` filter against real check-run shapes, and the YAML parsed with the
+  gate at step 5 of 16. **Not yet proven by a real run** — N2 blocks it.
+- Actions billing block, first seen 2026-10-26T00:49:53Z (run 40251234324): every later run's jobs
+  fail with zero steps and the billing annotation. Runs affected: 40251234324, 40251774846,
+  40251809814. Last job to start: `p4-slo-attribution` PR CI 40251181986 (00:49:11).
 
 ## Findings for triage
 
-- **N1 SLO below target:** the health check's 7-day reading is 96.5% success over 86 calls (the
-  target is ≥ 99.5%; p95 176 ms is well inside 1,500 ms). Decide whether the ~3 failures are real
-  agent calls or the probe/smoke accounts, then fix or record it before T14 calls the scheduled
-  run green. The run's failure is the trigger design, not a broken workflow.
+- **N1 — Founder decision: does N1 count client-correctable outcomes as service failures?** The
+  7-day reading is 96.5% over 86 calls (target ≥ 99.5%; p95 176 ms, well inside 1,500 ms). It is now
+  attributed: three non-ok events, all `create_holding`, all from one account
+  (`usr_01M5QMPG1S63Y8FQ4NHJWD3RHE`), in 3.3 seconds on 2026-10-24, client `claude`, outcomes
+  `LIKELY_DUPLICATE` ×2 (409, the duplicate guard working as designed) and `VALIDATION_FAILED` ×1
+  (400, the agent's own payload). No NetNet error class appears among them — no `INTERNAL`, no
+  timeout, no 5xx — and every call answered in 14–24 ms. Two things are the Founder's, not the
+  build's:
+  **(a)** whether `LIKELY_DUPLICATE` and `VALIDATION_FAILED` should count against N1 at all. They
+  are client-correctable outcomes an agent can retry past, so counting them makes N1 measure the
+  model's manners as much as the service's health (a reading that never drops below 99.5% would
+  hide real failures behind a very high volume of them). Recommended: exclude client-correctable
+  outcomes from N1's numerator/denominator and keep every `INTERNAL`/timeout/transport failure
+  counted — but that **redefines N1** (PRD N1, architecture §10), so it is a stop-and-raise, not a
+  metric edit.
+  **(b)** whether that account is a Founder test account that belongs in `METRICS_EXCLUDE_USERS`
+  (F24 names "your own test accounts" there). Its identity is not recorded anywhere in the repo,
+  and the `--user` lookup that would say so (PR #146) cannot run either while N2 blocks Actions.
+  Nothing was changed: `ops/metrics/n1-slo.sql`, the 99.5% target and the health trigger's exit 1
+  are as built, and T14's scheduled-run box stays open on (a).
+- **N2 — Actions billing blocks every job (2026-10-26 00:50 UTC onward).** Every workflow run
+  started after ~00:50 fails before its first step with *"The job was not started because recent
+  account payments have failed or your spending limit needs to be increased"*: `p4-t14`'s CI
+  (40251809814), `p4-slo-attribution-user`'s CI (40251774846), and even `renovate/pnpm-action-setup-6.x`'s
+  push (40251234324), which changes no code. The last green run, `p4-slo-attribution`'s PR CI
+  (40251181986), started at 00:49:11. Consequences while it lasts: no PR can earn a green `Checks`,
+  so nothing can be merged under the standing rule; `deploy.yml` cannot run, so the new gate cannot
+  be proven by a real run; and the four schedules (reminders, FX, daily sweep, health) plus the
+  backup stop. Only the Founder can fix it (GitHub → Settings → Billing). It is a hard stop, not a
+  flake: it is not a workflow-file problem, and re-running does not help.
 - **Preview job on #141 failed in Neon setup** (`db:bootstrap` before deploy) while #142's Preview
   passed; no code change was involved. Re-check the next preview; if it recurs, it is a CI/Neon
   issue for T14.
