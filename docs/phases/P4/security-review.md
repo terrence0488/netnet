@@ -503,3 +503,19 @@ document.
 
 — Reviewed 2026-10-26 against `main` at `6c95647` and production deployed from it (deploy run
 40246336691).
+
+## Triage (manager, 2026-10-26)
+
+- **H-1 → P4-T16.** Sentry scrub; two files and one test each.
+- **M-1 → P4-T17.** Rate-limit authorize and cap new CIMD clients.
+- **M-2 → P4-T18.** Show the host and treat a CIMD name as unverified unless the host matches a
+  guide.
+- **L-1, L-2 → P4-T19.** Close the two first-confirmation races before launch, as the review
+  recommends.
+- **L-4 → P4-T20.** The 30-day OAuth purge on the daily run.
+- **L-3 is resolved for now:** `OPS_EMAIL` is set — a `test_alert` dispatch (40246450413,
+  2026-10-26) reported `opsEmailConfigured: true` and sent the alert. The Founder still confirms
+  the test email in the inbox.
+- **I-1 … I-8 are recorded here; none needs a task before launch.** The Founder accepts or routes
+  them (I-7: the production dependency tree is clean; I-8: the manual production gate is the
+  accepted decision).

@@ -470,6 +470,11 @@ the seven new markets), and the security review across all of them.
 | P4-T13 | The security review before launch | T1–T4, T8, T9, T11, T12 | no | — |
 | P4-T14 | Launch readiness, and the P4 checkpoint | T1–T13, the review's fixes | no | the restore drill, the Actions budget |
 | P4-T15 | ChatGPT, once OpenAI lists NetNet | OpenAI's listing, T7 | yes | F11 (ChatGPT's shots) |
+| P4-T16 | Sentry holds no SQL, parameters or free text (the review's H-1) | T13 | yes | — |
+| P4-T17 | Bound CIMD resolution (the review's M-1) | T13 | yes | — |
+| P4-T18 | Show who is asking: a CIMD client's host, its name unverified (the review's M-2) | T13 | yes | — |
+| P4-T19 | Close the two first-confirmation races (the review's L-1, L-2) | T13 | yes | — |
+| P4-T20 | Purge stale OAuth artifacts on the daily run (the review's L-4) | T13 | yes | — |
 
 T1 comes first because three tasks show the same fictional household: the landing page's
 recording (F21, with a placeholder until it lands), the directory reviewers' test account (T7) and
@@ -501,7 +506,9 @@ flowchart LR
   T5[T5 seven packs + review record] --> T6[T6 ten reviews]
   T11[T11 push hosts] & T12[T12 error fields] --> T13[T13 security review]
   T1 & T3 & T4 & T8 & T9 --> T13
-  T13 --> T14[T14 readiness + checkpoint]
+  T13 --> T16[T16 Sentry scrub] & T17[T17 CIMD bound] & T18[T18 who is asking]
+  T13 --> T19[T19 first-confirmation races] & T20[T20 OAuth purge]
+  T16 & T17 & T18 & T19 & T20 --> T14[T14 readiness + checkpoint]
   T6 & T7 & T10 --> T14
   T7 -.-> T15[T15 ChatGPT, once listed]
 ```
@@ -511,8 +518,9 @@ flowchart LR
 | 1 | T1, T2, T5, T11, T12 |
 | 2 | T3, T7, T8, T9, T10 |
 | 3 | T4 |
-| 4 | T13 (a fresh session), then the fix tasks its triage writes |
-| 5 | T14 |
+| 4 | T13 (a fresh session) |
+| 5 | T16–T20 (T13's fixes) |
+| 6 | T14 |
 | alongside | T6, as each review comes back; T15, when OpenAI lists NetNet |
 
 #### Running the build

@@ -4,14 +4,14 @@ P4-T14's checklist, with what is proven, what is still open and what only the Fo
 Production stays unannounced (`noindex`) until Stage 8; this file never marks a stage or phase
 approved.
 
-Status: **in-progress** — T14's boxes are not all met. Last checked: 2026-10-26 (UTC 2026-10-25
-23:55), on `main` at the commit named under Evidence.
+Status: **in-progress** — T14's boxes are not all met. Last checked: 2026-10-26 (UTC 2026-10-26
+00:25), on `main` at the commit named under Evidence.
 
 ## Checklist
 
 | # | Criterion | Status | Evidence / what is missing |
 |---|---|---|---|
-| 1 | Sweep: landing, `/privacy`, `/terms` at 390 and 1280 px, no horizontal scroll at 320 px, axe clean; full E2E suite green | not run | T14's sweep; T13 comes first |
+| 1 | Sweep: landing, `/privacy`, `/terms` at 390 and 1280 px, no horizontal scroll at 320 px, axe clean; full E2E suite green | not run | T14's sweep |
 | 2 | The deploy waits for `main`'s green `Checks`, proven by a workflow test and one real run | not built | `deploy.yml` today has no green-main check (its header comment says so on purpose). T14 rewrites it and `docs/decisions.md`'s delivery row |
 | 3a | Landing live with `noindex` | pass | `curl https://netnetapp.io/` → 200, `<meta name="robots" content="noindex" />` (2026-10-25 22:49 UTC) |
 | 3b | `/privacy` and `/terms` live | pass | both answer 200 on production after the 2026-10-26 deploy (`6c95647`) |
@@ -23,7 +23,7 @@ Status: **in-progress** — T14's boxes are not all met. Last checked: 2026-10-2
 | 5 | Guides current, P2-T8 done, listing materials complete | listings ready; guides blocked on F11 | P4-T7 merged (#141): `ops/launch/listings.md`, `ops/launch/server.json`, `pnpm listing:tools` and three listing screenshots from the demo household are in. Of F11's six Claude screenshots only the three **computer** images are real; the three phone images are 70-byte 1×1 stand-ins (commit `fbe2f1b`). Claude's computer step 2 now names **Continue**; the phone steps are unverified, so P2-T8 stays open |
 | 6 | The launch note ready to paste, checked by the Founder | note ready, check open | `ops/launch-note.md` (P4-T10); the Founder's paste check is a Founder step |
 | 7 | One M12 run reported, its spend recorded, the blind sheet scored, result stated against the 80% line | blocked | F22: no `ANTHROPIC_API_KEY` repository secret and no spend cap approved in writing. `ops/m12/README.md` documents `--dry-run` as the only path until then |
-| 8 | The security review's Critical, High and Medium fixes merged and deployed | not started | P4-T13 runs as a fresh session after T4 is deployed; its findings become P4-T16 onward |
+| 8 | The security review's Critical, High and Medium fixes merged and deployed | review done; fixes todo | P4-T13's report is merged (#143, `e69de27`): no Critical, 1 High (Sentry keeps SQL and bound parameters), 2 Medium (unbounded CIMD resolution; a CIMD name shown as verified without its host), 4 Low, 8 Info. The fixes are P4-T16–T20 (T19/T20 for the Lows worth closing); none is merged yet |
 
 ## Founder steps (only the Founder can do these)
 
@@ -72,7 +72,13 @@ Status: **in-progress** — T14's boxes are not all met. Last checked: 2026-10-2
 - **Preview job on #141 failed in Neon setup** (`db:bootstrap` before deploy) while #142's Preview
   passed; no code change was involved. Re-check the next preview; if it recurs, it is a CI/Neon
   issue for T14.
-- P4-T13's report is pending; its Critical/High/Medium findings become P4-T16 onward.
+- **Security review (#143):** merged. The High is `apps/api/src/lib/sentry.ts` keeping Drizzle's
+  SQL and bound parameters (the privacy page says never); the Mediums are unbounded
+  unauthenticated CIMD resolution and a CIMD client's self-chosen name shown as verified with no
+  host. P4-T16–T18 fix those; P4-T19 closes the two `/api/me` first-confirmation races (the CI
+  flake is real but rare); P4-T20 adds the 30-day OAuth purge. The Founder must confirm
+  `SENTRY_DSN` is set, the production env names are present, and one real agent connection after
+  M-2's fix; the review's "Checks the Founder should run by hand" lists the rest.
 
 ## Left for Stage 8
 

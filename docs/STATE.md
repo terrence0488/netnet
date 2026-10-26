@@ -4,8 +4,9 @@
 Stage: Build (P4)
 Phase: P4
 Status: in-progress
-Next action: `stage: build P4-T14` after P4-T13's review is triaged (the fresh review session is running;
-its findings become P4-T16 onward). T6 waits on F20.
+Next action: `stage: build P4-T16` — the security review's fixes (P4-T16 Sentry, T17 CIMD limit,
+T18 who-is-asking, T19 first-confirmation races, T20 OAuth purge), then P4-T14 readiness and the
+checkpoint. T6 waits on F20.
 **Branches:** one branch and one PR per task, from `main` (CONVENTIONS §15); waves 1–3 merged,
 the T13 review is a docs-only branch.
 
@@ -23,13 +24,12 @@ the T13 review is a docs-only branch.
 | P4 | in-progress | | Wave 1 merged 2026-10-25 (#121–#125); wave 2 merged 2026-10-26 (T3 #140, T8 #138, T9 #139, T10 #137); wave 3 merged 2026-10-26 (T7 #141, T4 #142); production deployed from `6c95647`. T2 and T6 stay open (F21, F20); T7's phone half waits on F11 |
 
 ## Handoff note (last session)
-Wave 3 merged on 2026-10-26: T7 (#141, listings, registry entry, `pnpm listing:tools`, listing
-screenshots; Claude's computer guide matches today's screens) and T4 (#142, the daily health check,
-`cron-health.yml`, `ops/health.md`). Production was deployed from `6c95647` (deploy 40246336691,
-smoke green); `/privacy` and `/terms` now answer 200 and `/` stays `noindex`.
-F25 is **set**: a `test_alert` dispatch reported `opsEmailConfigured: true`. The same run fired a
-real `slo_success` trigger (96.5% over 86 calls, target ≥ 99.5%) — triage before T14 calls the
-scheduled run green. F11 is only half delivered: the three Claude phone screenshots are 70-byte
-1×1 stand-ins, so P2-T8 and T7 stay open. P4-T13 is a fresh review session now; its report goes to
-the Founder before any fix. F20, F22 and F23 remain open; T6 is blocked; no M12 spend approved;
-T2 waits on F21. Renovate #128–#131, #134, #135 untouched.
+Wave 3 merged on 2026-10-26: T7 (#141) and T4 (#142); production deployed from `6c95647` (run
+40246336691, smoke green), so `/privacy` and `/terms` are live and `/` stays `noindex`.
+F25 is set (`test_alert` 40246450413, `opsEmailConfigured: true`); that run fired a real
+`slo_success` trigger (96.5% over 86 calls) — triage before T14 calls the scheduled run green.
+F11 is half delivered: the three Claude phone screenshots are 70-byte 1×1 stand-ins, so P2-T8
+and T7 stay open. T13's review is merged (#143: no Critical, 1 High, 2 Medium, 4 Low, 8 Info);
+its High and Mediums are P4-T16–T18, the Lows that matter P4-T19–T20, and the `/api/me` race is
+real but rare. F20, F22 and F23 remain open; T6 is blocked; no M12 spend approved; T2 waits on
+F21. Renovate #128–#131, #134, #135 untouched.
