@@ -1,0 +1,54 @@
+name: SLO attribution
+
+# Names the `agent_tool_called` events behind a fired `slo_success` trigger (ops/launch-readiness.md
+# N1; P4-T14's triage). Dispatch it with a window and it runs `pnpm slo:attribute` as
+# netnet_metrics, writing every non-ok call — tool, kind, outcome, client, account, latency — to the
+# job summary, next to the same arithmetic `ops/metrics/n1-slo.sql` reads. Read-only: it never
+# migrates, writes or changes an account, and it prints no amount, name, email or free text because
+# `agent_tool_called` carries none. This is a diagnosis, not a metric: the Metrics workflow keeps
+# its aggregates-only promise. No `environment:` key, so a dispatch never waits for a reviewer.
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Days back from now, UTC (1–90)'
+        required: false
+        type: string
+        default: '7'
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_TELEMETRY_DISABLED: '1'
+
+jobs:
+  attribution:
+    name: Attribute the non-ok calls
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.4
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Attribute the non-ok calls
+        env:
+          DATABASE_METRICS_URL: ${{ secrets.DATABASE_METRICS_URL }}
+          METRICS_EXCLUDE_USERS: ${{ secrets.METRICS_EXCLUDE_USERS }}
+          DAYS: ${{ inputs.days }}
+        run: |
+          set -euo pipefail
+          pnpm --silent slo:attribute --days "$DAYS" | tee attribution.md
+      - name: Write the report to the job summary
+        if: always()
+        run: |
+          if [ -s attribution.md ]; then
+            cat attribution.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'No attribution output.' >> "$GITHUB_STEP_SUMMARY"
+          fi
