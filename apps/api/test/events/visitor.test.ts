@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import type { Agent } from '../../src/auth/agent';
 import { eventStore } from '../../src/db/analytics';
 import { createDatabase } from '../../src/db/client';
+import { purgeOAuthArtifacts } from '../../src/db/oauth-purge';
 import { countHit } from '../../src/db/rate-limits';
 import { visitorSalt } from '../../src/db/schema';
 import {
@@ -140,11 +141,23 @@ describe('the daily sweep', () => {
       dailyJob(
         () => agent,
         () => deleteSaltsBefore(db.appDb, utcDay(now)),
+        () => purgeOAuthArtifacts(db.appDb, now),
       ),
     );
     const res = await app.request('/api/cron/daily');
     expect(res.status).toBe(200);
-    expect(await res.json()).toStrictEqual({ attemptsFailed: 0, saltsDeleted: 2 });
+    expect(await res.json()).toStrictEqual({
+      attemptsFailed: 0,
+      saltsDeleted: 2,
+      oauthPurged: {
+        clients: 0,
+        clientResources: 0,
+        codes: 0,
+        accessTokens: 0,
+        refreshTokens: 0,
+        consents: 0,
+      },
+    });
     expect(await salts()).toStrictEqual([]);
   });
 });
