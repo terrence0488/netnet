@@ -213,8 +213,6 @@ export function meRoutes(deps: MeDeps = defaultDeps): Hono<AppEnv> {
           country: 'Choose a country from the list: an ISO 3166-1 code, such as "SG".',
         });
       }
-      const before =
-        change.country === undefined ? undefined : await ensureProfile(deps.db(), userId);
       // The base currency lives in the ledger, not the profile: it drives a ledger step below.
       const { baseCurrency: wanted, ...profile } = change;
       const updated = await updateProfile(deps.db(), userId, profile);
@@ -223,6 +221,7 @@ export function meRoutes(deps: MeDeps = defaultDeps): Hono<AppEnv> {
           segment: 'It is set once, in onboarding, and cannot be changed now. Leave it out.',
         });
       }
+      const { profile: current, previousCountry } = updated;
       // The first confirmed country makes the ledger, in its currency, or in the base currency
       // asked for with it (PRD J1). Another country moves it (J2): over again while it has no
       // holding (a country corrected in onboarding), else adding the new pack's types. The same
@@ -230,13 +229,17 @@ export function meRoutes(deps: MeDeps = defaultDeps): Hono<AppEnv> {
       // in it (P3-T3); before the ledger exists there is nothing to re-derive.
       if (country !== undefined) {
         if ((await deps.baseCurrency(userId)) === null) {
-          await deps.initLedger(userId, updated, wanted ?? country.currency);
+          await deps.initLedger(userId, current, wanted ?? country.currency);
         } else {
-          if (before?.country !== change.country) {
-            await deps.changeLedgerCountry(userId, updated, country.currency);
+          // `previousCountry` came from the profile UPDATE itself, under its row lock: a second
+          // first confirmation sees what the first committed, not a stale `null`, so it does not
+          // move the ledger the first one just made (review L-1). A first confirmation (`null`)
+          // never moves it, even if another request created it in the meantime.
+          if (previousCountry !== null && previousCountry !== change.country) {
+            await deps.changeLedgerCountry(userId, current, country.currency);
           }
           if (wanted !== undefined) {
-            await deps.changeLedgerCurrency(userId, updated, wanted);
+            await deps.changeLedgerCurrency(userId, current, wanted);
           }
         }
       } else if (wanted !== undefined) {
@@ -245,9 +248,9 @@ export function meRoutes(deps: MeDeps = defaultDeps): Hono<AppEnv> {
             country: 'Choose where you live first: the ledger is made in its currency.',
           });
         }
-        await deps.changeLedgerCurrency(userId, updated, wanted);
+        await deps.changeLedgerCurrency(userId, current, wanted);
       }
-      return c.json(await view(deps, userId, updated));
+      return c.json(await view(deps, userId, current));
     },
   );
 

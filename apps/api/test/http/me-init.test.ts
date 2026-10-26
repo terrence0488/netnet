@@ -155,6 +155,40 @@ describe('PATCH /api/me {country}', () => {
     expect(await typeCount(p.userId)).toBe(UNIVERSALS.length + 1);
   });
 
+  it('makes one ledger at data_version 1 when five first confirmations arrive at once', async () => {
+    // The shape of P4-T13's probe (five simultaneous confirmations): one ledger, its first types,
+    // no country move. A duplicate move would bump data_version and replace the types.
+    const p = await newPerson(target);
+    const responses = await Promise.all(
+      Array.from({ length: 5 }, () => p.patch('/api/me', { country: 'QZ' })),
+    );
+    expect(responses.map((res) => res.status)).toStrictEqual([200, 200, 200, 200, 200]);
+    expect(await ledgerOf(p.userId)).toStrictEqual({ base_currency: 'EUR', data_version: 1 });
+
+    const snapshot = await snapshotOf(p);
+    expect(snapshot).toMatchObject({ dataVersion: 1, baseCurrency: 'EUR' });
+    expect(snapshot.types).toHaveLength(UNIVERSALS.length + 1);
+    expect(snapshot.types.map((t) => t.universal).slice(0, UNIVERSALS.length)).toStrictEqual([
+      ...UNIVERSALS,
+    ]);
+    expect(snapshot.types.filter((t) => t.packTypeKey !== null)).toStrictEqual([
+      like({ universal: 'loan', packTypeKey: 'auto_loan' }),
+    ]);
+
+    // The first types, not a replacement: one create each and none deleted. The anomaly the review
+    // found was `data_version` 2 with `type create 26, type delete 13`.
+    const { rows: audited } = await db.owner.query<{ entity: string; action: string; n: number }>(
+      `select entity, action, count(*)::int as n from ledger.audit
+        where user_id = $1 and entity in ('ledger', 'type')
+        group by entity, action order by entity, action`,
+      [p.userId],
+    );
+    expect(audited).toStrictEqual([
+      { entity: 'ledger', action: 'create', n: 1 },
+      { entity: 'type', action: 'create', n: UNIVERSALS.length + 1 },
+    ]);
+  });
+
   it('makes nothing when the request is refused, or names no country', async () => {
     const p = await newPerson(target);
     await errorOf(await p.patch('/api/me', { country: 'ZZ' }), 400);

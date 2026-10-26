@@ -61,16 +61,17 @@ export function accountRoutes(
       { kind: 'user' },
       async (tx) => {
         const at = tx.now();
+        // The account row first, under its exclusive lock: a write that reached `withUser` before
+        // this point holds the share lock and this delete waits for it, then the ledger destroy
+        // below sweeps what it wrote; one that comes after finds no account and fails. Running it
+        // before `destroy()` is what leaves no ledger row for an erased id (review L-2).
+        await deleteUser(tx.db, userId);
         await revokeAllConnections(tx.db, userId, at);
         await openLedger(tx, options).destroy();
         await deleteEndpointsForUser(tx.db, userId);
         await deleteReminderState(tx.db, userId);
         await deleteAttemptsForUser(tx.db, userId);
         await deleteProfile(tx.db, userId);
-        // The rest goes with the user row, by the foreign keys on it: the sessions, the sign-in
-        // accounts, the OAuth grants and the agent connections, and any row a racing request
-        // wrote after the deletes above.
-        await deleteUser(tx.db, userId);
         // After the user row's delete: an event write that held the row first has committed, so
         // this reaches it, and one that comes later finds no account and writes nothing.
         await rekeyEvents(tx.db, userId, randomId);

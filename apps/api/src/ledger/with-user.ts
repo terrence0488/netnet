@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { isConnectionActive } from '../db/agent-connections';
 import { database, type Database, type Transaction } from '../db/client';
+import { lockAccount } from '../db/profiles';
 import { isId } from '../lib/ids';
 
 /**
@@ -74,6 +75,10 @@ export function createWithUser(deps: () => WithUserDeps): WithUser {
         // on a pooled connection that the next request will reuse.
         await tx.execute(sql`select set_config('app.user_id', ${userId}, true)`);
         if (write) {
+          // The account row first, for the deletion (review L-2): `DELETE /api/account` deletes it
+          // before the ledger, so a write that gets the share lock first is swept by that deletion,
+          // and one that comes after the deletion committed finds no account and fails.
+          await lockAccount(tx, userId);
           // The per-user write lock: one user's writes run one at a time (architecture §6.1).
           // Before the ledger exists there is no row to lock; creating it conflicts on its key.
           await tx.execute(

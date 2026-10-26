@@ -170,6 +170,13 @@ interface Row {
  * euro value at the person's rate.
  */
 async function seedValues(client: Client): Promise<void> {
+  // The accounts the previous release's ledgers belonged to: the app's writes now lock the account
+  // row (`withUser`), so a ledger without one could not be read or changed afterwards.
+  await client.query(
+    `insert into core."user" (id, name, email) values
+       ($1, '', $2), ($3, '', $4)`,
+    [USER_A, `${USER_A.toLowerCase()}@example.com`, USER_B, `${USER_B.toLowerCase()}@example.com`],
+  );
   for (const [userId, currency] of [
     [USER_A, 'EUR'],
     [USER_B, 'GBP'],
