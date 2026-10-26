@@ -19,6 +19,7 @@
     "content:images": "tsx scripts/content-images.ts",
     "content:publish": "tsx scripts/content-publish.ts",
     "listing:tools": "tsx scripts/listing-tools.ts",
+    "slo:attribute": "tsx scripts/slo-attribution.ts",
     "db:bootstrap": "tsx scripts/db-bootstrap.ts",
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:seed": "tsx scripts/db-seed.ts",
