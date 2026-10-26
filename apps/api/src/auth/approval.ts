@@ -9,6 +9,7 @@ import type { Auth } from './auth';
 import {
   classify,
   classifyingHost,
+  nameIsVerified,
   type Client,
   type LoadGuideHosts,
   type Registration,
@@ -32,7 +33,10 @@ export interface ApprovalView {
   /** The name the agent registered with: untrusted, cleaned and cut; the page escapes it. */
   clientName: string;
   registration: Registration;
-  /** False for a DCR client: the page says NetNet cannot verify the name. */
+  /**
+   * True only for a CIMD client whose host matched a named guide's `matchHosts`; false for every
+   * DCR client and every other CIMD one. The page says NetNet cannot verify a false one's name.
+   */
   nameVerified: boolean;
   /** The classification its connection will get. */
   client: Client;
@@ -172,7 +176,7 @@ export function createApproval(deps: ApprovalDeps): Approval {
       return {
         clientName: cleanAgentName(p.client.name, SHOWN_NAME_LENGTH),
         registration: p.registration,
-        nameVerified: p.registration === 'cimd',
+        nameVerified: nameIsVerified(p.registration, p.classification),
         client: p.classification,
         host: p.host,
         scopes: (p.params.get('scope') ?? '').split(' ').filter((s) => s !== ''),

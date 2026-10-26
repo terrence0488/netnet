@@ -45,6 +45,7 @@ const SAMPLES: { [K in MessageKind]: MessageOf<K>[] } = {
       kind: 'security.agent_connected',
       agentName: 'Claude',
       nameVerified: true,
+      host: 'claude.ai',
       connectedAt: CONNECTED_AT,
       timeZone: 'Asia/Singapore',
     },
@@ -53,6 +54,7 @@ const SAMPLES: { [K in MessageKind]: MessageOf<K>[] } = {
       agentName:
         '<b>Fictional</b> "agent" & co\u202e\nwith a name far longer than forty characters',
       nameVerified: false,
+      host: 'attacker.example',
       connectedAt: CONNECTED_AT,
       timeZone: 'Europe/London',
     },
@@ -224,7 +226,7 @@ describe('the security email', () => {
     expect(subject).toBe('Claude was connected to your NetNet');
     expect(text).toContain(
       'On 5 Aug 2026 at 5:32 am, you allowed Claude to see your holdings and their history, ' +
-        'and to add or update them.',
+        'and to add or update them; requests come from claude.ai.',
     );
     expect(text).toContain(`Not you? Revoke it: ${ORIGIN}${AGENT_TAB}`);
     expect(html).toContain(`href="${ORIGIN}${AGENT_TAB}"`);
@@ -241,12 +243,14 @@ describe('the security email', () => {
     expect(html).not.toContain('<b>Fictional');
     expect(html).toContain(escapeHtml(name));
     expect(text).toContain('On 4 Aug 2026 at 10:32 pm');
+    expect(text).toContain('requests come from attacker.example');
   });
 
   it('names no one when the agent gave no name, and falls back to UTC for an unknown zone', () => {
     const { subject, text } = renderEmail(nameless, { origin: ORIGIN });
     expect(subject).toBe(`An agent ${UNVERIFIED_NAME} was connected to your NetNet`);
     expect(text).toContain('On 4 Aug 2026 at 9:32 pm, you allowed an agent to see');
+    expect(text).not.toContain('requests come from');
   });
 
   it('formats the time as the prototype does', () => {

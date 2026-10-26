@@ -23,13 +23,16 @@ export type Message =
   /**
    * An agent was connected (PRD J5): sent on every Allow, by email only, whatever the Reminders
    * switches say. `agentName` is the name it registered with, untrusted: the template cleans,
-   * cuts and escapes it. `nameVerified` is false for a DCR client, whose name NetNet cannot check.
+   * cuts and escapes it. `nameVerified` is true only for a CIMD client whose host matched a named
+   * guide's `matchHosts`; it is false for every DCR client and every other CIMD one. `host` is
+   * the CIMD document's host when there is one, shown with the caveat.
    * `connectedAt` is an ISO instant, shown in `timeZone` (IANA).
    */
   | {
       kind: 'security.agent_connected';
       agentName: string;
       nameVerified: boolean;
+      host?: string | undefined;
       connectedAt: string;
       timeZone: string;
     }

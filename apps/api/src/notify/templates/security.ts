@@ -8,14 +8,15 @@ import type { RenderContext } from './render-context';
  * The security email (PRD J5, architecture §7.10): which agent was connected and when, what it may
  * do, and "Not you? Revoke it" to the Agent tab. Sent on every Allow, by email only; it cannot be
  * turned off. The agent's name is the one it registered with, which is untrusted: cleaned and cut
- * to 40 characters here, escaped by the layout, and for a DCR client followed by the caveat the
- * approval page shows.
+ * to 40 characters here, escaped by the layout, and for a name NetNet cannot verify (every DCR
+ * client and every CIMD document at a host no named guide matches), followed by the caveat the
+ * approval page shows. The CIMD document's host is named when the connection has one.
  */
 
 /** Where "Revoke it" goes: the web app's Agent tab. */
 export const AGENT_TAB = '/app/agent';
 
-/** What follows a name NetNet cannot verify (a DCR client's), as on the approval page. */
+/** What follows a name NetNet cannot verify, as on the approval page. */
 export const UNVERIFIED_NAME = '(the name it gave; NetNet can’t verify it)';
 
 const FALLBACK = 'An agent';
@@ -57,6 +58,7 @@ export function agentConnected(
   const named = name === '' ? FALLBACK : name;
   const inSentence = name === '' ? FALLBACK.toLowerCase() : name;
   const line = `${named}${msg.nameVerified ? '' : ` ${UNVERIFIED_NAME}`} was connected to your NetNet`;
+  const fromHost = msg.host === undefined ? '' : `; requests come from ${msg.host}`;
   const { day, time } = dayAndTime(msg.connectedAt, msg.timeZone);
   return {
     subject: line,
@@ -64,7 +66,7 @@ export function agentConnected(
       line,
       detail:
         `On ${day} at ${time}, you allowed ${inSentence} to see your holdings and their history, ` +
-        'and to add or update them.',
+        `and to add or update them${fromHost}.`,
       button: { lead: 'Not you?', label: 'Revoke it', url: `${origin}${AGENT_TAB}` },
       footer: 'We send this every time an agent is connected. It can’t be turned off.',
     }),

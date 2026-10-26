@@ -62,9 +62,10 @@ describe('consentAbilities', () => {
 });
 
 describe('the approval page', () => {
-  it('names who is asking, with the DCR caveat, and what each ledger scope allows', () => {
+  it('names who is asking, with the host, the DCR caveat, and what each ledger scope allows', () => {
     const markup = render(APPROVAL);
     expect(markup).toContain('Fictional agent wants to connect to your NetNet');
+    expect(markup).toContain('Requests come from agent.example');
     expect(markup).toContain('Signed in as avery@example.com');
     expect(markup).toContain('NetNet can’t verify this name');
     expect(markup).toContain(
@@ -75,14 +76,46 @@ describe('the approval page', () => {
     expect(markup).toContain('>Cancel<');
   });
 
-  it('shows no caveat for a verified name', () => {
-    const markup = render({ ...APPROVAL, registration: 'cimd', nameVerified: true });
+  it('shows a CIMD document’s host and marks its self-chosen name unverified (M-2)', () => {
+    const markup = render({
+      ...APPROVAL,
+      clientName: 'Claude',
+      registration: 'cimd',
+      nameVerified: false,
+      client: 'other',
+      host: 'attacker.example',
+    });
+    const titleEnd = markup.indexOf('</h1>');
+    const host = markup.indexOf('Requests come from attacker.example');
+    expect(titleEnd).toBeGreaterThan(-1);
+    expect(host).toBeGreaterThan(titleEnd);
+    expect(host).toBeLessThan(markup.indexOf('Signed in as avery@example.com'));
+    expect(markup).toContain('NetNet can’t verify this name');
+  });
+
+  it('shows no caveat for a real Claude client, whose host the claude guide names', () => {
+    const markup = render({
+      ...APPROVAL,
+      clientName: 'Claude',
+      registration: 'cimd',
+      nameVerified: true,
+      client: 'claude',
+      host: 'claude.ai',
+    });
+    expect(markup).toContain('Requests come from claude.ai');
     expect(markup).not.toContain('can’t verify this name');
   });
 
   it('escapes the name the agent registered with', () => {
     const markup = render({ ...APPROVAL, clientName: '<b>evil</b>' });
     expect(markup).toContain('&lt;b&gt;evil&lt;/b&gt;');
+  });
+
+  it('escapes the host, and leaves the line out when there is none', () => {
+    expect(render({ ...APPROVAL, host: '<b>evil</b>' })).toContain(
+      'Requests come from &lt;b&gt;evil&lt;/b&gt;',
+    );
+    expect(render({ ...APPROVAL, host: null })).not.toContain('Requests come from');
   });
 
   it('asks an unverified email to verify first, with resend', () => {

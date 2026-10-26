@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createVerifyAccessToken, jwksFrom } from '../../src/auth/mcp-token';
 import { seedLedger } from '../../src/ledger/seed';
 import { ConnectionRevoked } from '../../src/ledger/with-user';
+import { UNVERIFIED_NAME } from '../../src/notify/templates/security';
 import {
   CONNECTION_A,
   FIXED_NOW,
@@ -137,6 +138,29 @@ describe('GET /api/agent/approval', () => {
       nameVerified: false,
       client: 'other',
       host: 'agent.example',
+    });
+  });
+
+  it('marks a CIMD document at any other host unverified, and shows that host (M-2)', async () => {
+    const person = await newPerson();
+    const attacker = AgentClient.cimd(
+      target,
+      'https://attacker.example/client.json',
+      'Claude',
+      'https://attacker.example/callback',
+    );
+    const { location } = await attacker.authorize(person.browser);
+    const res = await person.browser.send(`/api/agent/approval${location.search}`);
+    expect(res.status).toBe(200);
+    const view = await body(res);
+    expect(approvalSchema.safeParse(view).success).toBe(true);
+    expect(view).toEqual({
+      clientName: 'Claude',
+      registration: 'cimd',
+      nameVerified: false,
+      client: 'other',
+      host: 'attacker.example',
+      scopes: ['ledger.read', 'ledger.write', 'offline_access'],
     });
   });
 
@@ -571,6 +595,8 @@ describe('the security email', () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]?.rendered.subject).toBe('Claude was connected to your NetNet');
     expect(sent[0]?.rendered.text).toContain('On 1 Aug 2026 at 6:00 pm, you allowed Claude');
+    expect(sent[0]?.rendered.text).toContain('requests come from claude.ai');
+    expect(sent[0]?.rendered.text).not.toContain(UNVERIFIED_NAME);
     expect(sent[0]?.rendered.text).toContain(`Revoke it: ${ORIGIN}/app/agent`);
     const [connection] = await connectionsOf(person.userId);
     expect(connection?.security_email_sent_at).toEqual(FIXED_NOW);
@@ -602,6 +628,30 @@ describe('the security email', () => {
     );
     expect(email?.rendered.html).not.toContain('<img');
     expect(email?.rendered.html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+  });
+
+  it('carries the caveat and the host for a CIMD document at a host no guide names (M-2)', async () => {
+    const person = await newPerson();
+    const attacker = AgentClient.cimd(
+      target,
+      'https://attacker.example/client.json',
+      'Claude',
+      'https://attacker.example/callback',
+    );
+    await attacker.connect(person.browser);
+    await target.settle();
+    const [email] = securityEmails(person);
+    expect(email?.rendered.subject).toBe(`Claude ${UNVERIFIED_NAME} was connected to your NetNet`);
+    expect(email?.rendered.text).toContain('requests come from attacker.example');
+    expect(email?.rendered.html).toContain('attacker.example');
+
+    const list = (await (await person.browser.send('/api/agent/connections')).json()) as Record<
+      string,
+      unknown
+    >[];
+    expect(list).toMatchObject([
+      { clientName: 'Claude', registration: 'cimd', client: 'other', nameVerified: false },
+    ]);
   });
 
   it('is retried by the reminder run when Resend did not accept it, from 10 minutes to 7 days', async () => {
