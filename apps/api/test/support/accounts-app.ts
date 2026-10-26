@@ -13,6 +13,7 @@ import { originCheck } from '../../src/auth/origin-check';
 import { authRoutes } from '../../src/auth/routes';
 import { sessionFromCookie } from '../../src/auth/session';
 import { eventStore } from '../../src/db/analytics';
+import { purgeOAuthArtifacts } from '../../src/db/oauth-purge';
 import { accountOf } from '../../src/db/profiles';
 import { countHit } from '../../src/db/rate-limits';
 import {
@@ -259,6 +260,7 @@ export function accountsApp(db: TestDatabase, options: AccountsAppOptions = {}):
     dailyJob(
       () => agent,
       () => deleteSaltsBefore(db.appDb, utcDay(clock.now)),
+      () => purgeOAuthArtifacts(db.appDb, clock.now),
     ),
   );
   app.get(
