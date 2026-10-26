@@ -56,6 +56,11 @@ No `INTERNAL` or transport failure among them. `n1-slo.sql`, the target and the 
 were **not** changed. Founder must decide (a) whether client-correctable outcomes count against
 N1 and (b) whether that account is a test account for F24. T14's scheduled-run box stays open.
 
+**Independent local re-run by the parent session (2026-10-26), on each fix branch with local
+Postgres:** T16 15/15, T17 30/30, T18 76/76 (34 integration + 42 unit), T19 9/9 focused (8 me-init
+including the five-way case, 1 delete race), T20 10/10 focused. These confirm the fixes locally;
+they do not replace the `Checks` job, which billing prevents.
+
 **Unchanged:** T4 done; T7 half delivered (F11 phone shots still 70-byte stand-ins); T2 waits on
 F21; T6 blocked on F20 (`content/reviews.json` is `{}`); F20/F22/F23 open; no M12 spend approved;
 Renovate #128–#131, #134, #135 untouched; `test-results/` gitignored; a local `pnpm lint` may flag
