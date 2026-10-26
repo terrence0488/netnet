@@ -2,7 +2,7 @@ import { Hono, type Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
 import type { Executor } from '../db/client';
-import { codeGrant } from '../db/oauth';
+import { codeGrant, countNewCimdClients, findOAuthClient } from '../db/oauth';
 import { afterResponse } from '../lib/after-response';
 import type { AppEnv } from '../lib/context';
 import { AppError } from '../lib/errors';
@@ -17,13 +17,29 @@ import { ADVERTISED_SCOPES, APPROVAL_PAGE, DROPPED_SCOPES, agentScope, hashToken
  * and the RFC 8414 and RFC 9728 metadata at the root's `/.well-known`.
  *
  * NetNet's own part around the library: `resource` is required; a browser's authorize request
- * gets a 302 where the library answers `{redirect, url}`; DCR is limited per IP; the token, DCR
- * and revocation endpoints never act on a cookie; and the person's connection attempt hears of the
- * agent's authorize request and of its code exchange (PRD J5).
+ * gets a 302 where the library answers `{redirect, url}`; authorize and DCR are limited per IP and
+ * a new CIMD client is capped per hour (P4-T17); the token, DCR and revocation endpoints never act
+ * on a cookie; and the person's connection attempt hears of the agent's authorize request and of
+ * its code exchange (PRD J5).
  */
 
 /** DCR: per IP address, in a fixed one-hour window (§8). */
 export const REGISTRATIONS_PER_HOUR = 10;
+
+/** Authorize: per IP address, in a fixed one-minute window (§8). */
+export const AUTHORIZE_PER_MINUTE = 60;
+
+/**
+ * A CIMD document NetNet has not seen before costs a fetch and a `core.oauth_client` row. Per IP
+ * address, in a fixed one-hour window (P4-T17): a script that names a different document each time
+ * is stopped here, if it was not already the rate limit above.
+ */
+export const NEW_CIMD_CLIENTS_PER_IP_PER_HOUR = 20;
+
+/** New CIMD clients, globally, in a fixed one-hour window: the storage bound (P4-T17). */
+export const NEW_CIMD_CLIENTS_PER_HOUR = 60;
+
+const HOUR_S = 60 * 60;
 
 /** A registration is a client's metadata; a token request a few parameters. */
 const MAX_BODY_BYTES = 16 * 1024;
@@ -178,12 +194,45 @@ async function asNavigation(response: Response, origin: string): Promise<Respons
   return location === response.headers.get('Location') ? response : redirect(location, response);
 }
 
+/** `clientId` as a CIMD document URL: HTTPS, which is all the library's resolver takes. */
+function isCimdClientId(clientId: string): boolean {
+  try {
+    return new URL(clientId).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * `null` when this authorize request may go ahead, or why NetNet refuses it before the library
+ * resolves and keeps a CIMD client it does not know: the limit per IP, then the cap on new rows
+ * for every caller. A client already stored passes untouched, so a known agent is never refused.
+ */
+async function newClientRefusal(deps: OAuthRoutesDeps, c: Context<AppEnv>): Promise<string | null> {
+  const clientId = new URL(c.req.url).searchParams.get('client_id');
+  if (clientId === null || !isCimdClientId(clientId)) return null;
+  if ((await findOAuthClient(deps.db(), clientId)) !== null) return null;
+  await deps.rateLimit(
+    `oauth-authorize:ip:${clientIp(c)}:cimd`,
+    NEW_CIMD_CLIENTS_PER_IP_PER_HOUR,
+    HOUR_S,
+  );
+  const since = new Date(Date.now() - HOUR_S * 1000);
+  if ((await countNewCimdClients(deps.db(), since)) >= NEW_CIMD_CLIENTS_PER_HOUR) {
+    return 'NetNet is at capacity for new agents. Try again later.';
+  }
+  return null;
+}
+
 export function oauthRoutes(deps: OAuthRoutesDeps): Hono<AppEnv> {
   const routes = new Hono<AppEnv>();
   const pass = async (c: Context<AppEnv>) => deps.auth().handler(await withoutCookie(c.req.raw));
 
   routes.get('/oauth2/authorize', async (c) => {
     const origin = deps.origin();
+    await deps.rateLimit(`oauth-authorize:ip:${clientIp(c)}`, AUTHORIZE_PER_MINUTE, 60);
+    const refusal = await newClientRefusal(deps, c);
+    if (refusal !== null) return redirect(errorPage(origin, 'temporarily_unavailable', refusal));
     const response =
       new URL(c.req.url).searchParams.getAll('resource').length === 0
         ? redirect(errorPage(origin, 'invalid_target', 'The agent did not name the resource.'))

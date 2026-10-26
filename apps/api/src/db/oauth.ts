@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, count, eq, gte } from 'drizzle-orm';
 import type { Executor } from './client';
 import { oauthClient, verification } from './schema';
 
@@ -35,6 +35,24 @@ export async function findOAuthClient(
     .limit(1);
   const row = rows[0];
   return row ? { ...row, disabled: row.disabled === true } : null;
+}
+
+/** The `client_discovery_id` the library stores for a client found by its metadata document. */
+const CIMD_DISCOVERY_ID = 'cimd';
+
+/**
+ * How many CIMD clients were created since `since`: one row per document NetNet resolved and kept
+ * (architecture §7.6). Refreshing a known client keeps its `created_at`, so it is counted once.
+ * P4-T17 caps the rows the authorize path may add in an hour with it.
+ */
+export async function countNewCimdClients(db: Executor, since: Date): Promise<number> {
+  const rows = await db
+    .select({ count: count() })
+    .from(oauthClient)
+    .where(
+      and(eq(oauthClient.clientDiscoveryId, CIMD_DISCOVERY_ID), gte(oauthClient.createdAt, since)),
+    );
+  return rows[0]?.count ?? 0;
 }
 
 /** Whose code it is and the connection it was approved for. */
