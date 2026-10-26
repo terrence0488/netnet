@@ -15,6 +15,11 @@ on:
         required: false
         type: string
         default: '7'
+      user:
+        description: 'Optional usr_ id: print that account’s own events instead'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -41,9 +46,12 @@ jobs:
           DATABASE_METRICS_URL: ${{ secrets.DATABASE_METRICS_URL }}
           METRICS_EXCLUDE_USERS: ${{ secrets.METRICS_EXCLUDE_USERS }}
           DAYS: ${{ inputs.days }}
+          USER: ${{ inputs.user }}
         run: |
           set -euo pipefail
-          pnpm --silent slo:attribute --days "$DAYS" | tee attribution.md
+          args=(--days "$DAYS")
+          if [ -n "$USER" ]; then args+=(--user "$USER"); fi
+          pnpm --silent slo:attribute "${args[@]}" | tee attribution.md
       - name: Write the report to the job summary
         if: always()
         run: |

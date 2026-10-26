@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ACCOUNT_SQL,
   CALLS_SQL,
   endOf,
+  renderTimeline,
   main,
   renderReport,
   successRate,
   tally,
   windowEndingAt,
+  type AccountTimeline,
   type AgentCall,
   type Attribution,
   type AttributionIo,
@@ -168,5 +171,84 @@ describe('the command', () => {
       exclude: [PROBE],
     });
     expect(target.lines.join('\n')).toContain('No non-ok agent_tool_called events');
+  });
+});
+
+describe('the account behind a failed call', () => {
+  const timeline: AccountTimeline = {
+    user: PROBE,
+    excluded: false,
+    window: { from: new Date('2026-07-28T00:00:00.000Z'), to: NOW },
+    events: [
+      {
+        at: new Date('2026-10-24T19:10:00.000Z'),
+        name: 'signup',
+        segment: 'unknown',
+        app_version: 'p4.3',
+        has_visitor: true,
+      },
+      {
+        at: new Date('2026-10-24T19:11:00.000Z'),
+        name: 'agent_connection',
+        segment: 'unknown',
+        app_version: 'p4.3',
+        has_visitor: false,
+      },
+      {
+        at: new Date('2026-10-24T19:11:30.000Z'),
+        name: 'agent_tool_called',
+        segment: 'unknown',
+        app_version: 'p4.3',
+        has_visitor: false,
+      },
+    ],
+  };
+
+  it('reads the account’s own events by id, and nothing else', () => {
+    expect(ACCOUNT_SQL).toContain('where e.user_id = $1');
+    expect(ACCOUNT_SQL).toContain('e.name');
+    expect(ACCOUNT_SQL).toContain('e.app_version');
+    expect(ACCOUNT_SQL).not.toMatch(/props/);
+  });
+
+  it('states the names, the releases and the excluded flag, then one line per event', () => {
+    const report = renderTimeline(timeline);
+    expect(report).toContain(`Account ${PROBE} · 3 events`);
+    expect(report).toContain('excluded: no');
+    expect(report).toContain('Names: agent_connection×1, agent_tool_called×1, signup×1');
+    expect(report).toContain('Releases: p4.3');
+    expect(report.split('\n').filter((line) => line.includes('2026-10-24'))).toHaveLength(3);
+  });
+
+  it('says so plainly when the account has no events in the window', () => {
+    expect(renderTimeline({ ...timeline, events: [] })).toContain(
+      'No events for that account in the window.',
+    );
+  });
+
+  it('`--user` prints the account, and reads 90 days by default', async () => {
+    const target = io();
+    const seen: { user: string; from: string; days: number }[] = [];
+    const fake = (
+      _url: string,
+      user: string,
+      window: { from: Date; to: Date },
+    ): Promise<AccountTimeline> => {
+      seen.push({
+        user,
+        from: window.from.toISOString(),
+        days: Math.round((window.to.getTime() - window.from.getTime()) / 86_400_000),
+      });
+      return Promise.resolve(timeline);
+    };
+    expect(await main(['--user', PROBE], target, undefined, fake)).toBe(0);
+    expect(seen[0]).toEqual({ user: PROBE, from: '2026-07-28T00:25:00.000Z', days: 90 });
+    expect(target.lines.join('\n')).toContain('Names:');
+  });
+
+  it('refuses a --user that is not a usr_ id', async () => {
+    const target = io();
+    expect(await main(['--user', 'someone@example.com'], target)).toBe(2);
+    expect(target.lines.join('\n')).toContain('--user must be a usr_ id');
   });
 });

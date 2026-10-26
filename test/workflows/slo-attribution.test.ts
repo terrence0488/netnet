@@ -27,6 +27,7 @@ describe('the SLO attribution workflow (slo-attribution.yml)', () => {
     expect(workflow).toMatch(/^on:\n {2}workflow_dispatch:\n {4}inputs:\n/m);
     expect(workflow).not.toMatch(/^\s+(schedule|push|pull_request|workflow_run):/m);
     expect(workflow).toMatch(/^ {6}days:\n(?: {8}.+\n)* {8}default: '7'$/m);
+    expect(workflow).toMatch(/^ {6}user:\n(?: {8}.+\n)* {8}default: ''$/m);
   });
 
   it('waits for no reviewer: no `environment:` key, and reads only the repository', () => {
@@ -39,7 +40,9 @@ describe('the SLO attribution workflow (slo-attribution.yml)', () => {
     expect(run).toContain('DATABASE_METRICS_URL: ${{ secrets.DATABASE_METRICS_URL }}');
     expect(run).toContain('METRICS_EXCLUDE_USERS: ${{ secrets.METRICS_EXCLUDE_USERS }}');
     expect(run).toContain('DAYS: ${{ inputs.days }}');
-    expect(run).toContain('pnpm --silent slo:attribute --days "$DAYS" | tee attribution.md');
+    expect(run).toContain('USER: ${{ inputs.user }}');
+    expect(run).toContain('if [ -n "$USER" ]; then args+=(--user "$USER"); fi');
+    expect(run).toContain('pnpm --silent slo:attribute "${args[@]}" | tee attribution.md');
     expect(inlineTokensIn(FILE, workflow)).toStrictEqual([]);
   });
 

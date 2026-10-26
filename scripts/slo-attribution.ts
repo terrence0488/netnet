@@ -1,7 +1,9 @@
 /**
- * `pnpm slo:attribute [--days <n>] [--to <YYYY-MM-DD>]` lists the `agent_tool_called` events that
- * were **not** `ok` in the window, so a fired `slo_success` trigger can be attributed to a tool, an
- * outcome and an account instead of being accepted or explained away (ops/launch-readiness.md, N1).
+ * `pnpm slo:attribute [--days <n>] [--to <YYYY-MM-DD>] [--user <usr_…>]` lists the
+ * `agent_tool_called` events that were **not** `ok` in the window, so a fired `slo_success` trigger
+ * can be attributed to a tool, an outcome and an account instead of being accepted or explained
+ * away (ops/launch-readiness.md, N1). With `--user` it answers the next question — who that account
+ * is — from its own event names, versions and dates, and nothing else.
  *
  * This is a diagnosis, never a metric: it is the only reader of `analytics.event` that prints a
  * user id, and it prints one only for the handful of non-ok calls. It reads `DATABASE_METRICS_URL`
@@ -19,9 +21,12 @@ import { parseExcludeUsers } from './metrics';
 /** The role `DATABASE_METRICS_URL` must connect as (architecture §6.1). */
 const METRICS_ROLE = 'netnet_metrics';
 
+/** A `usr_` ULID, the only id shape `--user` accepts (`METRICS_EXCLUDE_USERS` uses the same). */
+const USER_ID = /^usr_[0-7][0-9A-HJKMNP-TV-Z]{25}$/;
+
 const DAY_MS = 86_400_000;
 
-const USAGE = 'Usage: pnpm slo:attribute [--days <n>] [--to <YYYY-MM-DD>]';
+const USAGE = 'Usage: pnpm slo:attribute [--days <n>] [--to <YYYY-MM-DD>] [--user <usr_\u2026>]';
 
 /** One `agent_tool_called` row, exactly as `analytics.event` holds it. */
 export interface AgentCall {
@@ -84,8 +89,9 @@ export const CALLS_SQL = `select e.at,
    and e.at < $2
  order by e.at`;
 
-/** Tally rows the way `n1-slo.sql` counts them: `ok` is the only success. */
-export function tally(calls: AgentCall[]): Tally {
+/** Tally rows the way `n1-slo.sql` counts them: `ok` is the only success. */ export function tally(
+  calls: AgentCall[],
+): Tally {
   const ok = calls.filter((call) => call.outcome === 'ok').length;
   return { calls: calls.length, ok, nonOk: calls.length - ok };
 }
@@ -152,6 +158,69 @@ export interface AttributionIo {
   error: (line: string) => void;
 }
 
+/** One event of one account: its name, when, from which release, and the bucket it landed in. */
+export interface AccountEvent {
+  at: Date;
+  name: string;
+  segment: string;
+  app_version: string;
+  has_visitor: boolean;
+}
+
+/** The shape of an account, from its own event names: no props, no address, no amount. */
+export interface AccountTimeline {
+  user: string;
+  excluded: boolean;
+  window: { from: Date; to: Date };
+  events: AccountEvent[];
+}
+
+/** One account's events in a window. Names, versions and dates only. */
+export const ACCOUNT_SQL = `select e.at,
+       e.name,
+       e.segment,
+       e.app_version,
+       e.visitor is not null as has_visitor
+  from analytics.event e
+ where e.user_id = $1
+   and e.at >= $2
+   and e.at < $3
+ order by e.at`;
+
+/** The account's own record: what it did, on which release, first and last. */
+export function renderTimeline(timeline: AccountTimeline): string {
+  const { user, events } = timeline;
+  const lines = [
+    `Account ${user} · ${events.length} events · window ${timeline.window.from.toISOString()} → ${timeline.window.to.toISOString()} · excluded: ${timeline.excluded ? 'yes' : 'no'}`,
+  ];
+  if (events.length === 0) {
+    lines.push('No events for that account in the window.');
+    return lines.join('\n');
+  }
+  const names = new Map<string, number>();
+  for (const event of events) names.set(event.name, (names.get(event.name) ?? 0) + 1);
+  lines.push(
+    `Names: ${[...names.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name, count]) => `${name}×${count}`)
+      .join(', ')}`,
+    `Releases: ${[...new Set(events.map((event) => event.app_version))].join(', ')}`,
+    '',
+    [pad('at (UTC)', 20), pad('name', 26), pad('segment', 12), 'app_version'].join(' '),
+  );
+  for (const event of events) {
+    lines.push(
+      [
+        pad(event.at.toISOString().replace('.000Z', 'Z'), 20),
+        pad(event.name, 26),
+        pad(event.segment, 12),
+        event.app_version,
+      ].join(' '),
+    );
+  }
+  return lines.join('\n');
+}
+
 /** Read the window and hand the caller everything `renderReport` needs. */
 export async function attribute(
   connectionString: string,
@@ -183,16 +252,42 @@ export async function attribute(
   };
 }
 
+/** One account's own events: the answer to "who is this account?" without reading a single prop. */
+export async function accountTimeline(
+  connectionString: string,
+  user: string,
+  window: { from: Date; to: Date },
+  excludeUsers: string[],
+): Promise<AccountTimeline> {
+  const events = await withClient(connectionString, async (client) => {
+    const { rows: who } = await client.query<{ current_user: string }>('select current_user');
+    const role = who[0]?.current_user;
+    if (role !== METRICS_ROLE) {
+      throw new Error(
+        `DATABASE_METRICS_URL connects as ${role ?? 'no role'}, not ${METRICS_ROLE}; it must be the read-only metrics login.`,
+      );
+    }
+    const { rows } = await client.query<AccountEvent>(ACCOUNT_SQL, [
+      user,
+      window.from.toISOString(),
+      window.to.toISOString(),
+    ]);
+    return rows;
+  });
+  return { user, excluded: excludeUsers.includes(user), window, events };
+}
+
 export async function main(
   argv: string[],
   io: AttributionIo,
   run: typeof attribute = attribute,
+  timeline: typeof accountTimeline = accountTimeline,
 ): Promise<number> {
-  let values: { days?: string; to?: string };
+  let values: { days?: string; to?: string; user?: string };
   try {
     ({ values } = parseArgs({
       args: argv,
-      options: { days: { type: 'string' }, to: { type: 'string' } },
+      options: { days: { type: 'string' }, to: { type: 'string' }, user: { type: 'string' } },
     }));
   } catch {
     io.error(`slo:attribute: ${USAGE}`);
@@ -205,14 +300,22 @@ export async function main(
   let window: { from: Date; to: Date };
   let excludeUsers: string[];
   try {
-    const days = values.days === undefined ? 7 : Number(values.days);
+    const days =
+      values.days === undefined ? (values.user === undefined ? 7 : 90) : Number(values.days);
     window = windowEndingAt(days, endOf(values.to, io.now()));
     excludeUsers = parseExcludeUsers(io.excludeUsers);
+    if (values.user !== undefined && !USER_ID.test(values.user)) {
+      throw new Error('--user must be a usr_ id.');
+    }
   } catch (error) {
     io.error(`slo:attribute: ${error instanceof Error ? error.message : 'bad arguments'}`);
     return 2;
   }
   try {
+    if (values.user !== undefined) {
+      io.log(renderTimeline(await timeline(io.databaseUrl, values.user, window, excludeUsers)));
+      return 0;
+    }
     io.log(renderReport(await run(io.databaseUrl, window, excludeUsers)));
     return 0;
   } catch (error) {
