@@ -12,6 +12,12 @@ vi.mock('@sentry/node', () => ({
 const AMOUNT = '23841.17';
 const HOLDING = 'Harborview Global Index Fund';
 const EMAIL = 'marina-friend@example.com';
+const REDACTED = '[redacted by NetNet]';
+
+/** H-1's probe: Drizzle puts the SQL and its bound parameters in the error message. */
+const DRIZZLE_SQL =
+  'Failed query: insert into "ledger"."holding" ("name", "amount_minor") values ($1, $2) ' +
+  'params: Harborview Global Index Fund,2384117';
 
 function tainted() {
   return scrubSentryEvent({
@@ -30,6 +36,8 @@ function tainted() {
     breadcrumbs: [
       { category: 'mcp', message: `recorded ${AMOUNT} for ${HOLDING}`, data: { amount: AMOUNT } },
     ],
+    extra: { amount: AMOUNT, holding: HOLDING, note: 'free text' },
+    contexts: { holding: { name: HOLDING, amount: AMOUNT } },
     exception: { values: [{ type: 'Error', value: `could not notify ${EMAIL}` }] },
   });
 }
@@ -57,13 +65,43 @@ describe('Sentry scrubbing', () => {
     expect(event?.breadcrumbs?.[0]).not.toHaveProperty('message');
     expect(event?.breadcrumbs?.[0]).not.toHaveProperty('data');
     expect(event?.breadcrumbs?.[0]?.category).toBe('mcp');
+    expect(event).not.toHaveProperty('extra');
+    expect(event).not.toHaveProperty('contexts');
+  });
+
+  it('redacts the H-1 probe: no Drizzle SQL or bound parameters reach Sentry', () => {
+    const event = scrubSentryEvent({
+      type: undefined,
+      exception: {
+        values: [
+          {
+            type: 'DrizzleQueryError',
+            value: DRIZZLE_SQL,
+            stacktrace: {
+              frames: [
+                { filename: 'apps/api/src/ledger.ts', function: 'insertHolding', lineno: 42 },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    const value = event?.exception?.values?.[0];
+    expect(value?.value).toBe(REDACTED);
+    expect(value?.type).toBe('DrizzleQueryError');
+    expect(value?.stacktrace?.frames?.[0]?.filename).toBe('apps/api/src/ledger.ts');
+    const serialized = JSON.stringify(event);
+    expect(serialized).not.toContain('Harborview Global Index Fund,2384117');
+    expect(serialized).not.toContain('params:');
+    expect(serialized).not.toContain('insert into');
   });
 
   it('keeps the user id but no email or username, and redacts emails in text', () => {
     const event = tainted();
     expect(event?.user).toStrictEqual({ id: 'usr_01JAAA' });
     expect(event?.message).toBe('notify [email] failed');
-    expect(event?.exception?.values?.[0]?.value).toBe('could not notify [email]');
+    expect(event?.exception?.values?.[0]?.value).toBe(REDACTED);
+    expect(event?.exception?.values?.[0]?.type).toBe('Error');
   });
 
   it('initializes with automatic collection off, scrubbing on, and no tracing or replay', () => {

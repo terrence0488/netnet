@@ -4,12 +4,16 @@ import * as Sentry from '@sentry/node';
  * Error reporting (architecture §10): unexpected errors reach Sentry scrubbed, or stay in the
  * log when no DSN is set. `dataCollection` disables every automatic category (SDK v11 removed
  * `sendDefaultPii`; unset would collect bodies, cookies and query data by default); `beforeSend`
- * drops request bodies, query strings, breadcrumb text and emails. Errors only: no tracing, no
- * session replay.
+ * drops request bodies, query strings, breadcrumb text and emails, and replaces every exception
+ * message with a fixed placeholder so no SQL or bound parameter escapes. Errors only: no tracing,
+ * no session replay.
  *
  * This scrub mirrors `apps/web/src/sentry.ts`: the two drop the same fields, and both are
  * tested. Change one, change the other.
  */
+
+/** What every exception message becomes: the class and stack remain, the text never does. */
+const REDACTED = '[redacted by NetNet]';
 
 const EMAIL_LIKE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 
@@ -24,8 +28,10 @@ function stripQuery(url: string): string {
 }
 
 /**
- * What Sentry may keep of an event (CONVENTIONS §6): the route-level facts, never amounts,
- * names, emails, bodies or query strings. Returns the event, scrubbed in place.
+ * What Sentry may keep of an event (CONVENTIONS §6): the error's class, its stack and the
+ * route-level facts, never amounts, names, emails, bodies, query strings or free text. Exception
+ * values carry Drizzle's SQL and bound parameters, so they become a fixed placeholder; `extra`
+ * and `contexts` are dropped whole. Returns the event, scrubbed in place.
  */
 export function scrubSentryEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   const { request } = event;
@@ -43,9 +49,11 @@ export function scrubSentryEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | 
     delete crumb.message;
     delete crumb.data;
   }
+  delete event.extra;
+  delete event.contexts;
   if (typeof event.message === 'string') event.message = redactEmails(event.message);
   for (const value of event.exception?.values ?? []) {
-    if (typeof value.value === 'string') value.value = redactEmails(value.value);
+    value.value = REDACTED;
   }
   return event;
 }
