@@ -41,7 +41,7 @@
     "hono": "4.13.13",
     "jose": "6.2.13",
     "pg": "8.23.1",
-    "web-push": "3.6.7"
+    "web-push": "4.0.0"
   },
   "devDependencies": {
     "@hono/node-server": "2.1.5",
